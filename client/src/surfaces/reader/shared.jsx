@@ -10,6 +10,7 @@
  */
 import React from 'react'
 import { READER_EN, READER_ZH, detectLanguage, interpolate } from './messages.js'
+import { SlidingThumb, useSlidingThumb } from '../../core/motion.js'
 
 /* -------------------------------------------------------------------------- */
 /* Constants                                                                   */
@@ -1262,9 +1263,16 @@ export function IconBtn(props) {
 /** Horizontal tab strip (`items: [{id,label,count?,badge?}]`). */
 export function Tabs(props) {
   const items = arrayOf(props.items)
+  const slider = useSlidingThumb()
   return React.createElement(
     'div',
-    { className: cx('ph-r-tabs', props.className), role: 'tablist', 'aria-label': props['aria-label'] },
+    {
+      className: cx('ph-r-tabs', slider.rect && 'ph-r-tabs--sliding', props.className),
+      ref: slider.ref,
+      role: 'tablist',
+      'aria-label': props['aria-label'],
+    },
+    React.createElement(SlidingThumb, { rect: slider.rect, className: 'ph-thumb--pill', inset: 6, popKey: props.value }),
     items.map((item) =>
       React.createElement(
         'button',
@@ -1273,6 +1281,7 @@ export function Tabs(props) {
           type: 'button',
           role: 'tab',
           'aria-selected': item.id === props.value ? 'true' : 'false',
+          'data-ph-active': item.id === props.value ? 'true' : undefined,
           className: cx('ph-r-tab', item.id === props.value && 'ph-r-tab--active'),
           onClick: () => props.onChange(item.id),
           title: item.title,

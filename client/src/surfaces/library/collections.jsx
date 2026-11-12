@@ -9,6 +9,7 @@ import { Icon } from '../../core/icons.jsx'
 import { Badge, Check, IconButton } from '../../core/primitives.jsx'
 import { COLLECTION_COLORS, MATERIAL_MIME } from '../../core/constants.js'
 import { tagColor } from '../../core/tag-colors.js'
+import { SlidingThumb, useSlidingThumb } from '../../core/motion.js'
 import { FolderTree } from './folders.jsx'
 import { NotesSidebar } from './notes-sidebar.jsx'
 
@@ -148,6 +149,7 @@ function CollectionRow(props) {
 
 export function CollectionsPane(props) {
   const t = props.t
+  const smartSlider = useSlidingThumb()
   const snapshot = props.snapshot
   const controller = props.controller
   const filter = ''
@@ -202,13 +204,17 @@ export function CollectionsPane(props) {
       h(
         'div',
         { className: 'ph-left__section' },
-        h('div', { className: 'ph-left__list' },
+        h(
+          'div',
+          { className: 'ph-left__list' + (smartSlider.rect ? ' ph-left__list--sliding' : ''), ref: smartSlider.ref },
+          h(SlidingThumb, { rect: smartSlider.rect, popKey: filters.view + '|' + (filters.collectionId || '') + '|' + (filters.field || '') }),
           SMART_VIEWS.map((view) =>
             h(
               'button',
               {
                 key: view.id,
                 type: 'button',
+                'data-ph-active': (filters.view === view.id && !filters.collectionId && !filters.field) || (view.id === 'trash' && filters.view === 'trash') ? 'true' : undefined,
                 className: 'ph-navitem' + (filters.view === view.id && !filters.collectionId && !filters.field ? ' ph-navitem--active' : '') + (view.id === 'trash' && filters.view === 'trash' ? ' ph-navitem--active' : ''),
                 onClick: () => controller.setView(view.id),
               },

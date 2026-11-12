@@ -33,6 +33,7 @@ import { FloatingAnnotationTools } from './floating-tools.jsx'
 import { ReaderNotesPanel } from './notes-panel.jsx'
 import { Outline } from './outline.jsx'
 import { readFlag, writeFlag } from '../../core/notes-model.js'
+import { SlidingThumb, useSlidingThumb } from '../../core/motion.js'
 import { PageCanvas } from './page-canvas.jsx'
 import { ReaderToolbar } from './toolbar.jsx'
 import { Thumbnails } from './thumbnails.jsx'
@@ -290,6 +291,7 @@ export function ReaderShell(props) {
 /** Inner implementation (all hooks live here; the wrapper only adds the boundary). */
 function ReaderShellInner(props) {
   const rt = React.useMemo(() => buildReaderT(props.t), [props.t])
+  const trSlider = useSlidingThumb()
   // Styles live in a ref-counted <style> element; unmounting the reader removes
   // it so disabling the plugin leaves no global side effect behind.
   const releaseStyles = React.useMemo(() => ensureReaderStyles(), [])
@@ -2201,15 +2203,31 @@ function ReaderShellInner(props) {
             React.createElement('span', { className: 'ph-r-tr__title' }, rt('reader.translation.sheet')),
             React.createElement(
               'div',
-              { className: 'ph-r-tr__modes', role: 'group', 'aria-label': rt('reader.translation.sheet') },
+              {
+                className: cx('ph-r-tr__modes', trSlider.rect && 'ph-r-tr__modes--sliding'),
+                ref: trSlider.ref,
+                role: 'group',
+                'aria-label': rt('reader.translation.sheet'),
+              },
+              React.createElement(SlidingThumb, { rect: trSlider.rect, popKey: mode }),
               React.createElement(
                 'button',
-                { type: 'button', className: cx('ph-r-tr__mode', mode === 'compare' && 'ph-r-tr__mode--active'), onClick: () => changeMode('compare') },
+                {
+                  type: 'button',
+                  'data-ph-active': mode === 'compare' ? 'true' : undefined,
+                  className: cx('ph-r-tr__mode', mode === 'compare' && 'ph-r-tr__mode--active'),
+                  onClick: () => changeMode('compare'),
+                },
                 rt('reader.translation.mode.compare'),
               ),
               React.createElement(
                 'button',
-                { type: 'button', className: cx('ph-r-tr__mode', mode === 'translation' && 'ph-r-tr__mode--active'), onClick: () => changeMode('translation') },
+                {
+                  type: 'button',
+                  'data-ph-active': mode === 'translation' ? 'true' : undefined,
+                  className: cx('ph-r-tr__mode', mode === 'translation' && 'ph-r-tr__mode--active'),
+                  onClick: () => changeMode('translation'),
+                },
                 rt('reader.translation.mode.translation'),
               ),
             ),

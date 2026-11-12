@@ -8,6 +8,7 @@
  */
 import React from 'react'
 import { Btn, Icon, IconBtn, arrayOf, cx, firstText, num } from './shared.jsx'
+import { SlidingThumb, useSlidingThumb } from '../../core/motion.js'
 
 /** Build a single-line author list. */
 function authorLine(authors) {
@@ -74,6 +75,7 @@ export function ReaderToolbar(props) {
   const page = Math.max(1, Math.min(total, Math.round(num(props.page, 1))))
   const search = props.search || { open: false, query: '', hits: [], index: 0 }
   const searchInputRef = React.useRef(null)
+  const modeSlider = useSlidingThumb()
 
   React.useEffect(() => {
     if (!search.open) return
@@ -252,13 +254,20 @@ export function ReaderToolbar(props) {
       React.createElement('span', { className: 'ph-r-toolbar__meta-sep' }, ''),
       React.createElement(
         'div',
-        { className: 'ph-r-segment', role: 'group', 'aria-label': rt('reader.mode.label') },
+        {
+          className: cx('ph-r-segment', modeSlider.rect && 'ph-r-segment--sliding'),
+          ref: modeSlider.ref,
+          role: 'group',
+          'aria-label': rt('reader.mode.label'),
+        },
+        React.createElement(SlidingThumb, { rect: modeSlider.rect, inset: 2, popKey: props.mode }),
         modeItems.map((item) =>
           React.createElement(
             'button',
             {
               key: item.id,
               type: 'button',
+              'data-ph-active': props.mode === item.id ? 'true' : undefined,
               className: cx('ph-r-segment__item', props.mode === item.id && 'ph-r-segment__item--active'),
               onClick: () => props.onMode(item.id),
               'aria-pressed': props.mode === item.id ? 'true' : 'false',

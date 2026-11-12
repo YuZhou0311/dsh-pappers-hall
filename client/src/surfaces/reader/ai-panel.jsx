@@ -25,6 +25,7 @@ import {
   num,
   useAsync,
 } from './shared.jsx'
+import { SlidingThumb, useSlidingThumb } from '../../core/motion.js'
 import { Markdown } from './markdown.jsx'
 
 /** Stable id for one rendered chat message. */
@@ -188,6 +189,7 @@ export function AiPanel(props) {
   const [includeImage, setIncludeImage] = React.useState(false)
   // v0.3: fast (non-thinking) vs deep (reasoning) answer modes.
   const [mode, setMode] = React.useState('deep')
+  const modeSlider = useSlidingThumb()
   const [extraQuote, setExtraQuote] = React.useState('')
   const bodyRef = React.useRef(null)
   const inputRef = React.useRef(null)
@@ -502,13 +504,20 @@ export function AiPanel(props) {
         { className: 'ph-r-ai__tools' },
         React.createElement(
           'div',
-          { className: 'ph-r-ai__modes', role: 'group', 'aria-label': t('reader.ai.mode.label') },
+          {
+            className: cx('ph-r-ai__modes', modeSlider.rect && 'ph-r-ai__modes--sliding'),
+            ref: modeSlider.ref,
+            role: 'group',
+            'aria-label': t('reader.ai.mode.label'),
+          },
+          React.createElement(SlidingThumb, { rect: modeSlider.rect, popKey: mode }),
           ['fast', 'deep'].map((value) =>
             React.createElement(
               'button',
               {
                 key: value,
                 type: 'button',
+                'data-ph-active': mode === value ? 'true' : undefined,
                 className: cx('ph-r-ai__mode', mode === value && 'ph-r-ai__mode--active'),
                 title: t('reader.ai.mode.' + value + 'Hint'),
                 'aria-pressed': mode === value ? 'true' : 'false',

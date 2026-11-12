@@ -492,7 +492,7 @@ export function LibraryShell(props) {
       )
     : h(
         'div',
-        { className: 'ph-pane ph-pane--mid' },
+        { className: 'ph-pane ph-pane--mid' + (snapshot.selection.length > 0 ? ' ph-pane--batch' : '') },
         h(LibraryToolbar, { t: t, api: api, snapshot: snapshot, controller: library, pushToast: push }),
         h(SearchFilters, { t: t, snapshot: snapshot, controller: library }),
         snapshot.filters.view === 'duplicates'

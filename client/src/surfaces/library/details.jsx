@@ -554,7 +554,7 @@ export function DetailsPane(props) {
     'div',
     { className: 'ph-details' },
     head,
-    !detail ? null : h('div', { className: 'ph-details__tabs' }, h(TabStrip, { items: tabs, value: tab, onChange: (value) => controller.setDetailTab(value), 'aria-label': t('library.details.tab.info'), variant: 'underline' })),
+    !detail ? null : h('div', { className: 'ph-details__tabs' }, h(TabStrip, { items: tabs, value: tab, onChange: (value) => controller.setDetailTab(value), 'aria-label': t('library.details.tab.info'), variant: 'pill' })),
     body,
   )
 }

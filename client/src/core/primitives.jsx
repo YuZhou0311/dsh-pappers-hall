@@ -5,6 +5,7 @@
 import React from 'react'
 import { h } from './dom.js'
 import { Icon } from './icons.jsx'
+import { SlidingThumb, useSlidingThumb } from './motion.js'
 
 /** Standard button. Variants: primary | secondary | ghost | danger | subtle. */
 export function Button(props) {
@@ -110,9 +111,24 @@ export function SearchInput(props) {
 /** Horizontal tab strip. Variant: underline (default) | pill. */
 export function TabStrip(props) {
   const variant = props.variant || 'underline'
+  const slider = useSlidingThumb()
+  const underline = variant === 'underline'
   return h(
     'div',
-    { className: 'ph-tabs ph-tabs--' + variant + (props.className ? ' ' + props.className : ''), role: 'tablist', 'aria-label': props['aria-label'] },
+    {
+      className: 'ph-tabs ph-tabs--' + variant + (slider.rect ? ' ph-tabs--sliding' : '') + (props.className ? ' ' + props.className : ''),
+      ref: slider.ref,
+      role: 'tablist',
+      'aria-label': props['aria-label'],
+    },
+    h(SlidingThumb, {
+      rect: slider.rect,
+      popKey: props.value,
+      className: underline ? 'ph-thumb--bar' : 'ph-thumb--pill',
+      height: underline ? 3 : undefined,
+      alignBottom: underline,
+      inset: underline ? 0 : 3,
+    }),
     (props.items || []).map((item) =>
       h(
         'button',
@@ -121,6 +137,7 @@ export function TabStrip(props) {
           type: 'button',
           role: 'tab',
           'aria-selected': item.id === props.value ? 'true' : 'false',
+          'data-ph-active': item.id === props.value ? 'true' : undefined,
           className: 'ph-tab' + (item.id === props.value ? ' ph-tab--active' : ''),
           onClick: () => props.onChange(item.id),
         },
@@ -134,15 +151,23 @@ export function TabStrip(props) {
 
 /** Segmented control for mutually exclusive display modes. */
 export function Segmented(props) {
+  const slider = useSlidingThumb()
   return h(
     'div',
-    { className: 'ph-segment' + (props.className ? ' ' + props.className : ''), role: 'group', 'aria-label': props['aria-label'] },
+    {
+      className: 'ph-segment' + (slider.rect ? ' ph-segment--sliding' : '') + (props.className ? ' ' + props.className : ''),
+      ref: slider.ref,
+      role: 'group',
+      'aria-label': props['aria-label'],
+    },
+    h(SlidingThumb, { rect: slider.rect, popKey: props.value }),
     (props.items || []).map((item) =>
       h(
         'button',
         {
           key: item.id,
           type: 'button',
+          'data-ph-active': item.id === props.value ? 'true' : undefined,
           className: 'ph-segment__item' + (item.id === props.value ? ' ph-segment__item--active' : ''),
           onClick: () => props.onChange(item.id),
           title: item.title,

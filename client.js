@@ -57,8 +57,8 @@ __export(index_exports, {
   sectionizeMarkdown: () => sectionizeMarkdown
 });
 module.exports = __toCommonJS(index_exports);
-var import_react47 = __toESM(require("react"), 1);
-var import_react48 = require("react");
+var import_react48 = __toESM(require("react"), 1);
+var import_react49 = require("react");
 
 // src/core/constants.js
 var NS = "pappers-hall";
@@ -88,183 +88,445 @@ var TOOL_NAMES = [
 
 // src/core/styles.js
 var STYLES = `/* ==========================================================================
-   Pappers-Hall v0.2 client styles
-   - every colour/radius/shadow comes from DSH design tokens
-   - all classes are \`ph-\` prefixed; motion is CSS only
-   - layout: Zotero-style three panes, reader in surfaces/reader
+   Pappers-Hall \u2014 design system v0.19
+   --------------------------------------------------------------------------
+   One visual language for every surface: library, reader, notes, drawer,
+   dock, settings. Colours come from DSH alias tokens only, so light and dark
+   themes both follow the host. Nothing here changes behaviour: every class
+   name, aria attribute and data hook used by the components and the test
+   harness is preserved.
+
+   Layers
+     1  tokens            \u2013 spacing, type, radius, elevation, motion
+     2  surface + reset   \u2013 shell, scrollbars, focus
+     3  atoms             \u2013 button, badge, input, tabs, empty, notice\u2026
+     4  library           \u2013 three panes, table, details, dialogs
+     5  peripheral        \u2013 drawer, dock, header, tool card, settings
+     6  responsive        \u2013 1460 / 1280 / 1180 / 980 / 760
+     7  reduced motion
    ========================================================================== */
 
+/* ================================================================ 1 tokens */
+:root {
+  /* spacing \u2014 4px rhythm */
+  --ph-s1: 4px;
+  --ph-s2: 8px;
+  --ph-s3: 12px;
+  --ph-s4: 16px;
+  --ph-s5: 20px;
+  --ph-s6: 24px;
+  --ph-s8: 32px;
+  --ph-s12: 48px;
+
+  /* radius \u2014 soft, never sharp */
+  --ph-r-xs: 6px;
+  --ph-r-sm: 8px;
+  --ph-r-md: 10px;
+  --ph-r-lg: 14px;
+  --ph-r-pill: 999px;
+
+  /* type */
+  --ph-fs-11: 11px;
+  --ph-fs-12: 12px;
+  --ph-fs-13: 13px;
+  --ph-fs-14: 14px;
+  --ph-fs-15: 15px;
+  --ph-fs-17: 17px;
+  --ph-lh-tight: 1.32;
+  --ph-lh-ui: 1.5;
+  --ph-lh-read: 1.7;
+  --ph-fw-regular: 400;
+  --ph-fw-medium: 500;
+  --ph-fw-semi: 600;
+  --ph-fw-bold: 650;
+
+  /* metrics */
+  --ph-control: 30px;
+  --ph-control-sm: 26px;
+  --ph-control-xs: 22px;
+  --ph-row: 42px;
+  --ph-row-compact: 36px;
+  --ph-left-w: 240px;
+  --ph-right-w: 344px;
+
+  /* motion \u2014 enter eases out, exit runs at ~65% of entry */
+  --ph-fast: 140ms;
+  --ph-base: 200ms;
+  --ph-panel: 280ms;
+  --ph-exit: 120ms;
+  --ph-ease: cubic-bezier(0.22, 0.8, 0.26, 1);
+  --ph-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ph-ease-in: cubic-bezier(0.4, 0, 0.78, 0.3);
+  --ph-spring: cubic-bezier(0.22, 1.08, 0.36, 1);
+
+  /* ink + surface aliases so every rule reads one vocabulary */
+  --ph-bg: var(--dsw-alias-bg-base);
+  --ph-surface-1: var(--dsw-alias-bg-layer-1);
+  --ph-surface-2: var(--dsw-alias-bg-layer-2);
+  --ph-surface-3: var(--dsw-alias-bg-layer-3);
+  --ph-line: var(--dsw-alias-border-l2);
+  --ph-line-soft: var(--dsw-alias-border-l1);
+  --ph-line-strong: var(--dsw-alias-border-l3);
+  --ph-ink: var(--dsw-alias-label-primary);
+  --ph-ink-2: var(--dsw-alias-label-secondary);
+  --ph-ink-3: var(--dsw-alias-label-tertiary);
+  --ph-ink-4: var(--dsw-alias-label-caption);
+  /* \u2500\u2500 brand palette \u2014 Canva-inspired, deliberately not the host accent \u2500\u2500
+   * The plugin keeps its own vivid identity inside the host. Colours are
+   * fixed values (not theme tokens) so they stay saturated in both themes;
+   * everything that sits on a surface is mixed toward the theme ink so it
+   * remains legible instead of washing out in dark mode. */
+  --ph-canva-purple: #7d2ae8;
+  --ph-canva-violet: #9b87f5;
+  --ph-canva-lavender: #b39dff;
+  --ph-canva-cyan: #00c4cc;
+  --ph-canva-sky: #0d99ff;
+  --ph-canva-mint: #00b894;
+  --ph-canva-green: #48c997;
+  --ph-canva-tangerine: #ff9633;
+  --ph-canva-amber: #ffb020;
+  --ph-canva-coral: #ff7059;
+  --ph-canva-pink: #ff5757;
+  --ph-canva-rose: #ff6b9d;
+
+  /* \u2500\u2500 accent roles \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+   * Blue carries the product. Light purple is the secondary accent, used on
+   * tool buttons and AI marks \u2014 never as the main tone. Surfaces, ink and
+   * borders stay DSH tokens, so the host theme language is untouched and
+   * dark mode keeps working. No gradients: flat tints read cleaner here. */
+  --ph-hue-primary: #2b95e8;
+  --ph-hue-secondary: #9b87f5;
+  --ph-mark: #2b95e8;
+
+  --ph-accent: var(--ph-hue-primary);
+  --ph-accent-text: color-mix(in srgb, var(--ph-hue-primary) 62%, var(--dsw-alias-label-primary));
+  --ph-accent-ink: #ffffff;
+  --ph-accent-soft: color-mix(in srgb, var(--ph-hue-primary) 14%, transparent);
+  --ph-accent-soft-2: color-mix(in srgb, var(--ph-hue-primary) 21%, transparent);
+  --ph-accent-line: color-mix(in srgb, var(--ph-hue-primary) 40%, transparent);
+  --ph-btn-fill: #0c74c9;
+  --ph-btn-fill-hover: #0a63ab;
+
+  --ph-soft-bg: color-mix(in srgb, var(--ph-hue-secondary) 16%, transparent);
+  --ph-soft-bg-2: color-mix(in srgb, var(--ph-hue-secondary) 24%, transparent);
+  --ph-soft-text: color-mix(in srgb, var(--ph-hue-secondary) 62%, var(--dsw-alias-label-primary));
+  --ph-soft-line: color-mix(in srgb, var(--ph-hue-secondary) 40%, transparent);
+
+  --ph-ring: 0 0 0 3px color-mix(in srgb, var(--ph-hue-primary) 24%, transparent);
+
+  /* elevation \u2014 cool, soft, never stacked */
+  --ph-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.07);
+  --ph-shadow-2: 0 2px 6px -2px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.07);
+  --ph-shadow-3: 0 18px 44px -20px rgba(0, 0, 0, 0.36), 0 2px 8px -2px rgba(0, 0, 0, 0.14);
+
+  /* legacy names kept so older rules and inline callers keep resolving */
+  --ph-control-height: var(--ph-control);
+  --ph-control-height-sm: var(--ph-control-sm);
+  --ph-row-height: var(--ph-row);
+  --ph-scroll: var(--dsw-alias-scrollbar-bg-l2);
+  --ph-scroll-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
+
+/* Accent ownership, scoped to our own subtrees (including the notes and reader
+   stylesheets, which still reference the host alias directly), so the rest of
+   DSH keeps its own theme. */
 .ph-app,
+.ph-center,
 .ph-drawer,
 .ph-dock,
 .ph-hbtn-wrap,
-.ph-toolcard {
-  --ph-fast: 120ms;
-  --ph-standard: 180ms;
-  --ph-panel: 220ms;
-  --ph-spring: 180ms;
-  --ph-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --ph-ease-panel: cubic-bezier(0.16, 1, 0.3, 1);
-  --ph-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ph-scroll: var(--dsw-alias-scrollbar-bg-l2);
-  --ph-scroll-hover: var(--dsw-alias-scrollbar-hover-l2);
-  --ph-accent: var(--dsw-alias-state-business-primary);
-  --ph-accent-soft: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);
-  --ph-row-height: 44px;
+.ph-toolcard,
+.ph-sidebar,
+.ph-settings,
+.ph-sheet,
+.ph-fbhost,
+.ph-modalbackdrop,
+.ph-settingsbackdrop,
+.ph-sheetbackdrop {
+  --dsw-alias-state-business-primary: #2b8fe6;
+  --dsw-alias-button-primary-fill: #0c74c9;
+  --dsw-alias-button-primary-hover: #0a63ab;
+  --dsw-alias-link: color-mix(in srgb, #2b95e8 62%, var(--dsw-alias-label-primary));
+  --dsw-alias-label-primary-foreground: #ffffff;
+}
+
+/* ====================================================== 2 surface + reset */
+.ph-app,
+.ph-center,
+.ph-drawer,
+.ph-dock,
+.ph-hbtn-wrap,
+.ph-toolcard,
+.ph-sidebar,
+.ph-settings,
+.ph-sheet,
+.ph-fbhost,
+.ph-modalbackdrop,
+.ph-settingsbackdrop,
+.ph-sheetbackdrop,
+.ph-r-reader,
+.ph-n-app {
   box-sizing: border-box;
 }
 
 .ph-app *,
+.ph-center *,
 .ph-drawer *,
 .ph-dock *,
 .ph-hbtn-wrap *,
-.ph-toolcard * {
+.ph-toolcard *,
+.ph-sidebar * {
   box-sizing: border-box;
 }
 
-/* ---------------------------------------------------------------- surface */
 .ph-app {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  color: var(--dsw-alias-label-primary);
-  background: var(--dsw-alias-bg-base);
-  font-size: var(--dsh-content-font-size-secondary, 13px);
-  line-height: 1.5;
+  color: var(--ph-ink);
+  background: var(--ph-bg);
+  font-size: var(--ph-fs-13);
+  line-height: var(--ph-lh-ui);
   position: relative;
   overflow: hidden;
 }
 
+.ph-boundary { display: flex; height: 100%; min-height: 0; }
+
+/* One scrollbar language across the plugin. */
 .ph-scroll {
   scrollbar-width: thin;
+  scrollbar-color: var(--ph-scroll) transparent;
   --dsh-scrollbar-thumb: var(--ph-scroll);
   --dsh-scrollbar-thumb-hover: var(--ph-scroll-hover);
+  overscroll-behavior: contain;
 }
-.ph-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
-.ph-scroll::-webkit-scrollbar-thumb { background: var(--ph-scroll); border-radius: 4px; }
+.ph-scroll::-webkit-scrollbar { width: 9px; height: 9px; }
+.ph-scroll::-webkit-scrollbar-thumb {
+  background: var(--ph-scroll);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--ph-r-sm);
+}
+.ph-scroll::-webkit-scrollbar-thumb:hover { background: var(--ph-scroll-hover); background-clip: content-box; }
 .ph-scroll::-webkit-scrollbar-track { background: transparent; }
 
+/* Utilities */
 .ph-hidden-input { display: none; }
-.ph-muted { color: var(--dsw-alias-label-tertiary); }
-.ph-caption { color: var(--dsw-alias-label-caption); font-size: 12px; }
-.ph-mono { font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, monospace); font-variant-numeric: tabular-nums; }
+.ph-muted { color: var(--ph-ink-3); }
+.ph-caption { color: var(--ph-ink-4); font-size: var(--ph-fs-12); line-height: 1.45; }
+.ph-caption--hint { opacity: 0.92; }
+.ph-caption--error { color: var(--dsw-alias-state-error-primary); }
+.ph-mono {
+  font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+}
 .ph-nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ph-spacer { flex: 1; min-width: 0; }
 .ph-icon { flex: none; display: inline-block; vertical-align: -0.15em; }
+.ph-panel-icon { display: block; }
 
-button.ph-btn, button.ph-iconbtn { font: inherit; }
+button.ph-btn,
+button.ph-iconbtn { font: inherit; }
 
-/* ---------------------------------------------------------------- atoms */
+/* Keyboard focus is always visible, never on mouse press. */
+.ph-app :is(button, a, input, select, textarea, [tabindex]):focus-visible,
+.ph-drawer :is(button, a, input, select, textarea, [tabindex]):focus-visible,
+.ph-dock :is(button, a, input, select, textarea, [tabindex]):focus-visible,
+.ph-hbtn-wrap :is(button, a):focus-visible,
+.ph-toolcard :is(button, a, [tabindex]):focus-visible,
+.ph-sidebar :is(button, a, input, select, [tabindex]):focus-visible,
+.ph-settings :is(button, a, input, select, textarea, [tabindex]):focus-visible,
+.ph-sheet :is(button, a, input, select, textarea, [tabindex]):focus-visible,
+.ph-ctxmenu button:focus-visible,
+.ph-modalbackdrop button:focus-visible {
+  outline: 2px solid var(--dsw-focus-ring-color, var(--ph-accent));
+  outline-offset: 2px;
+  border-radius: var(--ph-r-sm);
+}
+.ph-r-reader :is(button, a, input, select, textarea, [tabindex]):focus-visible,
+.ph-n-app :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--dsw-focus-ring-color, var(--ph-accent));
+  outline-offset: 2px;
+}
+
+/* ================================================================ 3 atoms */
 .ph-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 30px;
-  padding: 0 12px;
-  border-radius: var(--dsw-radius-md);
-  border: 0.5px solid transparent;
+  height: var(--ph-control);
+  padding: 0 11px;
+  border-radius: var(--ph-r-sm);
+  border: 1px solid transparent;
   background: transparent;
-  color: var(--dsw-alias-label-primary);
+  color: var(--ph-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--ph-fs-13);
+  font-weight: var(--ph-fw-medium);
   line-height: 1;
   cursor: pointer;
   white-space: nowrap;
   text-decoration: none;
-  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease), transform var(--ph-fast) var(--ph-ease);
+  transition:
+    background-color var(--ph-fast) var(--ph-ease),
+    border-color var(--ph-fast) var(--ph-ease),
+    color var(--ph-fast) var(--ph-ease),
+    box-shadow var(--ph-fast) var(--ph-ease),
+    transform var(--ph-fast) var(--ph-ease);
 }
 .ph-btn:hover:active:not(:disabled) { transform: translateY(0.5px); }
 .ph-btn:disabled { opacity: 0.45; cursor: default; }
-.ph-btn--sm { height: 26px; padding: 0 9px; font-size: 12px; border-radius: var(--dsw-radius-sm); gap: 4px; }
-.ph-btn--lg { height: 34px; padding: 0 16px; font-size: 13.5px; }
+.ph-btn--sm { height: var(--ph-control-sm); padding: 0 9px; font-size: var(--ph-fs-12); border-radius: var(--ph-r-xs); gap: 4px; }
+.ph-btn--md { height: var(--ph-control); }
+.ph-btn--lg { height: 34px; padding: 0 16px; font-size: var(--ph-fs-13); border-radius: var(--ph-r-md); }
 .ph-btn--primary {
   background: var(--dsw-alias-button-primary-fill, var(--ph-accent));
-  color: var(--dsw-alias-label-primary-foreground);
+  color: var(--ph-accent-ink);
+  box-shadow: var(--ph-shadow-1);
 }
-.ph-btn--primary:hover:not(:disabled) { background: var(--dsw-alias-button-primary-hover, var(--ph-accent)); }
-.ph-btn--secondary { border-color: var(--dsw-alias-border-l4); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); }
-.ph-btn--secondary:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
-.ph-btn--ghost { color: var(--dsw-alias-label-secondary); }
-.ph-btn--ghost:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-.ph-btn--subtle { color: var(--dsw-alias-label-secondary); background: var(--dsw-alias-bg-layer-2); }
-.ph-btn--subtle:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-.ph-btn--danger { color: var(--dsw-alias-state-error-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 32%, transparent); }
-.ph-btn--danger:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-danger, var(--dsw-alias-interactive-bg-hover)); }
-.ph-btn--active { background: var(--ph-accent-soft); color: var(--ph-accent); border-color: color-mix(in srgb, var(--ph-accent) 34%, transparent); }
-.ph-btn__label { overflow: hidden; text-overflow: ellipsis; }
+.ph-btn--primary:hover:not(:disabled) {
+  background: var(--dsw-alias-button-primary-hover, var(--ph-accent));
+  box-shadow: 0 3px 10px -4px color-mix(in srgb, var(--ph-accent) 55%, transparent);
+}
+.ph-btn--secondary {
+  border-color: var(--ph-line);
+  background: var(--ph-surface-2);
+  color: var(--ph-ink);
+}
+.ph-btn--secondary:hover:not(:disabled) {
+  background: var(--ph-surface-3);
+  border-color: var(--ph-line);
+}
+.ph-btn--ghost { color: var(--ph-ink-2); }
+.ph-btn--ghost:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--ph-ink); }
+.ph-btn--subtle,
+.ph-btn--soft { color: var(--ph-ink-2); background: var(--ph-surface-2); }
+.ph-btn--soft { color: var(--ph-accent-text); background: var(--ph-accent-soft); }
+.ph-btn--subtle:hover:not(:disabled),
+.ph-btn--soft:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--ph-ink);
+}
+.ph-btn--soft:hover:not(:disabled) { background: var(--ph-accent-soft-2); color: var(--ph-accent-text); }
+.ph-btn--danger {
+  color: var(--dsw-alias-state-error-primary);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 32%, transparent);
+}
+.ph-btn--danger:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover-danger, color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent));
+}
+.ph-btn--active { background: var(--ph-accent-soft); color: var(--ph-accent-text); border-color: var(--ph-accent-line); }
+.ph-btn__label { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 
 .ph-iconbtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: var(--ph-control);
+  height: var(--ph-control);
   padding: 0;
   border: none;
-  border-radius: var(--dsw-radius-sm);
+  border-radius: var(--ph-r-sm);
   background: transparent;
-  color: var(--dsw-alias-label-secondary);
+  color: var(--ph-ink-2);
   cursor: pointer;
   flex: none;
-  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease), transform var(--ph-fast) var(--ph-ease);
+  transition:
+    background-color var(--ph-fast) var(--ph-ease),
+    color var(--ph-fast) var(--ph-ease),
+    transform var(--ph-fast) var(--ph-ease);
 }
-.ph-iconbtn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.ph-iconbtn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--ph-ink); }
 .ph-iconbtn:active:not(:disabled) { transform: scale(0.94); }
 .ph-iconbtn:disabled { opacity: 0.4; cursor: default; }
-.ph-iconbtn--active { background: var(--dsw-alias-interactive-bg-active); color: var(--dsw-alias-label-primary); }
-
-.ph-app button:focus-visible,
-.ph-drawer button:focus-visible,
-.ph-dock button:focus-visible,
-.ph-hbtn-wrap button:focus-visible,
-.ph-toolcard button:focus-visible,
-.ph-ctxmenu button:focus-visible {
-  outline: var(--dsw-focus-ring-width, 2px) solid var(--dsw-focus-ring-color, var(--ph-accent));
-  outline-offset: 1px;
-}
+.ph-iconbtn--active { background: var(--ph-accent-soft); color: var(--ph-accent-text); }
+.ph-iconbtn--sm { width: 24px; height: 24px; }
 
 .ph-badge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   height: 20px;
-  padding: 0 7px;
-  border-radius: 999px;
-  background: var(--dsw-alias-bg-layer-2);
-  color: var(--dsw-alias-label-secondary);
-  font-size: 11.5px;
+  padding: 0 8px;
+  border-radius: var(--ph-r-pill);
+  background: var(--ph-surface-2);
+  color: var(--ph-ink-2);
+  font-size: var(--ph-fs-11);
+  font-weight: var(--ph-fw-medium);
   line-height: 1;
   white-space: nowrap;
   flex: none;
 }
-.ph-badge--success { color: var(--dsw-alias-state-success-primary); background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 12%, transparent); }
-.ph-badge--business { color: var(--ph-accent); background: var(--ph-accent-soft); }
-.ph-badge--warning { color: var(--dsw-alias-state-warn-label, var(--dsw-alias-state-warn-primary)); background: var(--dsw-alias-state-warn-tertiary); }
-.ph-badge--error { color: var(--dsw-alias-state-error-primary); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent); }
-.ph-badge--muted { color: var(--dsw-alias-label-tertiary); background: var(--dsw-alias-bg-layer-2); }
+.ph-badge--success {
+  color: var(--dsw-alias-state-success-primary);
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 12%, transparent);
+}
+.ph-badge--business { color: var(--ph-accent-text); background: var(--ph-accent-soft); }
+.ph-badge--warning {
+  color: var(--dsw-alias-state-warn-label, var(--dsw-alias-state-warn-primary));
+  background: var(--dsw-alias-state-warn-tertiary);
+}
+.ph-badge--error {
+  color: var(--dsw-alias-state-error-primary);
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 11%, transparent);
+}
+.ph-badge--muted { color: var(--ph-ink-3); background: var(--ph-surface-2); }
+.ph-badges { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 
-.ph-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--dsw-alias-label-secondary); font-size: 12.5px; user-select: none; }
-.ph-check input { width: 15px; height: 15px; margin: 0; accent-color: var(--dsw-alias-button-primary-fill, var(--ph-accent)); cursor: pointer; flex: none; }
+.ph-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  color: var(--ph-ink-2);
+  font-size: var(--ph-fs-12);
+  user-select: none;
+}
+.ph-check input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--dsw-alias-button-primary-fill, var(--ph-accent));
+  cursor: pointer;
+  flex: none;
+}
 .ph-check__label { white-space: nowrap; }
 
 .ph-search {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   height: 32px;
-  padding: 0 8px;
-  border-radius: var(--dsw-radius-md);
-  border: 0.5px solid var(--dsw-alias-border-l4);
-  background: var(--dsw-alias-bg-layer-3);
-  color: var(--dsw-alias-label-secondary);
+  padding: 0 9px;
+  border-radius: var(--ph-r-sm);
+  border: 1px solid var(--ph-line);
+  background: var(--ph-surface-2);
+  color: var(--ph-ink-2);
   min-width: 0;
+  transition: border-color var(--ph-fast) var(--ph-ease), box-shadow var(--ph-fast) var(--ph-ease), background-color var(--ph-fast) var(--ph-ease);
 }
-.ph-search:focus-within { border-color: var(--ph-accent); }
-.ph-search__icon { color: var(--dsw-alias-label-tertiary); flex: none; }
-.ph-search input { flex: 1; min-width: 0; height: 100%; border: none; outline: none; background: transparent; color: var(--dsw-alias-label-primary); font: inherit; font-size: 13px; }
-.ph-search input::placeholder { color: var(--dsw-alias-label-tertiary); }
+.ph-search:hover { border-color: var(--ph-line-strong); }
+.ph-search:focus-within {
+  border-color: var(--ph-accent-text);
+  background: var(--ph-bg);
+  box-shadow: var(--ph-ring);
+}
+.ph-search__icon { color: var(--ph-ink-3); flex: none; }
+.ph-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--ph-ink);
+  font: inherit;
+  font-size: var(--ph-fs-13);
+}
+.ph-search input::placeholder { color: var(--ph-ink-3); }
 .ph-search__clear { width: 22px; height: 22px; }
 .ph-search--compact { height: 28px; }
 
@@ -273,55 +535,94 @@ button.ph-btn, button.ph-iconbtn { font: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 32px;
+  height: 34px;
   padding: 0 10px;
   border: none;
-  border-radius: var(--dsw-radius-sm);
+  border-radius: var(--ph-r-sm);
   background: transparent;
-  color: var(--dsw-alias-label-secondary);
+  color: var(--ph-ink-3);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--ph-fs-13);
+  font-weight: var(--ph-fw-medium);
   cursor: pointer;
   white-space: nowrap;
   position: relative;
   transition: color var(--ph-fast) var(--ph-ease), background-color var(--ph-fast) var(--ph-ease);
 }
-.ph-tab:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-.ph-tab--active { color: var(--dsw-alias-label-primary); }
-.ph-tabs--underline .ph-tab--active { box-shadow: inset 0 -2px 0 var(--ph-accent); border-radius: var(--dsw-radius-sm) var(--dsw-radius-sm) 0 0; }
-.ph-tabs--pill { padding: 2px; border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-2); }
-.ph-tabs--pill .ph-tab { height: 26px; font-size: 12.5px; }
-.ph-tabs--pill .ph-tab--active { background: var(--dsw-alias-bg-base); box-shadow: var(--dsw-elevation-stroke, 0 0 0 0.5px var(--dsw-alias-border-l2)); }
-.ph-tab__count { color: var(--dsw-alias-label-tertiary); font-size: 11.5px; }
+.ph-tab:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--ph-ink); }
+.ph-tab--active { color: var(--ph-ink); }
+.ph-tab--active::after {
+  content: '';
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ph-accent);
+  animation: ph-tab-in var(--ph-base) var(--ph-ease-out);
+}
+@keyframes ph-tab-in { from { transform: scaleX(0.35); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+.ph-tabs--underline .ph-tab--active { box-shadow: none; }
+.ph-tabs--pill { padding: 3px; border-radius: var(--ph-r-md); background: var(--ph-surface-2); }
+.ph-tabs--pill .ph-tab { height: 27px; font-size: var(--ph-fs-12); }
+.ph-tabs--pill .ph-tab--active { background: var(--ph-bg); box-shadow: var(--ph-shadow-1), 0 0 0 0.5px var(--ph-line); }
+.ph-tabs--pill .ph-tab--active::after { display: none; }
+.ph-tab__count { color: var(--ph-ink-3); font-size: var(--ph-fs-11); font-variant-numeric: tabular-nums; }
+.ph-tab__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.ph-segment { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-3); flex: none; }
+.ph-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-surface-2);
+  flex: none;
+}
 .ph-segment__item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 24px;
-  padding: 0 9px;
+  gap: 5px;
+  height: 25px;
+  padding: 0 10px;
   border: none;
-  border-radius: var(--dsw-radius-xs);
+  border-radius: var(--ph-r-xs);
   background: transparent;
-  color: var(--dsw-alias-label-secondary);
+  color: var(--ph-ink-2);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--ph-fs-12);
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease);
+  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease), box-shadow var(--ph-fast) var(--ph-ease);
 }
-.ph-segment__item:hover { color: var(--dsw-alias-label-primary); }
-.ph-segment__item--active { background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); box-shadow: 0 0 0 0.5px var(--dsw-alias-border-l2); }
+.ph-segment__item:hover { color: var(--ph-ink); }
+.ph-segment__item--active {
+  background: var(--ph-bg);
+  color: var(--ph-ink);
+  font-weight: var(--ph-fw-medium);
+  box-shadow: var(--ph-shadow-1), 0 0 0 0.5px var(--ph-line);
+}
 
-.ph-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 52px 24px; text-align: center; color: var(--dsw-alias-label-secondary); flex: 1; min-height: 0; }
-.ph-empty__icon { color: var(--dsw-alias-label-caption); margin-bottom: 4px; opacity: 0.9; }
-.ph-empty__title { margin: 0; font-size: 14px; font-weight: 500; color: var(--dsw-alias-label-primary); }
-.ph-empty__desc { margin: 0; max-width: 420px; font-size: 12.5px; line-height: 1.65; color: var(--dsw-alias-label-tertiary); }
-.ph-empty__action { margin-top: 6px; }
-.ph-empty--compact { padding: 22px 14px; gap: 5px; }
-.ph-empty--compact .ph-empty__title { font-size: 13px; }
-.ph-empty--compact .ph-empty__desc { font-size: 12px; }
+.ph-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ph-s2);
+  padding: 56px var(--ph-s6);
+  text-align: center;
+  color: var(--ph-ink-2);
+  flex: 1;
+  min-height: 0;
+}
+.ph-empty__icon { color: var(--ph-ink-4); margin-bottom: var(--ph-s1); opacity: 0.9; }
+.ph-empty__title { margin: 0; font-size: var(--ph-fs-14); font-weight: var(--ph-fw-semi); color: var(--ph-ink); }
+.ph-empty__desc { margin: 0; max-width: 420px; font-size: var(--ph-fs-12); line-height: 1.65; color: var(--ph-ink-3); }
+.ph-empty__action { margin-top: var(--ph-s1); }
+.ph-empty--compact { padding: 24px var(--ph-s4); gap: 6px; }
+.ph-empty--compact .ph-empty__title { font-size: var(--ph-fs-13); }
+.ph-empty--compact .ph-empty__desc { font-size: var(--ph-fs-12); }
 .ph-empty--error .ph-empty__icon { color: var(--dsw-alias-state-error-primary); }
 .ph-empty--warning .ph-empty__icon { color: var(--dsw-alias-state-warn-primary); }
 
@@ -330,70 +631,92 @@ button.ph-btn, button.ph-iconbtn { font: inherit; }
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--dsw-alias-border-l2);
-  border-top-color: var(--ph-accent);
+  border: 2px solid var(--ph-line);
+  border-top-color: var(--ph-accent-text);
   animation: ph-spin 0.8s linear infinite;
   flex: none;
 }
 .ph-spinner--inline { width: 12px; height: 12px; border-width: 1.5px; }
 @keyframes ph-spin { to { transform: rotate(360deg); } }
+@keyframes ph-spin-half { to { transform: rotate(180deg); } }
 
 .ph-notice {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: var(--dsw-radius-md);
-  background: var(--dsw-alias-bg-layer-2);
-  color: var(--dsw-alias-label-secondary);
-  font-size: 12.5px;
+  gap: var(--ph-s2);
+  padding: 9px 11px;
+  border-radius: var(--ph-r-md);
+  border: 1px solid transparent;
+  background: var(--ph-surface-2);
+  color: var(--ph-ink-2);
+  font-size: var(--ph-fs-12);
+  line-height: 1.55;
   flex: none;
-  animation: ph-fade-in var(--ph-standard) var(--ph-ease);
+  animation: ph-fade-in var(--ph-base) var(--ph-ease);
 }
 .ph-notice__text { min-width: 0; overflow-wrap: anywhere; flex: 1; }
 .ph-notice__close { width: 20px; height: 20px; }
-.ph-notice--success { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 10%, transparent); color: var(--dsw-alias-label-primary); }
+.ph-notice--success {
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 22%, transparent);
+  color: var(--ph-ink);
+}
 .ph-notice--success .ph-icon { color: var(--dsw-alias-state-success-primary); }
-.ph-notice--warning { background: var(--dsw-alias-state-warn-tertiary); color: var(--dsw-alias-label-primary); }
+.ph-notice--warning {
+  background: var(--dsw-alias-state-warn-tertiary);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 26%, transparent);
+  color: var(--ph-ink);
+}
 .ph-notice--warning .ph-icon { color: var(--dsw-alias-state-warn-primary); }
-.ph-notice--error { background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent); color: var(--dsw-alias-label-primary); }
+.ph-notice--error {
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 26%, transparent);
+  color: var(--ph-ink);
+}
 .ph-notice--error .ph-icon { color: var(--dsw-alias-state-error-primary); }
+.ph-notice--info {
+  background: var(--ph-accent-soft);
+  border-color: var(--ph-accent-line);
+  color: var(--ph-ink);
+}
+.ph-notice--info .ph-icon { color: var(--ph-accent-text); }
 
 .ph-skeleton {
   display: block;
   position: relative;
   overflow: hidden;
-  border-radius: var(--dsw-radius-xs);
+  border-radius: var(--ph-r-xs);
   background: var(--dsw-alias-bg-skeleton);
   height: 12px;
+  flex: none;
 }
 .ph-skeleton::after {
   content: '';
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ph-bg) 55%, transparent), transparent);
   animation: ph-shimmer 1.4s linear infinite;
 }
 @keyframes ph-shimmer { to { transform: translateX(100%); } }
-@keyframes ph-spin-half { to { transform: rotate(180deg); } }
+
 @keyframes ph-fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes ph-fade-up { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-@keyframes ph-slide-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes ph-scale-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
-@keyframes ph-slide-in-right { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@keyframes ph-fade-up { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes ph-slide-up { from { opacity: 0; transform: translateY(10px) scale(0.99); } to { opacity: 1; transform: none; } }
+@keyframes ph-scale-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes ph-slide-in-right { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+@keyframes ph-slide-left { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes ph-pop-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(6px) scale(0.98); } }
 
-.ph-boundary { display: flex; height: 100%; min-height: 0; }
-
-/* ---------------------------------------------------------------- toasts */
+/* Toasts */
 .ph-toasts {
   position: absolute;
   left: 50%;
-  bottom: 44px;
+  bottom: 46px;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ph-s2);
   align-items: center;
   z-index: 40;
   pointer-events: none;
@@ -402,1085 +725,2770 @@ button.ph-btn, button.ph-iconbtn { font: inherit; }
 .ph-toast {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ph-s2);
   pointer-events: auto;
-  padding: 8px 10px;
-  border-radius: var(--dsw-radius-md);
-  background: var(--dsw-alias-bg-layer-2);
-  color: var(--dsw-alias-label-primary);
-  box-shadow: var(--dsw-elevation-panel);
-  border: 0.5px solid var(--dsw-alias-border-l2);
-  font-size: 12.5px;
-  animation: ph-slide-up var(--ph-standard) var(--ph-ease-spring);
+  padding: 9px 11px;
+  border-radius: var(--ph-r-md);
+  background: var(--ph-surface-2);
+  color: var(--ph-ink);
+  box-shadow: var(--dsw-elevation-panel, var(--ph-shadow-3));
+  border: 1px solid var(--ph-line);
+  font-size: var(--ph-fs-12);
+  line-height: 1.45;
+  animation: ph-slide-up var(--ph-base) var(--ph-spring);
   max-width: 100%;
 }
 .ph-toast--success .ph-icon { color: var(--dsw-alias-state-success-primary); }
 .ph-toast--warning .ph-icon { color: var(--dsw-alias-state-warn-primary); }
 .ph-toast--error .ph-icon { color: var(--dsw-alias-state-error-primary); }
+.ph-toast--info { border-color: var(--ph-accent-line); }
 .ph-toast__text { min-width: 0; overflow-wrap: anywhere; }
 .ph-toast__close { width: 20px; height: 20px; }
 
-/* ----------------------------------------------------------- paper center */
-.ph-center { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+/* ============================================================== 4 library */
+/* ---- shell ------------------------------------------------------------- */
+.ph-center { display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%; }
 .ph-center__topbar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--ph-s3);
   flex: none;
-  padding: 12px 18px 10px 20px;
-  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
-  min-height: 52px;
+  padding: var(--ph-s3) var(--ph-s5);
+  border-bottom: 1px solid var(--ph-line-soft);
+  min-height: 58px;
+  background: var(--ph-bg);
 }
-.ph-center__brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.ph-center__mark { color: var(--ph-accent); flex: none; }
-.ph-center__title { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; white-space: nowrap; }
-.ph-center__subtitle { color: var(--dsw-alias-label-tertiary); font-size: 12px; white-space: nowrap; }
-.ph-center__globalsearch { flex: 1; max-width: 420px; margin-left: 8px; }
-.ph-center__actions { display: flex; align-items: center; gap: 6px; flex: none; margin-left: auto; }
+.ph-center__brand { display: flex; align-items: center; gap: var(--ph-s2); min-width: 0; }
+.ph-center__mark {
+  color: var(--ph-accent-text);
+  flex: none;
+  padding: 5px;
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-accent-soft);
+  box-sizing: content-box;
+}
+.ph-center__title {
+  margin: 0;
+  font-size: var(--ph-fs-17);
+  font-weight: var(--ph-fw-bold);
+  line-height: 1.25;
+  letter-spacing: -0.012em;
+  white-space: nowrap;
+  color: var(--ph-ink);
+}
+.ph-center__subtitle {
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-12);
+  white-space: nowrap;
+  padding-left: var(--ph-s3);
+  margin-left: var(--ph-s1);
+  border-left: 1px solid var(--ph-line);
+}
+.ph-center__globalsearch { flex: 1; max-width: 460px; margin-inline: auto; }
+.ph-center__actions { display: flex; align-items: center; gap: var(--ph-s1); flex: none; margin-left: auto; }
 .ph-center__body { display: flex; flex: 1; min-height: 0; position: relative; }
+.ph-center__figures { display: flex; flex: 1; min-height: 0; flex-direction: column; }
 
 .ph-pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; position: relative; }
-.ph-pane--left { flex: none; width: var(--ph-left-width, 232px); border-right: 0.5px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-base); transition: width var(--ph-panel) var(--ph-ease-panel); }
-.ph-pane--mid { flex: 1; background: var(--dsw-alias-bg-base); }
-.ph-pane--right { flex: none; width: var(--ph-right-width, 340px); border-left: 0.5px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-base); transition: width var(--ph-panel) var(--ph-ease-panel); }
-.ph-pane--collapsed { width: 0 !important; border: none; overflow: hidden; }
-.ph-pane--left.ph-pane--collapsed > * { visibility: hidden; }
+.ph-pane--left {
+  flex: none;
+  width: var(--ph-left-width, var(--ph-left-w));
+  border-right: 1px solid var(--ph-line-soft);
+  background: var(--ph-bg);
+  transition: width var(--ph-panel) var(--ph-ease-out), opacity var(--ph-base) var(--ph-ease);
+}
+.ph-pane--mid { flex: 1; background: var(--ph-bg); position: relative; min-width: 0; overflow: hidden; }
+.ph-pane--right {
+  flex: none;
+  width: var(--ph-right-width, var(--ph-right-w));
+  border-left: 1px solid var(--ph-line-soft);
+  background: var(--ph-bg);
+  transition: width var(--ph-panel) var(--ph-ease-out), opacity var(--ph-base) var(--ph-ease);
+}
+.ph-pane--collapsed { width: 0 !important; border: none; overflow: hidden; opacity: 0; }
+.ph-pane--left.ph-pane--collapsed > *,
 .ph-pane--right.ph-pane--collapsed > * { visibility: hidden; }
 
 .ph-resizer {
   flex: none;
-  width: 4px;
-  margin: 0 -2px;
+  width: 5px;
+  margin: 0 -2.5px;
   cursor: col-resize;
   position: relative;
   z-index: 5;
   touch-action: none;
 }
-.ph-resizer::after { content: ''; position: absolute; inset: 0 1.5px; background: transparent; transition: background-color var(--ph-fast) var(--ph-ease); }
-.ph-resizer:hover::after, .ph-resizer--active::after { background: var(--ph-accent); }
+.ph-resizer::after {
+  content: '';
+  position: absolute;
+  inset: 0 1.75px;
+  background: transparent;
+  border-radius: var(--ph-r-pill);
+  transition: background-color var(--ph-fast) var(--ph-ease);
+}
+.ph-resizer:hover::after,
+.ph-resizer--active::after { background: var(--ph-accent); }
 .ph-resizer:focus-visible { outline: none; }
-.ph-resizer:focus-visible::after { background: var(--ph-accent); }
+.ph-resizer:focus-visible::after { background: var(--ph-accent); box-shadow: 0 0 0 2px var(--ph-accent-soft); }
 
-.ph-center__figures { display: flex; flex: 1; min-height: 0; flex-direction: column; }
-
-/* ------------------------------------------------------------- left pane */
+/* ---- left pane --------------------------------------------------------- */
 .ph-left { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-.ph-left__head { display: flex; align-items: center; gap: 6px; flex: none; padding: 10px 12px 6px; }
+.ph-left__head { display: flex; flex-direction: column; gap: var(--ph-s2); padding: var(--ph-s3) var(--ph-s3) var(--ph-s2); flex: none; }
+.ph-left__toolbar { display: flex; align-items: center; gap: 2px; min-height: 24px; padding: 0 2px; }
+.ph-left__title {
+  font-size: var(--ph-fs-11);
+  font-weight: var(--ph-fw-semi);
+  letter-spacing: 0.06em;
+  color: var(--ph-ink-3);
+  text-transform: uppercase;
+}
 .ph-left__search { flex: 1; min-width: 0; }
-.ph-left__scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 8px 16px; }
-.ph-left__section { margin-top: 10px; }
-.ph-left__sectionHead { display: flex; align-items: center; gap: 6px; padding: 4px 6px; color: var(--dsw-alias-label-tertiary); font-size: 11.5px; font-weight: 500; letter-spacing: 0.03em; text-transform: none; user-select: none; }
-.ph-left__sectionHead .ph-iconbtn { width: 20px; height: 20px; margin-left: auto; opacity: 0; transition: opacity var(--ph-fast) var(--ph-ease); }
-.ph-left__section:hover .ph-left__sectionHead .ph-iconbtn { opacity: 1; }
-.ph-left__list { display: flex; flex-direction: column; gap: 1px; }
-.ph-left__empty { padding: 4px 10px 6px; color: var(--dsw-alias-label-caption); font-size: 11.5px; }
-
-.ph-navitem {
+.ph-left__scroll { flex: 1; min-height: 0; overflow-y: auto; padding: var(--ph-s1) var(--ph-s2) var(--ph-s6); }
+.ph-left__section { margin-top: var(--ph-s3); }
+.ph-left__section:first-child { margin-top: 0; }
+.ph-left__sectionHead {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 30px;
-  padding: 0 8px;
-  border: none;
-  border-radius: var(--dsw-radius-md);
-  background: transparent;
-  color: var(--dsw-alias-label-secondary);
-  font: inherit;
-  font-size: 12.5px;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease);
-  position: relative;
+  gap: 6px;
+  padding: var(--ph-s1) 6px;
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-11);
+  font-weight: var(--ph-fw-semi);
+  letter-spacing: 0.04em;
+  user-select: none;
+  border-radius: var(--ph-r-xs);
 }
-.ph-navitem:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-.ph-navitem--active { background: var(--dsw-alias-interactive-bg-active); color: var(--dsw-alias-label-primary); font-weight: 500; }
-.ph-navitem--active::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--ph-accent); }
-.ph-navitem__icon { color: var(--dsw-alias-label-tertiary); flex: none; }
-.ph-navitem--active .ph-navitem__icon { color: var(--ph-accent); }
-.ph-navitem__label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-navitem__count { color: var(--dsw-alias-label-tertiary); font-size: 11px; font-variant-numeric: tabular-nums; flex: none; }
-.ph-navitem--active .ph-navitem__count { color: var(--dsw-alias-label-secondary); }
+.ph-left__sectionHead .ph-iconbtn {
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity var(--ph-fast) var(--ph-ease);
+}
+.ph-left__section:hover .ph-left__sectionHead .ph-iconbtn,
+.ph-left__section:focus-within .ph-left__sectionHead .ph-iconbtn { opacity: 1; }
+.ph-left__list { display: flex; flex-direction: column; gap: 1px; }
+.ph-left__empty { padding: 3px 9px 7px; color: var(--ph-ink-4); font-size: var(--ph-fs-11); line-height: 1.5; }
+.ph-left__count { margin-left: auto; font-size: var(--ph-fs-11); color: var(--ph-ink-3); font-variant-numeric: tabular-nums; }
+.ph-left__newcollection { display: flex; gap: var(--ph-s1); padding: var(--ph-s1) 6px var(--ph-s1); }
+.ph-left__newcollection input {
+  flex: 1;
+  min-width: 0;
+  height: 27px;
+  padding: 0 8px;
+  border: 1px solid var(--ph-line-strong);
+  border-radius: var(--ph-r-xs);
+  background: var(--ph-surface-2);
+  color: var(--ph-ink);
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  outline: none;
+  transition: border-color var(--ph-fast) var(--ph-ease), box-shadow var(--ph-fast) var(--ph-ease);
+}
+.ph-left__newcollection input:focus { border-color: var(--ph-accent-text); box-shadow: var(--ph-ring); background: var(--ph-bg); }
 
+.ph-navitem,
 .ph-collection {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--ph-s2);
   width: 100%;
-  min-height: 30px;
-  padding: 0 8px;
+  min-height: 32px;
+  padding: 0 9px;
   border: none;
-  border-radius: var(--dsw-radius-md);
+  border-radius: var(--ph-r-sm);
   background: transparent;
-  color: var(--dsw-alias-label-secondary);
+  color: var(--ph-ink-2);
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--ph-fs-13);
   text-align: left;
   cursor: pointer;
-  position: relative;
   transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease);
+  position: relative;
 }
-.ph-collection:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-.ph-collection--active { background: var(--dsw-alias-interactive-bg-active); color: var(--dsw-alias-label-primary); font-weight: 500; }
-.ph-collection--drop { background: var(--ph-accent-soft); color: var(--ph-accent); outline: 1px dashed var(--ph-accent); outline-offset: -2px; }
+.ph-navitem:hover,
+.ph-collection:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--ph-ink); }
+.ph-navitem--active,
+.ph-collection--active {
+  background: var(--dsw-alias-interactive-bg-active);
+  color: var(--ph-ink);
+  font-weight: var(--ph-fw-semi);
+}
+.ph-navitem--active::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 9px;
+  bottom: 9px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--ph-accent);
+}
+.ph-navitem__icon { color: var(--ph-ink-3); flex: none; }
+.ph-navitem--active .ph-navitem__icon { color: var(--ph-accent-text); }
+.ph-navitem__label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-navitem__count {
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-11);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+  margin-left: auto;
+  padding: 0 5px;
+  border-radius: var(--ph-r-pill);
+  background: color-mix(in srgb, var(--ph-ink) 6%, transparent);
+  min-width: 20px;
+  text-align: center;
+}
+.ph-navitem--active .ph-navitem__count { color: var(--ph-ink-2); background: color-mix(in srgb, var(--ph-accent) 12%, transparent); }
+
+.ph-collection--drop {
+  background: var(--ph-accent-soft);
+  color: var(--ph-accent-text);
+  outline: 1.5px dashed var(--ph-accent);
+  outline-offset: -2px;
+}
 .ph-collection__dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--ph-accent); }
 .ph-collection__dot[data-color='green'] { background: var(--dsw-alias-state-success-primary); }
 .ph-collection__dot[data-color='amber'] { background: var(--dsw-alias-state-warn-primary); }
 .ph-collection__dot[data-color='red'] { background: var(--dsw-alias-state-error-primary); }
 .ph-collection__dot[data-color='violet'] { background: var(--dsw-alias-brand-primary, var(--ph-accent)); }
-.ph-collection__dot[data-color='slate'] { background: var(--dsw-alias-label-tertiary); }
+.ph-collection__dot[data-color='slate'] { background: var(--ph-ink-3); }
 .ph-collection__label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-collection__count { color: var(--dsw-alias-label-tertiary); font-size: 11px; font-variant-numeric: tabular-nums; flex: none; }
-.ph-collection__edit { width: 22px; height: 22px; opacity: 0; }
-.ph-collection:hover .ph-collection__edit, .ph-collection:focus-within .ph-collection__edit { opacity: 1; }
+.ph-collection__count { color: var(--ph-ink-3); font-size: var(--ph-fs-11); font-variant-numeric: tabular-nums; flex: none; }
+.ph-collection__edit { width: 22px; height: 22px; opacity: 0; transition: opacity var(--ph-fast) var(--ph-ease); }
+.ph-collection:hover .ph-collection__edit,
+.ph-collection:focus-within .ph-collection__edit { opacity: 1; }
 .ph-collection--field { cursor: pointer; }
+.ph-collection__wrap { display: flex; flex-direction: column; gap: 2px; }
+.ph-collection__editor {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: var(--ph-s1) 6px 7px 22px;
+  padding: 8px 9px;
+  border-radius: var(--ph-r-md);
+  background: var(--ph-surface-2);
+  border: 1px solid var(--ph-line);
+  box-shadow: var(--ph-shadow-1);
+  animation: ph-scale-in var(--ph-fast) var(--ph-ease-out);
+}
+.ph-collection__editorRow { display: flex; gap: var(--ph-s1); }
+.ph-collection__editorRow .ph-inlineinput { height: 27px; font-size: var(--ph-fs-12); }
+.ph-collection__editorActions { display: flex; gap: var(--ph-s1); flex-wrap: wrap; }
 
-.ph-tagcloud { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 6px 4px; }
+.ph-tagcloud { display: flex; flex-wrap: wrap; gap: 5px; padding: var(--ph-s1) 6px var(--ph-s1); }
 .ph-tagchip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 22px;
-  padding: 0 7px;
-  border: 0.5px solid transparent;
-  border-radius: 999px;
-  background: var(--dsw-alias-bg-layer-2);
-  color: var(--dsw-alias-label-secondary);
+  gap: 5px;
+  height: 23px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--ph-r-pill);
+  background: var(--ph-surface-2);
+  color: var(--ph-ink-2);
   font: inherit;
-  font-size: 11.5px;
+  font-size: var(--ph-fs-11);
   cursor: pointer;
   max-width: 100%;
-  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease), transform var(--ph-fast) var(--ph-ease);
+  transition:
+    background-color var(--ph-fast) var(--ph-ease),
+    color var(--ph-fast) var(--ph-ease),
+    border-color var(--ph-fast) var(--ph-ease),
+    transform var(--ph-fast) var(--ph-ease);
 }
-.ph-tagchip:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); transform: translateY(-1px); }
-.ph-tagchip--active { background: var(--ph-accent-soft); color: var(--ph-accent); border-color: color-mix(in srgb, var(--ph-accent) 30%, transparent); }
+.ph-tagchip:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--ph-ink); transform: translateY(-1px); }
+.ph-tagchip--active { background: var(--ph-accent-soft); color: var(--ph-accent-text); border-color: var(--ph-accent-line); }
 .ph-tagchip__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-tagchip__count { color: inherit; opacity: 0.7; font-variant-numeric: tabular-nums; }
+.ph-tagchip__count { color: inherit; opacity: 0.65; font-variant-numeric: tabular-nums; }
 .ph-tagchip__x { display: inline-flex; margin-left: 1px; opacity: 0.8; }
 .ph-tagchip__x:hover { opacity: 1; }
-
-.ph-left__newcollection { display: flex; gap: 4px; padding: 4px 6px 2px; }
-.ph-left__newcollection input {
-  flex: 1;
-  min-width: 0;
-  height: 26px;
-  padding: 0 8px;
-  border: 0.5px solid var(--dsw-alias-border-l4);
-  border-radius: var(--dsw-radius-sm);
-  background: var(--dsw-alias-bg-layer-3);
-  color: var(--dsw-alias-label-primary);
-  font: inherit;
-  font-size: 12px;
-  outline: none;
+.ph-tagchip[data-tag-color] { border-color: color-mix(in srgb, var(--ph-tag-tone, var(--ph-line-strong)) 38%, transparent); }
+.ph-tagchip[data-tag-color]::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ph-tag-tone, var(--ph-ink-3));
+  flex: none;
 }
-.ph-left__newcollection input:focus { border-color: var(--ph-accent); }
+.ph-tagchip[data-tag-color='0'], .ph-badge[data-tag-color='0'], [data-tag-color='0'] { --ph-tag-tone: var(--dsw-alias-state-business-primary); }
+.ph-tagchip[data-tag-color='1'], [data-tag-color='1'] { --ph-tag-tone: var(--dsw-alias-state-success-primary); }
+.ph-tagchip[data-tag-color='2'], [data-tag-color='2'] { --ph-tag-tone: var(--dsw-alias-state-warn-primary); }
+.ph-tagchip[data-tag-color='3'], [data-tag-color='3'] { --ph-tag-tone: var(--dsw-alias-state-error-primary); }
+.ph-tagchip[data-tag-color='4'], [data-tag-color='4'] { --ph-tag-tone: color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, var(--dsw-alias-state-success-primary)); }
+.ph-tagchip[data-tag-color='5'], [data-tag-color='5'] { --ph-tag-tone: color-mix(in srgb, var(--dsw-alias-state-business-primary) 60%, var(--ph-ink-3)); }
+.ph-tagchip[data-tag-color='6'], [data-tag-color='6'] { --ph-tag-tone: color-mix(in srgb, var(--dsw-alias-state-success-primary) 55%, var(--ph-ink-3)); }
+.ph-tagchip[data-tag-color='7'], [data-tag-color='7'] { --ph-tag-tone: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 60%, var(--ph-ink-3)); }
 
-/* -------------------------------------------------------------- mid pane */
-.ph-mid { display: flex; flex-direction: column; min-height: 0; flex: 1; position: relative; }
-.ph-toolbar { display: flex; align-items: center; gap: 6px; flex: none; padding: 8px 10px; border-bottom: 0.5px solid var(--dsw-alias-border-l2); flex-wrap: wrap; min-height: 46px; }
-.ph-toolbar__search { flex: 1; min-width: 160px; max-width: 360px; }
-.ph-toolbar__spacer { flex: 1; }
-.ph-toolbar__count { color: var(--dsw-alias-label-tertiary); font-size: 11.5px; white-space: nowrap; }
-.ph-select {
-  height: 28px;
-  max-width: 150px;
-  padding: 0 6px;
-  border: 0.5px solid var(--dsw-alias-border-l4);
-  border-radius: var(--dsw-radius-sm);
-  background: var(--dsw-alias-bg-layer-3);
-  color: var(--dsw-alias-label-primary);
+/* folders */
+.ph-folders { display: flex; flex-direction: column; gap: 2px; padding-bottom: var(--ph-s1); }
+.ph-folders__tree { display: flex; flex-direction: column; gap: 1px; }
+.ph-folder__row {
+  display: flex;
+  align-items: center;
+  gap: var(--ph-s1);
+  min-height: 30px;
+  padding: 2px 6px;
+  border-radius: var(--ph-r-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  position: relative;
+  color: var(--ph-ink-2);
+  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease);
+}
+.ph-folder__row:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--ph-ink); }
+.ph-folder__row--active { background: var(--ph-accent-soft); color: var(--ph-accent-text); font-weight: var(--ph-fw-medium); }
+.ph-folder__row--drop { border-color: var(--ph-accent-text); background: var(--ph-accent-soft); }
+.ph-folder__caret { width: 18px; height: 18px; }
+.ph-folder__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--ph-fs-12); }
+.ph-folder__count { font-size: var(--ph-fs-11); color: var(--ph-ink-3); font-variant-numeric: tabular-nums; }
+.ph-folder__actions {
+  display: inline-flex;
+  gap: 0;
+  opacity: 0;
+  transition: opacity var(--ph-fast) var(--ph-ease);
+}
+.ph-folder__row:hover .ph-folder__actions,
+.ph-folder__row:focus-within .ph-folder__actions { opacity: 1; }
+.ph-folder__actions .ph-iconbtn { width: 20px; height: 20px; }
+.ph-folder__input { height: 23px; font-size: var(--ph-fs-11); }
+.ph-folder__childnew { display: flex; gap: var(--ph-s1); padding: 3px 6px 3px 22px; }
+.ph-folder__childnew .ph-inlineinput { height: 23px; font-size: var(--ph-fs-11); flex: 1; }
+.ph-folder { color: var(--ph-ink-3); }
+
+/* search filters + semantic chips */
+.ph-searchfilters { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; padding: var(--ph-s1) 0 2px; }
+.ph-semantic { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; padding: 2px 0 0; }
+.ph-semchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 19px;
+  padding: 0 7px;
+  border-radius: var(--ph-r-pill);
+  font-size: var(--ph-fs-11);
+  border: 1px solid var(--ph-line);
+  color: var(--ph-ink-3);
+  background: var(--ph-surface-1);
+  white-space: nowrap;
+}
+.ph-semchip--ok { color: var(--dsw-alias-state-success-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 34%, transparent); }
+.ph-semchip--unavailable,
+.ph-semchip--degraded { color: var(--dsw-alias-state-warn-label, var(--dsw-alias-state-warn-primary)); }
+.ph-semchip__meta { opacity: 0.75; font-size: var(--ph-fs-11); }
+.ph-semantic__hint { font-size: var(--ph-fs-11); }
+
+/* notes tree inside the library sidebar */
+.ph-notes-sidebar { border-top: 1px solid var(--ph-line); padding-top: var(--ph-s2); margin-top: var(--ph-s2); }
+.ph-notes-sidebar .ph-left__sectionHead { position: sticky; top: 0; z-index: 1; background: var(--ph-bg); }
+.ph-notes-sidebar__toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--ph-fs-11);
+  font-weight: var(--ph-fw-semi);
+  letter-spacing: 0.04em;
   cursor: pointer;
 }
-.ph-select:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--ph-accent)); }
+.ph-notes-sidebar__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: var(--ph-s1) 0 var(--ph-s1) 18px;
+  padding-left: 6px;
+  border-left: 1px solid var(--ph-line-soft);
+  max-height: 236px;
+  overflow-y: auto;
+}
+.ph-notes-sidebar__note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  border: 0;
+  border-radius: var(--ph-r-xs);
+  padding: 5px 7px;
+  background: transparent;
+  color: var(--ph-ink-2);
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease);
+}
+.ph-notes-sidebar__note:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--ph-ink); }
+.ph-notes-sidebar__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-notes-sidebar__folder {
+  flex: 0 0 auto;
+  max-width: 78px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ph-fs-11);
+  color: var(--ph-ink-3);
+}
 
-.ph-table { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+/* inline note pane in the middle column */
+.ph-pane--noteinline { display: flex; flex-direction: column; min-height: 0; }
+.ph-n-inline { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--ph-bg); }
+.ph-n-inline__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ph-s2);
+  flex: 0 0 auto;
+  height: 44px;
+  padding: 0 var(--ph-s4);
+  border-bottom: 1px solid var(--ph-line-soft);
+  color: var(--ph-ink-2);
+}
+.ph-n-inline__title { font-size: var(--ph-fs-13); font-weight: var(--ph-fw-semi); color: var(--ph-ink); }
+.ph-n-inline > .ph-n-editor { flex: 1; min-height: 0; height: auto; }
+.ph-n-inline__state { display: flex; align-items: center; justify-content: center; gap: var(--ph-s2); flex: 1; color: var(--ph-ink-3); font-size: var(--ph-fs-12); }
+.ph-reader-placeholder { display: flex; flex-direction: column; flex: 1; min-height: 0; align-items: center; justify-content: center; gap: var(--ph-s2); color: var(--ph-ink-3); }
+
+/* ---- middle pane: toolbar --------------------------------------------- */
+.ph-mid { display: flex; flex-direction: column; min-height: 0; flex: 1; position: relative; }
+.ph-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: var(--ph-s2) var(--ph-s3);
+  border-bottom: 1px solid var(--ph-line-soft);
+  flex-wrap: wrap;
+  min-height: 48px;
+  background: var(--ph-bg);
+}
+.ph-toolbar__search { flex: 1; min-width: 160px; max-width: 380px; }
+.ph-toolbar__spacer { flex: 1; }
+.ph-toolbar__count { color: var(--ph-ink-3); font-size: var(--ph-fs-12); white-space: nowrap; margin-left: 2px; font-variant-numeric: tabular-nums; }
+.ph-select {
+  height: 28px;
+  max-width: 156px;
+  padding: 0 8px;
+  border: 1px solid var(--ph-line-strong);
+  border-radius: var(--ph-r-xs);
+  background: var(--ph-surface-2);
+  color: var(--ph-ink);
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  cursor: pointer;
+  transition: border-color var(--ph-fast) var(--ph-ease), background-color var(--ph-fast) var(--ph-ease);
+}
+.ph-select:hover { border-color: var(--ph-ink-4); }
+.ph-select:focus-visible { outline: 2px solid var(--dsw-focus-ring-color, var(--ph-accent)); outline-offset: 1px; }
+.ph-select--inline { height: 26px; font-size: var(--ph-fs-12); }
+.ph-select--block { width: 100%; }
+.ph-select--sm { height: 24px; font-size: var(--ph-fs-11); padding: 0 6px; border-radius: var(--ph-r-xs); max-width: 170px; }
+
+/* ---- table ------------------------------------------------------------- */
+.ph-table {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  /* column budget: check \xB7 title \xB7 creators \xB7 year \xB7 venue \xB7 tags \xB7 read \xB7 annotations \xB7 open */
+  --ph-table-cols: 32px minmax(200px, 1fr) 124px 54px 108px 118px 40px 46px 32px;
+}
 .ph-table__head {
   display: grid;
-  grid-template-columns: var(--ph-table-cols, 34px minmax(160px, 1fr) 128px 60px 116px 132px 44px 54px 34px);
+  grid-template-columns: var(--ph-table-cols);
   align-items: center;
   gap: 0;
   flex: none;
-  height: 30px;
-  padding: 0 10px;
-  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 11px;
+  height: 34px;
+  padding: 0 var(--ph-s3);
+  border-bottom: 1px solid var(--ph-line);
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-11);
+  font-weight: var(--ph-fw-semi);
+  letter-spacing: 0.02em;
   user-select: none;
   position: sticky;
   top: 0;
   z-index: 3;
-  background: var(--dsw-alias-bg-base);
+  background: var(--ph-bg);
 }
 .ph-table__headcell { display: flex; align-items: center; gap: 4px; padding: 0 6px; min-width: 0; }
-.ph-table__headcell--sortable { cursor: pointer; border: none; background: transparent; color: inherit; font: inherit; height: 100%; text-align: left; border-radius: var(--dsw-radius-xs); }
-.ph-table__headcell--sortable:hover { color: var(--dsw-alias-label-primary); }
-.ph-table__headcell--sorted { color: var(--dsw-alias-label-primary); }
-.ph-table__body { flex: 1; min-height: 0; overflow-y: auto; }
+.ph-table__headcell--sortable {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  height: 100%;
+  text-align: left;
+  border-radius: var(--ph-r-xs);
+  transition: color var(--ph-fast) var(--ph-ease), background-color var(--ph-fast) var(--ph-ease);
+}
+.ph-table__headcell--sortable:hover { color: var(--ph-ink); background: var(--dsw-alias-interactive-bg-hover); }
+.ph-table__headcell--sorted { color: var(--ph-ink); }
+.ph-table__headcell--check { padding-left: 2px; }
+.ph-table__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: var(--ph-s1);
+  outline: none;
+}
+/* the floating batch bar reserves room at the end of the list */
+.ph-pane--batch .ph-table__body,
+.ph-pane--batch .ph-gridview { padding-bottom: 104px; }
 .ph-table__rows { display: flex; flex-direction: column; }
+.ph-table__more { display: flex; justify-content: center; padding: var(--ph-s3); }
 
 .ph-rowitem {
   display: grid;
-  grid-template-columns: var(--ph-table-cols, 34px minmax(160px, 1fr) 128px 60px 116px 132px 44px 54px 34px);
+  grid-template-columns: var(--ph-table-cols);
   align-items: center;
   min-height: var(--ph-row-height);
-  padding: 0 10px;
-  border-bottom: 0.5px solid var(--dsw-alias-border-l1);
-  color: var(--dsw-alias-label-primary);
+  padding: 0 var(--ph-s3);
+  border-bottom: 1px solid var(--ph-line-soft);
+  color: var(--ph-ink);
   cursor: pointer;
   position: relative;
   user-select: none;
-  transition: background-color var(--ph-fast) var(--ph-ease);
-  animation: ph-fade-up var(--ph-standard) var(--ph-ease) both;
+  transition: background-color var(--ph-fast) var(--ph-ease), box-shadow var(--ph-fast) var(--ph-ease);
+  animation: ph-fade-up var(--ph-base) var(--ph-ease) both;
 }
+/* first paint only: a 24ms cascade over the first screenful, never on filter */
+.ph-rowitem:nth-child(1) { animation-delay: 0ms; }
+.ph-rowitem:nth-child(2) { animation-delay: 24ms; }
+.ph-rowitem:nth-child(3) { animation-delay: 48ms; }
+.ph-rowitem:nth-child(4) { animation-delay: 72ms; }
+.ph-rowitem:nth-child(5) { animation-delay: 96ms; }
+.ph-rowitem:nth-child(6) { animation-delay: 120ms; }
+.ph-rowitem:nth-child(7) { animation-delay: 144ms; }
+.ph-rowitem:nth-child(8) { animation-delay: 168ms; }
+.ph-rowitem:nth-child(9) { animation-delay: 192ms; }
+.ph-rowitem:nth-child(10) { animation-delay: 216ms; }
 .ph-rowitem:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .ph-rowitem--selected { background: var(--dsw-alias-interactive-bg-active); }
-.ph-rowitem--selected::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--ph-accent); }
-.ph-rowitem--focused { outline: 1px solid color-mix(in srgb, var(--ph-accent) 40%, transparent); outline-offset: -1px; }
+.ph-rowitem--selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2.5px;
+  border-radius: 2px;
+  background: var(--ph-accent);
+}
+.ph-rowitem--selected:hover { background: color-mix(in srgb, var(--ph-accent) 9%, var(--ph-bg)); }
+.ph-rowitem--focused { box-shadow: inset 0 0 0 1.5px var(--ph-accent-line); }
 .ph-rowitem--drag { opacity: 0.5; }
 .ph-rowitem__cell { padding: 0 6px; min-width: 0; display: flex; align-items: center; gap: 6px; }
 .ph-rowitem__cell--check { padding: 0 2px; }
-.ph-rowitem__titlewrap { display: flex; flex-direction: column; gap: 1px; min-width: 0; padding: 5px 6px; }
-.ph-rowitem__title { font-size: 12.8px; font-weight: 500; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-rowitem__original { font-size: 11.5px; line-height: 1.35; color: var(--dsw-alias-label-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-rowitem__authors, .ph-rowitem__venue { color: var(--dsw-alias-label-secondary); font-size: 11.8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-rowitem__year { color: var(--dsw-alias-label-secondary); font-size: 11.8px; font-variant-numeric: tabular-nums; }
-.ph-rowitem__tags { display: flex; gap: 3px; overflow: hidden; flex-wrap: nowrap; }
+.ph-rowitem__cell--year { justify-content: flex-start; }
+.ph-rowitem__cell--annot { justify-content: flex-start; }
+.ph-rowitem__cell--annot .ph-rowitem__annot { gap: 4px; }
+.ph-rowitem__titlewrap { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 6px; }
+.ph-rowitem__title {
+  font-size: var(--ph-fs-13);
+  font-weight: var(--ph-fw-medium);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ph-rowitem__original {
+  font-size: var(--ph-fs-11);
+  line-height: 1.35;
+  color: var(--ph-ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ph-rowitem__authors,
+.ph-rowitem__venue {
+  color: var(--ph-ink-2);
+  font-size: var(--ph-fs-12);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ph-rowitem__year { color: var(--ph-ink-2); font-size: var(--ph-fs-12); font-variant-numeric: tabular-nums; }
+.ph-rowitem__tags { display: flex; gap: 4px; overflow: hidden; flex-wrap: nowrap; align-items: center; }
 .ph-rowitem__tag { max-width: 74px; }
 .ph-rowitem__read { display: flex; align-items: center; justify-content: center; }
-.ph-rowitem__dot { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--dsw-alias-label-caption); background: transparent; transition: background-color var(--ph-fast) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease), transform var(--ph-fast) var(--ph-ease-spring); }
-.ph-rowitem__dot--read { background: transparent; border-color: var(--dsw-alias-label-tertiary); }
-.ph-rowitem__dot--unread { background: var(--ph-accent); border-color: var(--ph-accent); }
-.ph-rowitem:hover .ph-rowitem__dot { transform: scale(1.15); }
-.ph-rowitem__annot { display: inline-flex; align-items: center; gap: 3px; color: var(--dsw-alias-label-tertiary); font-size: 11.5px; }
-.ph-rowitem__annot--some { color: var(--ph-accent); }
-.ph-rowitem__open { opacity: 0; }
-.ph-rowitem:hover .ph-rowitem__open, .ph-rowitem:focus-within .ph-rowitem__open { opacity: 1; }
+.ph-rowitem__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ph-ink-4);
+  background: transparent;
+  padding: 0;
+  transition:
+    background-color var(--ph-fast) var(--ph-ease),
+    border-color var(--ph-fast) var(--ph-ease),
+    transform var(--ph-fast) var(--ph-spring);
+}
+.ph-rowitem__dot--read { background: transparent; border-color: var(--ph-ink-3); }
+.ph-rowitem__dot--unread { background: var(--ph-accent); border-color: var(--ph-accent-text); }
+.ph-rowitem:hover .ph-rowitem__dot { transform: scale(1.18); }
+.ph-rowitem__annot {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-11);
+  font-variant-numeric: tabular-nums;
+}
+.ph-rowitem__annot--some { color: var(--ph-accent-text); }
+.ph-rowitem__open { opacity: 0; transition: opacity var(--ph-fast) var(--ph-ease); }
+.ph-rowitem:hover .ph-rowitem__open,
+.ph-rowitem:focus-within .ph-rowitem__open { opacity: 1; }
+.ph-rowitem--compact { --ph-row-height: var(--ph-row-compact); }
+.ph-rowitem--compact .ph-rowitem__titlewrap { padding: 3px 6px; }
 
-.ph-gridview { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; padding: 12px; overflow-y: auto; align-content: start; flex: 1; min-height: 0; }
+/* grid */
+.ph-gridview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: var(--ph-s3);
+  padding: var(--ph-s3);
+  overflow-y: auto;
+  align-content: start;
+  flex: 1;
+  min-height: 0;
+}
 .ph-gridcard {
   display: flex;
   flex-direction: column;
-  border: 0.5px solid var(--dsw-alias-border-l3);
-  border-radius: var(--dsw-radius-lg);
-  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--ph-line);
+  border-radius: var(--ph-r-md);
+  background: var(--ph-surface-1);
   overflow: hidden;
   cursor: pointer;
-  transition: transform var(--ph-standard) var(--ph-ease), box-shadow var(--ph-standard) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease);
-  animation: ph-fade-up var(--ph-standard) var(--ph-ease) both;
+  transition:
+    transform var(--ph-base) var(--ph-ease),
+    box-shadow var(--ph-base) var(--ph-ease),
+    border-color var(--ph-fast) var(--ph-ease);
+  animation: ph-fade-up var(--ph-base) var(--ph-ease) both;
 }
-.ph-gridcard:hover { transform: translateY(-2px); box-shadow: var(--dsw-elevation-panel); border-color: var(--dsw-alias-border-l1); }
-.ph-gridcard--selected { border-color: var(--ph-accent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--ph-accent) 40%, transparent); }
-.ph-gridcard__thumb { aspect-ratio: 4/3; background: var(--dsw-alias-bg-layer-3); overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-caption); }
-.ph-gridcard__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ph-gridcard__body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.ph-gridcard__title { font-size: 12.5px; font-weight: 500; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-gridcard__meta { color: var(--dsw-alias-label-tertiary); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.ph-table__more { display: flex; justify-content: center; padding: 10px; }
-
-.ph-trashbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 0.5px solid var(--dsw-alias-border-l2); color: var(--dsw-alias-label-secondary); background: var(--dsw-alias-state-warn-tertiary); font-size: 12px; flex: none; }
-.ph-trashbar .ph-icon { color: var(--dsw-alias-state-warn-primary); }
-
-/* ---------------------------------------------------------- details pane */
-.ph-details { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-.ph-details__head { display: flex; align-items: center; gap: 6px; flex: none; padding: 8px 10px 6px 12px; border-bottom: 0.5px solid var(--dsw-alias-border-l2); min-height: 40px; }
-.ph-details__title { font-size: 12.5px; font-weight: 500; min-width: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-details__scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px 18px; }
-.ph-details__tabs { flex: none; padding: 0 8px; border-bottom: 0.5px solid var(--dsw-alias-border-l2); }
-.ph-details__empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
-
-.ph-detailblock { display: flex; flex-direction: column; gap: 6px; }
-.ph-detailblock + .ph-detailblock { margin-top: 14px; padding-top: 12px; border-top: 0.5px solid var(--dsw-alias-border-l2); }
-.ph-detailblock__head { display: flex; align-items: center; gap: 6px; color: var(--dsw-alias-label-tertiary); font-size: 11.5px; font-weight: 500; }
-.ph-detailblock__head .ph-icon { color: var(--dsw-alias-label-caption); }
-.ph-detailblock__head .ph-btn, .ph-detailblock__head .ph-iconbtn { margin-left: auto; }
-
-.ph-fieldgrid { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 4px 10px; font-size: 12.3px; line-height: 1.55; }
-.ph-fieldgrid dt { color: var(--dsw-alias-label-tertiary); }
-.ph-fieldgrid dd { margin: 0; color: var(--dsw-alias-label-primary); overflow-wrap: anywhere; }
-.ph-fieldgrid dd.ph-mono { font-size: 11.3px; }
-
-.ph-editabletitle { display: flex; flex-direction: column; gap: 4px; }
-.ph-editabletitle__row { display: flex; align-items: flex-start; gap: 4px; }
-.ph-editabletitle__text { font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--dsw-alias-label-primary); overflow-wrap: anywhere; flex: 1; min-width: 0; }
-.ph-editabletitle__original { font-size: 11.8px; color: var(--dsw-alias-label-tertiary); line-height: 1.45; overflow-wrap: anywhere; }
-.ph-editabletitle input, .ph-inlineinput {
-  flex: 1;
-  min-width: 0;
-  height: 28px;
-  padding: 0 8px;
-  border: 0.5px solid var(--dsw-alias-border-l4);
-  border-radius: var(--dsw-radius-sm);
-  background: var(--dsw-alias-bg-layer-3);
-  color: var(--dsw-alias-label-primary);
-  font: inherit;
-  font-size: 12.5px;
-  outline: none;
+.ph-gridcard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ph-shadow-2);
+  border-color: var(--ph-line-strong);
 }
-.ph-editabletitle input:focus, .ph-inlineinput:focus { border-color: var(--ph-accent); }
+.ph-gridcard--selected { border-color: var(--ph-accent-text); box-shadow: 0 0 0 1px var(--ph-accent-line); }
+.ph-gridcard__thumb {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--ph-surface-3);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ph-ink-4);
+}
+.ph-gridcard__thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; transition: transform var(--ph-panel) var(--ph-ease); }
+.ph-gridcard:hover .ph-gridcard__thumb img { transform: scale(1.015); }
+.ph-gridcard__body { padding: 9px 11px 11px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.ph-gridcard__title {
+  font-size: var(--ph-fs-12);
+  font-weight: var(--ph-fw-medium);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ph-gridcard__meta { color: var(--ph-ink-3); font-size: var(--ph-fs-11); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-card__check {
+  position: absolute;
+  left: 7px;
+  top: 7px;
+  z-index: 2;
+  padding: 3px 5px;
+  border-radius: var(--ph-r-xs);
+  background: color-mix(in srgb, var(--ph-bg) 86%, transparent);
+  backdrop-filter: blur(4px);
+  box-shadow: var(--ph-shadow-1);
+}
+.ph-card__check .ph-check__label { display: none; }
 
-.ph-tageditor { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-.ph-tagitem { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 4px 0 8px; border-radius: 999px; background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary); font-size: 11.5px; }
-.ph-tagitem button { width: 16px; height: 16px; border: none; border-radius: 50%; background: transparent; color: var(--dsw-alias-label-tertiary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
-.ph-tagitem button:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-.ph-taginput { width: 118px; height: 22px; padding: 0 8px; border: 0.5px dashed var(--dsw-alias-border-l4); border-radius: 999px; background: transparent; color: var(--dsw-alias-label-primary); font: inherit; font-size: 11.5px; outline: none; }
-.ph-taginput:focus { border-color: var(--ph-accent); border-style: solid; }
-.ph-tagsuggest { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-.ph-tagsuggest__label { color: var(--dsw-alias-label-caption); font-size: 11px; }
-
-.ph-actiongrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.ph-actiongrid .ph-btn { width: 100%; justify-content: flex-start; }
-
-.ph-abstract { font-size: 12.3px; line-height: 1.7; color: var(--dsw-alias-label-secondary); }
-.ph-abstract.clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-abstract__more { align-self: flex-start; margin-top: 2px; }
-
-.ph-detailannot { display: flex; flex-direction: column; gap: 3px; padding: 8px 9px; border-radius: var(--dsw-radius-md); border: 0.5px solid var(--dsw-alias-border-l2); border-left-width: 3px; background: var(--dsw-alias-bg-layer-1); }
-.ph-detailannot + .ph-detailannot { margin-top: 6px; }
-.ph-detailannot--yellow { border-left-color: var(--dsw-alias-state-warn-primary); }
-.ph-detailannot--green { border-left-color: var(--dsw-alias-state-success-primary); }
-.ph-detailannot--blue { border-left-color: var(--ph-accent); }
-.ph-detailannot--red { border-left-color: var(--dsw-alias-state-error-primary); }
-.ph-detailannot--purple { border-left-color: var(--dsw-alias-brand-primary, var(--ph-accent)); }
-.ph-detailannot__head { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; color: var(--dsw-alias-label-tertiary); font-size: 11px; }
-.ph-detailannot__text { font-size: 12.2px; line-height: 1.55; overflow-wrap: anywhere; }
-.ph-detailannot__quote { color: var(--dsw-alias-label-tertiary); font-size: 11.5px; padding-left: 7px; border-left: 2px solid var(--dsw-alias-border-l2); overflow-wrap: anywhere; }
-.ph-detailannot__actions { display: flex; gap: 2px; margin-left: auto; }
-
-.ph-figrow { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l1); }
-.ph-figrow:last-child { border-bottom: none; }
-.ph-figrow__thumb { width: 64px; height: 46px; flex: none; border-radius: var(--dsw-radius-sm); overflow: hidden; background: var(--dsw-alias-bg-layer-3); display: flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-caption); }
-.ph-figrow__thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.ph-figrow__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ph-figrow__caption { font-size: 11.8px; line-height: 1.45; color: var(--dsw-alias-label-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-figrow__meta { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
-
-.ph-details__skeleton { display: flex; flex-direction: column; gap: 10px; padding: 6px 2px; }
-.ph-details__skeletonrow { display: flex; gap: 8px; align-items: center; }
-
-/* ------------------------------------------------------------ batch bar */
+/* ---- batch bar --------------------------------------------------------- */
 .ph-batch {
   position: absolute;
   left: 50%;
-  bottom: 13px;
+  right: auto;
+  bottom: 14px;
   transform: translateX(-50%);
   z-index: 12;
   display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: calc(100% - 24px);
-  padding: 7px 10px;
-  border-radius: var(--dsw-radius-lg);
-  background: var(--dsw-alias-bg-layer-2);
-  border: 0.5px solid var(--dsw-alias-border-l2);
-  box-shadow: var(--dsw-elevation-prompt, var(--dsw-elevation-panel));
-  animation: ph-slide-up var(--ph-standard) var(--ph-ease-spring);
+  justify-content: center;
+  gap: 7px;
+  width: max-content;
+  max-width: min(720px, calc(100% - 32px));
+  max-height: calc(100% - 28px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-wrap: wrap;
+  row-gap: 6px;
+  padding: 7px 9px;
+  border-radius: var(--ph-r-md);
+  background: var(--ph-surface-2);
+  border: 1px solid var(--ph-line);
+  box-shadow: var(--dsw-elevation-prompt, var(--ph-shadow-3));
+  animation: ph-slide-up var(--ph-base) var(--ph-spring);
 }
-.ph-batch__count { font-size: 12.5px; font-weight: 500; white-space: nowrap; }
-.ph-batch__divider { width: 1px; height: 16px; background: var(--dsw-alias-border-l2); flex: none; }
+.ph-batch__count { font-size: var(--ph-fs-12); font-weight: var(--ph-fw-semi); white-space: nowrap; }
+.ph-batch__divider { width: 1px; height: 16px; background: var(--ph-line); flex: none; }
 .ph-batch__tag { display: inline-flex; align-items: center; gap: 4px; }
-.ph-batch__tag input { width: 132px; height: 26px; padding: 0 8px; border: 0.5px solid var(--dsw-alias-border-l4); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-3); color: var(--dsw-alias-label-primary); font: inherit; font-size: 12px; outline: none; }
-.ph-batch__tag input:focus { border-color: var(--ph-accent); }
+.ph-batch__tag input {
+  width: 134px;
+  height: 27px;
+  padding: 0 8px;
+  border: 1px solid var(--ph-line-strong);
+  border-radius: var(--ph-r-xs);
+  background: var(--ph-bg);
+  color: var(--ph-ink);
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  outline: none;
+}
+.ph-batch__tag input:focus { border-color: var(--ph-accent-text); box-shadow: var(--ph-ring); }
+.ph-batch .ph-btn { height: var(--ph-control-sm); padding: 0 9px; font-size: var(--ph-fs-12); }
+.ph-batch .ph-iconbtn { width: 24px; height: 24px; }
 
-/* ------------------------------------------------------------ status bar */
+.ph-trashbar {
+  display: flex;
+  align-items: center;
+  gap: var(--ph-s2);
+  padding: 8px var(--ph-s4);
+  border-bottom: 1px solid var(--ph-line);
+  color: var(--ph-ink-2);
+  background: var(--dsw-alias-state-warn-tertiary);
+  font-size: var(--ph-fs-12);
+  flex: none;
+}
+.ph-trashbar .ph-icon { color: var(--dsw-alias-state-warn-primary); }
+
+/* ---- status bar -------------------------------------------------------- */
 .ph-statusbar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--ph-s3);
   flex-wrap: wrap;
   flex: none;
-  min-height: 30px;
-  padding: 4px 16px 5px;
-  border-top: 0.5px solid var(--dsw-alias-border-l2);
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 11.3px;
-  background: var(--dsw-alias-bg-base);
+  min-height: 32px;
+  padding: 4px var(--ph-s4) 5px;
+  border-top: 1px solid var(--ph-line-soft);
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-11);
+  background: var(--ph-bg);
 }
 .ph-statusbar__group { display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap; min-width: 0; }
-.ph-statusbar__chip { color: var(--dsw-alias-label-secondary); white-space: nowrap; }
-.ph-statusbar__muted { color: var(--dsw-alias-label-tertiary); white-space: nowrap; }
-.ph-statusbar__warn { color: var(--dsw-alias-state-warn-label, var(--dsw-alias-state-warn-primary)); white-space: nowrap; max-width: 360px; overflow: hidden; text-overflow: ellipsis; }
+.ph-statusbar__chip { color: var(--ph-ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ph-statusbar__muted { color: var(--ph-ink-3); white-space: nowrap; }
+.ph-statusbar__warn {
+  color: var(--dsw-alias-state-warn-label, var(--dsw-alias-state-warn-primary));
+  white-space: nowrap;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .ph-statusbar__error { color: var(--dsw-alias-state-error-primary); }
-.ph-statusbar__divider { width: 1px; height: 12px; background: var(--dsw-alias-border-l2); }
+.ph-statusbar__divider { width: 1px; height: 12px; background: var(--ph-line); }
 .ph-statusbar__spacer { flex: 1; }
-.ph-statusbar .ph-btn { height: 22px; font-size: 11px; padding: 0 7px; }
+.ph-statusbar .ph-btn { height: 22px; font-size: var(--ph-fs-11); padding: 0 7px; }
 
-/* ---------------------------------------------------------- context menu */
+/* overlays used by the narrow library layout */
+.ph-leftbackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 19;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: color-mix(in srgb, #000 26%, transparent);
+  cursor: pointer;
+  animation: ph-fade-in var(--ph-base) var(--ph-ease);
+}
+
+/* ---- details pane ------------------------------------------------------ */
+.ph-details {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  flex: 1;
+  background: var(--ph-bg);
+}
+.ph-details__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ph-s2);
+  flex: none;
+  padding: var(--ph-s3) var(--ph-s3) var(--ph-s2) var(--ph-s4);
+  border-bottom: 1px solid var(--ph-line-soft);
+  background: var(--ph-bg);
+}
+.ph-details__heading { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ph-details__title {
+  font-size: var(--ph-fs-15);
+  line-height: 1.34;
+  font-weight: var(--ph-fw-semi);
+  min-width: 0;
+  margin: 0;
+  letter-spacing: -0.006em;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ph-details__original {
+  font-size: var(--ph-fs-11);
+  line-height: 1.45;
+  color: var(--ph-ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ph-details__actions { display: flex; align-items: center; gap: 2px; flex: none; }
+.ph-details__tabs {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  flex: none;
+  padding: 0 var(--ph-s2);
+  background: var(--ph-bg);
+  border-bottom: 1px solid var(--ph-line-soft);
+}
+.ph-details__scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: var(--ph-s3) var(--ph-s4) var(--ph-s6); background: var(--ph-bg); }
+.ph-details__scroll > * { min-width: 0; max-width: 100%; }
+.ph-details__scroll > .ph-details__tabs { position: sticky; top: 0; }
+.ph-details__empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+.ph-details__skeleton { display: flex; flex-direction: column; gap: var(--ph-s3); padding: 6px 2px; }
+.ph-details__skeletonrow { display: flex; gap: var(--ph-s2); align-items: center; }
+.ph-details__skeletonrow .ph-skeleton { display: inline-block; }
+
+.ph-detailblock { display: flex; flex-direction: column; gap: 7px; }
+.ph-detailblock + .ph-detailblock {
+  margin-top: var(--ph-s4);
+  padding-top: var(--ph-s3);
+  border-top: 1px solid var(--ph-line-soft);
+}
+.ph-detailblock__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-11);
+  font-weight: var(--ph-fw-semi);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ph-detailblock__head .ph-icon { color: var(--ph-ink-4); }
+.ph-detailblock__head .ph-btn,
+.ph-detailblock__head .ph-iconbtn { margin-left: auto; }
+
+.ph-fieldgrid { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px 12px; font-size: var(--ph-fs-12); line-height: 1.55; }
+.ph-fieldgrid dt { color: var(--ph-ink-3); }
+.ph-fieldgrid dd { margin: 0; color: var(--ph-ink); overflow-wrap: anywhere; }
+.ph-fieldgrid dd.ph-mono { font-size: var(--ph-fs-11); }
+
+.ph-editabletitle { display: flex; flex-direction: column; gap: 5px; }
+.ph-editabletitle__row { display: flex; align-items: flex-start; gap: var(--ph-s1); }
+.ph-editabletitle__text {
+  font-size: var(--ph-fs-14);
+  font-weight: var(--ph-fw-semi);
+  line-height: 1.45;
+  color: var(--ph-ink);
+  overflow-wrap: anywhere;
+  flex: 1;
+  min-width: 0;
+}
+.ph-editabletitle__original { font-size: var(--ph-fs-12); color: var(--ph-ink-3); line-height: 1.5; overflow-wrap: anywhere; }
+.ph-editabletitle input,
+.ph-inlineinput {
+  flex: 1;
+  min-width: 0;
+  height: 29px;
+  padding: 0 8px;
+  border: 1px solid var(--ph-line-strong);
+  border-radius: var(--ph-r-xs);
+  background: var(--ph-surface-2);
+  color: var(--ph-ink);
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  outline: none;
+  transition: border-color var(--ph-fast) var(--ph-ease), box-shadow var(--ph-fast) var(--ph-ease), background-color var(--ph-fast) var(--ph-ease);
+}
+.ph-editabletitle input:focus,
+.ph-inlineinput:focus { border-color: var(--ph-accent-text); box-shadow: var(--ph-ring); background: var(--ph-bg); }
+
+.ph-tageditor { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.ph-tagitem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 23px;
+  padding: 0 4px 0 9px;
+  border-radius: var(--ph-r-pill);
+  background: var(--ph-surface-2);
+  border: 1px solid var(--ph-line-soft);
+  color: var(--ph-ink-2);
+  font-size: var(--ph-fs-11);
+}
+.ph-tagitem button {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ph-ink-3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.ph-tagitem button:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--ph-ink); }
+.ph-taginput {
+  width: 118px;
+  height: 23px;
+  padding: 0 9px;
+  border: 1px dashed var(--ph-line-strong);
+  border-radius: var(--ph-r-pill);
+  background: transparent;
+  color: var(--ph-ink);
+  font: inherit;
+  font-size: var(--ph-fs-11);
+  outline: none;
+}
+.ph-taginput:focus { border-color: var(--ph-accent-text); border-style: solid; box-shadow: var(--ph-ring); }
+.ph-tagsuggest { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.ph-tagsuggest__label { color: var(--ph-ink-4); font-size: var(--ph-fs-11); }
+
+.ph-actiongrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.ph-actiongrid .ph-btn { width: 100%; justify-content: flex-start; min-width: 0; }
+
+.ph-abstract { font-size: var(--ph-fs-12); line-height: 1.72; color: var(--ph-ink-2); }
+.ph-abstract.clamped { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.ph-abstract__more { align-self: flex-start; margin-top: 2px; }
+
+.ph-detailannot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 10px;
+  border-radius: var(--ph-r-sm);
+  border: 1px solid var(--ph-line-soft);
+  border-left-width: 3px;
+  background: var(--ph-surface-1);
+  transition: border-color var(--ph-fast) var(--ph-ease), background-color var(--ph-fast) var(--ph-ease);
+}
+.ph-detailannot:hover { background: var(--ph-surface-2); }
+.ph-detailannot + .ph-detailannot { margin-top: 6px; }
+.ph-detailannot--yellow { border-left-color: var(--dsw-alias-state-warn-primary); }
+.ph-detailannot--green { border-left-color: var(--dsw-alias-state-success-primary); }
+.ph-detailannot--blue { border-left-color: var(--ph-accent-text); }
+.ph-detailannot--red { border-left-color: var(--dsw-alias-state-error-primary); }
+.ph-detailannot--purple { border-left-color: var(--dsw-alias-brand-primary, var(--ph-accent)); }
+.ph-detailannot__head { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; color: var(--ph-ink-3); font-size: var(--ph-fs-11); }
+.ph-detailannot__text { font-size: var(--ph-fs-12); line-height: 1.58; overflow-wrap: anywhere; }
+.ph-detailannot__quote {
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-11);
+  line-height: 1.5;
+  padding-left: 8px;
+  border-left: 2px solid var(--ph-line);
+  overflow-wrap: anywhere;
+}
+.ph-detailannot__actions { display: flex; gap: 2px; margin-left: auto; }
+
+.ph-figrow {
+  display: flex;
+  align-items: center;
+  gap: var(--ph-s2);
+  padding: 6px;
+  border-radius: var(--ph-r-sm);
+  border-bottom: 1px solid var(--ph-line-soft);
+  cursor: pointer;
+  transition: background-color var(--ph-fast) var(--ph-ease);
+}
+.ph-figrow:last-child { border-bottom: none; }
+.ph-figrow:hover { background: var(--ph-surface-2); }
+.ph-figrow:active { background: var(--ph-surface-3); }
+.ph-figrow:focus-visible { outline: 2px solid var(--ph-accent); outline-offset: 2px; }
+.ph-figrow__thumb {
+  width: 66px;
+  height: 48px;
+  flex: none;
+  border-radius: var(--ph-r-xs);
+  overflow: hidden;
+  background: var(--ph-surface-3);
+  border: 1px solid var(--ph-line-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ph-ink-4);
+}
+.ph-figrow__thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.ph-figrow__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ph-figrow__caption {
+  font-size: var(--ph-fs-11);
+  line-height: 1.5;
+  color: var(--ph-ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ph-figrow__meta { color: var(--ph-ink-3); font-size: var(--ph-fs-11); }
+.ph-figrow__body[data-ph-drag] { cursor: grab; }
+
+/* metrics + duplicates */
+.ph-metrics .ph-metricgrid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; margin: 4px 0 2px; }
+.ph-metricrow { display: contents; }
+.ph-metricrow dt { font-size: var(--ph-fs-12); color: var(--ph-ink-2); display: flex; align-items: center; gap: 4px; min-width: 0; flex-wrap: wrap; }
+.ph-metricrow__hint { font-size: var(--ph-fs-11); color: var(--ph-ink-3); font-weight: 400; display: block; flex-basis: 100%; margin-top: 1px; }
+.ph-metricrow dd { margin: 0; font-size: var(--ph-fs-12); text-align: right; font-variant-numeric: tabular-nums; color: var(--ph-ink); }
+.ph-metricrow--empty dd { color: var(--ph-ink-3); font-size: var(--ph-fs-11); }
+.ph-metricform {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: var(--ph-s2);
+  padding: var(--ph-s2);
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-surface-2);
+  border: 1px solid var(--ph-line-soft);
+}
+.ph-metricfield { display: flex; align-items: center; gap: var(--ph-s2); font-size: var(--ph-fs-12); }
+.ph-metricfield span { flex: 1; min-width: 0; color: var(--ph-ink-2); }
+.ph-metricfield input {
+  width: 120px;
+  height: 27px;
+  padding: 0 8px;
+  border: 1px solid var(--ph-line-strong);
+  border-radius: var(--ph-r-xs);
+  background: var(--ph-bg);
+  color: var(--ph-ink);
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  outline: none;
+}
+.ph-metricfield input:focus { border-color: var(--ph-accent-text); box-shadow: var(--ph-ring); }
+.ph-metrics__reset { margin-left: 4px; white-space: nowrap; }
+.ph-metrics .ph-detailblock__head { flex-wrap: wrap; row-gap: 4px; }
+
+.ph-dup { flex: 1; min-height: 0; overflow-y: auto; padding: var(--ph-s3) var(--ph-s4) var(--ph-s6); }
+.ph-dup__head { display: flex; align-items: center; gap: 6px; font-size: var(--ph-fs-13); font-weight: var(--ph-fw-semi); margin-bottom: var(--ph-s3); }
+.ph-dup__hint { display: flex; align-items: center; gap: 6px; color: var(--ph-ink-3); font-size: var(--ph-fs-12); padding: 20px 4px; }
+.ph-dupg {
+  border: 1px solid var(--ph-line);
+  border-radius: var(--ph-r-md);
+  background: var(--ph-surface-1);
+  margin-bottom: var(--ph-s3);
+  overflow: hidden;
+  box-shadow: var(--ph-shadow-1);
+}
+.ph-dupg__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px var(--ph-s3);
+  border-bottom: 1px solid var(--ph-line-soft);
+  background: var(--ph-surface-2);
+  font-size: var(--ph-fs-12);
+}
+.ph-duprow { display: flex; align-items: center; gap: var(--ph-s2); padding: 8px var(--ph-s3); cursor: pointer; transition: background-color var(--ph-fast) var(--ph-ease); }
+.ph-duprow + .ph-duprow { border-top: 1px solid var(--ph-line-soft); }
+.ph-duprow:hover { background: var(--ph-surface-2); }
+.ph-duprow--primary { background: var(--ph-accent-soft); }
+.ph-duprow__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ph-duprow__title { font-size: var(--ph-fs-12); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- dialogs / menus / palette ---------------------------------------- */
+.ph-modalbackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: min(16vh, 140px);
+  background: var(--dsw-alias-bg-mask-1, rgba(0, 0, 0, 0.32));
+  animation: ph-fade-in var(--ph-fast) var(--ph-ease);
+}
+.ph-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--ph-r-lg);
+  background: var(--ph-surface-1);
+  border: 1px solid var(--ph-line);
+  box-shadow: var(--dsw-elevation-prominent, var(--ph-shadow-3));
+  overflow: hidden;
+  animation: ph-scale-in var(--ph-fast) var(--ph-ease-out);
+}
+.ph-dialog--palette { width: min(520px, calc(100vw - 32px)); }
+.ph-dialog--citation { width: min(640px, calc(100vw - 32px)); }
+.ph-dialog--help { width: min(460px, calc(100vw - 32px)); }
+.ph-dialog__head { display: flex; align-items: center; gap: var(--ph-s2); padding: 11px var(--ph-s3) 11px var(--ph-s4); border-bottom: 1px solid var(--ph-line-soft); flex: none; }
+.ph-dialog__title { flex: 1; font-size: var(--ph-fs-13); font-weight: var(--ph-fw-semi); }
+.ph-dialog__search { padding: var(--ph-s2) var(--ph-s3); flex: none; }
+.ph-dialog__foot {
+  padding: 8px var(--ph-s4);
+  border-top: 1px solid var(--ph-line-soft);
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-11);
+  flex: none;
+  background: var(--ph-surface-2);
+}
+.ph-dialog__empty { padding: var(--ph-s4); color: var(--ph-ink-3); font-size: var(--ph-fs-12); text-align: center; }
+.ph-dialog__actions { display: flex; gap: var(--ph-s2); justify-content: flex-end; padding-top: var(--ph-s2); }
+
+.ph-commandlist { overflow-y: auto; max-height: min(420px, calc(100vh - 220px)); padding: 0 6px 6px; outline: none; }
+.ph-command {
+  display: flex;
+  align-items: center;
+  gap: var(--ph-s2);
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: var(--ph-r-sm);
+  background: transparent;
+  color: var(--ph-ink);
+  font: inherit;
+  font-size: var(--ph-fs-13);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--ph-fast) var(--ph-ease);
+}
+.ph-command--active,
+.ph-command:hover { background: var(--ph-accent-soft); }
+.ph-command__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-command__hint { color: var(--ph-ink-3); font-size: var(--ph-fs-11); max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ph-citation {
+  display: flex;
+  gap: 0;
+  min-height: 220px;
+  max-height: min(420px, calc(100vh - 260px));
+  border-top: 1px solid var(--ph-line-soft);
+}
+.ph-citation__results { flex: 1; min-width: 0; overflow-y: auto; padding: 6px; }
+.ph-citation__row {
+  display: flex;
+  align-items: center;
+  gap: var(--ph-s2);
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: var(--ph-r-sm);
+  background: transparent;
+  color: var(--ph-ink);
+  font: inherit;
+  font-size: var(--ph-fs-13);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--ph-fast) var(--ph-ease);
+}
+.ph-citation__row--active,
+.ph-citation__row:hover { background: var(--ph-accent-soft); }
+.ph-citation__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-citation__side { width: 262px; flex: none; border-left: 1px solid var(--ph-line-soft); padding: var(--ph-s2) var(--ph-s3); display: flex; flex-direction: column; gap: 7px; }
+.ph-citation__label { font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+.ph-citation__preview {
+  flex: 1;
+  margin: 0;
+  min-height: 80px;
+  max-height: 200px;
+  overflow: auto;
+  padding: var(--ph-s2);
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-surface-2);
+  color: var(--ph-ink-2);
+  font-size: var(--ph-fs-11);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ph-help { display: flex; flex-direction: column; gap: 2px; padding: var(--ph-s2) var(--ph-s4); overflow-y: auto; }
+.ph-help__row { display: flex; align-items: center; gap: var(--ph-s3); padding: 6px 0; font-size: var(--ph-fs-12); border-bottom: 1px solid var(--ph-line-soft); }
+.ph-help__row:last-child { border-bottom: none; }
+.ph-kbd {
+  min-width: 92px;
+  padding: 3px 7px;
+  border-radius: var(--ph-r-xs);
+  border: 1px solid var(--ph-line-strong);
+  background: var(--ph-surface-2);
+  font-family: var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--ph-fs-11);
+  text-align: center;
+  color: var(--ph-ink-2);
+  box-shadow: 0 1px 0 var(--ph-line);
+}
+
 .ph-ctxmenu {
   position: fixed;
   z-index: 60;
-  min-width: 176px;
-  padding: 4px;
-  border-radius: var(--dsw-radius-md);
-  background: var(--dsw-alias-bg-layer-2);
-  border: 0.5px solid var(--dsw-alias-border-l2);
-  box-shadow: var(--dsw-elevation-prominent);
+  min-width: 184px;
+  padding: 5px;
+  border-radius: var(--ph-r-md);
+  background: var(--ph-surface-2);
+  border: 1px solid var(--ph-line);
+  box-shadow: var(--dsw-elevation-prominent, var(--ph-shadow-3));
   display: flex;
   flex-direction: column;
-  animation: ph-scale-in var(--ph-fast) var(--ph-ease);
+  animation: ph-scale-in var(--ph-fast) var(--ph-ease-out);
   transform-origin: top left;
+  max-width: 340px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
 }
 .ph-ctxmenu__item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 28px;
-  padding: 0 8px;
+  gap: var(--ph-s2);
+  height: 30px;
+  padding: 0 9px;
   border: none;
-  border-radius: var(--dsw-radius-sm);
+  border-radius: var(--ph-r-xs);
   background: transparent;
-  color: var(--dsw-alias-label-primary);
+  color: var(--ph-ink);
   font: inherit;
-  font-size: 12.3px;
+  font-size: var(--ph-fs-12);
   text-align: left;
   cursor: pointer;
   white-space: nowrap;
+  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease);
 }
 .ph-ctxmenu__item:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .ph-ctxmenu__item--danger { color: var(--dsw-alias-state-error-primary); }
-.ph-ctxmenu__item .ph-icon { color: var(--dsw-alias-label-tertiary); }
+.ph-ctxmenu__item .ph-icon { color: var(--ph-ink-3); }
 .ph-ctxmenu__item--danger .ph-icon { color: inherit; }
-.ph-ctxmenu__sep { height: 0.5px; background: var(--dsw-alias-border-l2); margin: 3px 4px; }
-.ph-ctxmenu__label { color: var(--dsw-alias-label-caption); font-size: 11px; padding: 3px 8px; }
-
-/* ---------------------------------------------------------- figure search */
-.ph-figsearch { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 14px 18px 18px; gap: 10px; overflow-y: auto; }
-.ph-figsearch__head { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
-.ph-figsearch__title { margin: 0; font-size: 16px; font-weight: 600; }
-.ph-figsearch__desc { margin: 3px 0 0; color: var(--dsw-alias-label-tertiary); font-size: 12px; max-width: 620px; }
-.ph-figsearch__bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; max-width: 780px; }
-.ph-figsearch__bar .ph-search { flex: 1; min-width: 220px; }
-.ph-figsearch__filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.ph-figgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); gap: 12px; }
-.ph-figcard {
+.ph-ctxmenu__sep { height: 1px; background: var(--ph-line); margin: 4px 5px; }
+.ph-ctxmenu__label { color: var(--ph-ink-4); font-size: var(--ph-fs-11); padding: 4px 9px; }
+.ph-ctxmenu__sub {
   display: flex;
   flex-direction: column;
-  border: 0.5px solid var(--dsw-alias-border-l3);
-  border-radius: var(--dsw-radius-lg);
-  background: var(--dsw-alias-bg-layer-1);
-  overflow: hidden;
-  min-width: 0;
-  transition: transform var(--ph-standard) var(--ph-ease), box-shadow var(--ph-standard) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease);
-  animation: ph-fade-up var(--ph-standard) var(--ph-ease) both;
+  gap: 1px;
+  margin: 2px 0 2px 9px;
+  padding-left: 7px;
+  border-left: 1px solid var(--ph-line);
+  max-height: min(200px, calc(100vh - 120px));
+  overflow-y: auto;
 }
-.ph-figcard:hover { transform: translateY(-2px); box-shadow: var(--dsw-elevation-panel); border-color: var(--dsw-alias-border-l1); }
-.ph-figcard__img { aspect-ratio: 4/3; background: var(--dsw-alias-bg-layer-3); display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--dsw-alias-label-caption); }
-.ph-figcard__img img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.ph-figcard__body { display: flex; flex-direction: column; gap: 4px; padding: 9px 11px 11px; min-width: 0; }
-.ph-figcard__title { font-size: 13px; font-weight: 500; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-figcard__caption { margin: 0; font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-secondary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-figcard__meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11.5px; color: var(--dsw-alias-label-tertiary); }
-.ph-figcard__annotation { display: flex; align-items: flex-start; gap: 5px; padding: 5px 7px; border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-state-warn-tertiary); color: var(--dsw-alias-label-primary); font-size: 11.5px; }
-.ph-figcard__actions { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 2px; }
-.ph-reasons { display: flex; flex-wrap: wrap; gap: 4px; }
-.ph-uploadchip { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-2); border: 0.5px solid var(--dsw-alias-border-l3); color: var(--dsw-alias-label-secondary); font-size: 12px; width: fit-content; }
-.ph-channelwarn { display: flex; align-items: flex-start; gap: 8px; padding: 9px 11px; border-radius: var(--dsw-radius-md); background: var(--dsw-alias-state-warn-tertiary); color: var(--dsw-alias-label-primary); font-size: 12.3px; }
-.ph-channelwarn .ph-icon { color: var(--dsw-alias-state-warn-primary); margin-top: 1px; flex: none; }
-.ph-channelwarn__text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.ph-channelwarn__text p { margin: 0; }
-.ph-figsource { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-2); font-size: 12px; color: var(--dsw-alias-label-secondary); }
-
-/* ---------------------------------------------------------------- drawer */
-.ph-drawer { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 10px 12px 12px; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-size: var(--dsh-content-font-size-secondary, 13px); animation: ph-fade-in var(--ph-standard) var(--ph-ease); }
-.ph-drawer__head { display: flex; flex-direction: column; gap: 8px; flex: none; padding-bottom: 8px; border-bottom: 0.5px solid var(--dsw-alias-border-l2); }
-.ph-drawer__filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ph-drawer__body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 0; }
-.ph-drawer__foot { display: flex; gap: 8px; flex: none; padding-top: 8px; border-top: 0.5px solid var(--dsw-alias-border-l2); }
-.ph-drawer__foot .ph-btn { flex: 1; }
-.ph-drowlist { display: flex; flex-direction: column; gap: 4px; }
-.ph-drow { display: flex; align-items: flex-start; gap: 8px; padding: 7px; border-radius: var(--dsw-radius-md); border: 0.5px solid transparent; cursor: pointer; min-width: 0; transition: background-color var(--ph-fast) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease); animation: ph-fade-up var(--ph-fast) var(--ph-ease) both; }
-.ph-drow:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.ph-drow--selected { border-color: var(--ph-accent); background: color-mix(in srgb, var(--ph-accent) 6%, transparent); }
-.ph-drow__check { flex: none; display: flex; padding-top: 2px; }
-.ph-drow__thumb { flex: none; width: 62px; height: 48px; border-radius: var(--dsw-radius-sm); overflow: hidden; background: var(--dsw-alias-bg-layer-3); display: flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-tertiary); }
-.ph-drow__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ph-drow__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ph-drow__title { font-size: 13px; font-weight: 500; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-.ph-drow__original, .ph-drow__meta { font-size: 11.5px; color: var(--dsw-alias-label-tertiary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-.ph-badges { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-
-/* ------------------------------------------------------------------ dock */
-.ph-dock { display: flex; flex-direction: column; gap: 5px; margin: 6px 0 2px; padding: 7px 10px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-lg); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); font-size: 12.5px; animation: ph-slide-up var(--ph-standard) var(--ph-ease); }
-.ph-dock__caption { display: flex; align-items: center; gap: 5px; color: var(--dsw-alias-label-tertiary); font-size: 11px; }
-.ph-dock__bundle { border-radius: var(--dsw-radius-md); padding: 2px 0; }
-.ph-dock__bundle--added { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 7%, transparent); }
-.ph-dock__row { display: flex; align-items: center; gap: 7px; min-width: 0; flex-wrap: wrap; }
-.ph-dock__toggle { width: 20px; height: 20px; padding: 0; border: none; border-radius: var(--dsw-radius-xs); background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: none; }
-.ph-dock__toggle:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.ph-dock__icon { color: var(--ph-accent); display: inline-flex; flex: none; }
-.ph-dock__title { font-weight: 500; max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-dock__count { color: var(--dsw-alias-label-tertiary); font-size: 11.5px; flex: none; }
-.ph-dock__error { color: var(--dsw-alias-state-error-primary); font-size: 11.5px; max-width: 280px; overflow-wrap: anywhere; }
-.ph-dock__row .ph-btn { margin-left: auto; }
-.ph-dock__materials { margin: 2px 0 4px 26px; padding-left: 8px; border-left: 2px solid var(--dsw-alias-border-l2); display: flex; flex-direction: column; gap: 3px; }
-.ph-dock__materialsTitle { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
-.ph-dock__material { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.ph-dock__materialTitle { color: var(--dsw-alias-label-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 360px; }
-
-/* --------------------------------------------------------- header button */
-.ph-hbtn-wrap { position: relative; display: inline-flex; align-items: center; }
-.ph-hbtn { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 9px; border: none; border-radius: var(--dsw-radius-sm); background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12.5px; cursor: pointer; transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease); }
-.ph-hbtn:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-.ph-hbtn__error { position: absolute; top: 32px; right: 0; z-index: 30; white-space: nowrap; padding: 5px 8px; border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-2); border: 0.5px solid var(--dsw-alias-border-l2); box-shadow: var(--dsw-elevation-prominent); color: var(--dsw-alias-state-error-primary); font-size: 11.5px; }
-
-/* ------------------------------------------------------------- tool cards */
-.ph-toolcard { margin: 4px 0 4px 4px; border: 0.5px solid var(--dsw-alias-border-l1); border-radius: var(--dsw-radius-lg); background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); overflow: hidden; animation: ph-fade-in var(--ph-standard) var(--ph-ease); max-width: 720px; }
-.ph-toolcard__head { display: flex; align-items: center; gap: 8px; padding: 7px 10px; min-height: 34px; border-bottom: 0.5px solid var(--dsw-alias-border-l1); }
-.ph-toolcard__icon { color: var(--ph-accent); flex: none; display: inline-flex; }
-.ph-toolcard__title { font-size: 12.5px; font-weight: 500; white-space: nowrap; }
-.ph-toolcard__sub { color: var(--dsw-alias-label-tertiary); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.ph-toolcard__head .ph-spacer { flex: 1; }
-.ph-toolcard__body { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px 10px; }
-.ph-toolcard__row { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
-.ph-toolcard__thumb { width: 76px; height: 56px; flex: none; border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-3); overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-caption); }
-.ph-toolcard__thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.ph-toolcard__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-.ph-toolcard__name { font-size: 12.5px; font-weight: 500; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-toolcard__alt { font-size: 11.5px; color: var(--dsw-alias-label-tertiary); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-toolcard__meta { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; color: var(--dsw-alias-label-tertiary); font-size: 11px; }
-.ph-toolcard__text { margin: 0; font-size: 12px; line-height: 1.6; color: var(--dsw-alias-label-secondary); white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-toolcard__actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.ph-toolcard__note { margin: 0; color: var(--dsw-alias-label-tertiary); font-size: 11.5px; }
-.ph-toolcard__error { display: flex; align-items: flex-start; gap: 6px; color: var(--dsw-alias-state-error-primary); font-size: 12px; }
-.ph-toolcard__error .ph-icon { margin-top: 2px; flex: none; }
-.ph-toolcard__running { display: flex; align-items: center; gap: 7px; color: var(--dsw-alias-label-tertiary); font-size: 12px; }
-.ph-toolcard__list { display: flex; flex-direction: column; gap: 1px; margin: 0; padding: 0; list-style: none; }
-.ph-toolcard__listitem { display: flex; align-items: flex-start; gap: 7px; padding: 6px 7px; border-radius: var(--dsw-radius-sm); min-width: 0; }
-.ph-toolcard__listitem:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.ph-toolcard__listitem .ph-toolcard__main { gap: 1px; }
-.ph-toolcard__counts { display: flex; flex-wrap: wrap; gap: 6px 14px; }
-.ph-toolcard__fact { display: inline-flex; align-items: center; gap: 5px; color: var(--dsw-alias-label-secondary); font-size: 11.8px; }
-.ph-toolcard__fact b { font-weight: 500; color: var(--dsw-alias-label-primary); }
-.ph-toolcard__warn { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; color: var(--dsw-alias-state-warn-label, var(--dsw-alias-state-warn-primary)); font-size: 11.5px; }
-.ph-toolcard__cite { display: flex; flex-direction: column; gap: 3px; padding: 6px 8px; border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-2); font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: 11.3px; line-height: 1.5; color: var(--dsw-alias-label-secondary); white-space: pre-wrap; overflow-wrap: anywhere; }
-
-/* -------------------------------------------------------------- skeleton */
-.ph-left-skeleton { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; }
-.ph-table-skeleton { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; }
-.ph-table-skeleton__row { display: flex; align-items: center; gap: 10px; height: 44px; border-bottom: 0.5px solid var(--dsw-alias-border-l1); }
-.ph-table-skeleton__main { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-
-/* ------------------------------------------------------------- responsive */
-@media (max-width: 1180px) {
-  .ph-pane--right { width: 300px; }
-  .ph-rowitem { --ph-row-height: 40px; }
+.ph-popover,
+.ph-menu,
+.ph-dropdown,
+.ph-colorpanel { max-width: 340px; max-height: calc(100vh - 24px); overflow-y: auto; }
+.ph-colors { display: inline-flex; align-items: center; gap: 5px; }
+.ph-colors { max-width: none; max-height: none; overflow: visible; }
+.ph-color {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  background: var(--ph-surface-3);
+  transition: transform var(--ph-fast) var(--ph-ease), box-shadow var(--ph-fast) var(--ph-ease);
 }
-@media (max-width: 980px) {
-  .ph-pane--left { position: absolute; z-index: 20; top: 0; bottom: 0; left: 0; width: 232px; box-shadow: var(--dsw-elevation-prominent); background: var(--dsw-alias-bg-layer-1); transform: translateX(-100%); transition: transform var(--ph-panel) var(--ph-ease-panel); }
-  .ph-pane--left.ph-pane--mobile-open { transform: translateX(0); }
-  .ph-pane--left.ph-pane--collapsed { display: none; }
-  .ph-pane--right.ph-pane--collapsed { display: none; }
-  .ph-center__subtitle { display: none; }
-}
-@media (max-width: 760px) {
-  .ph-pane--right { position: absolute; z-index: 15; right: 0; top: 0; bottom: 0; width: min(340px, 92%); box-shadow: var(--dsw-elevation-prominent); }
-  .ph-center__globalsearch { display: none; }
-  .ph-rowitem { grid-template-columns: 30px minmax(120px, 1fr) 70px 44px !important; }
-  .ph-rowitem__cell--authors, .ph-rowitem__headcell--authors, .ph-rowitem__cell--venue, .ph-rowitem__headcell--venue, .ph-rowitem__cell--tags, .ph-rowitem__headcell--tags, .ph-rowitem__cell--annot, .ph-rowitem__headcell--annot { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ph-app *, .ph-drawer *, .ph-dock *, .ph-toolcard * {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-  .ph-skeleton::after { animation: none; }
-  .ph-gridcard:hover, .ph-figcard:hover, .ph-tagchip:hover { transform: none; }
-  .ph-rowitem:nth-child(n) { animation: none; }
-}
-
-
-/* --------------------------------------------------- v0.2 addendum details */
-.ph-color { width: 18px; height: 18px; padding: 0; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: var(--dsw-alias-bg-layer-3); }
+.ph-color:hover { transform: scale(1.12); }
 .ph-color--blue { background: var(--ph-accent); }
 .ph-color--green { background: var(--dsw-alias-state-success-primary); }
 .ph-color--amber { background: var(--dsw-alias-state-warn-primary); }
 .ph-color--yellow { background: var(--dsw-alias-state-warn-primary); }
 .ph-color--red { background: var(--dsw-alias-state-error-primary); }
 .ph-color--violet { background: var(--dsw-alias-brand-primary, var(--ph-accent)); }
-.ph-color--slate { background: var(--dsw-alias-label-tertiary); }
-.ph-color--active { box-shadow: 0 0 0 2px var(--dsw-alias-bg-base), 0 0 0 3px var(--dsw-alias-label-secondary); }
-.ph-colors { display: inline-flex; align-items: center; gap: 4px; }
-.ph-collection__wrap { display: flex; flex-direction: column; gap: 2px; }
-.ph-collection__editor { display: flex; flex-direction: column; gap: 6px; margin: 4px 6px 6px 22px; padding: 7px 8px; border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-2); border: 0.5px solid var(--dsw-alias-border-l2); animation: ph-scale-in var(--ph-fast) var(--ph-ease); }
-.ph-collection__editorRow { display: flex; gap: 4px; }
-.ph-collection__editorRow .ph-inlineinput { height: 26px; font-size: 12px; }
-.ph-collection__editorActions { display: flex; gap: 4px; flex-wrap: wrap; }
-.ph-details__skeletonrow .ph-skeleton { display: inline-block; }
-.ph-toolbar .ph-toolbar__count { margin-left: 2px; }
-.ph-table__headcell--check .ph-check { padding-left: 2px; }
-.ph-rowitem__cell--annot { justify-content: flex-start; }
-.ph-rowitem__cell--annot .ph-rowitem__annot { gap: 4px; }
-.ph-linkbtn { padding: 0; border: none; background: transparent; color: var(--dsw-alias-link, var(--ph-accent)); font: inherit; font-size: 11.5px; cursor: pointer; }
-.ph-linkbtn:hover { text-decoration: underline; }
-.ph-card__check { position: absolute; left: 6px; top: 6px; z-index: 2; padding: 3px 5px; border-radius: var(--dsw-radius-sm); background: color-mix(in srgb, var(--dsw-alias-bg-base) 82%, transparent); }
-.ph-card__check .ph-check__label { display: none; }
-.ph-ctxmenu__sub { display: flex; flex-direction: column; gap: 1px; margin: 1px 0 1px 8px; padding-left: 6px; border-left: 1px solid var(--dsw-alias-border-l2); max-height: 200px; overflow-y: auto; }
-.ph-dock__toasts, .ph-drawer__toasts { display: flex; flex-direction: column; gap: 4px; }
-.ph-dock__toastText { color: var(--dsw-alias-label-tertiary); font-size: 11.5px; }
-.ph-drawer__toasts { padding: 4px 0; }
-.ph-details__scroll > .ph-details__tabs { position: sticky; top: 0; z-index: 2; background: var(--dsw-alias-bg-base); }
-.ph-pane--left.ph-pane--collapsed .ph-left,
-.ph-pane--right.ph-pane--collapsed .ph-details { display: none; }
-.ph-skeleton { flex: none; }
+.ph-color--slate { background: var(--ph-ink-3); }
+.ph-color--active { box-shadow: 0 0 0 2px var(--ph-bg), 0 0 0 3.5px var(--ph-ink-2); }
 
-/* reader placeholder (replaced by surfaces/reader/**) */
-.ph-reader-placeholder { display: flex; flex-direction: column; flex: 1; min-height: 0; align-items: center; justify-content: center; gap: 10px; color: var(--dsw-alias-label-tertiary); }
-
-/* -------------------------------------------- final primitive polish */
-.ph-panel-icon { display: block; }
-.ph-tab__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-notice--info { background: var(--ph-accent-soft); color: var(--ph-accent); border-color: color-mix(in srgb, var(--ph-accent) 30%, transparent); }
-.ph-toast--info { border-color: color-mix(in srgb, var(--ph-accent) 30%, transparent); }
-.ph-rowitem__cell--year { justify-content: flex-start; }
-
-.ph-collectionlist { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; }
-.ph-collectionlist__row { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: var(--dsw-radius-sm); }
-.ph-collectionlist__row:hover { background: var(--dsw-alias-bg-layer-2); }
-.ph-collectionlist__row--busy { opacity: 0.72; }
-.ph-spinner--inline { width: 12px; height: 12px; }
-
-/* left pane search row + section header row (keep search clear of icons) */
-.ph-left__head { display: flex; flex-direction: column; gap: 6px; padding: 8px 8px 6px; }
-.ph-left__toolbar { display: flex; align-items: center; gap: 2px; min-height: 24px; padding: 0 2px; }
-.ph-left__title { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--dsw-alias-label-tertiary); text-transform: uppercase; }
-.ph-left__sectionHead { padding: 0 2px; }
-.ph-left__sectionHead .ph-iconbtn { width: 22px; height: 22px; }
-
-/* ================================================================ v0.3 foundation */
-:root { --ph-control-height: 28px; --ph-control-height-sm: 26px; }
-
-/* batch bar is scoped to the centre pane (never the right rail) */
-.ph-pane--mid { position: relative; min-width: 0; overflow: hidden; }
-.ph-batch {
-  left: 50%; right: auto; bottom: 12px; transform: translateX(-50%);
-  max-width: min(720px, calc(100% - 32px)); width: max-content;
-  flex-wrap: wrap; justify-content: center; row-gap: 6px; column-gap: 6px;
-  padding: 6px 8px; border-radius: var(--dsw-radius-md);
-  max-height: calc(100% - 24px); overflow-y: auto; overflow-x: hidden;
+.ph-linkbtn {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--dsw-alias-link, var(--ph-accent));
+  font: inherit;
+  font-size: var(--ph-fs-11);
+  cursor: pointer;
 }
-.ph-batch .ph-btn { height: var(--ph-control-height-sm); padding: 0 8px; font-size: 12px; }
-.ph-batch .ph-iconbtn { width: 24px; height: 24px; }
-.ph-batch__count { font-size: 12px; }
-.ph-batch__tag input { height: 26px; }
-
-/* right rail is always an opaque surface, even when it overlays the table */
-.ph-pane--right { background: var(--dsw-alias-bg-base); }
-.ph-details { display: flex; flex-direction: column; min-height: 0; height: 100%; background: var(--dsw-alias-bg-base); border-left: 0.5px solid var(--dsw-alias-border-l2); }
-.ph-details__head { display: flex; align-items: flex-start; gap: 8px; flex: none; padding: 10px 10px 8px 12px; background: var(--dsw-alias-bg-base); border-bottom: 0.5px solid var(--dsw-alias-border-l2); }
-.ph-details__heading { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ph-details__title { font-size: 15px; line-height: 1.32; font-weight: 600; min-width: 0; white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.ph-details__original { font-size: 11px; line-height: 1.4; color: var(--dsw-alias-label-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-details__actions { display: flex; align-items: center; gap: 2px; flex: none; }
-.ph-details__tabs { position: sticky; top: 0; z-index: 3; flex: none; padding: 0 8px; background: var(--dsw-alias-bg-base); border-bottom: 0.5px solid var(--dsw-alias-border-l2); }
-.ph-details__scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px 20px; background: var(--dsw-alias-bg-base); }
-
-/* unified sizing */
-.ph-btn { height: var(--ph-control-height); padding: 0 10px; font-size: 12.5px; gap: 5px; border-radius: var(--dsw-radius-sm); }
-.ph-btn--sm { height: var(--ph-control-height-sm); padding: 0 8px; font-size: 12px; gap: 4px; }
-.ph-iconbtn { width: var(--ph-control-height); height: var(--ph-control-height); border-radius: var(--dsw-radius-sm); }
-.ph-iconbtn--sm { width: 24px; height: 24px; }
-.ph-rowitem { --ph-row-height: 40px; }
-.ph-rowitem--compact { --ph-row-height: 34px; }
-
-/* every floating layer is bounded to the viewport and internally scrollable */
-.ph-ctxmenu, .ph-popover, .ph-menu, .ph-dropdown, .ph-colorpanel, .ph-colors { max-width: 340px; max-height: calc(100vh - 24px); overflow-y: auto; }
-.ph-ctxmenu__sub { max-height: min(200px, calc(100vh - 120px)); overflow-y: auto; }
-
-/* right rail becomes an opaque overlay before the window gets too narrow */
-@media (max-width: 1280px) {
-  .ph-pane--right { position: absolute; z-index: 18; top: 0; right: 0; bottom: 0; width: min(340px, 46%); background: var(--dsw-alias-bg-base) !important; border-left: 0.5px solid var(--dsw-alias-border-l2); box-shadow: var(--dsw-elevation-prominent); }
-  .ph-pane--right.ph-pane--collapsed { display: none; }
-  .ph-details { background: var(--dsw-alias-bg-base); }
-}
-@media (max-width: 1100px) {
-  .ph-pane--right { width: min(320px, 50%); }
-  .ph-batch { max-width: calc(100% - 20px); }
-}
-
-/* ================================================================ v0.3 components */
-/* right rail stays in flow down to 960 (opaque, never translucent) */
-@media (max-width: 1280px) {
-  .ph-pane--right { position: relative; z-index: auto; width: 300px; box-shadow: none; background: var(--dsw-alias-bg-base) !important; border-left: 0.5px solid var(--dsw-alias-border-l2); }
-}
-@media (max-width: 1100px) { .ph-pane--right { width: 288px; } }
-
-/* tag colours (stable hash palette) */
-.ph-tagchip[data-tag-color="0"], .ph-badge[data-tag-color="0"], [data-tag-color="0"] { --ph-tag-tone: var(--dsw-alias-state-business-primary); }
-.ph-tagchip[data-tag-color="1"], [data-tag-color="1"] { --ph-tag-tone: var(--dsw-alias-state-success-primary); }
-.ph-tagchip[data-tag-color="2"], [data-tag-color="2"] { --ph-tag-tone: var(--dsw-alias-state-warn-primary); }
-.ph-tagchip[data-tag-color="3"], [data-tag-color="3"] { --ph-tag-tone: var(--dsw-alias-state-error-primary); }
-.ph-tagchip[data-tag-color="4"], [data-tag-color="4"] { --ph-tag-tone: color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, var(--dsw-alias-state-success-primary)); }
-.ph-tagchip[data-tag-color="5"], [data-tag-color="5"] { --ph-tag-tone: color-mix(in srgb, var(--dsw-alias-state-business-primary) 60%, var(--dsw-alias-label-tertiary)); }
-.ph-tagchip[data-tag-color="6"], [data-tag-color="6"] { --ph-tag-tone: color-mix(in srgb, var(--dsw-alias-state-success-primary) 55%, var(--dsw-alias-label-tertiary)); }
-.ph-tagchip[data-tag-color="7"], [data-tag-color="7"] { --ph-tag-tone: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 60%, var(--dsw-alias-label-tertiary)); }
-.ph-tagchip[data-tag-color] { border-color: color-mix(in srgb, var(--ph-tag-tone, var(--dsw-alias-border-l4)) 38%, transparent); }
-.ph-tagchip[data-tag-color]::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--ph-tag-tone, var(--dsw-alias-label-tertiary)); flex: none; }
-
-/* metrics */
-.ph-metrics .ph-metricgrid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; margin: 4px 0 2px; }
-.ph-metricrow { display: contents; }
-.ph-metricrow dt { font-size: 12px; color: var(--dsw-alias-label-secondary); display: flex; align-items: center; gap: 4px; min-width: 0; }
-.ph-metricrow__hint { font-size: 10px; color: var(--dsw-alias-label-tertiary); font-weight: 400; }
-.ph-metricrow dd { margin: 0; font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
-.ph-metricrow--empty dd { color: var(--dsw-alias-label-tertiary); font-size: 11.5px; }
-.ph-metricform { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; padding: 8px; border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-2); border: 0.5px solid var(--dsw-alias-border-l2); }
-.ph-metricfield { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-.ph-metricfield span { flex: 1; min-width: 0; color: var(--dsw-alias-label-secondary); }
-.ph-metricfield input { width: 120px; height: 26px; padding: 0 8px; border: 0.5px solid var(--dsw-alias-border-l4); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-3); color: var(--dsw-alias-label-primary); font: inherit; font-size: 12px; }
-
-/* duplicates */
-.ph-dup { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 14px 20px; }
-.ph-dup__head { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; margin-bottom: 10px; }
-.ph-dup__hint { display: flex; align-items: center; gap: 6px; color: var(--dsw-alias-label-tertiary); font-size: 12px; padding: 20px 4px; }
-.ph-dupg { border: 0.5px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-1); margin-bottom: 10px; overflow: hidden; }
-.ph-dupg__head { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-bottom: 0.5px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-2); }
-.ph-duprow { display: flex; align-items: center; gap: 8px; padding: 7px 10px; cursor: pointer; }
-.ph-duprow + .ph-duprow { border-top: 0.5px solid var(--dsw-alias-border-l1); }
-.ph-duprow:hover { background: var(--dsw-alias-bg-layer-2); }
-.ph-duprow--primary { background: var(--ph-accent-soft); }
-.ph-duprow__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ph-duprow__title { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* toasts + feedback */
-.ph-fbhost { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 1300; display: flex; flex-direction: column; gap: 6px; align-items: center; max-width: min(560px, calc(100vw - 32px)); pointer-events: none; }
-.ph-fb { pointer-events: auto; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-2); border: 0.5px solid var(--dsw-alias-border-l2); box-shadow: var(--dsw-elevation-prompt, var(--dsw-elevation-panel)); font-size: 12px; animation: ph-slide-up var(--ph-fast) var(--ph-ease-spring); }
-.ph-fb__text { flex: 1; min-width: 0; }
-.ph-fb__action { border: none; background: transparent; color: var(--ph-accent); font: inherit; font-size: 12px; cursor: pointer; padding: 2px 4px; border-radius: var(--dsw-radius-sm); }
-.ph-fb__action:hover { background: var(--ph-accent-soft); }
-.ph-fb__close { border: none; background: transparent; color: var(--dsw-alias-label-tertiary); cursor: pointer; padding: 2px; display: inline-flex; }
-.ph-fb--success { border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 32%, transparent); }
-.ph-fb--error { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 36%, transparent); }
-.ph-fb--warning { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 36%, transparent); }
-
-/* drag to conversation */
-body.ph-dnd-dragging [data-ph-drag] { opacity: 0.55; }
-.ph-dropoverlay { position: fixed; inset: 0; z-index: 1200; pointer-events: none; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--dsw-alias-bg-mask-1, rgba(0,0,0,0.24)) 60%, transparent); opacity: 0; transition: opacity var(--ph-fast) var(--ph-ease); }
-.ph-dropoverlay--visible { opacity: 1; }
-.ph-dropoverlay__card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 22px; border-radius: var(--dsw-radius-lg); background: var(--dsw-alias-bg-layer-1); border: 1px dashed color-mix(in srgb, var(--ph-accent) 46%, transparent); box-shadow: var(--dsw-elevation-prominent); font-size: 13px; }
-.ph-dropoverlay__text { font-weight: 600; }
-.ph-dropoverlay__hint { font-size: 11.5px; color: var(--dsw-alias-label-tertiary); }
-.ph-dnd-target { outline: 2px dashed var(--ph-accent) !important; outline-offset: -2px; background: var(--ph-accent-soft) !important; }
-
-/* dialogs */
-.ph-modalbackdrop { position: fixed; inset: 0; z-index: 1100; display: flex; align-items: flex-start; justify-content: center; padding-top: min(16vh, 140px); background: var(--dsw-alias-bg-mask-1, rgba(0,0,0,0.32)); animation: ph-fade-in var(--ph-fast) var(--ph-ease); }
-.ph-dialog { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); display: flex; flex-direction: column; border-radius: var(--dsw-radius-lg); background: var(--dsw-alias-bg-layer-1); border: 0.5px solid var(--dsw-alias-border-l2); box-shadow: var(--dsw-elevation-prominent); overflow: hidden; animation: ph-scale-in var(--ph-fast) var(--ph-ease-spring); }
-.ph-dialog--palette { width: min(520px, calc(100vw - 32px)); }
-.ph-dialog--citation { width: min(640px, calc(100vw - 32px)); }
-.ph-dialog__head { display: flex; align-items: center; gap: 8px; padding: 9px 10px 9px 12px; border-bottom: 0.5px solid var(--dsw-alias-border-l2); flex: none; }
-.ph-dialog__title { flex: 1; font-size: 13px; font-weight: 600; }
-.ph-dialog__search { padding: 8px 10px; flex: none; }
-.ph-dialog__foot { padding: 7px 12px; border-top: 0.5px solid var(--dsw-alias-border-l2); color: var(--dsw-alias-label-tertiary); font-size: 11px; flex: none; }
-.ph-dialog__empty { padding: 14px 12px; color: var(--dsw-alias-label-tertiary); font-size: 12px; }
-.ph-dialog__actions { display: flex; gap: 6px; justify-content: flex-end; padding-top: 6px; }
-.ph-commandlist { overflow-y: auto; max-height: min(420px, calc(100vh - 220px)); padding: 0 6px 6px; outline: none; }
-.ph-command { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: none; border-radius: var(--dsw-radius-sm); background: transparent; color: var(--dsw-alias-label-primary); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
-.ph-command--active, .ph-command:hover { background: var(--ph-accent-soft); }
-.ph-command__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-command__hint { color: var(--dsw-alias-label-tertiary); font-size: 11px; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-citation { display: flex; gap: 0; min-height: 220px; max-height: min(420px, calc(100vh - 260px)); border-top: 0.5px solid var(--dsw-alias-border-l1); }
-.ph-citation__results { flex: 1; min-width: 0; overflow-y: auto; padding: 6px; }
-.ph-citation__row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: none; border-radius: var(--dsw-radius-sm); background: transparent; color: var(--dsw-alias-label-primary); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
-.ph-citation__row--active, .ph-citation__row:hover { background: var(--ph-accent-soft); }
-.ph-citation__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-citation__side { width: 260px; flex: none; border-left: 0.5px solid var(--dsw-alias-border-l2); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
-.ph-citation__label { font-size: 11px; color: var(--dsw-alias-label-tertiary); }
-.ph-citation__preview { flex: 1; margin: 0; min-height: 80px; max-height: 200px; overflow: auto; padding: 8px; border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-2); font-size: 11px; white-space: pre-wrap; word-break: break-word; }
-.ph-help { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; overflow-y: auto; }
-.ph-help__row { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 12px; }
-.ph-kbd { min-width: 92px; padding: 2px 6px; border-radius: var(--dsw-radius-sm); border: 0.5px solid var(--dsw-alias-border-l4); background: var(--dsw-alias-bg-layer-2); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; text-align: center; }
-.ph-select--inline { height: 26px; font-size: 12px; }
-.ph-toolrow { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
-.ph-figrow__body[data-ph-drag] { cursor: grab; }
-
-.ph-caption--error { color: var(--dsw-alias-state-error-primary); }
-.ph-dialog--help { width: min(460px, calc(100vw - 32px)); }
-
-.ph-metrics__reset { margin-left: 4px; white-space: nowrap; }
+.ph-linkbtn:hover { text-decoration: underline; text-underline-offset: 2px; }
 .ph-linkbtn--danger { color: var(--dsw-alias-state-error-primary); }
-.ph-metrics .ph-detailblock__head { flex-wrap: wrap; row-gap: 4px; }
-.ph-metricrow dd { font-variant-numeric: tabular-nums; }
 
-.ph-metricrow dt { flex-wrap: wrap; }
-.ph-metricrow__hint { display: block; flex-basis: 100%; margin-top: 1px; }
-.ph-caption--hint { opacity: 0.9; }
+.ph-toolrow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ph-toolrow .ph-btn { width: 100%; min-width: 0; justify-content: flex-start; height: 28px; font-size: var(--ph-fs-12); }
+.ph-toolrow > :nth-child(3) { grid-column: 1 / -1; }
+.ph-pdfprompt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 6px;
+  padding: 7px 9px;
+  border-radius: var(--ph-r-sm);
+  border: 1px dashed var(--ph-accent-line);
+  background: var(--ph-accent-soft);
+  font-size: var(--ph-fs-11);
+  flex-wrap: wrap;
+}
+.ph-pdfprompt__text { flex: 1; min-width: 0; }
 
-/* ================================================================ v0.4 sidebar + settings */
-.ph-sidebar { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-size: 12.5px; }
-.ph-sidebar__head { display: flex; align-items: center; gap: 4px; padding: 8px 8px 4px 10px; flex: none; }
-.ph-sidebar__title { display: flex; align-items: center; gap: 5px; font-weight: 600; font-size: 12.5px; flex: 1; min-width: 0; }
+/* ---- figure search ----------------------------------------------------- */
+.ph-figsearch { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: var(--ph-s4) var(--ph-s5) var(--ph-s5); gap: var(--ph-s3); overflow-y: auto; }
+.ph-figsearch__head { display: flex; align-items: flex-end; gap: var(--ph-s3); flex-wrap: wrap; }
+.ph-figsearch__title { margin: 0; font-size: var(--ph-fs-17); font-weight: var(--ph-fw-bold); letter-spacing: -0.01em; }
+.ph-figsearch__desc { margin: 4px 0 0; color: var(--ph-ink-3); font-size: var(--ph-fs-12); line-height: 1.6; max-width: 620px; }
+.ph-figsearch__bar { display: flex; gap: var(--ph-s2); align-items: center; flex-wrap: wrap; max-width: 780px; }
+.ph-figsearch__bar .ph-search { flex: 1; min-width: 220px; }
+.ph-figsearch__filters { display: flex; align-items: center; gap: var(--ph-s3); flex-wrap: wrap; }
+.ph-figgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--ph-s3); }
+.ph-figcard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ph-line);
+  border-radius: var(--ph-r-md);
+  background: var(--ph-surface-1);
+  overflow: hidden;
+  min-width: 0;
+  transition:
+    transform var(--ph-base) var(--ph-ease),
+    box-shadow var(--ph-base) var(--ph-ease),
+    border-color var(--ph-fast) var(--ph-ease);
+  animation: ph-fade-up var(--ph-base) var(--ph-ease) both;
+}
+.ph-figcard:hover { transform: translateY(-2px); box-shadow: var(--ph-shadow-2); border-color: var(--ph-line-strong); }
+.ph-figcard__img {
+  aspect-ratio: 4 / 3;
+  background: var(--ph-surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--ph-ink-4);
+}
+.ph-figcard__img img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.ph-figcard__body { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px 12px; min-width: 0; }
+.ph-figcard__title {
+  font-size: var(--ph-fs-13);
+  font-weight: var(--ph-fw-semi);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ph-figcard__caption {
+  margin: 0;
+  font-size: var(--ph-fs-12);
+  line-height: 1.55;
+  color: var(--ph-ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ph-figcard__meta { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+.ph-figcard__annotation {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--ph-r-xs);
+  background: var(--dsw-alias-state-warn-tertiary);
+  color: var(--ph-ink);
+  font-size: var(--ph-fs-11);
+  line-height: 1.5;
+}
+.ph-figcard__actions { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 2px; }
+.ph-reasons { display: flex; flex-wrap: wrap; gap: 4px; }
+.ph-uploadchip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-surface-2);
+  border: 1px solid var(--ph-line);
+  color: var(--ph-ink-2);
+  font-size: var(--ph-fs-12);
+  width: fit-content;
+}
+.ph-channelwarn {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ph-s2);
+  padding: 10px 12px;
+  border-radius: var(--ph-r-sm);
+  background: var(--dsw-alias-state-warn-tertiary);
+  color: var(--ph-ink);
+  font-size: var(--ph-fs-12);
+  line-height: 1.55;
+}
+.ph-channelwarn .ph-icon { color: var(--dsw-alias-state-warn-primary); margin-top: 1px; flex: none; }
+.ph-channelwarn__text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ph-channelwarn__text p { margin: 0; }
+.ph-figsource {
+  display: flex;
+  align-items: center;
+  gap: var(--ph-s2);
+  padding: 7px 9px;
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-surface-2);
+  font-size: var(--ph-fs-12);
+  color: var(--ph-ink-2);
+}
+
+/* ============================================================ 5 peripheral */
+/* ---- drawer ------------------------------------------------------------ */
+.ph-drawer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: var(--ph-s3);
+  background: var(--ph-bg);
+  color: var(--ph-ink);
+  font-size: var(--ph-fs-13);
+  animation: ph-fade-in var(--ph-base) var(--ph-ease);
+}
+.ph-drawer__head { display: flex; flex-direction: column; gap: var(--ph-s2); flex: none; padding-bottom: var(--ph-s2); border-bottom: 1px solid var(--ph-line-soft); }
+.ph-drawer__filters { display: flex; align-items: center; gap: var(--ph-s2); flex-wrap: wrap; }
+.ph-drawer__body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--ph-s2) 0; }
+.ph-drawer__foot { display: flex; gap: var(--ph-s2); flex: none; padding-top: var(--ph-s2); border-top: 1px solid var(--ph-line-soft); }
+.ph-drawer__foot .ph-btn { flex: 1; }
+.ph-drawer__toasts { display: flex; flex-direction: column; gap: 6px; padding: 6px 0; }
+.ph-drowlist { display: flex; flex-direction: column; gap: 4px; }
+.ph-drow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ph-s2);
+  padding: var(--ph-s2);
+  border-radius: var(--ph-r-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  min-width: 0;
+  transition: background-color var(--ph-fast) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease);
+  animation: ph-fade-up var(--ph-fast) var(--ph-ease) both;
+}
+.ph-drow:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.ph-drow--selected { border-color: var(--ph-accent-line); background: var(--ph-accent-soft); }
+.ph-drow__check { flex: none; display: flex; padding-top: 2px; }
+.ph-drow__thumb {
+  flex: none;
+  width: 62px;
+  height: 48px;
+  border-radius: var(--ph-r-xs);
+  overflow: hidden;
+  background: var(--ph-surface-3);
+  border: 1px solid var(--ph-line-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ph-ink-3);
+}
+.ph-drow__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ph-drow__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ph-drow__title { font-size: var(--ph-fs-13); font-weight: var(--ph-fw-medium); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.ph-drow__original,
+.ph-drow__meta { font-size: var(--ph-fs-11); color: var(--ph-ink-3); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+
+/* sidebar feed (right pane tab) */
+.ph-sidebar { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--ph-bg); color: var(--ph-ink); font-size: var(--ph-fs-13); }
+.ph-sidebar__head { display: flex; align-items: center; gap: var(--ph-s1); padding: var(--ph-s2) var(--ph-s2) var(--ph-s1) var(--ph-s3); flex: none; }
+.ph-sidebar__title { display: flex; align-items: center; gap: 6px; font-weight: var(--ph-fw-semi); font-size: var(--ph-fs-13); flex: 1; min-width: 0; }
 .ph-sidebar__engine { max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-sidebar__search { padding: 2px 8px 6px; flex: none; }
+.ph-sidebar__search { padding: 2px var(--ph-s2) 6px; flex: none; }
 .ph-sidebar__tabs { padding: 0 6px 2px; flex: none; }
-.ph-sidebar__tabs .ph-tab { height: 26px; padding: 0 7px; font-size: 12px; }
-.ph-side-filters { display: flex; align-items: center; gap: 4px; padding: 4px 8px 6px; flex-wrap: wrap; flex: none; }
-.ph-side-filters .ph-select { height: 24px; font-size: 11.5px; max-width: 108px; }
-.ph-fchip { height: 24px; padding: 0 8px; border-radius: 999px; border: 0.5px solid var(--dsw-alias-border-l2); background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
-.ph-fchip--active { background: var(--ph-accent-soft); color: var(--ph-accent); border-color: color-mix(in srgb, var(--ph-accent) 32%, transparent); }
-.ph-fchip__count { font-size: 10px; color: var(--dsw-alias-label-tertiary); }
-.ph-sidebar__body { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 6px 8px; }
+.ph-sidebar__tabs .ph-tab { height: 28px; padding: 0 8px; font-size: var(--ph-fs-12); }
+.ph-sidebar__body { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 6px var(--ph-s2); }
+.ph-sidebar__foot {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 7px var(--ph-s2);
+  border-top: 1px solid var(--ph-line-soft);
+  flex: none;
+  flex-wrap: wrap;
+  background: var(--ph-bg);
+}
+.ph-sidebar__foot .ph-caption { font-size: var(--ph-fs-11); }
+.ph-side-filters { display: flex; align-items: center; gap: 4px; padding: 4px var(--ph-s2) 6px; flex-wrap: wrap; flex: none; }
+.ph-side-filters .ph-select { height: 24px; font-size: var(--ph-fs-11); max-width: 108px; }
+.ph-fchip {
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--ph-r-pill);
+  border: 1px solid var(--ph-line);
+  background: transparent;
+  color: var(--ph-ink-2);
+  font: inherit;
+  font-size: var(--ph-fs-11);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease);
+}
+.ph-fchip:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--ph-ink); }
+.ph-fchip--active { background: var(--ph-accent-soft); color: var(--ph-accent-text); border-color: var(--ph-accent-line); }
+.ph-fchip__count { font-size: var(--ph-fs-11); color: var(--ph-ink-3); font-variant-numeric: tabular-nums; }
 .ph-side-groups, .ph-side-annots, .ph-side-notes { display: flex; flex-direction: column; gap: 2px; }
-.ph-side-group { margin-bottom: 6px; }
-.ph-side-group__head { display: flex; align-items: center; gap: 6px; padding: 5px 4px 3px; position: sticky; top: 0; z-index: 2; background: var(--dsw-alias-bg-base); }
-.ph-side-group__title { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; color: var(--dsw-alias-label-tertiary); flex: 1; min-width: 0; }
-.ph-side-group__head .ph-linkbtn { font-size: 10.5px; }
-.ph-side-row { display: flex; align-items: flex-start; gap: 7px; padding: 6px 5px; border-radius: 8px; border: 0.5px solid transparent; position: relative; animation: ph-fade-up var(--ph-fast) var(--ph-ease); }
-.ph-side-row:hover { background: var(--dsw-alias-bg-layer-2); border-color: var(--dsw-alias-border-l1); }
-.ph-side-row--selected { background: var(--ph-accent-soft); }
-.ph-side-row__check { padding-top: 16px; opacity: 0.55; }
-.ph-side-row:hover .ph-side-row__check, .ph-side-row--selected .ph-side-row__check { opacity: 1; }
-.ph-side-thumb { width: 48px; height: 64px; flex: none; border-radius: 4px; overflow: hidden; background: var(--dsw-alias-bg-layer-3); display: inline-flex; align-items: center; justify-content: center; color: var(--dsw-alias-label-tertiary); }
+.ph-side-annotgroups { display: flex; flex-direction: column; gap: var(--ph-s1); }
+.ph-side-group { margin-bottom: var(--ph-s2); }
+.ph-side-group__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px 4px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ph-bg);
+}
+.ph-side-group__title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--ph-fs-11);
+  font-weight: var(--ph-fw-semi);
+  letter-spacing: 0.04em;
+  color: var(--ph-ink-3);
+  flex: 1;
+  min-width: 0;
+}
+.ph-side-group__head .ph-linkbtn { font-size: var(--ph-fs-11); }
+.ph-side-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 7px 6px;
+  border-radius: var(--ph-r-sm);
+  border: 1px solid transparent;
+  position: relative;
+  transition: background-color var(--ph-fast) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease);
+}
+.ph-side-row:hover { background: var(--ph-surface-2); border-color: var(--ph-line-soft); }
+.ph-side-row--selected { background: var(--ph-accent-soft); border-color: var(--ph-accent-line); }
+.ph-side-row--paper { align-items: flex-start; }
+.ph-side-row__check { padding-top: 16px; opacity: 0.6; transition: opacity var(--ph-fast) var(--ph-ease); }
+.ph-side-row:hover .ph-side-row__check,
+.ph-side-row--selected .ph-side-row__check,
+.ph-side-row:focus-within .ph-side-row__check { opacity: 1; }
+.ph-side-thumb {
+  width: 48px;
+  height: 64px;
+  flex: none;
+  border-radius: var(--ph-r-xs);
+  overflow: hidden;
+  background: var(--ph-surface-3);
+  border: 1px solid var(--ph-line-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ph-ink-3);
+}
 .ph-side-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
-.ph-side-thumb--empty { border: 0.5px solid var(--dsw-alias-border-l2); }
-.ph-side-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; cursor: pointer; }
-.ph-side-row__title { font-size: 12.5px; font-weight: 500; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-side-row__original { font-size: 10.5px; color: var(--dsw-alias-label-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-side-row__meta { font-size: 10.5px; color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-side-row__badges { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
-.ph-side-row__badges .ph-caption { font-size: 10px; display: inline-flex; align-items: center; gap: 3px; }
-.ph-statusdot { width: 7px; height: 7px; border-radius: 50%; background: var(--dsw-alias-label-tertiary); flex: none; }
+.ph-side-thumb--empty { border-style: dashed; }
+.ph-side-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
+.ph-side-row__title { font-size: var(--ph-fs-12); font-weight: var(--ph-fw-medium); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ph-side-row__original { font-size: var(--ph-fs-11); color: var(--ph-ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-side-row__meta { font-size: var(--ph-fs-11); color: var(--ph-ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-side-row__badges { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 3px; }
+.ph-side-row__badges .ph-caption { font-size: var(--ph-fs-11); display: inline-flex; align-items: center; gap: 3px; }
+.ph-side-row__actions {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  display: flex;
+  gap: 1px;
+  padding: 2px;
+  border-radius: var(--ph-r-xs);
+  background: var(--ph-surface-2);
+  border: 1px solid var(--ph-line);
+  box-shadow: var(--ph-shadow-1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ph-fast) var(--ph-ease);
+}
+.ph-side-row:hover .ph-side-row__actions,
+.ph-side-row:focus-within .ph-side-row__actions { opacity: 1; pointer-events: auto; }
+.ph-side-row__actions--always { position: static; display: flex; margin-left: auto; background: transparent; border: none; box-shadow: none; opacity: 0.6; }
+.ph-statusdot { width: 7px; height: 7px; border-radius: 50%; background: var(--ph-ink-3); flex: none; }
 .ph-statusdot--read { background: var(--dsw-alias-state-success-primary); }
-.ph-statusdot--reading { background: var(--dsw-alias-state-business-primary); box-shadow: 0 0 0 2px var(--ph-accent-soft); }
-.ph-side-row__actions { position: absolute; right: 4px; top: 4px; display: none; gap: 1px; padding: 1px; border-radius: 6px; background: var(--dsw-alias-bg-layer-2); border: 0.5px solid var(--dsw-alias-border-l2); }
-.ph-side-row:hover .ph-side-row__actions { display: flex; }
-.ph-side-row__actions--always { position: static; display: flex; margin-left: auto; background: transparent; border: none; opacity: 0.55; }
-.ph-side-annot { display: flex; gap: 6px; padding: 6px 6px 6px 8px; border-radius: 8px; border: 0.5px solid var(--dsw-alias-border-l1); border-left-width: 3px; border-left-color: var(--dsw-alias-state-warn-primary); margin: 3px 0; }
+.ph-statusdot--reading { background: var(--ph-accent); box-shadow: 0 0 0 2px var(--ph-accent-soft); }
+.ph-side-annot {
+  display: flex;
+  gap: 7px;
+  padding: 7px 8px 7px 9px;
+  border-radius: var(--ph-r-sm);
+  border: 1px solid var(--ph-line-soft);
+  border-left-width: 3px;
+  border-left-color: var(--dsw-alias-state-warn-primary);
+  margin: 3px 0;
+  transition: background-color var(--ph-fast) var(--ph-ease);
+}
+.ph-side-annot:hover { background: var(--ph-surface-2); }
 .ph-side-annot--green { border-left-color: var(--dsw-alias-state-success-primary); }
 .ph-side-annot--blue { border-left-color: var(--dsw-alias-state-business-primary); }
 .ph-side-annot--red { border-left-color: var(--dsw-alias-state-error-primary); }
 .ph-side-annot--purple { border-left-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, var(--dsw-alias-state-error-primary)); }
-.ph-side-annot__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ph-side-annot__quote { font-size: 11.5px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ph-side-annot__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ph-side-annot__quote { font-size: var(--ph-fs-11); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ph-side-annot__meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-.ph-side-annot__comment { font-size: 10.5px; color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-chipbtn { height: 18px; padding: 0 6px; border-radius: 999px; border: 0.5px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-secondary); font: inherit; font-size: 10px; cursor: pointer; }
+.ph-side-annot__comment { font-size: var(--ph-fs-11); color: var(--ph-ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-chipbtn {
+  height: 19px;
+  padding: 0 7px;
+  border-radius: var(--ph-r-pill);
+  border: 1px solid var(--ph-line);
+  background: var(--ph-surface-2);
+  color: var(--ph-ink-2);
+  font: inherit;
+  font-size: var(--ph-fs-11);
+  cursor: pointer;
+}
 .ph-annotgroup { margin-bottom: 4px; }
-.ph-annotgroup__head { display: flex; align-items: center; gap: 5px; width: 100%; padding: 4px 5px; border: none; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 11px; cursor: pointer; }
+.ph-annotgroup__head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 5px 6px;
+  border: none;
+  background: transparent;
+  color: var(--ph-ink-2);
+  font: inherit;
+  font-size: var(--ph-fs-11);
+  cursor: pointer;
+  border-radius: var(--ph-r-xs);
+}
+.ph-annotgroup__head:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .ph-annotgroup__title { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-side-annotfilters { display: flex; gap: 4px; padding: 2px 2px 6px; }
-.ph-side-figgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 4px 2px; }
-.ph-side-fig { display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0.5px solid var(--dsw-alias-border-l1); border-radius: 8px; background: var(--dsw-alias-bg-layer-1); overflow: hidden; cursor: pointer; text-align: left; color: inherit; font: inherit; }
-.ph-side-fig:hover { border-color: color-mix(in srgb, var(--ph-accent) 36%, transparent); }
-.ph-side-fig__img { aspect-ratio: 4 / 3; background: var(--dsw-alias-bg-layer-3); display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--dsw-alias-label-tertiary); }
+.ph-side-annotfilters { display: flex; gap: 4px; padding: 2px 2px 6px; flex-wrap: wrap; }
+.ph-side-figgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 4px 2px; }
+.ph-side-fig {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  border: 1px solid var(--ph-line-soft);
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-surface-1);
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  transition: border-color var(--ph-fast) var(--ph-ease), transform var(--ph-fast) var(--ph-ease), box-shadow var(--ph-fast) var(--ph-ease);
+}
+.ph-side-fig:hover { border-color: var(--ph-accent-line); transform: translateY(-1px); box-shadow: var(--ph-shadow-1); }
+.ph-side-fig__img { aspect-ratio: 4 / 3; background: var(--ph-surface-3); display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--ph-ink-3); }
 .ph-side-fig__img img { width: 100%; height: 100%; object-fit: cover; }
-.ph-side-fig__caption { font-size: 10.5px; line-height: 1.3; padding: 3px 5px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-side-fig .ph-caption { padding: 0 5px 4px; font-size: 9.5px; }
+.ph-side-fig__caption { font-size: var(--ph-fs-11); line-height: 1.4; padding: 4px 6px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ph-side-fig .ph-caption { padding: 0 6px 5px; font-size: var(--ph-fs-11); }
 .ph-side-collections { display: flex; flex-direction: column; gap: 1px; }
-.ph-side-collection { display: flex; align-items: center; gap: 6px; width: 100%; padding: 5px 6px; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-primary); font: inherit; font-size: 11.5px; cursor: pointer; text-align: left; }
-.ph-side-collection:hover { background: var(--dsw-alias-bg-layer-2); }
+.ph-side-collection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 7px;
+  border: none;
+  border-radius: var(--ph-r-xs);
+  background: transparent;
+  color: var(--ph-ink);
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  cursor: pointer;
+  text-align: left;
+}
+.ph-side-collection:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .ph-side-collection__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-side-skeleton { display: flex; flex-direction: column; gap: 6px; padding: 4px; }
+.ph-side-skeleton { display: flex; flex-direction: column; gap: 7px; padding: 4px; }
 .ph-side-skeleton__row { display: flex; gap: 7px; align-items: center; }
 .ph-side-skeleton__main { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-.ph-side-figskeleton { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.ph-sidebar__foot { display: flex; align-items: center; gap: 3px; padding: 6px 8px; border-top: 0.5px solid var(--dsw-alias-border-l2); flex: none; flex-wrap: wrap; background: var(--dsw-alias-bg-base); }
-.ph-sidebar__foot .ph-caption { font-size: 10.5px; }
-/* translation settings sheet */
-.ph-sheetbackdrop { position: fixed; inset: 0; z-index: 1250; display: flex; justify-content: flex-end; background: var(--dsw-alias-bg-mask-1, rgba(0,0,0,0.28)); animation: ph-fade-in var(--ph-fast) var(--ph-ease); }
-.ph-sheet { width: min(380px, calc(100vw - 16px)); height: 100%; display: flex; flex-direction: column; background: var(--dsw-alias-bg-base); border-left: 0.5px solid var(--dsw-alias-border-l2); box-shadow: var(--dsw-elevation-prominent); animation: ph-slide-left var(--ph-panel) var(--ph-ease-panel); }
-.ph-sheet__head { display: flex; align-items: center; gap: 6px; padding: 10px 10px 8px 12px; border-bottom: 0.5px solid var(--dsw-alias-border-l2); flex: none; }
-.ph-sheet__title { flex: 1; font-size: 13px; font-weight: 600; }
-.ph-sheet__body { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px 18px; display: flex; flex-direction: column; gap: 8px; }
-.ph-sheet__sectionTitle { font-size: 11px; font-weight: 600; color: var(--dsw-alias-label-tertiary); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 4px; }
-.ph-enginelist { display: flex; flex-direction: column; gap: 3px; }
-.ph-engine { display: flex; align-items: center; gap: 7px; padding: 7px 8px; border: 0.5px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-layer-1); color: inherit; font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
-.ph-engine--active { border-color: color-mix(in srgb, var(--ph-accent) 46%, transparent); background: var(--ph-accent-soft); }
-.ph-engine__dot { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--dsw-alias-border-l4); flex: none; }
-.ph-engine__dot--active { border-color: var(--ph-accent); box-shadow: inset 0 0 0 3px var(--ph-accent); }
-.ph-engine__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.ph-engine__label { font-size: 12px; font-weight: 500; }
-.ph-engine__hint { font-size: 10.5px; color: var(--dsw-alias-label-tertiary); }
-.ph-sheet__row { display: flex; align-items: center; gap: 6px; }
-.ph-sheet__testrow { display: flex; align-items: center; gap: 8px; }
-.ph-testresult { display: flex; flex-direction: column; gap: 4px; padding: 8px 9px; border-radius: 8px; background: var(--dsw-alias-bg-layer-2); border: 0.5px solid var(--dsw-alias-border-l2); }
-.ph-testresult--error { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent); }
-.ph-testresult__head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.ph-testresult__text { font-size: 12px; line-height: 1.5; }
-.ph-disclaimer { display: flex; gap: 6px; margin-top: 4px; padding: 7px 8px; border-radius: 8px; border: 0.5px dashed var(--dsw-alias-border-l3); color: var(--dsw-alias-label-tertiary); font-size: 10.5px; line-height: 1.5; }
-.ph-sheet__foot { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-top: 0.5px solid var(--dsw-alias-border-l2); flex: none; }
-@keyframes ph-slide-left { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes ph-slide-up { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.ph-side-figskeleton { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 
-/* v0.5 folders/filters/semantic */
-.ph-folders { display: flex; flex-direction: column; gap: 2px; padding-bottom: 4px; }
-.ph-folders__tree { display: flex; flex-direction: column; gap: 1px; }
-.ph-folder__row { display: flex; align-items: center; gap: 4px; padding: 3px 4px; border-radius: 6px; cursor: pointer; border: 0.5px solid transparent; position: relative; }
-.ph-folder__row:hover { background: var(--dsw-alias-bg-layer-2); }
-.ph-folder__row--active { background: var(--ph-accent-soft); color: var(--ph-accent); }
-.ph-folder__row--drop { border-color: var(--ph-accent); background: var(--ph-accent-soft); }
-.ph-folder__caret { width: 18px; height: 18px; }
-.ph-folder__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-.ph-folder__count { font-size: 10px; color: var(--dsw-alias-label-tertiary); }
-.ph-folder__actions { display: none; gap: 0; }
-.ph-folder__row:hover .ph-folder__actions { display: inline-flex; }
-.ph-folder__actions .ph-iconbtn { width: 20px; height: 20px; }
-.ph-folder__input { height: 22px; font-size: 11.5px; }
-.ph-folder__childnew { display: flex; gap: 3px; padding: 3px 6px 3px 22px; }
-.ph-folder__childnew .ph-inlineinput { height: 22px; font-size: 11.5px; flex: 1; }
-.ph-navitem__count { margin-left: auto; font-size: 10px; color: var(--dsw-alias-label-tertiary); }
-.ph-searchfilters { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 4px 0 2px; }
-.ph-semantic { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; justify-content: flex-end; padding: 2px 0 0; }
-.ph-semchip { display: inline-flex; align-items: center; gap: 3px; height: 18px; padding: 0 6px; border-radius: 999px; font-size: 9.5px; border: 0.5px solid var(--dsw-alias-border-l2); color: var(--dsw-alias-label-tertiary); background: var(--dsw-alias-bg-layer-1); }
-.ph-semchip--ok { color: var(--dsw-alias-state-success-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 34%, transparent); }
-.ph-semchip--unavailable, .ph-semchip--degraded { color: var(--dsw-alias-state-warn-primary); }
-.ph-semchip__meta { opacity: 0.75; font-size: 9px; }
-.ph-semantic__hint { font-size: 9.5px; }
-.ph-favoriterow { display: flex; align-items: center; gap: 6px; }
-.ph-favbtn.ph-favbtn--on { color: var(--dsw-alias-state-warn-primary); }
-.ph-favlabel { font-size: 12px; color: var(--dsw-alias-label-secondary); }
-.ph-favlabel--on { color: var(--dsw-alias-state-warn-primary); }
-.ph-select--block { width: 100%; }
-
-/* v0.6 pdf prompt */
-.ph-pdfprompt { display: flex; align-items: center; gap: 6px; margin: 4px 0 6px; padding: 6px 8px; border-radius: 8px; border: 0.5px dashed color-mix(in srgb, var(--ph-accent) 40%, transparent); background: var(--ph-accent-soft); font-size: 11.5px; flex-wrap: wrap; }
-.ph-pdfprompt__text { flex: 1; min-width: 0; }
-
-/* ================================================================ v0.11 settings */
-.ph-settingsbackdrop { position: fixed; inset: 0; z-index: 1300; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--dsw-alias-bg-mask-1, rgba(0,0,0,0.36)); animation: ph-fade-in var(--ph-fast) var(--ph-ease); }
-.ph-settings { width: min(960px, 92vw); height: min(720px, 88vh); display: flex; flex-direction: column; border-radius: var(--dsw-radius-lg); background: var(--dsw-alias-bg-base); border: 0.5px solid var(--dsw-alias-border-l2); box-shadow: var(--dsw-elevation-prominent); overflow: hidden; animation: ph-scale-in var(--ph-fast) var(--ph-ease-spring); }
-.ph-settings__head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 0.5px solid var(--dsw-alias-border-l2); flex: none; }
-.ph-settings__title { font-size: 14px; font-weight: 600; }
-.ph-settings__body { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px 18px; display: flex; flex-direction: column; gap: 16px; }
-.ph-settings__foot { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-top: 0.5px solid var(--dsw-alias-border-l2); flex: none; }
-.ph-settings__skeleton { display: flex; flex-direction: column; gap: 10px; }
-.ph-settings__error { display: flex; gap: 10px; align-items: flex-start; padding: 14px; border: 0.5px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent); border-radius: 10px; }
-.ph-settings__errorTitle { font-weight: 600; margin-bottom: 4px; }
-.ph-settings__section { display: flex; flex-direction: column; gap: 8px; }
-.ph-settings__sectionHead { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
-.ph-settings__sectionHead .ph-caption { text-transform: none; letter-spacing: 0; font-weight: 400; }
-.ph-capcard { border: 0.5px solid var(--dsw-alias-border-l2); border-radius: 10px; background: var(--dsw-alias-bg-layer-1); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
-.ph-capcard__head { display: flex; align-items: flex-start; gap: 8px; }
-.ph-capcard__icon { width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: var(--ph-accent-soft); color: var(--ph-accent); flex: none; }
-.ph-capcard__titlewrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ph-capcard__title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-.ph-capcard__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 4px 12px; }
-.ph-fact { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.ph-fact__label { font-size: 10.5px; color: var(--dsw-alias-label-tertiary); }
-.ph-fact__value { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-fact__value--mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
-.ph-capcard__actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.ph-switch { width: 34px; height: 20px; padding: 2px; border-radius: 999px; border: 0.5px solid var(--dsw-alias-border-l3); background: var(--dsw-alias-bg-layer-3); cursor: pointer; flex: none; transition: background var(--ph-fast) var(--ph-ease); }
-.ph-switch--on { background: var(--ph-accent); border-color: var(--ph-accent); }
-.ph-switch--disabled { opacity: 0.5; cursor: not-allowed; }
-.ph-switch__dot { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--dsw-alias-bg-base); transform: translateX(0); transition: transform var(--ph-fast) var(--ph-ease-spring); }
-.ph-switch--on .ph-switch__dot { transform: translateX(14px); }
-.ph-job { border: 0.5px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 7px 9px; display: flex; flex-direction: column; gap: 4px; background: var(--dsw-alias-bg-layer-2); }
-.ph-job--error { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent); }
-.ph-job__head { display: flex; align-items: center; gap: 6px; font-size: 11.5px; flex-wrap: wrap; }
-.ph-progress { height: 4px; border-radius: 999px; background: var(--dsw-alias-bg-layer-3); overflow: hidden; }
-.ph-progress__bar { display: block; height: 100%; background: var(--ph-accent); transition: width var(--ph-panel) var(--ph-ease); }
-.ph-settings__list { display: flex; flex-direction: column; gap: 2px; border: 0.5px solid var(--dsw-alias-border-l2); border-radius: 10px; padding: 4px 10px; background: var(--dsw-alias-bg-layer-1); }
-.ph-settingrow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l1); }
-.ph-settingrow:last-child { border-bottom: none; }
-.ph-settingrow__name { flex: 1; min-width: 0; font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
-.ph-settings__testrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ph-testbox { border: 0.5px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 8px 9px; display: flex; flex-direction: column; gap: 4px; background: var(--dsw-alias-bg-layer-2); }
-.ph-testbox--error { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent); }
-.ph-testbox__head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.ph-testbox__text { font-size: 12px; line-height: 1.5; }
-.ph-channelgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
-.ph-channel { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 7px 9px; border-radius: 8px; border: 0.5px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); font-size: 12px; }
-.ph-aboutgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px 16px; padding: 8px 10px; border: 0.5px solid var(--dsw-alias-border-l2); border-radius: 8px; background: var(--dsw-alias-bg-layer-1); }
-@media (max-width: 640px) {
-  .ph-settings { width: calc(100vw - 16px); height: calc(100vh - 16px); }
-  .ph-settings__body { padding: 10px; }
-  .ph-capcard__facts { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
+/* ---- composer dock + reference cards ---------------------------------- */
+.ph-dock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ph-s2);
+  margin: 0 0 6px;
+  max-width: 100%;
+  min-width: 0;
+  color: var(--ph-ink);
+  font-size: var(--ph-fs-12);
+  animation: ph-slide-up var(--ph-base) var(--ph-ease);
 }
-
-/* ================================================================ v0.12 citation dock + token */
-.ph-dock { display: flex; flex-direction: column; gap: 8px; margin: 0 0 6px; max-width: 100%; min-width: 0; }
-.ph-refcard { position: relative; border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 82%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--dsw-alias-bg-base) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.035); overflow: hidden; transition: box-shadow var(--ph-fast) var(--ph-ease), transform var(--ph-fast) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease); animation: ph-refcard-in 180ms var(--ph-ease) both; }
-.ph-refcard:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 24%, var(--dsw-alias-border-l2)); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 8px 20px rgba(0, 0, 0, 0.07); }
-.ph-refcard--added { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 4%, var(--dsw-alias-bg-base)); }
-.ph-refcard__main { display: flex; align-items: center; gap: 9px; padding: 7px 8px 7px 10px; min-width: 0; }
-.ph-refcard__icon { width: 28px; height: 28px; flex: none; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 11%, transparent); color: var(--dsw-alias-state-business-primary); }
-.ph-refcard__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.ph-refcard__title { font-size: 12.5px; font-weight: 600; color: var(--dsw-alias-label-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-refcard__sub { font-size: 11px; color: var(--dsw-alias-label-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-refcard__error { font-size: 10.5px; color: var(--dsw-alias-state-error-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-refcard__actions { display: flex; align-items: center; gap: 2px; flex: none; }
-.ph-refcard__added { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 500; color: var(--dsw-alias-state-success-primary); background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 10%, transparent); border: 1px solid color-mix(in srgb, var(--dsw-alias-state-success-primary) 24%, transparent); white-space: nowrap; }
-.ph-refcard__remove, .ph-refcard__undo { opacity: 0.32; transition: opacity var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease); }
-.ph-refcard:hover .ph-refcard__remove, .ph-refcard:hover .ph-refcard__undo { opacity: 0.85; }
-.ph-refcard__remove:hover { color: var(--dsw-alias-state-error-primary); }
-.ph-refcard__chevron { width: 22px; height: 22px; flex: none; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 6px; background: transparent; color: var(--dsw-alias-label-tertiary); cursor: pointer; padding: 0; }
-.ph-refcard__chevron:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
-.ph-refcard__chevron:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 1px; }
-.ph-refcard__materials { border-top: 1px solid var(--dsw-alias-border-l1); padding: 4px 6px 3px 10px; display: flex; flex-direction: column; gap: 2px; animation: ph-refcard-expand 160ms var(--ph-ease) both; }
-.ph-refcard__list { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; overscroll-behavior: contain; }
-.ph-refcard__material { display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 3px; border-radius: 6px; font-size: 11.5px; min-width: 0; }
-.ph-refcard__material:hover { background: var(--dsw-alias-bg-layer-2); }
-.ph-refcard__materialIcon { flex: none; display: inline-flex; color: var(--dsw-alias-label-tertiary); }
-.ph-refcard__materialTitle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dsw-alias-label-primary); }
-.ph-refcard__materialMeta { flex: none; font-size: 10.5px; color: var(--dsw-alias-label-tertiary); }
-.ph-refcard__materialRemove { opacity: 0; transition: opacity var(--ph-fast) var(--ph-ease); }
-.ph-refcard__material:hover .ph-refcard__materialRemove { opacity: 0.7; }
-.ph-refcard__foot { display: flex; align-items: center; gap: 8px; padding: 4px 3px 3px 2px; border-top: 1px solid var(--dsw-alias-border-l1); margin-top: 2px; }
-.ph-refcard__hint { flex: 1; min-width: 0; font-size: 10.5px; color: var(--dsw-alias-label-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-dock__more { font-size: 10.5px; color: var(--dsw-alias-label-tertiary); text-align: center; padding: 1px 0 0; }
+.ph-dock__caption { display: flex; align-items: center; gap: 5px; color: var(--ph-ink-3); font-size: var(--ph-fs-11); }
+.ph-dock__bundle { border-radius: var(--ph-r-md); padding: 2px 0; }
+.ph-dock__bundle--added { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 7%, transparent); }
+.ph-dock__row { display: flex; align-items: center; gap: 7px; min-width: 0; flex-wrap: wrap; }
+.ph-dock__toggle {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: var(--ph-r-xs);
+  background: transparent;
+  color: var(--ph-ink-2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.ph-dock__toggle:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.ph-dock__icon { color: var(--ph-accent-text); display: inline-flex; flex: none; }
+.ph-dock__title { font-weight: var(--ph-fw-medium); max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-dock__count { color: var(--ph-ink-3); font-size: var(--ph-fs-11); flex: none; }
+.ph-dock__error { color: var(--dsw-alias-state-error-primary); font-size: var(--ph-fs-11); max-width: 280px; overflow-wrap: anywhere; }
+.ph-dock__row .ph-btn { margin-left: auto; }
+.ph-dock__materials {
+  margin: 2px 0 4px 26px;
+  padding-left: var(--ph-s2);
+  border-left: 2px solid var(--ph-line);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ph-dock__materialsTitle { color: var(--ph-ink-3); font-size: var(--ph-fs-11); }
+.ph-dock__material { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ph-dock__materialTitle { color: var(--ph-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 360px; }
+.ph-dock__more { font-size: var(--ph-fs-11); color: var(--ph-ink-3); text-align: center; padding: 1px 0 0; }
 .ph-dock__toasts { display: flex; flex-direction: column; gap: 2px; }
-.ph-dock__toastText { font-size: 10.5px; color: var(--dsw-alias-label-tertiary); }
-@keyframes ph-refcard-in { from { opacity: 0; transform: translateY(4px) scale(0.995); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.ph-dock__toastText { font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+
+.ph-refcard {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--ph-line) 82%, transparent);
+  border-radius: var(--ph-r-md);
+  background: color-mix(in srgb, var(--ph-bg) 90%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--ph-shadow-1);
+  overflow: hidden;
+  transition: box-shadow var(--ph-base) var(--ph-ease), transform var(--ph-base) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease);
+  animation: ph-refcard-in var(--ph-base) var(--ph-ease) both;
+}
+.ph-refcard:hover {
+  transform: translateY(-1px);
+  border-color: var(--ph-accent-line);
+  box-shadow: var(--ph-shadow-2);
+}
+.ph-refcard--added { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 4%, var(--ph-bg)); }
+.ph-refcard__main { display: flex; align-items: center; gap: 9px; padding: 8px 8px 8px 10px; min-width: 0; }
+.ph-refcard__icon {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: var(--ph-r-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ph-accent-soft);
+  color: var(--ph-accent-text);
+}
+.ph-refcard__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ph-refcard__title { font-size: var(--ph-fs-12); font-weight: var(--ph-fw-semi); color: var(--ph-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-refcard__sub { font-size: var(--ph-fs-11); color: var(--ph-ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-refcard__error { font-size: var(--ph-fs-11); color: var(--dsw-alias-state-error-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-refcard__actions { display: flex; align-items: center; gap: 2px; flex: none; }
+.ph-refcard__added {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--ph-r-pill);
+  font-size: var(--ph-fs-11);
+  font-weight: var(--ph-fw-medium);
+  color: var(--dsw-alias-state-success-primary);
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-success-primary) 24%, transparent);
+  white-space: nowrap;
+}
+.ph-refcard__remove,
+.ph-refcard__undo { opacity: 0.35; transition: opacity var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease); }
+.ph-refcard:hover .ph-refcard__remove,
+.ph-refcard:hover .ph-refcard__undo { opacity: 0.85; }
+.ph-refcard__remove:hover { color: var(--dsw-alias-state-error-primary); }
+.ph-refcard__chevron {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--ph-r-xs);
+  background: transparent;
+  color: var(--ph-ink-3);
+  cursor: pointer;
+  padding: 0;
+  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease);
+}
+.ph-refcard__chevron:hover { background: var(--ph-surface-2); color: var(--ph-ink); }
+.ph-refcard__chevron:focus-visible { outline: 2px solid var(--ph-accent); outline-offset: 1px; }
+.ph-refcard__materials {
+  border-top: 1px solid var(--ph-line-soft);
+  padding: 4px 6px 4px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: ph-refcard-expand var(--ph-fast) var(--ph-ease) both;
+}
+.ph-refcard__list { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; overscroll-behavior: contain; }
+.ph-refcard__material { display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 4px; border-radius: var(--ph-r-xs); font-size: var(--ph-fs-11); min-width: 0; }
+.ph-refcard__material:hover { background: var(--ph-surface-2); }
+.ph-refcard__materialIcon { flex: none; display: inline-flex; color: var(--ph-ink-3); }
+.ph-refcard__materialTitle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ph-ink); }
+.ph-refcard__materialMeta { flex: none; font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+.ph-refcard__materialRemove { opacity: 0; transition: opacity var(--ph-fast) var(--ph-ease); }
+.ph-refcard__material:hover .ph-refcard__materialRemove,
+.ph-refcard__material:focus-within .ph-refcard__materialRemove { opacity: 0.75; }
+.ph-refcard__foot { display: flex; align-items: center; gap: var(--ph-s2); padding: 4px 4px 3px 2px; border-top: 1px solid var(--ph-line-soft); margin-top: 2px; }
+.ph-refcard__hint { flex: 1; min-width: 0; font-size: var(--ph-fs-11); color: var(--ph-ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@keyframes ph-refcard-in { from { opacity: 0; transform: translateY(4px) scale(0.995); } to { opacity: 1; transform: none; } }
 @keyframes ph-refcard-expand { from { opacity: 0; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) {
-  .ph-refcard, .ph-refcard__materials { animation: none; transition: none; }
-  .ph-refcard:hover { transform: none; }
-}
+
 /* composer token pill: only adds a class, never changes text */
-[data-composer-input="true"] .ph-citetoken,
-[data-composer-input="true"] [data-ph-citetoken="1"] {
-  display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
-  padding: 1px 8px; margin: 0 1px; border-radius: 8px;
-  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent) !important;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 26%, transparent) !important;
-  color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 86%, var(--dsw-alias-label-primary)) !important;
-  font-size: 12.5px !important; line-height: 1.55 !important; font-family: inherit !important;
-  font-weight: 500 !important; letter-spacing: 0 !important; white-space: nowrap;
-  box-decoration-break: clone; -webkit-box-decoration-break: clone;
-  cursor: text; vertical-align: baseline;
+[data-composer-input='true'] .ph-citetoken,
+[data-composer-input='true'] [data-ph-citetoken='1'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 1px 8px;
+  margin: 0 1px;
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-accent-soft) !important;
+  border: 1px solid var(--ph-accent-line) !important;
+  color: color-mix(in srgb, var(--ph-accent) 86%, var(--ph-ink)) !important;
+  font-size: var(--ph-fs-12) !important;
+  line-height: 1.55 !important;
+  font-family: inherit !important;
+  font-weight: var(--ph-fw-medium) !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  cursor: text;
+  vertical-align: baseline;
 }
-[data-composer-input="true"] .ph-citetoken::before,
-[data-composer-input="true"] [data-ph-citetoken="1"]::before {
-  content: ""; width: 12px; height: 12px; flex: none; background: currentColor;
+[data-composer-input='true'] .ph-citetoken::before,
+[data-composer-input='true'] [data-ph-citetoken='1']::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  flex: none;
+  background: currentColor;
   -webkit-mask: var(--ph-citetoken-mask) center / contain no-repeat;
   mask: var(--ph-citetoken-mask) center / contain no-repeat;
 }
-[data-composer-input="true"] .ph-citetoken:hover { background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 16%, transparent) !important; }
-:root, body { --ph-citetoken-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5V5.5A1.5 1.5 0 0 1 5.5 4H19v15.5'/%3E%3Cpath d='M4 19.5A1.5 1.5 0 0 1 5.5 18H19'/%3E%3Cpath d='M8 8h7M8 11.5h5'/%3E%3C/svg%3E"); }
-
-/* v0.15 clickable figure rows in details */
-.ph-figrow { cursor: pointer; border-radius: 8px; transition: background var(--ph-fast) var(--ph-ease); }
-.ph-figrow:hover { background: var(--dsw-alias-bg-layer-2); }
-.ph-figrow:focus-visible { outline: 2px solid var(--ph-accent); outline-offset: 2px; }
-.ph-figrow:active { background: var(--dsw-alias-bg-layer-3); }
-
-/* v0.15 QA: narrow left-pane overlay + backdrop */
-.ph-center__body { position: relative; }
-.ph-leftbackdrop { position: absolute; inset: 0; z-index: 19; border: none; padding: 0; margin: 0; background: color-mix(in srgb, #000 28%, transparent); cursor: pointer; }
-@media (max-width: 980px) {
-  .ph-pane--left { z-index: 21; }
-  .ph-pane--left.ph-pane--mobile-open { display: flex; }
-  .ph-pane--left.ph-pane--collapsed { display: none; }
+[data-composer-input='true'] .ph-citetoken:hover { background: var(--ph-accent-soft-2) !important; }
+:root,
+body {
+  --ph-citetoken-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5V5.5A1.5 1.5 0 0 1 5.5 4H19v15.5'/%3E%3Cpath d='M4 19.5A1.5 1.5 0 0 1 5.5 18H19'/%3E%3Cpath d='M8 8h7M8 11.5h5'/%3E%3C/svg%3E");
 }
 
-/* v0.18: notes tree in the library sidebar + inline note editor */
-.ph-notes-sidebar { border-top: 1px solid var(--dsw-alias-border-secondary); padding-top: 6px; }
-.ph-notes-sidebar .ph-left__sectionHead { position: sticky; top: 0; z-index: 1; background: var(--dsw-alias-bg-base); }
-.ph-notes-sidebar__toggle { display: flex; align-items: center; gap: 5px; min-width: 0; border: 0; padding: 0; background: transparent; color: inherit; font: inherit; font-size: 11.5px; font-weight: 500; letter-spacing: .03em; cursor: pointer; }
-.ph-notes-sidebar__list { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 4px 20px; max-height: 220px; overflow-y: auto; }
-.ph-notes-sidebar__note { display: flex; align-items: center; gap: 6px; min-width: 0; border: 0; border-radius: 6px; padding: 4px 6px; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
-.ph-notes-sidebar__note:hover { background: var(--dsw-alias-bg-secondary); color: var(--dsw-alias-label-primary); }
-.ph-notes-sidebar__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ph-notes-sidebar__folder { flex: 0 0 auto; max-width: 78px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10.5px; color: var(--dsw-alias-label-tertiary); }
-.ph-pane--noteinline { display: flex; flex-direction: column; min-height: 0; }
-.ph-n-inline { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--dsw-alias-bg-base); }
-.ph-n-inline__head { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; height: 40px; padding: 0 12px; border-bottom: 1px solid var(--dsw-alias-border-secondary); color: var(--dsw-alias-label-secondary); }
-.ph-n-inline__title { font-size: 12.5px; font-weight: 500; color: var(--dsw-alias-label-primary); }
-.ph-n-inline > .ph-n-editor { flex: 1; min-height: 0; height: auto; }
-.ph-n-inline__state { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; color: var(--dsw-alias-label-tertiary); font-size: 12px; }
+/* ---- header button ----------------------------------------------------- */
+.ph-hbtn-wrap { position: relative; display: inline-flex; align-items: center; }
+.ph-hbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--ph-r-sm);
+  background: transparent;
+  color: var(--ph-ink-2);
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  cursor: pointer;
+  transition: background-color var(--ph-fast) var(--ph-ease), color var(--ph-fast) var(--ph-ease);
+}
+.ph-hbtn:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--ph-ink); }
+.ph-hbtn__error {
+  position: absolute;
+  top: 34px;
+  right: 0;
+  z-index: 30;
+  white-space: nowrap;
+  padding: 6px 9px;
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-surface-2);
+  border: 1px solid var(--ph-line);
+  box-shadow: var(--dsw-elevation-prominent, var(--ph-shadow-3));
+  color: var(--dsw-alias-state-error-primary);
+  font-size: var(--ph-fs-11);
+  animation: ph-scale-in var(--ph-fast) var(--ph-ease-out);
+}
+
+/* ---- tool cards inside the conversation ------------------------------- */
+.ph-toolcard {
+  margin: 4px 0 4px 4px;
+  border: 1px solid var(--ph-line-soft);
+  border-radius: var(--ph-r-md);
+  background: var(--ph-bg);
+  color: var(--ph-ink);
+  overflow: hidden;
+  animation: ph-fade-in var(--ph-base) var(--ph-ease);
+  max-width: 720px;
+}
+.ph-toolcard__head { display: flex; align-items: center; gap: var(--ph-s2); padding: 8px var(--ph-s3); min-height: 38px; border-bottom: 1px solid var(--ph-line-soft); background: var(--ph-surface-1); }
+.ph-toolcard__icon { color: var(--ph-accent-text); flex: none; display: inline-flex; }
+.ph-toolcard__title { font-size: var(--ph-fs-12); font-weight: var(--ph-fw-semi); white-space: nowrap; }
+.ph-toolcard__sub { color: var(--ph-ink-3); font-size: var(--ph-fs-11); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ph-toolcard__head .ph-spacer { flex: 1; }
+.ph-toolcard__body { display: flex; flex-direction: column; gap: 7px; padding: var(--ph-s2) var(--ph-s3) var(--ph-s3); }
+.ph-toolcard__row { display: flex; align-items: flex-start; gap: var(--ph-s2); min-width: 0; }
+.ph-toolcard__thumb {
+  width: 76px;
+  height: 56px;
+  flex: none;
+  border-radius: var(--ph-r-xs);
+  background: var(--ph-surface-3);
+  border: 1px solid var(--ph-line-soft);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ph-ink-4);
+}
+.ph-toolcard__thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.ph-toolcard__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ph-toolcard__name { font-size: var(--ph-fs-12); font-weight: var(--ph-fw-medium); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ph-toolcard__alt { font-size: var(--ph-fs-11); color: var(--ph-ink-3); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.ph-toolcard__meta { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; color: var(--ph-ink-3); font-size: var(--ph-fs-11); }
+.ph-toolcard__text {
+  margin: 0;
+  font-size: var(--ph-fs-12);
+  line-height: 1.65;
+  color: var(--ph-ink-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ph-toolcard__actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ph-toolcard__note { margin: 0; color: var(--ph-ink-3); font-size: var(--ph-fs-11); }
+.ph-toolcard__error { display: flex; align-items: flex-start; gap: 6px; color: var(--dsw-alias-state-error-primary); font-size: var(--ph-fs-12); }
+.ph-toolcard__error .ph-icon { margin-top: 2px; flex: none; }
+.ph-toolcard__running { display: flex; align-items: center; gap: 7px; color: var(--ph-ink-3); font-size: var(--ph-fs-12); }
+.ph-toolcard__list { display: flex; flex-direction: column; gap: 1px; margin: 0; padding: 0; list-style: none; }
+.ph-toolcard__listitem { display: flex; align-items: flex-start; gap: 7px; padding: 6px 7px; border-radius: var(--ph-r-xs); min-width: 0; }
+.ph-toolcard__listitem:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.ph-toolcard__listitem .ph-toolcard__main { gap: 1px; }
+.ph-toolcard__counts { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.ph-toolcard__fact { display: inline-flex; align-items: center; gap: 5px; color: var(--ph-ink-2); font-size: var(--ph-fs-11); }
+.ph-toolcard__fact b { font-weight: var(--ph-fw-semi); color: var(--ph-ink); }
+.ph-toolcard__warn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--dsw-alias-state-warn-label, var(--dsw-alias-state-warn-primary));
+  font-size: var(--ph-fs-11);
+}
+.ph-toolcard__cite {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 9px;
+  border-radius: var(--ph-r-xs);
+  background: var(--ph-surface-2);
+  font-family: var(--ds-font-family-code, ui-monospace, monospace);
+  font-size: var(--ph-fs-11);
+  line-height: 1.55;
+  color: var(--ph-ink-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---- drag affordances -------------------------------------------------- */
+body.ph-dnd-dragging [data-ph-drag] { opacity: 0.55; }
+.ph-dropoverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--dsw-alias-bg-mask-1, rgba(0, 0, 0, 0.24)) 60%, transparent);
+  opacity: 0;
+  transition: opacity var(--ph-fast) var(--ph-ease);
+}
+.ph-dropoverlay--visible { opacity: 1; }
+.ph-dropoverlay__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 18px 24px;
+  border-radius: var(--ph-r-lg);
+  background: var(--ph-surface-1);
+  border: 1.5px dashed var(--ph-accent-line);
+  box-shadow: var(--dsw-elevation-prominent, var(--ph-shadow-3));
+  font-size: var(--ph-fs-13);
+  animation: ph-scale-in var(--ph-base) var(--ph-ease-out);
+}
+.ph-dropoverlay__text { font-weight: var(--ph-fw-semi); }
+.ph-dropoverlay__hint { font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+.ph-dnd-target { outline: 2px dashed var(--ph-accent) !important; outline-offset: -2px; background: var(--ph-accent-soft) !important; }
+
+/* ---- feedback toasts (component-level) --------------------------------- */
+.ph-fbhost {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 1300;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  max-width: min(560px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.ph-fb {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ph-s2);
+  padding: 8px 11px;
+  border-radius: var(--ph-r-md);
+  background: var(--ph-surface-2);
+  border: 1px solid var(--ph-line);
+  box-shadow: var(--dsw-elevation-prompt, var(--ph-shadow-3));
+  font-size: var(--ph-fs-12);
+  animation: ph-slide-up var(--ph-fast) var(--ph-spring);
+}
+.ph-fb__text { flex: 1; min-width: 0; }
+.ph-fb__action {
+  border: none;
+  background: transparent;
+  color: var(--ph-accent-text);
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  font-weight: var(--ph-fw-semi);
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: var(--ph-r-xs);
+}
+.ph-fb__action:hover { background: var(--ph-accent-soft); }
+.ph-fb__close { border: none; background: transparent; color: var(--ph-ink-3); cursor: pointer; padding: 2px; display: inline-flex; border-radius: var(--ph-r-xs); }
+.ph-fb__close:hover { color: var(--ph-ink); background: var(--dsw-alias-interactive-bg-hover); }
+.ph-fb--success { border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 32%, transparent); }
+.ph-fb--error { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 36%, transparent); }
+.ph-fb--warning { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 36%, transparent); }
+
+/* ---- settings ---------------------------------------------------------- */
+.ph-settings-host { display: contents; }
+.ph-settingsbackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ph-s4);
+  background: var(--dsw-alias-bg-mask-1, rgba(0, 0, 0, 0.36));
+  animation: ph-fade-in var(--ph-fast) var(--ph-ease);
+}
+.ph-settings {
+  width: min(960px, 92vw);
+  height: min(720px, 88vh);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--ph-r-lg);
+  background: var(--ph-bg);
+  border: 1px solid var(--ph-line);
+  box-shadow: var(--dsw-elevation-prominent, var(--ph-shadow-3));
+  overflow: hidden;
+  animation: ph-scale-in var(--ph-base) var(--ph-ease-out);
+}
+.ph-settings__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ph-s2);
+  padding: var(--ph-s3) var(--ph-s4);
+  border-bottom: 1px solid var(--ph-line-soft);
+  flex: none;
+  background: var(--ph-bg);
+}
+.ph-settings__title { font-size: var(--ph-fs-15); font-weight: var(--ph-fw-bold); letter-spacing: -0.008em; }
+.ph-settings__body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--ph-s4) var(--ph-s5) var(--ph-s6); display: flex; flex-direction: column; gap: var(--ph-s5); }
+.ph-settings__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--ph-s2);
+  padding: var(--ph-s2) var(--ph-s4);
+  border-top: 1px solid var(--ph-line-soft);
+  flex: none;
+  background: var(--ph-surface-1);
+}
+.ph-settings__skeleton { display: flex; flex-direction: column; gap: var(--ph-s3); }
+.ph-settings__error {
+  display: flex;
+  gap: var(--ph-s3);
+  align-items: flex-start;
+  padding: var(--ph-s4);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent);
+  border-radius: var(--ph-r-md);
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 6%, transparent);
+}
+.ph-settings__errorTitle { font-weight: var(--ph-fw-semi); margin-bottom: 4px; }
+.ph-settings__section { display: flex; flex-direction: column; gap: var(--ph-s2); }
+.ph-settings__sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--ph-fs-11);
+  font-weight: var(--ph-fw-semi);
+  color: var(--ph-ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ph-settings__sectionHead .ph-caption { text-transform: none; letter-spacing: 0; font-weight: var(--ph-fw-regular); }
+.ph-settings__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--ph-line);
+  border-radius: var(--ph-r-md);
+  padding: 2px var(--ph-s3);
+  background: var(--ph-surface-1);
+}
+.ph-settings__testrow { display: flex; align-items: center; gap: var(--ph-s2); flex-wrap: wrap; }
+
+.ph-capcard {
+  border: 1px solid var(--ph-line);
+  border-radius: var(--ph-r-md);
+  background: var(--ph-surface-1);
+  padding: var(--ph-s3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ph-s2);
+  transition: border-color var(--ph-fast) var(--ph-ease), box-shadow var(--ph-fast) var(--ph-ease);
+}
+.ph-capcard:hover { border-color: var(--ph-line-strong); box-shadow: var(--ph-shadow-1); }
+.ph-capcard__head { display: flex; align-items: flex-start; gap: var(--ph-s2); }
+.ph-capcard__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ph-r-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ph-accent-soft);
+  color: var(--ph-accent-text);
+  flex: none;
+}
+.ph-capcard__titlewrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ph-capcard__title { font-size: var(--ph-fs-13); font-weight: var(--ph-fw-semi); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ph-capcard__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px 16px; }
+.ph-capcard__actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ph-fact { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ph-fact__label { font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+.ph-fact__value { font-size: var(--ph-fs-12); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-fact__value--mono { font-family: var(--ds-font-family-code, ui-monospace, monospace); font-size: var(--ph-fs-11); }
+
+.ph-switch {
+  width: 36px;
+  height: 21px;
+  padding: 2px;
+  border-radius: var(--ph-r-pill);
+  border: 1px solid var(--ph-line-strong);
+  background: var(--ph-surface-3);
+  cursor: pointer;
+  flex: none;
+  transition: background-color var(--ph-base) var(--ph-ease), border-color var(--ph-base) var(--ph-ease);
+}
+.ph-switch--on { background: var(--ph-accent); border-color: var(--ph-accent-text); }
+.ph-switch--disabled { opacity: 0.5; cursor: not-allowed; }
+.ph-switch__dot {
+  display: block;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transform: translateX(0);
+  transition: transform var(--ph-base) var(--ph-spring);
+}
+.ph-switch--on .ph-switch__dot { transform: translateX(15px); }
+
+.ph-job {
+  border: 1px solid var(--ph-line);
+  border-radius: var(--ph-r-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: var(--ph-surface-2);
+}
+.ph-job--error { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent); }
+.ph-job__head { display: flex; align-items: center; gap: 6px; font-size: var(--ph-fs-11); flex-wrap: wrap; }
+.ph-progress { height: 4px; border-radius: var(--ph-r-pill); background: var(--ph-surface-3); overflow: hidden; }
+.ph-progress__bar { display: block; height: 100%; background: var(--ph-accent); border-radius: var(--ph-r-pill); transition: width var(--ph-panel) var(--ph-ease); }
+.ph-settingrow { display: flex; align-items: center; gap: var(--ph-s2); padding: 9px 0; border-bottom: 1px solid var(--ph-line-soft); }
+.ph-settingrow:last-child { border-bottom: none; }
+.ph-settingrow__name { flex: 1; min-width: 0; font-size: var(--ph-fs-12); display: flex; align-items: center; gap: 6px; }
+.ph-testbox {
+  border: 1px solid var(--ph-line);
+  border-radius: var(--ph-r-sm);
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--ph-surface-2);
+}
+.ph-testbox--error { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent); }
+.ph-testbox__head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ph-testbox__text { font-size: var(--ph-fs-12); line-height: 1.55; }
+.ph-channelgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(156px, 1fr)); gap: 7px; }
+.ph-channel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: var(--ph-r-sm);
+  border: 1px solid var(--ph-line);
+  background: var(--ph-surface-1);
+  font-size: var(--ph-fs-12);
+}
+.ph-channel__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ph-ink-2); }
+.ph-aboutgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 7px 16px;
+  padding: 10px var(--ph-s3);
+  border: 1px solid var(--ph-line);
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-surface-1);
+}
+
+/* ---- translation settings sheet --------------------------------------- */
+.ph-sheetbackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  display: flex;
+  justify-content: flex-end;
+  background: var(--dsw-alias-bg-mask-1, rgba(0, 0, 0, 0.28));
+  animation: ph-fade-in var(--ph-fast) var(--ph-ease);
+}
+.ph-sheet {
+  width: min(392px, calc(100vw - 16px));
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ph-bg);
+  border-left: 1px solid var(--ph-line);
+  box-shadow: var(--dsw-elevation-prominent, var(--ph-shadow-3));
+  animation: ph-slide-left var(--ph-panel) var(--ph-ease-out);
+}
+.ph-sheet__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--ph-s3) var(--ph-s3) var(--ph-s2) var(--ph-s4);
+  border-bottom: 1px solid var(--ph-line-soft);
+  flex: none;
+}
+.ph-sheet__title { flex: 1; font-size: var(--ph-fs-14); font-weight: var(--ph-fw-semi); }
+.ph-sheet__body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--ph-s3) var(--ph-s4) var(--ph-s6); display: flex; flex-direction: column; gap: var(--ph-s2); }
+.ph-sheet__sectionTitle {
+  font-size: var(--ph-fs-11);
+  font-weight: var(--ph-fw-semi);
+  color: var(--ph-ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: var(--ph-s2);
+}
+.ph-sheet__row { display: flex; align-items: center; gap: 6px; }
+.ph-sheet__testrow { display: flex; align-items: center; gap: var(--ph-s2); }
+.ph-sheet__foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--ph-s2) var(--ph-s4);
+  border-top: 1px solid var(--ph-line-soft);
+  flex: none;
+  background: var(--ph-surface-1);
+}
+.ph-enginelist { display: flex; flex-direction: column; gap: 4px; }
+.ph-engine {
+  display: flex;
+  align-items: center;
+  gap: var(--ph-s2);
+  padding: 8px 9px;
+  border: 1px solid var(--ph-line);
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-surface-1);
+  color: inherit;
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--ph-fast) var(--ph-ease), background-color var(--ph-fast) var(--ph-ease);
+}
+.ph-engine:hover { border-color: var(--ph-line-strong); }
+.ph-engine--active { border-color: var(--ph-accent-line); background: var(--ph-accent-soft); }
+.ph-engine__dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--ph-line-strong); flex: none; transition: box-shadow var(--ph-fast) var(--ph-ease), border-color var(--ph-fast) var(--ph-ease); }
+.ph-engine__dot--active { border-color: var(--ph-accent-text); box-shadow: inset 0 0 0 3px var(--ph-accent); }
+.ph-engine__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ph-engine__label { font-size: var(--ph-fs-12); font-weight: var(--ph-fw-medium); }
+.ph-engine__hint { font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+.ph-testresult {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 10px;
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-surface-2);
+  border: 1px solid var(--ph-line);
+}
+.ph-testresult--error { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent); }
+.ph-testresult__head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ph-testresult__text { font-size: var(--ph-fs-12); line-height: 1.55; }
+.ph-disclaimer {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 8px 9px;
+  border-radius: var(--ph-r-sm);
+  border: 1px dashed var(--ph-line-strong);
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-11);
+  line-height: 1.55;
+}
+
+/* favorites */
+.ph-favoriterow { display: flex; align-items: center; gap: 6px; }
+.ph-favbtn.ph-favbtn--on { color: var(--dsw-alias-state-warn-primary); }
+.ph-favlabel { font-size: var(--ph-fs-12); color: var(--ph-ink-2); }
+.ph-favlabel--on { color: var(--dsw-alias-state-warn-primary); }
+
+/* skeletons */
+.ph-left-skeleton { display: flex; flex-direction: column; gap: var(--ph-s2); padding: var(--ph-s3); }
+.ph-table-skeleton { display: flex; flex-direction: column; gap: 1px; padding: var(--ph-s2) var(--ph-s3); }
+.ph-table-skeleton__row { display: flex; align-items: center; gap: var(--ph-s3); height: var(--ph-row); border-bottom: 1px solid var(--ph-line-soft); }
+.ph-table-skeleton__main { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
+/* =========================================================== 6 responsive */
+/* The table keeps its column budget in step with the pane width: hide the
+   low-value columns and drop the matching grid track at each step so the
+   header and rows never drift apart. */
+@media (max-width: 1460px) {
+  .ph-table { --ph-table-cols: 32px minmax(180px, 1fr) 118px 52px 116px 40px 44px 32px; }
+  .ph-table__head > :nth-child(5),
+  .ph-rowitem > :nth-child(5) { display: none; }
+}
+@media (max-width: 1280px) {
+  .ph-center__topbar { padding: var(--ph-s3) var(--ph-s4); }
+  .ph-left__head { padding: var(--ph-s3) var(--ph-s2) var(--ph-s2); }
+  .ph-details__scroll { padding: var(--ph-s3) var(--ph-s3) var(--ph-s6); }
+  .ph-figgrid { grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); }
+}
+@media (max-width: 1180px) {
+  .ph-table { --ph-table-cols: 32px minmax(160px, 1fr) 52px 112px 40px 44px 32px; }
+  .ph-table__head > :nth-child(3),
+  .ph-rowitem > :nth-child(3) { display: none; }
+  .ph-pane--right { width: min(304px, 34%); }
+  .ph-center__subtitle { display: none; }
+  .ph-center__globalsearch { max-width: 320px; }
+}
+@media (max-width: 980px) {
+  /* the collection pane becomes a drawer over the table */
+  .ph-pane--left {
+    position: absolute;
+    z-index: 21;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 248px;
+    box-shadow: var(--dsw-elevation-prominent, var(--ph-shadow-3));
+    background: var(--ph-surface-1);
+    transform: translateX(-100%);
+    transition: transform var(--ph-panel) var(--ph-ease-out);
+    border-right: 1px solid var(--ph-line);
+  }
+  .ph-pane--left.ph-pane--mobile-open { transform: translateX(0); }
+  .ph-pane--left.ph-pane--collapsed { display: none; }
+  .ph-pane--right { width: min(300px, 38%); }
+  .ph-center__topbar { min-height: 54px; }
+  .ph-center__title { font-size: var(--ph-fs-15); }
+  .ph-toolbar { padding: var(--ph-s2); }
+  .ph-batch { max-width: calc(100% - 20px); }
+}
+@media (max-width: 760px) {
+  .ph-pane--right {
+    position: absolute;
+    z-index: 18;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: min(320px, 88%);
+    box-shadow: var(--dsw-elevation-prominent, var(--ph-shadow-3));
+    border-left: 1px solid var(--ph-line);
+  }
+  .ph-pane--right.ph-pane--collapsed { display: none; }
+  .ph-center__globalsearch { display: none; }
+  .ph-center__topbar { gap: var(--ph-s2); padding: var(--ph-s2) var(--ph-s3); }
+  .ph-center__brand { gap: 6px; }
+  .ph-table { --ph-table-cols: 30px minmax(120px, 1fr) 50px 38px 30px; }
+  .ph-table__head > :nth-child(6),
+  .ph-rowitem > :nth-child(6),
+  .ph-table__head > :nth-child(8),
+  .ph-rowitem > :nth-child(8) { display: none; }
+  .ph-toolbar__search { max-width: none; }
+  .ph-details__scroll { padding: var(--ph-s3) var(--ph-s3) var(--ph-s6); }
+  .ph-batch { bottom: 10px; padding: 6px 7px; }
+  .ph-statusbar { padding: 4px var(--ph-s3) 5px; }
+  .ph-statusbar__group:first-child .ph-statusbar__chip:nth-child(n + 3) { display: none; }
+}
+@media (max-width: 560px) {
+  .ph-settings { width: calc(100vw - 16px); height: calc(100vh - 16px); }
+  .ph-settings__body { padding: var(--ph-s3); }
+  .ph-capcard__facts { grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); }
+  .ph-citation__side { display: none; }
+}
+
+/* ====================================================== 7 reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ph-app *,
+  .ph-app *::before,
+  .ph-app *::after,
+  .ph-center *,
+  .ph-drawer *,
+  .ph-dock *,
+  .ph-toolcard *,
+  .ph-sidebar *,
+  .ph-settings *,
+  .ph-sheet *,
+  .ph-settingsbackdrop *,
+  .ph-sheetbackdrop *,
+  .ph-modalbackdrop * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ph-skeleton::after { animation: none; }
+  .ph-gridcard:hover,
+  .ph-figcard:hover,
+  .ph-tagchip:hover,
+  .ph-side-fig:hover,
+  .ph-refcard:hover { transform: none; }
+  .ph-rowitem:nth-child(n) { animation: none; }
+  .ph-switch__dot { transition: none; }
+}
+
+/* ---- compatibility aliases --------------------------------------------- */
+/* Column modifier classes are still emitted by the table rows; the responsive
+   rules above work on child order so header and body always stay in step. */
+.ph-rowitem__cell--authors,
+.ph-rowitem__cell--venue,
+.ph-rowitem__cell--tags,
+.ph-rowitem__cell--annot { padding: 0 6px; }
+.ph-rowitem__headcell--authors,
+.ph-rowitem__headcell--venue,
+.ph-rowitem__headcell--tags,
+.ph-rowitem__headcell--annot { display: flex; align-items: center; }
+
+.ph-collectionlist { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; }
+.ph-collectionlist__row { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: var(--ph-r-xs); transition: background-color var(--ph-fast) var(--ph-ease); }
+.ph-collectionlist__row:hover { background: var(--ph-surface-2); }
+.ph-collectionlist__row--busy { opacity: 0.72; }
+
+/* ---- view transitions + late polish ------------------------------------ */
+/* Route changes (library \u21C4 reader \u21C4 notes) mount a fresh surface; a short
+   fade keeps the swap from feeling like a flash. */
+@keyframes ph-view-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.ph-app > .ph-r-reader,
+.ph-app > .ph-n-app { animation: ph-view-in var(--ph-base) var(--ph-ease-out); }
+
+.ph-folder--nested { position: relative; }
+.ph-folder--nested .ph-folder__row { min-height: 28px; }
+.ph-folder__row--active .ph-folder__count { color: var(--ph-accent-text); }
+
+/* the details rail keeps its tab strip on one line, scrollable when tight */
+.ph-details__tabs .ph-tabs { flex-wrap: wrap; overflow-x: visible; }
+.ph-details__tabs .ph-tabs::-webkit-scrollbar { display: none; }
+.ph-details__tabs .ph-tab { height: 33px; padding: 0 8px; font-size: var(--ph-fs-12); flex: none; }
+.ph-details__tabs .ph-tab--active::after { left: 6px; right: 6px; }
+
+/* empty states inside panes should not stretch the pane */
+.ph-details__empty .ph-empty { flex: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-app > .ph-r-reader,
+  .ph-app > .ph-n-app { animation: none; }
+}
+
+/* Keep transient toasts clear of the floating batch bar when it is open. */
+.ph-center:has(.ph-pane--batch) .ph-toasts { bottom: 96px; }
+
+/* ==================================================== 8 colour system */
+/* Blue is the product accent; light purple is reserved for secondary tool
+   buttons and AI marks. No gradients \u2014 flat tints sit better against host
+   chrome and keep text contrast predictable in both themes. */
+
+/* ---- brand mark + primary action ---------------------------------------- */
+.ph-center__mark {
+  color: #ffffff;
+  background: var(--ph-mark);
+  box-shadow: 0 3px 12px -4px color-mix(in srgb, var(--ph-mark) 45%, transparent);
+}
+.ph-btn--primary {
+  background: var(--ph-btn-fill);
+  color: #ffffff;
+  box-shadow: 0 2px 10px -2px color-mix(in srgb, var(--ph-btn-fill) 45%, transparent);
+}
+.ph-btn--primary:hover:not(:disabled) {
+  background: var(--ph-btn-fill-hover);
+  box-shadow: 0 5px 18px -4px color-mix(in srgb, var(--ph-btn-fill) 50%, transparent);
+  transform: translateY(-1px);
+}
+.ph-btn--primary .ph-spinner { border-color: rgba(255, 255, 255, 0.35); border-top-color: #ffffff; }
+
+/* light purple is the secondary button language (matches the tool buttons) */
+.ph-btn--soft {
+  color: var(--ph-soft-text);
+  background: var(--ph-soft-bg);
+}
+.ph-btn--soft:hover:not(:disabled) { background: var(--ph-soft-bg-2); color: var(--ph-soft-text); }
+.ph-iconbtn--active { background: var(--ph-soft-bg); color: var(--ph-soft-text); }
+.ph-iconbtn--active:hover:not(:disabled) { background: var(--ph-soft-bg-2); color: var(--ph-soft-text); }
+
+/* ---- chrome tints + landmarks ------------------------------------------ */
+.ph-center__topbar { background: color-mix(in srgb, var(--ph-accent) 3%, var(--ph-bg)); }
+.ph-table__head { background: color-mix(in srgb, var(--ph-accent) 4%, var(--ph-bg)); }
+
+/* smart views: blue / purple / blue / coral \u2014 colour with a reason */
+.ph-left__list > .ph-navitem:nth-child(1) .ph-navitem__icon { color: var(--ph-accent-text); }
+.ph-left__list > .ph-navitem:nth-child(2) .ph-navitem__icon { color: var(--ph-soft-text); }
+.ph-left__list > .ph-navitem:nth-child(3) .ph-navitem__icon { color: var(--ph-accent-text); }
+.ph-left__list > .ph-navitem:nth-child(4) .ph-navitem__icon { color: var(--ph-canva-coral); }
+
+/* a 3px accent bar marks each section header */
+.ph-left__sectionHead { position: relative; padding-left: 12px; }
+.ph-left__sectionHead::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 3px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 2px;
+  background: var(--ph-accent);
+  opacity: 0.75;
+}
+
+/* ---- active states ------------------------------------------------------ */
+.ph-tab--active::after { background: var(--ph-accent); }
+.ph-navitem--active::before { background: var(--ph-accent); }
+.ph-navitem--active,
+.ph-navitem--active .ph-navitem__icon { color: var(--ph-accent-text); }
+.ph-tagchip--active { color: var(--ph-accent-text); }
+.ph-collection--drop { color: var(--ph-accent-text); }
+.ph-rowitem--selected { background: color-mix(in srgb, var(--ph-accent) 10%, var(--ph-bg)); }
+.ph-rowitem--selected:hover { background: color-mix(in srgb, var(--ph-accent) 14%, var(--ph-bg)); }
+.ph-rowitem--selected::before { background: var(--ph-accent); }
+.ph-rowitem__dot--unread { background: var(--ph-accent); border-color: var(--ph-accent); }
+.ph-statusdot--reading { background: var(--ph-accent); box-shadow: 0 0 0 2px var(--ph-accent-soft); }
+.ph-side-row--selected { background: color-mix(in srgb, var(--ph-accent) 11%, transparent); border-color: var(--ph-accent-line); }
+.ph-duprow--primary { background: color-mix(in srgb, var(--ph-accent) 9%, transparent); }
+.ph-progress__bar { background: var(--ph-accent); }
+.ph-switch--on { background: var(--ph-accent); border-color: var(--ph-accent); }
+.ph-spinner { border-top-color: var(--ph-accent); }
+
+/* ---- data colours ------------------------------------------------------- */
+.ph-collection__dot { background: var(--ph-canva-sky); }
+.ph-collection__dot[data-color='blue'] { background: var(--ph-canva-sky); }
+.ph-collection__dot[data-color='green'] { background: var(--ph-canva-mint); }
+.ph-collection__dot[data-color='amber'] { background: var(--ph-canva-tangerine); }
+.ph-collection__dot[data-color='red'] { background: var(--ph-canva-coral); }
+.ph-collection__dot[data-color='violet'] { background: var(--ph-canva-lavender); }
+.ph-collection__dot[data-color='slate'] { background: #8b95a5; }
+
+.ph-tagchip[data-tag-color='0'], .ph-badge[data-tag-color='0'], [data-tag-color='0'] { --ph-tag-tone: var(--ph-canva-purple); }
+.ph-tagchip[data-tag-color='1'], [data-tag-color='1'] { --ph-tag-tone: var(--ph-canva-mint); }
+.ph-tagchip[data-tag-color='2'], [data-tag-color='2'] { --ph-tag-tone: var(--ph-canva-tangerine); }
+.ph-tagchip[data-tag-color='3'], [data-tag-color='3'] { --ph-tag-tone: var(--ph-canva-coral); }
+.ph-tagchip[data-tag-color='4'], [data-tag-color='4'] { --ph-tag-tone: var(--ph-canva-sky); }
+.ph-tagchip[data-tag-color='5'], [data-tag-color='5'] { --ph-tag-tone: var(--ph-canva-lavender); }
+.ph-tagchip[data-tag-color='6'], [data-tag-color='6'] { --ph-tag-tone: var(--ph-canva-cyan); }
+.ph-tagchip[data-tag-color='7'], [data-tag-color='7'] { --ph-tag-tone: var(--ph-canva-amber); }
+
+.ph-detailannot--yellow { border-left-color: var(--ph-canva-tangerine); }
+.ph-detailannot--green { border-left-color: var(--ph-canva-mint); }
+.ph-detailannot--blue { border-left-color: var(--ph-canva-sky); }
+.ph-detailannot--red { border-left-color: var(--ph-canva-coral); }
+.ph-detailannot--purple { border-left-color: var(--ph-canva-lavender); }
+.ph-side-annot { border-left-color: var(--ph-canva-tangerine); }
+.ph-side-annot--green { border-left-color: var(--ph-canva-mint); }
+.ph-side-annot--blue { border-left-color: var(--ph-canva-sky); }
+.ph-side-annot--red { border-left-color: var(--ph-canva-coral); }
+.ph-side-annot--purple { border-left-color: var(--ph-canva-lavender); }
+.ph-color--blue { background: var(--ph-canva-sky); }
+.ph-color--green { background: var(--ph-canva-mint); }
+.ph-color--amber, .ph-color--yellow { background: var(--ph-canva-tangerine); }
+.ph-color--red { background: var(--ph-canva-coral); }
+.ph-color--violet { background: var(--ph-canva-lavender); }
+
+/* ---- small brand moments ------------------------------------------------ */
+.ph-refcard__icon { background: var(--ph-accent-soft); color: var(--ph-accent-text); }
+.ph-dock__icon, .ph-toolcard__icon { color: var(--ph-accent-text); }
+.ph-refcard--added { background: color-mix(in srgb, var(--ph-canva-mint) 6%, var(--ph-bg)); }
+.ph-empty__icon { color: var(--ph-accent-text); opacity: 0.5; }
+.ph-badge--business { color: var(--ph-soft-text); background: var(--ph-soft-bg); }
+
+/* ---- coloured hover feedback ------------------------------------------- */
+.ph-rowitem:not(.ph-rowitem--selected):hover { background: color-mix(in srgb, var(--ph-accent) 5%, var(--ph-bg)); }
+.ph-navitem:not(.ph-navitem--active):hover,
+.ph-collection:not(.ph-collection--active):hover { background: color-mix(in srgb, var(--ph-accent) 7%, transparent); }
+.ph-side-row:not(.ph-side-row--selected):hover { background: color-mix(in srgb, var(--ph-accent) 6%, transparent); }
+.ph-drow:not(.ph-drow--selected):hover { background: color-mix(in srgb, var(--ph-accent) 6%, transparent); }
+.ph-command--active, .ph-command:hover,
+.ph-citation__row--active, .ph-citation__row:hover { background: color-mix(in srgb, var(--ph-accent) 10%, transparent); }
+.ph-figrow:hover { background: color-mix(in srgb, var(--ph-accent) 5%, transparent); }
+.ph-toolcard__listitem:hover { background: color-mix(in srgb, var(--ph-accent) 6%, transparent); }
+.ph-gridcard:hover, .ph-figcard:hover { border-color: var(--ph-accent-line); }
+.ph-fchip:not(.ph-fchip--active):hover { background: color-mix(in srgb, var(--ph-accent) 8%, transparent); }
+.ph-segment__item:not(.ph-segment__item--active):hover { color: var(--ph-accent-text); }
+.ph-rowitem--focused { box-shadow: inset 0 0 0 1.5px var(--ph-accent-line); }
+
+/* ---- active states survive hover --------------------------------------- */
+.ph-navitem--active:hover { background: var(--dsw-alias-interactive-bg-active); color: var(--ph-accent-text); }
+.ph-collection--active:hover { background: var(--dsw-alias-interactive-bg-active); color: var(--ph-ink); }
+.ph-tagchip--active:hover { background: var(--ph-accent-soft-2); color: var(--ph-accent-text); border-color: var(--ph-accent-line); }
+.ph-fchip--active:hover { background: var(--ph-accent-soft-2); color: var(--ph-accent-text); border-color: var(--ph-accent-line); }
+.ph-side-row--selected:hover { background: color-mix(in srgb, var(--ph-accent) 13%, transparent); border-color: var(--ph-accent-line); }
+.ph-drow--selected:hover { background: color-mix(in srgb, var(--ph-accent) 9%, transparent); border-color: var(--ph-accent-line); }
+.ph-segment__item--active:hover { color: var(--ph-ink); }
+
+/* ============================================== 9 sliding option bubble */
+/* A measured highlight slides between the options of one control. The
+   components add it when their group can be measured; without it the old
+   static active style remains, so nothing breaks if measurement fails. */
+.ph-segment,
+.ph-tabs,
+.ph-left__list,
+.ph-r-tabs,
+.ph-r-segment,
+.ph-r-ai__modes,
+.ph-r-tr__modes {
+  position: relative;
+}
+.ph-thumb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition:
+    transform 320ms cubic-bezier(0.22, 0.8, 0.26, 1) 70ms,
+    width 280ms cubic-bezier(0.22, 0.8, 0.26, 1) 70ms,
+    height 280ms cubic-bezier(0.22, 0.8, 0.26, 1) 70ms;
+  will-change: transform, width, height;
+}
+.ph-thumb__inner {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--ph-r-sm);
+  background: color-mix(in srgb, var(--ph-accent) 22%, var(--ph-bg));
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 2px 6px -3px color-mix(in srgb, var(--ph-accent) 45%, transparent),
+    0 0 0 1px var(--ph-accent-line),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  animation: ph-thumb-pop 420ms cubic-bezier(0.22, 0.8, 0.26, 1);
+}
+/* The bubble first sucks inward from its full size, then springs out. */
+@keyframes ph-thumb-pop {
+  0% { transform: scale(1, 1); }
+  32% { transform: scale(0.9, 0.93); }
+  68% { transform: scale(0.985, 0.99); }
+  100% { transform: scale(1, 1); }
+}
+.ph-thumb--pill .ph-thumb__inner { border-radius: var(--ph-r-pill); }
+.ph-thumb--bar .ph-thumb__inner {
+  border-radius: 2px;
+  background: var(--ph-accent);
+  box-shadow: none;
+  animation: none;
+}
+.ph-left__list .ph-thumb__inner { background: color-mix(in srgb, var(--ph-accent) 18%, var(--ph-bg)); }
+
+.ph-segment__item,
+.ph-tab,
+.ph-navitem,
+.ph-r-tab,
+.ph-r-segment__item,
+.ph-r-ai__mode,
+.ph-r-tr__mode {
+  position: relative;
+  z-index: 1;
+  transition:
+    color var(--ph-fast, 140ms) var(--ph-ease, ease),
+    background-color var(--ph-fast, 140ms) var(--ph-ease, ease),
+    transform 160ms var(--ph-ease, ease);
+}
+.ph-segment__item:active,
+.ph-tab:active,
+.ph-navitem:active,
+.ph-r-tab:active,
+.ph-r-segment__item:active,
+.ph-r-ai__mode:active,
+.ph-r-tr__mode:active {
+  transform: scale(0.96);
+}
+
+.ph-segment--sliding .ph-segment__item--active,
+.ph-tabs--sliding.ph-tabs--pill .ph-tab--active,
+.ph-left__list--sliding .ph-navitem--active,
+.ph-r-tabs--sliding .ph-r-tab--active,
+.ph-r-segment--sliding .ph-r-segment__item--active,
+.ph-r-ai__modes--sliding .ph-r-ai__mode--active,
+.ph-r-tr__modes--sliding .ph-r-tr__mode--active {
+  background: transparent;
+  box-shadow: none;
+}
+.ph-tabs--sliding.ph-tabs--underline .ph-tab--active::after { display: none; }
+.ph-r-tabs--sliding .ph-r-tab--active::after { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-thumb { transition: none; }
+  .ph-thumb__inner { animation: none; }
+  .ph-btn--primary:hover:not(:disabled) { transform: none; }
+}
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -2794,10 +4802,74 @@ function createLibraryController({ api }) {
 }
 
 // src/core/boundary.jsx
-var import_react5 = __toESM(require("react"), 1);
+var import_react6 = __toESM(require("react"), 1);
 
 // src/core/primitives.jsx
+var import_react5 = __toESM(require("react"), 1);
+
+// src/core/motion.js
 var import_react4 = __toESM(require("react"), 1);
+function useSlidingThumb() {
+  const ref = import_react4.default.useRef(null);
+  const [rect, setRect] = import_react4.default.useState(null);
+  const measure = import_react4.default.useCallback(() => {
+    const host = ref.current;
+    if (!host || typeof host.querySelector !== "function") return;
+    const active = host.querySelector('[data-ph-active="true"]');
+    const width = active ? active.offsetWidth || active.getBoundingClientRect().width : 0;
+    if (!active || !width) {
+      setRect((previous) => previous === null ? previous : null);
+      return;
+    }
+    const next = { x: active.offsetLeft, y: active.offsetTop, w: width, h: active.offsetHeight };
+    setRect(
+      (previous) => previous && previous.x === next.x && previous.y === next.y && previous.w === next.w && previous.h === next.h ? previous : next
+    );
+  }, []);
+  import_react4.default.useLayoutEffect(measure);
+  import_react4.default.useEffect(() => {
+    const host = ref.current;
+    if (!host) return void 0;
+    let observer2 = null;
+    if (typeof ResizeObserver !== "undefined") {
+      observer2 = new ResizeObserver(measure);
+      try {
+        observer2.observe(host);
+      } catch {
+        observer2 = null;
+      }
+    }
+    if (typeof window !== "undefined") window.addEventListener("resize", measure);
+    return () => {
+      if (observer2) observer2.disconnect();
+      if (typeof window !== "undefined") window.removeEventListener("resize", measure);
+    };
+  }, [measure]);
+  return { ref, rect };
+}
+function SlidingThumb(props) {
+  const rect = props.rect;
+  if (!rect) return null;
+  const inset = props.inset || 0;
+  const height = props.height != null ? props.height : Math.max(2, rect.h - inset * 2);
+  const top = props.alignBottom ? rect.y + rect.h - height : rect.y + inset;
+  return h(
+    "span",
+    {
+      className: "ph-thumb" + (props.className ? " " + props.className : ""),
+      style: {
+        width: rect.w + "px",
+        height: height + "px",
+        transform: "translate(" + rect.x + "px," + top + "px)"
+      },
+      "aria-hidden": "true"
+    },
+    /* Remounting on selection change replays the squash/pop animation. */
+    h("span", { key: props.popKey == null ? "thumb" : String(props.popKey), className: "ph-thumb__inner" })
+  );
+}
+
+// src/core/primitives.jsx
 function Button(props) {
   const variant = props.variant || "secondary";
   const size = props.size || "md";
@@ -2889,9 +4961,24 @@ function SearchInput(props) {
 }
 function TabStrip(props) {
   const variant = props.variant || "underline";
+  const slider = useSlidingThumb();
+  const underline = variant === "underline";
   return h(
     "div",
-    { className: "ph-tabs ph-tabs--" + variant + (props.className ? " " + props.className : ""), role: "tablist", "aria-label": props["aria-label"] },
+    {
+      className: "ph-tabs ph-tabs--" + variant + (slider.rect ? " ph-tabs--sliding" : "") + (props.className ? " " + props.className : ""),
+      ref: slider.ref,
+      role: "tablist",
+      "aria-label": props["aria-label"]
+    },
+    h(SlidingThumb, {
+      rect: slider.rect,
+      popKey: props.value,
+      className: underline ? "ph-thumb--bar" : "ph-thumb--pill",
+      height: underline ? 3 : void 0,
+      alignBottom: underline,
+      inset: underline ? 0 : 3
+    }),
     (props.items || []).map(
       (item) => h(
         "button",
@@ -2900,6 +4987,7 @@ function TabStrip(props) {
           type: "button",
           role: "tab",
           "aria-selected": item.id === props.value ? "true" : "false",
+          "data-ph-active": item.id === props.value ? "true" : void 0,
           className: "ph-tab" + (item.id === props.value ? " ph-tab--active" : ""),
           onClick: () => props.onChange(item.id)
         },
@@ -2911,15 +4999,23 @@ function TabStrip(props) {
   );
 }
 function Segmented(props) {
+  const slider = useSlidingThumb();
   return h(
     "div",
-    { className: "ph-segment" + (props.className ? " " + props.className : ""), role: "group", "aria-label": props["aria-label"] },
+    {
+      className: "ph-segment" + (slider.rect ? " ph-segment--sliding" : "") + (props.className ? " " + props.className : ""),
+      ref: slider.ref,
+      role: "group",
+      "aria-label": props["aria-label"]
+    },
+    h(SlidingThumb, { rect: slider.rect, popKey: props.value }),
     (props.items || []).map(
       (item) => h(
         "button",
         {
           key: item.id,
           type: "button",
+          "data-ph-active": item.id === props.value ? "true" : void 0,
           className: "ph-segment__item" + (item.id === props.value ? " ph-segment__item--active" : ""),
           onClick: () => props.onChange(item.id),
           title: item.title,
@@ -2970,10 +5066,10 @@ function ToastStack(props) {
   );
 }
 function useToasts() {
-  const counter = import_react4.default.useRef(0);
-  const timers = import_react4.default.useRef(/* @__PURE__ */ new Map());
-  const [toasts, setToasts] = import_react4.default.useState([]);
-  const dismiss2 = import_react4.default.useCallback((id) => {
+  const counter = import_react5.default.useRef(0);
+  const timers = import_react5.default.useRef(/* @__PURE__ */ new Map());
+  const [toasts, setToasts] = import_react5.default.useState([]);
+  const dismiss2 = import_react5.default.useCallback((id) => {
     const timer2 = timers.current.get(id);
     if (timer2) {
       clearTimeout(timer2);
@@ -2981,7 +5077,7 @@ function useToasts() {
     }
     setToasts((list) => list.filter((toast) => toast.id !== id));
   }, []);
-  const push = import_react4.default.useCallback(
+  const push = import_react5.default.useCallback(
     (tone, text2) => {
       if (!text2) return;
       counter.current += 1;
@@ -2995,7 +5091,7 @@ function useToasts() {
     },
     []
   );
-  import_react4.default.useEffect(
+  import_react5.default.useEffect(
     () => () => {
       timers.current.forEach((timer2) => clearTimeout(timer2));
       timers.current.clear();
@@ -3015,7 +5111,7 @@ function formatTime(value) {
 }
 
 // src/core/boundary.jsx
-var ErrorBoundary = class extends import_react5.default.Component {
+var ErrorBoundary = class extends import_react6.default.Component {
   constructor(props) {
     super(props);
     this.state = { error: null };
@@ -3061,7 +5157,7 @@ function withBoundary(Component, surface) {
 }
 
 // src/surfaces/panel-icon.jsx
-var import_react6 = __toESM(require("react"), 1);
+var import_react7 = __toESM(require("react"), 1);
 function PanelIcon(props) {
   const size = Number(props && props.size) || 24;
   return h(
@@ -3090,7 +5186,7 @@ function PanelIcon(props) {
 }
 
 // src/surfaces/center.jsx
-var import_react40 = __toESM(require("react"), 1);
+var import_react41 = __toESM(require("react"), 1);
 
 // src/core/bus.js
 var handlers = /* @__PURE__ */ new Map();
@@ -3361,7 +5457,7 @@ function createStore2() {
 var navigation = createStore2();
 
 // src/surfaces/library/shell.jsx
-var import_react22 = __toESM(require("react"), 1);
+var import_react23 = __toESM(require("react"), 1);
 
 // src/core/files.js
 function formatBytes(bytes2) {
@@ -3432,7 +5528,7 @@ async function copyText(text2) {
 }
 
 // src/core/texts.js
-var import_react7 = __toESM(require("react"), 1);
+var import_react8 = __toESM(require("react"), 1);
 function firstText() {
   for (let index = 0; index < arguments.length; index += 1) {
     const value = arguments[index];
@@ -3474,7 +5570,7 @@ function metaLine(t, paper) {
 }
 
 // src/surfaces/library/collections.jsx
-var import_react10 = __toESM(require("react"), 1);
+var import_react11 = __toESM(require("react"), 1);
 
 // src/core/tag-colors.js
 var PALETTE = 8;
@@ -3486,7 +5582,7 @@ function tagColor(name) {
 }
 
 // src/surfaces/library/folders.jsx
-var import_react8 = __toESM(require("react"), 1);
+var import_react9 = __toESM(require("react"), 1);
 function filterTree(nodes, query) {
   const needle = String(query || "").trim().toLowerCase();
   if (!needle) return nodes;
@@ -3518,22 +5614,22 @@ function readPaperIds(event) {
 function Node(props) {
   const t = props.t;
   const node = props.node;
-  const [open, setOpen] = import_react8.default.useState(true);
+  const [open, setOpen] = import_react9.default.useState(true);
   const expanded = Boolean(props.forceOpen) || open;
-  const [editing, setEditing] = import_react8.default.useState(false);
-  const [name, setName] = import_react8.default.useState(node.name || "");
-  const [armed, setArmed] = import_react8.default.useState(false);
-  const [drop, setDrop] = import_react8.default.useState(false);
-  const [childOpen, setChildOpen] = import_react8.default.useState(false);
-  const [childName, setChildName] = import_react8.default.useState("");
+  const [editing, setEditing] = import_react9.default.useState(false);
+  const [name, setName] = import_react9.default.useState(node.name || "");
+  const [armed, setArmed] = import_react9.default.useState(false);
+  const [drop, setDrop] = import_react9.default.useState(false);
+  const [childOpen, setChildOpen] = import_react9.default.useState(false);
+  const [childName, setChildName] = import_react9.default.useState("");
   const readOnly = false;
   const children = Array.isArray(node.children) ? node.children : [];
   const color = node.color || "blue";
-  const childBoxRef = import_react8.default.useRef(null);
-  import_react8.default.useEffect(() => {
+  const childBoxRef = import_react9.default.useRef(null);
+  import_react9.default.useEffect(() => {
     setName(node.name || "");
   }, [node.name]);
-  import_react8.default.useEffect(() => {
+  import_react9.default.useEffect(() => {
     if (!childOpen) return void 0;
     const onPointerDown = (event) => {
       const box = childBoxRef.current;
@@ -3623,11 +5719,11 @@ function FolderTree(props) {
   const queryLower = query.toLowerCase();
   const favoriteMatches = !queryLower || t("folders.favorite").toLowerCase().includes(queryLower);
   const userFolders = filterTree(folders, query);
-  const [newOpen, setNewOpen] = import_react8.default.useState(false);
-  const [newName, setNewName] = import_react8.default.useState("");
-  const newBoxRef = import_react8.default.useRef(null);
+  const [newOpen, setNewOpen] = import_react9.default.useState(false);
+  const [newName, setNewName] = import_react9.default.useState("");
+  const newBoxRef = import_react9.default.useRef(null);
   const filters = props.snapshot.filters;
-  import_react8.default.useEffect(() => {
+  import_react9.default.useEffect(() => {
     if (!newOpen) return void 0;
     const onPointerDown = (event) => {
       const box = newBoxRef.current;
@@ -3742,7 +5838,7 @@ function FavoriteButton(props) {
 }
 
 // src/surfaces/library/notes-sidebar.jsx
-var import_react9 = __toESM(require("react"), 1);
+var import_react10 = __toESM(require("react"), 1);
 
 // src/core/notes-model.js
 var NOTES_FORMAT_VERSION = 2;
@@ -5049,7 +7145,7 @@ var NOTES_CSS = `
   min-height: 48px;
 }
 .ph-n-brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.ph-n-brand__mark { color: var(--dsw-alias-state-business-primary); flex: none; }
+.ph-n-brand__mark { color: var(--ph-accent-text, #7d2ae8); flex: none; }
 .ph-n-brand__title { margin: 0; font-size: 15px; font-weight: 650; white-space: nowrap; }
 .ph-n-brand__sub { font-size: 11.5px; color: var(--dsw-alias-label-tertiary); white-space: nowrap; }
 .ph-n-topbar__spacer { flex: 1 1 auto; }
@@ -5104,7 +7200,7 @@ var NOTES_CSS = `
 .ph-n-tree__row:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary) 5%, transparent); }
 .ph-n-tree__row--active {
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   font-weight: 600;
 }
 .ph-n-tree__icon { flex: none; color: var(--dsw-alias-label-tertiary); display: inline-flex; }
@@ -5278,7 +7374,7 @@ var NOTES_CSS = `
 }
 .ph-n-editor--compact .ph-n-editor__title { font-size: 13.5px; }
 .ph-n-editor__title:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary) 4%, transparent); }
-.ph-n-editor__title:focus { border-color: var(--dsw-alias-state-business-primary); background: var(--dsw-alias-bg-base); }
+.ph-n-editor__title:focus { border-color: var(--ph-accent-text, #7d2ae8); background: var(--dsw-alias-bg-base); }
 .ph-n-editor__title::placeholder { color: var(--dsw-alias-label-caption); }
 .ph-n-editor__actions { flex: none; display: flex; align-items: center; gap: 4px; }
 .ph-n-editor__meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 0 2px; min-height: 22px; }
@@ -5416,7 +7512,7 @@ var NOTES_CSS = `
 .ph-n-card__h { margin: 2px 0 0; font-size: 13px; font-weight: 650; line-height: 1.4; }
 .ph-n-card__p { margin: 0; white-space: pre-wrap; }
 .ph-n-card__ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 3px; }
-.ph-n-card__ul li::marker { color: var(--dsw-alias-state-business-primary); }
+.ph-n-card__ul li::marker { color: var(--ph-accent-text, #7d2ae8); }
 .ph-n-card__tablewrap { overflow-x: auto; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; }
 .ph-n-card__table { border-collapse: collapse; width: 100%; font-size: 11.8px; }
 .ph-n-card__table th, .ph-n-card__table td { padding: 5px 8px; border-bottom: 1px solid var(--dsw-alias-border-l1); text-align: left; vertical-align: top; }
@@ -5426,7 +7522,7 @@ var NOTES_CSS = `
 .ph-n-card__callout { display: flex; gap: 8px; padding: 7px 10px; border-radius: 8px; font-size: 12px; background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, transparent); border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 22%, transparent); }
 .ph-n-card__callout--warn { background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 8%, transparent); border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 26%, transparent); }
 .ph-n-card__callout--success { background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #16a34a) 8%, transparent); border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary, #16a34a) 26%, transparent); }
-.ph-n-card__callout-icon { flex: none; margin-top: 1px; color: var(--dsw-alias-state-business-primary); }
+.ph-n-card__callout-icon { flex: none; margin-top: 1px; color: var(--ph-accent-text, #7d2ae8); }
 .ph-n-card__callout-title { font-weight: 650; margin-bottom: 2px; }
 .ph-n-sec__note { margin: 0; font-size: 11px; color: var(--dsw-alias-label-caption); }
 
@@ -5544,7 +7640,7 @@ var NOTES_CSS = `
 }
 .ph-n-choice:hover { border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 45%, transparent); }
 .ph-n-choice--active {
-  border-color: var(--dsw-alias-state-business-primary);
+  border-color: var(--ph-accent-text, #7d2ae8);
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 8%, transparent);
 }
 .ph-n-choice__title { font-size: 12.5px; font-weight: 650; }
@@ -5563,7 +7659,7 @@ var NOTES_CSS = `
   color: var(--dsw-alias-label-secondary);
   line-height: 1.55;
 }
-.ph-n-summary__icon { flex: none; margin-top: 1px; color: var(--dsw-alias-state-business-primary); }
+.ph-n-summary__icon { flex: none; margin-top: 1px; color: var(--ph-accent-text, #7d2ae8); }
 .ph-n-progress { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .ph-n-error { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 9px; background: color-mix(in srgb, var(--dsw-alias-state-error-primary, #dc2626) 8%, transparent); border: 1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary, #dc2626) 28%, transparent); font-size: 11.8px; color: var(--dsw-alias-label-secondary); line-height: 1.55; }
 .ph-n-revlist { display: flex; flex-direction: column; gap: 6px; }
@@ -5676,7 +7772,7 @@ var NOTES_CSS = `
   line-height: 1;
   white-space: nowrap;
 }
-.ph-n-doc__badge--ai { color: var(--dsw-alias-state-business-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 30%, transparent); }
+.ph-n-doc__badge--ai { color: var(--ph-accent-text, #7d2ae8); border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 30%, transparent); }
 .ph-n-doc__badge--warn { color: var(--dsw-alias-state-warn-primary, #d97706); border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 34%, transparent); }
 .ph-n-doc__toggle {
   border: 1px solid var(--dsw-alias-border-l1);
@@ -5705,7 +7801,7 @@ var NOTES_CSS = `
 .ph-n-doc__h { margin: 12px 0 6px; font-size: 13.6px; font-weight: 650; line-height: 1.4; }
 .ph-n-doc__block:first-child .ph-n-doc__h { margin-top: 0; }
 .ph-n-doc__ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 3px; }
-.ph-n-doc__ul li::marker { color: var(--dsw-alias-state-business-primary); }
+.ph-n-doc__ul li::marker { color: var(--ph-accent-text, #7d2ae8); }
 .ph-n-doc__quote {
   margin: 0;
   padding: 6px 12px;
@@ -5726,7 +7822,7 @@ var NOTES_CSS = `
 }
 .ph-n-doc__callout--warn { background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 7%, transparent); border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 24%, transparent); }
 .ph-n-doc__callout--success { background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #16a34a) 7%, transparent); border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary, #16a34a) 24%, transparent); }
-.ph-n-doc__callout-icon { flex: none; margin-top: 2px; color: var(--dsw-alias-state-business-primary); }
+.ph-n-doc__callout-icon { flex: none; margin-top: 2px; color: var(--ph-accent-text, #7d2ae8); }
 .ph-n-doc__callout-title { font-weight: 650; margin-bottom: 2px; }
 .ph-n-doc__tablewrap { overflow-x: auto; border: 1px solid var(--dsw-alias-border-l2); border-radius: 9px; }
 .ph-n-doc__table { border-collapse: collapse; width: 100%; font-size: 12px; }
@@ -5760,7 +7856,7 @@ var NOTES_CSS = `
   gap: 3px;
   border: none;
   background: transparent;
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   font: inherit;
   font-size: 10.5px;
   cursor: pointer;
@@ -5792,7 +7888,7 @@ var NOTES_CSS = `
 }
 .ph-n-autofix__toggle:hover { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-label-tertiary); }
 .ph-n-autofix__toggle--on {
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 38%, transparent);
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);
 }
@@ -5861,7 +7957,7 @@ var NOTES_CSS = `
 .ph-n-autofix__option-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .ph-n-autofix__option-label { font-size: 11.8px; font-weight: 650; display: flex; align-items: center; gap: 5px; }
 .ph-n-autofix__option-reason { font-size: 10.6px; color: var(--dsw-alias-label-tertiary); line-height: 1.45; }
-.ph-n-autofix__option-tag { font-size: 9.5px; font-weight: 600; color: var(--dsw-alias-state-business-primary); border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 35%, transparent); border-radius: 999px; padding: 0 5px; height: 15px; line-height: 14px; }
+.ph-n-autofix__option-tag { font-size: 9.5px; font-weight: 600; color: var(--ph-accent-text, #7d2ae8); border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 35%, transparent); border-radius: 999px; padding: 0 5px; height: 15px; line-height: 14px; }
 .ph-n-autofix__overlay-foot { display: flex; align-items: center; gap: 6px; }
 .ph-n-autofix__overlay-foot .ph-n-spacer { flex: 1 1 auto; }
 .ph-n-autofix__status { display: inline-flex; align-items: center; gap: 5px; font-size: 10.8px; color: var(--dsw-alias-label-tertiary); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -5878,7 +7974,7 @@ var NOTES_CSS = `
 .ph-n-scroll::-webkit-scrollbar { width: 9px; height: 9px; }
 .ph-n-scroll::-webkit-scrollbar-thumb { background: var(--dsw-alias-scrollbar-bg-l2); border: 2px solid transparent; background-clip: content-box; border-radius: 8px; }
 .ph-n-skeletonrow { height: 52px; border-radius: 9px; background: color-mix(in srgb, var(--dsw-alias-label-primary) 6%, transparent); animation: ph-n-pulse 1.3s ease-in-out infinite; }
-.ph-n-spin { display: inline-block; width: 13px; height: 13px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--dsw-alias-label-primary) 22%, transparent); border-top-color: var(--dsw-alias-state-business-primary); animation: ph-n-rot 720ms linear infinite; flex: none; }
+.ph-n-spin { display: inline-block; width: 13px; height: 13px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--dsw-alias-label-primary) 22%, transparent); border-top-color: var(--ph-accent-text, #7d2ae8); animation: ph-n-rot 720ms linear infinite; flex: none; }
 
 @keyframes ph-n-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ph-n-pop { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
@@ -5939,6 +8035,452 @@ var NOTES_CSS = `
   .ph-n-folders--closed { width: 0; }
   .ph-n-paperpane { position: absolute; right: 0; z-index: 30; height: 100%; width: min(340px, 86vw); box-shadow: -12px 0 24px -18px color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent); }
 }
+
+/* ========================================================================== *
+ * v0.19 design layer \u2014 typography-first notes surface
+ * Reads the shared tokens declared in core/styles.css. Kept as a layer so the
+ * structural rules above stay intact; every selector below is the same one
+ * the components already use.
+ * ========================================================================== */
+
+/* ---- shell --------------------------------------------------------------- */
+.ph-n-app {
+  background: var(--ph-bg, var(--dsw-alias-bg-base));
+  font-size: var(--ph-fs-13, 13px);
+  line-height: var(--ph-lh-ui, 1.5);
+}
+.ph-n-topbar {
+  gap: var(--ph-s3, 12px);
+  padding: var(--ph-s3, 12px) var(--ph-s5, 20px);
+  border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1));
+  min-height: 56px;
+}
+.ph-n-brand { gap: var(--ph-s2, 8px); }
+.ph-n-brand__mark {
+  color: var(--ph-accent, var(--dsw-alias-state-business-primary));
+  padding: 5px;
+  border-radius: var(--ph-r-sm, 8px);
+  background: var(--ph-accent-soft, color-mix(in srgb, var(--dsw-alias-state-business-primary) 11%, transparent));
+  box-sizing: content-box;
+}
+.ph-n-brand__title { font-size: var(--ph-fs-15, 15px); font-weight: var(--ph-fw-bold, 650); letter-spacing: -0.01em; }
+.ph-n-brand__sub { font-size: var(--ph-fs-12, 12px); color: var(--ph-ink-3, var(--dsw-alias-label-tertiary)); }
+
+/* ---- folder tree --------------------------------------------------------- */
+.ph-n-folders {
+  width: 232px;
+  background: var(--ph-bg, var(--dsw-alias-bg-base));
+  border-right: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1));
+  transition: width var(--ph-panel, 280ms) var(--ph-ease-out, cubic-bezier(0.16, 1, 0.3, 1)), opacity var(--ph-base, 200ms) var(--ph-ease, ease);
+}
+.ph-n-folders__head {
+  padding: var(--ph-s3, 12px) var(--ph-s2, 8px) var(--ph-s1, 4px) var(--ph-s3, 12px);
+  font-size: var(--ph-fs-11, 11px);
+  font-weight: var(--ph-fw-semi, 600);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ph-ink-3, var(--dsw-alias-label-tertiary));
+}
+.ph-n-folders__scroll { padding: var(--ph-s1, 4px) var(--ph-s2, 8px) var(--ph-s6, 24px); }
+.ph-n-folders__group { margin-top: var(--ph-s3, 12px); padding: 4px 8px 2px; font-size: var(--ph-fs-11, 11px); color: var(--ph-ink-4, var(--dsw-alias-label-caption)); letter-spacing: 0.03em; }
+.ph-n-tree { gap: 1px; }
+.ph-n-tree__row {
+  min-height: 32px;
+  padding: 5px 8px;
+  border-radius: var(--ph-r-sm, 8px);
+  border: none;
+  font-size: var(--ph-fs-13, 13px);
+  color: var(--ph-ink-2, var(--dsw-alias-label-secondary));
+  transition: background-color var(--ph-fast, 140ms) var(--ph-ease, ease), color var(--ph-fast, 140ms) var(--ph-ease, ease);
+}
+.ph-n-tree__row:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--ph-ink, var(--dsw-alias-label-primary)); }
+.ph-n-tree__row--active,
+.ph-n-tree__row--active:hover {
+  background: var(--ph-accent-soft, color-mix(in srgb, var(--dsw-alias-state-business-primary) 11%, transparent));
+  color: var(--ph-accent, var(--dsw-alias-state-business-primary));
+  font-weight: var(--ph-fw-semi, 600);
+}
+.ph-n-tree__icon { color: var(--ph-ink-3, var(--dsw-alias-label-tertiary)); }
+.ph-n-tree__count { font-size: var(--ph-fs-11, 11px); color: var(--ph-ink-3, var(--dsw-alias-label-tertiary)); }
+.ph-n-tree__input {
+  border: 1px solid var(--ph-accent, var(--dsw-alias-state-business-primary));
+  box-shadow: var(--ph-ring, 0 0 0 3px color-mix(in srgb, var(--dsw-alias-state-business-primary) 18%, transparent));
+  border-radius: var(--ph-r-xs, 6px);
+  padding: 3px 7px;
+}
+
+/* ---- note list ----------------------------------------------------------- */
+.ph-n-listpane {
+  width: 312px;
+  border-right: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1));
+  background: var(--ph-bg, var(--dsw-alias-bg-base));
+  transition: width var(--ph-panel, 280ms) var(--ph-ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.ph-n-listpane__head { padding: var(--ph-s3, 12px) var(--ph-s3, 12px) var(--ph-s2, 8px) var(--ph-s4, 16px); border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-n-listpane__title { font-size: var(--ph-fs-12, 12px); font-weight: var(--ph-fw-bold, 650); letter-spacing: 0.02em; }
+.ph-n-listpane__count { font-size: var(--ph-fs-11, 11px); color: var(--ph-ink-3, var(--dsw-alias-label-tertiary)); }
+.ph-n-listpane__filter {
+  gap: var(--ph-s2, 8px);
+  padding: 7px var(--ph-s3, 12px);
+  border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1));
+  background: var(--ph-surface-1, var(--dsw-alias-bg-layer-1));
+  font-size: var(--ph-fs-11, 11px);
+}
+.ph-n-list { padding: var(--ph-s2, 8px); gap: 2px; }
+.ph-n-listrow {
+  gap: 4px;
+  padding: 10px 11px;
+  border-radius: var(--ph-r-sm, 8px);
+  border: 1px solid transparent;
+  transition: background-color var(--ph-fast, 140ms) var(--ph-ease, ease), border-color var(--ph-fast, 140ms) var(--ph-ease, ease);
+}
+.ph-n-listrow:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.ph-n-listrow--active {
+  background: var(--ph-accent-soft, color-mix(in srgb, var(--dsw-alias-state-business-primary) 11%, transparent));
+  border-color: var(--ph-accent-line, color-mix(in srgb, var(--dsw-alias-state-business-primary) 34%, transparent));
+}
+.ph-n-listrow__top { gap: 7px; }
+.ph-n-listrow__title { font-size: var(--ph-fs-13, 13px); font-weight: var(--ph-fw-semi, 600); line-height: 1.4; }
+.ph-n-listrow__time { font-size: var(--ph-fs-11, 11px); }
+.ph-n-listrow__preview { font-size: var(--ph-fs-12, 12px); line-height: 1.55; color: var(--ph-ink-3, var(--dsw-alias-label-tertiary)); }
+.ph-n-listrow__meta { gap: 8px; font-size: var(--ph-fs-11, 11px); }
+
+/* ---- editor header / toolbar -------------------------------------------- */
+.ph-n-editor__head {
+  padding: var(--ph-s4, 16px) var(--ph-s5, 20px) var(--ph-s2, 8px);
+  gap: 7px;
+  border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1));
+}
+.ph-n-editor--compact .ph-n-editor__head { padding: var(--ph-s3, 12px) var(--ph-s3, 12px) var(--ph-s1, 4px); }
+.ph-n-editor__title {
+  font-size: var(--ph-fs-17, 17px);
+  font-weight: var(--ph-fw-bold, 650);
+  letter-spacing: -0.012em;
+  border-radius: var(--ph-r-sm, 8px);
+  padding: 5px 8px;
+  transition: background-color var(--ph-fast, 140ms) var(--ph-ease, ease), border-color var(--ph-fast, 140ms) var(--ph-ease, ease);
+}
+.ph-n-editor--compact .ph-n-editor__title { font-size: var(--ph-fs-14, 14px); }
+.ph-n-editor__title:hover { background: color-mix(in srgb, var(--ph-ink, var(--dsw-alias-label-primary)) 5%, transparent); }
+.ph-n-editor__title:focus { border-color: var(--ph-accent, var(--dsw-alias-state-business-primary)); box-shadow: var(--ph-ring, none); }
+.ph-n-editor__meta { gap: 8px; min-height: 24px; }
+.ph-n-savestate { font-size: var(--ph-fs-11, 11px); }
+.ph-n-editor__toolbar {
+  gap: 5px;
+  padding: 6px var(--ph-s5, 20px);
+  border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1));
+  background: var(--ph-surface-1, var(--dsw-alias-bg-layer-1));
+}
+.ph-n-editor--compact .ph-n-editor__toolbar { padding: 5px var(--ph-s3, 12px); }
+.ph-n-sections { background: var(--ph-surface-1, var(--dsw-alias-bg-layer-1)); border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-n-sections__head { padding: 7px var(--ph-s5, 20px); font-size: var(--ph-fs-11, 11px); color: var(--ph-ink-2, var(--dsw-alias-label-secondary)); }
+.ph-n-sections__list { padding: 2px var(--ph-s4, 16px) var(--ph-s2, 8px); gap: 3px; }
+.ph-n-sections__row { font-size: var(--ph-fs-12, 12px); padding: 3px 2px; }
+.ph-n-sections__toggle { border-radius: var(--ph-r-pill, 999px); padding: 2px 9px; font-size: var(--ph-fs-11, 11px); }
+
+/* ---- body: reading rhythm ------------------------------------------------ */
+.ph-n-editor__textarea {
+  font-size: 13.5px;
+  line-height: 1.8;
+  padding: var(--ph-s4, 16px) var(--ph-s6, 24px) var(--ph-s8, 32px);
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+  caret-color: var(--ph-accent, var(--dsw-alias-state-business-primary));
+  scrollbar-width: thin;
+}
+.ph-n-editor--compact .ph-n-editor__textarea { padding: var(--ph-s3, 12px) var(--ph-s4, 16px) var(--ph-s6, 24px); font-size: 12.5px; line-height: 1.75; max-width: none; }
+.ph-n-editor__cards { padding: var(--ph-s4, 16px) var(--ph-s6, 24px) var(--ph-s8, 32px); gap: var(--ph-s3, 12px); }
+
+/* Markdown preview inside a note */
+.ph-n-md { font-size: 13.5px; line-height: 1.8; max-width: 760px; }
+.ph-n-md .ph-ai-md__p { margin: 0 0 12px; }
+.ph-n-md .ph-ai-md__h { margin: 20px 0 8px; font-weight: var(--ph-fw-bold, 650); letter-spacing: -0.006em; }
+.ph-n-md .ph-ai-md__h1 { font-size: 19px; }
+.ph-n-md .ph-ai-md__h2 { font-size: 16.5px; }
+.ph-n-md .ph-ai-md__h3 { font-size: 14.5px; }
+.ph-n-md .ph-ai-md__list { margin: 0 0 12px; padding-left: 22px; }
+.ph-n-md .ph-ai-md__quote {
+  margin: 12px 0;
+  padding: 8px 14px;
+  border-left: 2.5px solid var(--ph-accent-line, color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent));
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent);
+  border-radius: 0 var(--ph-r-sm, 8px) var(--ph-r-sm, 8px) 0;
+  color: var(--ph-ink-2, var(--dsw-alias-label-secondary));
+}
+
+/* Beautified document \u2014 layout first, boxes only where they carry meaning */
+.ph-n-cards { gap: var(--ph-s5, 20px); max-width: 880px; }
+.ph-n-sec {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+.ph-n-sec + .ph-n-sec { padding-top: var(--ph-s3, 12px); border-top: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-n-sec--original { background: transparent; padding-left: var(--ph-s3, 12px); border-left: 2px dashed var(--ph-line, var(--dsw-alias-border-l2)); }
+.ph-n-sec--incomplete { border-top-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 34%, transparent); }
+.ph-n-sec__heading { font-size: var(--ph-fs-12, 12px); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ph-ink-3, var(--dsw-alias-label-tertiary)); font-weight: var(--ph-fw-semi, 600); }
+.ph-n-sec__body { gap: var(--ph-s2, 8px); }
+
+.ph-n-doc { gap: var(--ph-s6, 24px); max-width: 860px; }
+.ph-n-doc__sec { gap: var(--ph-s2, 8px); }
+.ph-n-doc__sec--accent {
+  padding: var(--ph-s3, 12px) var(--ph-s4, 16px);
+  border-left: 2.5px solid var(--ph-accent-line, color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent));
+  border-radius: 0 var(--ph-r-sm, 8px) var(--ph-r-sm, 8px) 0;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 4%, transparent);
+}
+.ph-n-doc__sec--figure {
+  padding: var(--ph-s3, 12px) var(--ph-s4, 16px) var(--ph-s4, 16px);
+  border-radius: var(--ph-r-md, 10px);
+  background: var(--ph-surface-1, var(--dsw-alias-bg-layer-1));
+  border: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1));
+}
+.ph-n-doc__eyebrow { gap: var(--ph-s2, 8px); min-height: 22px; }
+.ph-n-doc__heading {
+  font-size: 15px;
+  font-weight: var(--ph-fw-bold, 650);
+  letter-spacing: -0.008em;
+  line-height: 1.4;
+}
+.ph-n-doc__heading--none { font-size: var(--ph-fs-11, 11px); letter-spacing: 0.08em; color: var(--ph-ink-4, var(--dsw-alias-label-caption)); text-transform: uppercase; }
+.ph-n-doc__badge {
+  height: 19px;
+  padding: 0 7px;
+  border-radius: var(--ph-r-pill, 999px);
+  border: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1));
+  background: var(--ph-surface-2, var(--dsw-alias-bg-layer-2));
+  font-size: 10.5px;
+}
+.ph-n-doc__toggle { height: 19px; border-radius: var(--ph-r-pill, 999px); font-size: 10.5px; padding: 0 8px; }
+.ph-n-doc__body { font-size: 13.5px; line-height: 1.82; max-width: 748px; color: var(--ph-ink, var(--dsw-alias-label-primary)); }
+.ph-n-doc__body--original { font-size: 13px; color: var(--ph-ink-2, var(--dsw-alias-label-secondary)); }
+.ph-n-doc__flow { column-gap: 32px; }
+.ph-n-doc__block { margin: 0 0 14px; }
+.ph-n-doc__p { margin: 0 0 14px; }
+.ph-n-doc__h { margin: 18px 0 8px; font-size: 14px; font-weight: var(--ph-fw-bold, 650); }
+.ph-n-doc__quote {
+  padding: 8px 14px;
+  border-left: 2.5px solid var(--ph-accent-line, color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent));
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 4%, transparent);
+  font-size: 13px;
+}
+.ph-n-doc__callout,
+.ph-n-card__callout { border-radius: var(--ph-r-sm, 8px); font-size: 12.5px; padding: 9px 12px; }
+.ph-n-doc__callout-body { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; }
+.ph-n-doc__tablewrap,
+.ph-n-card__tablewrap { border-color: var(--ph-line, var(--dsw-alias-border-l2)); border-radius: var(--ph-r-sm, 8px); }
+.ph-n-doc__table th,
+.ph-n-card__table th { background: var(--ph-surface-2, var(--dsw-alias-bg-layer-2)); font-weight: var(--ph-fw-semi, 600); }
+.ph-n-doc__figure-media {
+  border-radius: var(--ph-r-sm, 8px);
+  border-color: var(--ph-line, var(--dsw-alias-border-l2));
+  transition: border-color var(--ph-fast, 140ms) var(--ph-ease, ease), box-shadow var(--ph-base, 200ms) var(--ph-ease, ease);
+}
+.ph-n-doc__figure-media:hover { border-color: var(--ph-accent-line, var(--dsw-alias-border-l3)); box-shadow: var(--ph-shadow-2, 0 2px 8px rgba(0, 0, 0, 0.08)); }
+.ph-n-doc__figure-cap { font-size: var(--ph-fs-11, 11px); line-height: 1.55; }
+.ph-n-doc__note { font-size: var(--ph-fs-11, 11px); }
+
+.ph-n-chip {
+  gap: 5px;
+  padding: 3px 5px 3px 9px;
+  border-radius: var(--ph-r-pill, 999px);
+  border: 1px solid var(--ph-line, var(--dsw-alias-border-l2));
+  background: var(--ph-surface-2, var(--dsw-alias-bg-layer-2));
+  font-size: var(--ph-fs-11, 11px);
+  color: var(--ph-ink-2, var(--dsw-alias-label-secondary));
+}
+
+/* ---- paper panel --------------------------------------------------------- */
+.ph-n-paperpane {
+  width: 368px;
+  border-left: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1));
+  background: var(--ph-bg, var(--dsw-alias-bg-base));
+  transition: width var(--ph-panel, 280ms) var(--ph-ease-out, cubic-bezier(0.16, 1, 0.3, 1)), opacity var(--ph-base, 200ms) var(--ph-ease, ease);
+}
+.ph-n-paperpane__head { padding: var(--ph-s2, 8px) var(--ph-s2, 8px) var(--ph-s2, 8px) var(--ph-s3, 12px); border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); min-height: 42px; }
+.ph-n-paperpane__title { font-size: var(--ph-fs-12, 12px); font-weight: var(--ph-fw-bold, 650); }
+.ph-n-paperpane__scroll { padding: var(--ph-s3, 12px) var(--ph-s3, 12px) var(--ph-s6, 24px); }
+.ph-n-paperrow { padding: 8px; border-radius: var(--ph-r-sm, 8px); transition: background-color var(--ph-fast, 140ms) var(--ph-ease, ease), border-color var(--ph-fast, 140ms) var(--ph-ease, ease); }
+.ph-n-paperrow:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.ph-n-paperrow--active { border-color: var(--ph-accent-line, var(--dsw-alias-border-l3)); background: var(--ph-accent-soft, transparent); }
+.ph-n-paperrow__thumb { width: 34px; height: 44px; border-radius: 3px; border-color: var(--ph-line-soft, var(--dsw-alias-border-l2)); }
+.ph-n-paperrow__title { font-size: var(--ph-fs-12, 12px); }
+.ph-n-paperrow__meta { font-size: var(--ph-fs-11, 11px); }
+.ph-n-paperview__title { font-size: var(--ph-fs-13, 13px); font-weight: var(--ph-fw-bold, 650); line-height: 1.45; }
+.ph-n-paperview__meta { font-size: var(--ph-fs-11, 11px); }
+.ph-n-paperview__imagewrap { border-radius: var(--ph-r-sm, 8px); border-color: var(--ph-line, var(--dsw-alias-border-l2)); box-shadow: var(--ph-shadow-1, none); }
+.ph-n-paperview__section-title { font-size: var(--ph-fs-11, 11px); letter-spacing: 0.05em; text-transform: uppercase; color: var(--ph-ink-3, var(--dsw-alias-label-tertiary)); font-weight: var(--ph-fw-semi, 600); }
+.ph-n-paperview__trans { font-size: var(--ph-fs-12, 12px); line-height: 1.68; gap: var(--ph-s2, 8px); }
+.ph-n-paperview__annot { padding: 7px 9px; border-radius: var(--ph-r-sm, 8px); background: var(--ph-surface-2, var(--dsw-alias-bg-layer-2)); border-color: var(--ph-line-soft, var(--dsw-alias-border-l1)); font-size: var(--ph-fs-11, 11px); line-height: 1.55; }
+.ph-n-paperview__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---- status strip -------------------------------------------------------- */
+.ph-n-statusbar {
+  gap: var(--ph-s2, 8px);
+  padding: 5px var(--ph-s4, 16px);
+  border-top: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1));
+  background: var(--ph-bg, var(--dsw-alias-bg-base));
+  font-size: var(--ph-fs-11, 11px);
+  min-height: 28px;
+}
+
+/* ---- dialogs, menus, overlays ------------------------------------------- */
+.ph-n-modal-backdrop { background: var(--dsw-alias-bg-mask-1, rgba(0, 0, 0, 0.32)); backdrop-filter: blur(3px); }
+.ph-n-modal {
+  border-radius: var(--ph-r-lg, 14px);
+  border: 1px solid var(--ph-line, var(--dsw-alias-border-l2));
+  box-shadow: var(--dsw-elevation-prominent, 0 18px 44px -20px rgba(0, 0, 0, 0.4));
+  background: var(--ph-bg, var(--dsw-alias-bg-base));
+  animation: ph-n-pop var(--ph-base, 200ms) var(--ph-ease-out, ease);
+}
+.ph-n-modal__head { padding: var(--ph-s4, 16px) var(--ph-s5, 20px) var(--ph-s3, 12px); border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-n-modal__title { font-size: var(--ph-fs-15, 15px); font-weight: var(--ph-fw-bold, 650); letter-spacing: -0.006em; }
+.ph-n-modal__desc { font-size: var(--ph-fs-12, 12px); line-height: 1.6; color: var(--ph-ink-3, var(--dsw-alias-label-tertiary)); }
+.ph-n-modal__body { padding: var(--ph-s3, 12px) var(--ph-s5, 20px); gap: var(--ph-s3, 12px); }
+.ph-n-modal__foot { padding: var(--ph-s3, 12px) var(--ph-s5, 20px) var(--ph-s4, 16px); border-top: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-n-field__label { font-size: var(--ph-fs-12, 12px); font-weight: var(--ph-fw-semi, 600); }
+.ph-n-field__hint { font-size: var(--ph-fs-11, 11px); line-height: 1.55; }
+.ph-n-choice { border-radius: var(--ph-r-md, 10px); padding: 10px 11px; transition: border-color var(--ph-fast, 140ms) var(--ph-ease, ease), background-color var(--ph-fast, 140ms) var(--ph-ease, ease); }
+.ph-n-choice__title { font-size: var(--ph-fs-13, 13px); }
+.ph-n-choice__desc { font-size: var(--ph-fs-11, 11px); line-height: 1.5; }
+.ph-n-summary { border-radius: var(--ph-r-sm, 8px); font-size: var(--ph-fs-12, 12px); padding: 9px 11px; background: var(--ph-surface-2, var(--dsw-alias-bg-layer-2)); border-color: var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-n-error { border-radius: var(--ph-r-sm, 8px); font-size: var(--ph-fs-12, 12px); }
+.ph-n-revrow { border-radius: var(--ph-r-sm, 8px); padding: 9px 11px; }
+.ph-n-menu {
+  border-radius: var(--ph-r-md, 10px);
+  border: 1px solid var(--ph-line, var(--dsw-alias-border-l2));
+  background: var(--ph-surface-2, var(--dsw-alias-bg-base));
+  box-shadow: var(--dsw-elevation-prominent, var(--ph-shadow-3, 0 12px 34px -16px rgba(0, 0, 0, 0.4)));
+  padding: 5px;
+}
+.ph-n-menu__item { border-radius: var(--ph-r-xs, 6px); padding: 7px 9px; font-size: var(--ph-fs-12, 12px); }
+.ph-n-menu__item:hover { background: var(--dsw-alias-interactive-bg-hover); }
+
+/* autofix \u2014 keep the behaviour, calm the surface */
+.ph-n-autofix__toggle { height: 26px; padding: 0 10px; border-radius: var(--ph-r-pill, 999px); font-size: var(--ph-fs-11, 11px); transition: all var(--ph-fast, 140ms) var(--ph-ease, ease); }
+.ph-n-autofix__select { height: 26px; border-radius: var(--ph-r-xs, 6px); font-size: var(--ph-fs-11, 11px); }
+.ph-n-autofix__overlay {
+  border-radius: var(--ph-r-md, 10px);
+  border: 1px solid var(--ph-line, var(--dsw-alias-border-l2));
+  background: var(--ph-surface-2, var(--dsw-alias-bg-base));
+  box-shadow: var(--dsw-elevation-prominent, var(--ph-shadow-3, 0 16px 40px -22px rgba(0, 0, 0, 0.4)));
+  animation: ph-n-pop var(--ph-base, 200ms) var(--ph-ease-out, ease);
+}
+.ph-n-autofix__option { border-radius: var(--ph-r-sm, 8px); padding: 8px 9px; border-color: var(--ph-line-soft, var(--dsw-alias-border-l1)); transition: all var(--ph-fast, 140ms) var(--ph-ease, ease); }
+.ph-n-autofix__option--recommended { border-color: var(--ph-accent-line, var(--dsw-alias-border-l3)); background: var(--ph-accent-soft, transparent); }
+
+/* reader-side note editor shares the same rhythm */
+.ph-n-readernotes__head { padding: 7px var(--ph-s2, 8px) 7px var(--ph-s3, 12px); }
+.ph-n-readernotes__title { font-size: var(--ph-fs-11, 11px); letter-spacing: 0.04em; text-transform: uppercase; }
+.ph-n-readernotes__row { padding: 6px 8px; border-radius: var(--ph-r-xs, 6px); }
+.ph-n-readernotes__rowtitle { font-size: var(--ph-fs-12, 12px); }
+.ph-n-readernotes__rowmeta { font-size: var(--ph-fs-11, 11px); }
+.ph-n-skeletonrow { border-radius: var(--ph-r-sm, 8px); }
+
+/* ---- responsive ---------------------------------------------------------- */
+@media (max-width: 1320px) {
+  .ph-n-paperpane { width: 336px; }
+  .ph-n-listpane { width: 288px; }
+  .ph-n-folders { width: 220px; }
+}
+@media (max-width: 1120px) {
+  .ph-n-paperpane { width: 304px; }
+  .ph-n-editor__textarea,
+  .ph-n-editor__cards { padding-left: var(--ph-s4, 16px); padding-right: var(--ph-s4, 16px); }
+}
+@media (max-width: 900px) {
+  .ph-n-folders { position: absolute; z-index: 30; height: 100%; width: 240px; background: var(--ph-surface-1, var(--dsw-alias-bg-base)); box-shadow: var(--ph-shadow-3, 0 0 24px rgba(0, 0, 0, 0.18)); }
+  .ph-n-paperpane { position: absolute; right: 0; z-index: 30; height: 100%; width: min(340px, 88vw); background: var(--ph-bg, var(--dsw-alias-bg-base)); box-shadow: var(--ph-shadow-3, 0 -0 24px rgba(0, 0, 0, 0.18)); }
+  .ph-n-topbar { padding: var(--ph-s2, 8px) var(--ph-s3, 12px); }
+  .ph-n-brand__sub { display: none; }
+}
+@media (max-width: 640px) {
+  .ph-n-listpane { position: absolute; z-index: 20; height: 100%; width: min(320px, 88vw); background: var(--ph-bg, var(--dsw-alias-bg-base)); box-shadow: var(--ph-shadow-3, 0 0 24px rgba(0, 0, 0, 0.18)); }
+  .ph-n-editor__head { padding: var(--ph-s3, 12px) var(--ph-s3, 12px) var(--ph-s1, 4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-n-folders,
+  .ph-n-listpane,
+  .ph-n-paperpane,
+  .ph-n-choice,
+  .ph-n-modal,
+  .ph-n-menu,
+  .ph-n-autofix__overlay,
+  .ph-n-tree__row { transition: none !important; animation: none !important; }
+}
+@media (max-width: 760px) {
+  .ph-n-topbar > .ph-btn .ph-btn__label { display: none; }
+  .ph-n-topbar > .ph-btn { width: 30px; padding: 0; gap: 0; }
+  .ph-n-topbar__search { max-width: none; }
+  .ph-n-topbar { gap: 6px; }
+}
+/* state overrides must follow the width declarations above */
+.ph-n-folders--closed { width: 0 !important; opacity: 0; border-right-color: transparent; }
+.ph-n-paperpane--closed { width: 0 !important; opacity: 0; border-left-color: transparent; }
+.ph-n-folders--closed .ph-n-folders__scroll,
+.ph-n-paperpane--closed .ph-n-paperpane__body { visibility: hidden; }
+/* incomplete sections keep a quiet warning edge without a full card */
+.ph-n-sec--incomplete {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--dsw-alias-state-warn-primary) 55%, transparent);
+  padding-left: var(--ph-s3, 12px);
+}
+/* centre the reading column inside wide editor panes */
+.ph-n-cards,
+.ph-n-doc,
+.ph-n-md { margin-inline: auto; }
+/* ---- v0.22 colour pass: blue chrome, purple AI -------------------------- */
+.ph-n-brand__mark {
+  color: #ffffff;
+  background: var(--ph-mark, #2b95e8);
+  padding: 5px;
+  border-radius: 9px;
+  box-sizing: content-box;
+  box-shadow: 0 3px 12px -4px color-mix(in srgb, var(--ph-mark, #2b95e8) 45%, transparent);
+}
+/* the gradient hairline from the previous pass is gone \u2014 calm flat chrome */
+.ph-n-topbar::after { display: none; }
+.ph-n-topbar { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 3%, var(--ph-bg, var(--dsw-alias-bg-base))); }
+.ph-n-editor__toolbar { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 4%, var(--ph-bg, var(--dsw-alias-bg-base))); }
+.ph-n-listpane__head { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 4%, var(--ph-bg, var(--dsw-alias-bg-base))); }
+.ph-n-paperpane__head { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 3%, var(--ph-bg, var(--dsw-alias-bg-base))); }
+
+.ph-n-listrow--active,
+.ph-n-tree__row--active,
+.ph-n-tree__row--active:hover {
+  background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 11%, transparent);
+  color: var(--ph-accent-text, #0b6fc4);
+}
+.ph-n-paperrow--active {
+  border-color: var(--ph-accent-line, rgba(62, 166, 255, 0.4));
+  background: var(--ph-accent-soft, rgba(62, 166, 255, 0.14));
+}
+.ph-n-doc__ul li::marker,
+.ph-n-card__ul li::marker { color: var(--ph-accent, #3ea6ff); }
+
+/* AI authorship keeps the light purple secondary accent */
+.ph-n-doc__badge--ai {
+  color: var(--ph-soft-text, #655ba1);
+  border-color: var(--ph-soft-line, rgba(155, 135, 245, 0.4));
+  background: var(--ph-soft-bg, rgba(155, 135, 245, 0.16));
+}
+.ph-n-autofix__toggle--on {
+  color: var(--ph-soft-text, #655ba1);
+  border-color: var(--ph-soft-line, rgba(155, 135, 245, 0.4));
+  background: var(--ph-soft-bg, rgba(155, 135, 245, 0.16));
+}
+
+/* hover feedback follows the blue accent */
+.ph-n-listrow:not(.ph-n-listrow--active):hover { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 5%, transparent); }
+.ph-n-paperrow:hover { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 6%, transparent); }
+.ph-n-tree__row:not(.ph-n-tree__row--active):hover { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 7%, transparent); }
+
+/* keep the active row visible while hovered */
+.ph-n-listrow--active:hover { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 14%, transparent); border-color: var(--ph-accent-line, rgba(62, 166, 255, 0.4)); }
+.ph-n-paperrow--active:hover { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 14%, transparent); }
 `;
 var users = 0;
 var element = null;
@@ -5972,10 +8514,10 @@ function ensureNotesStyles() {
 function FolderRow(props) {
   const t = props.t;
   const node = props.node;
-  const [editing, setEditing] = import_react9.default.useState(false);
-  const [value, setValue] = import_react9.default.useState(node.name);
-  const [armed, setArmed] = import_react9.default.useState(false);
-  import_react9.default.useEffect(() => setValue(node.name), [node.name]);
+  const [editing, setEditing] = import_react10.default.useState(false);
+  const [value, setValue] = import_react10.default.useState(node.name);
+  const [armed, setArmed] = import_react10.default.useState(false);
+  import_react10.default.useEffect(() => setValue(node.name), [node.name]);
   const submit = () => {
     const next = String(value || "").trim();
     setEditing(false);
@@ -6027,19 +8569,19 @@ function FolderRow(props) {
 function NotesSidebar(props) {
   const t = props.t;
   const api = props.api;
-  const releaseStyles = import_react9.default.useMemo(() => ensureNotesStyles(), []);
-  const service = import_react9.default.useMemo(() => createNotesService(api), [api]);
-  const [status, setStatus] = import_react9.default.useState("loading");
-  const [tree, setTree] = import_react9.default.useState([]);
-  const [notes, setNotes] = import_react9.default.useState([]);
-  const [total, setTotal] = import_react9.default.useState(0);
-  const [folderId, setFolderId] = import_react9.default.useState("");
-  const [refresh, setRefresh] = import_react9.default.useState(0);
-  const [open, setOpen] = import_react9.default.useState(true);
-  const [editing, setEditing] = import_react9.default.useState(null);
-  const [busy2, setBusy] = import_react9.default.useState(false);
-  import_react9.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  import_react9.default.useEffect(() => {
+  const releaseStyles = import_react10.default.useMemo(() => ensureNotesStyles(), []);
+  const service = import_react10.default.useMemo(() => createNotesService(api), [api]);
+  const [status, setStatus] = import_react10.default.useState("loading");
+  const [tree, setTree] = import_react10.default.useState([]);
+  const [notes, setNotes] = import_react10.default.useState([]);
+  const [total, setTotal] = import_react10.default.useState(0);
+  const [folderId, setFolderId] = import_react10.default.useState("");
+  const [refresh, setRefresh] = import_react10.default.useState(0);
+  const [open, setOpen] = import_react10.default.useState(true);
+  const [editing, setEditing] = import_react10.default.useState(null);
+  const [busy2, setBusy] = import_react10.default.useState(false);
+  import_react10.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  import_react10.default.useEffect(() => {
     let alive = true;
     setStatus("loading");
     service.probe().then((state) => {
@@ -6092,7 +8634,7 @@ function NotesSidebar(props) {
     }).catch((error) => props.pushToast && props.pushToast("error", String(error && error.message || error))).then(() => setBusy(false));
   };
   const walk = (nodes, depth) => nodes.map((node) => h(
-    import_react9.default.Fragment,
+    import_react10.default.Fragment,
     { key: "nf-" + node.id },
     h(FolderRow, { t, node, depth, active: folderId === node.id, onSelect: (id) => setFolderId(folderId === id ? "" : id), onCreateChild: (parentId) => setEditing({ mode: "create", parentId, value: "" }), onRename: renameFolder, onDelete: deleteFolder }),
     node.children && node.children.length > 0 ? walk(node.children, depth + 1) : null
@@ -6116,7 +8658,7 @@ function NotesSidebar(props) {
       h(IconButton, { icon: "folderPlus", size: 13, title: t("notes.folders.new") || "\u65B0\u5EFA\u7B14\u8BB0\u6587\u4EF6\u5939", onClick: () => setEditing({ mode: "create", parentId: null, value: "" }), disabled: busy2 || status !== "ready" })
     ),
     !open ? null : status === "loading" ? h("div", { className: "ph-left__empty" }, h(Spinner)) : status === "unavailable" || status === "error" ? h("div", { className: "ph-left__empty" }, t("notes.unavailable") || "\u7B14\u8BB0\u670D\u52A1\u672A\u5C31\u7EEA") : h(
-      import_react9.default.Fragment,
+      import_react10.default.Fragment,
       null,
       h(
         "div",
@@ -6167,12 +8709,13 @@ var SMART_VIEWS = [
 ];
 function CollectionsPane(props) {
   const t = props.t;
+  const smartSlider = useSlidingThumb();
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const filter = "";
-  const [newOpen, setNewOpen] = import_react10.default.useState(false);
-  const [newName, setNewName] = import_react10.default.useState("");
-  const [newColor, setNewColor] = import_react10.default.useState("blue");
+  const [newOpen, setNewOpen] = import_react11.default.useState(false);
+  const [newName, setNewName] = import_react11.default.useState("");
+  const [newColor, setNewColor] = import_react11.default.useState("blue");
   const filters = snapshot4.filters;
   const collections = (snapshot4.collections || []).filter((collection) => !filter || String(collection.name).toLowerCase().includes(filter.toLowerCase()));
   const tags = (snapshot4.tags || []).filter((tag) => !filter || String(tag.name).toLowerCase().includes(filter.toLowerCase()));
@@ -6219,13 +8762,15 @@ function CollectionsPane(props) {
         { className: "ph-left__section" },
         h(
           "div",
-          { className: "ph-left__list" },
+          { className: "ph-left__list" + (smartSlider.rect ? " ph-left__list--sliding" : ""), ref: smartSlider.ref },
+          h(SlidingThumb, { rect: smartSlider.rect, popKey: filters.view + "|" + (filters.collectionId || "") + "|" + (filters.field || "") }),
           SMART_VIEWS.map(
             (view) => h(
               "button",
               {
                 key: view.id,
                 type: "button",
+                "data-ph-active": filters.view === view.id && !filters.collectionId && !filters.field || view.id === "trash" && filters.view === "trash" ? "true" : void 0,
                 className: "ph-navitem" + (filters.view === view.id && !filters.collectionId && !filters.field ? " ph-navitem--active" : "") + (view.id === "trash" && filters.view === "trash" ? " ph-navitem--active" : ""),
                 onClick: () => controller.setView(view.id)
               },
@@ -6280,16 +8825,16 @@ function CollectionsPane(props) {
 }
 
 // src/surfaces/library/note-inline.jsx
-var import_react15 = __toESM(require("react"), 1);
+var import_react16 = __toESM(require("react"), 1);
 
 // src/surfaces/notes/editor.jsx
-var import_react14 = __toESM(require("react"), 1);
+var import_react15 = __toESM(require("react"), 1);
 
 // src/surfaces/notes/cards.jsx
-var import_react12 = __toESM(require("react"), 1);
+var import_react13 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/markdown.jsx
-var import_react11 = __toESM(require("react"), 1);
+var import_react12 = __toESM(require("react"), 1);
 var SAFE_URL = /^(https?:\/\/|mailto:)/i;
 function inlineNodes(text2, keyPrefix) {
   const nodes = [];
@@ -6309,18 +8854,18 @@ function inlineNodes(text2, keyPrefix) {
     const key = keyPrefix + "-" + (nodes.length + 1);
     if (token.startsWith("`") && token.endsWith("`")) {
       flush();
-      nodes.push(import_react11.default.createElement("code", { key, className: "ph-ai-md__code" }, token.slice(1, -1)));
+      nodes.push(import_react12.default.createElement("code", { key, className: "ph-ai-md__code" }, token.slice(1, -1)));
     } else if (token.startsWith("**") && token.endsWith("**") || token.startsWith("__") && token.endsWith("__")) {
       flush();
-      nodes.push(import_react11.default.createElement("strong", { key }, token.slice(2, -2)));
+      nodes.push(import_react12.default.createElement("strong", { key }, token.slice(2, -2)));
     } else if (token.startsWith("*") && token.endsWith("*") || token.startsWith("_") && token.endsWith("_")) {
       flush();
-      nodes.push(import_react11.default.createElement("em", { key }, token.slice(1, -1)));
+      nodes.push(import_react12.default.createElement("em", { key }, token.slice(1, -1)));
     } else if (token.startsWith("[")) {
       const link = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(token);
       if (link && SAFE_URL.test(link[2])) {
         flush();
-        nodes.push(import_react11.default.createElement("a", { key, href: link[2], target: "_blank", rel: "noopener noreferrer" }, link[1]));
+        nodes.push(import_react12.default.createElement("a", { key, href: link[2], target: "_blank", rel: "noopener noreferrer" }, link[1]));
       } else {
         buffer += token;
       }
@@ -6363,10 +8908,10 @@ function renderMarkdown(text2, options) {
       }
       i += 1;
       blocks.push(
-        import_react11.default.createElement(
+        import_react12.default.createElement(
           "pre",
           { key: nextKey(), className: "ph-ai-md__pre" },
-          import_react11.default.createElement("code", { className: "ph-ai-md__codeblock", "data-language": language || void 0 }, code.join("\n"))
+          import_react12.default.createElement("code", { className: "ph-ai-md__codeblock", "data-language": language || void 0 }, code.join("\n"))
         )
       );
       continue;
@@ -6374,12 +8919,12 @@ function renderMarkdown(text2, options) {
     const heading = /^\s*(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
     if (heading) {
       const level = heading[1].length;
-      blocks.push(import_react11.default.createElement("h" + level, { key: nextKey(), className: "ph-ai-md__h ph-ai-md__h" + level }, inlineNodes(heading[2], nextKey())));
+      blocks.push(import_react12.default.createElement("h" + level, { key: nextKey(), className: "ph-ai-md__h ph-ai-md__h" + level }, inlineNodes(heading[2], nextKey())));
       i += 1;
       continue;
     }
     if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) {
-      blocks.push(import_react11.default.createElement("hr", { key: nextKey(), className: "ph-ai-md__hr" }));
+      blocks.push(import_react12.default.createElement("hr", { key: nextKey(), className: "ph-ai-md__hr" }));
       i += 1;
       continue;
     }
@@ -6389,7 +8934,7 @@ function renderMarkdown(text2, options) {
         quote.push(lines[i].replace(/^\s*>\s?/, ""));
         i += 1;
       }
-      blocks.push(import_react11.default.createElement("blockquote", { key: nextKey(), className: "ph-ai-md__quote" }, renderMarkdown(quote.join("\n"), { keyPrefix: nextKey() })));
+      blocks.push(import_react12.default.createElement("blockquote", { key: nextKey(), className: "ph-ai-md__quote" }, renderMarkdown(quote.join("\n"), { keyPrefix: nextKey() })));
       continue;
     }
     if (/^\s*\|/.test(line) && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
@@ -6401,14 +8946,14 @@ function renderMarkdown(text2, options) {
         i += 1;
       }
       blocks.push(
-        import_react11.default.createElement(
+        import_react12.default.createElement(
           "div",
           { key: nextKey(), className: "ph-ai-md__tablewrap" },
-          import_react11.default.createElement(
+          import_react12.default.createElement(
             "table",
             { className: "ph-ai-md__table" },
-            import_react11.default.createElement("thead", null, import_react11.default.createElement("tr", null, header.map((cell, index) => import_react11.default.createElement("th", { key: index }, inlineNodes(cell, nextKey()))))),
-            import_react11.default.createElement("tbody", null, rows.map((row, rowIndex) => import_react11.default.createElement("tr", { key: rowIndex }, row.map((cell, cellIndex) => import_react11.default.createElement("td", { key: cellIndex }, inlineNodes(cell, nextKey()))))))
+            import_react12.default.createElement("thead", null, import_react12.default.createElement("tr", null, header.map((cell, index) => import_react12.default.createElement("th", { key: index }, inlineNodes(cell, nextKey()))))),
+            import_react12.default.createElement("tbody", null, rows.map((row, rowIndex) => import_react12.default.createElement("tr", { key: rowIndex }, row.map((cell, cellIndex) => import_react12.default.createElement("td", { key: cellIndex }, inlineNodes(cell, nextKey()))))))
           )
         )
       );
@@ -6424,10 +8969,10 @@ function renderMarkdown(text2, options) {
         i += 1;
       }
       blocks.push(
-        import_react11.default.createElement(
+        import_react12.default.createElement(
           ordered ? "ol" : "ul",
           { key: nextKey(), className: "ph-ai-md__list" },
-          items2.map((item, index) => import_react11.default.createElement("li", { key: index }, inlineNodes(item, nextKey())))
+          items2.map((item, index) => import_react12.default.createElement("li", { key: index }, inlineNodes(item, nextKey())))
         )
       );
       continue;
@@ -6441,15 +8986,15 @@ function renderMarkdown(text2, options) {
     const children = [];
     paragraph.forEach((part, row) => {
       const pieces = inlineNodes(part, nextKey());
-      pieces.forEach((piece, index) => children.push(import_react11.default.isValidElement(piece) ? import_react11.default.cloneElement(piece, { key: nextKey() }) : piece));
-      if (row < paragraph.length - 1) children.push(import_react11.default.createElement("br", { key: nextKey() }));
+      pieces.forEach((piece, index) => children.push(import_react12.default.isValidElement(piece) ? import_react12.default.cloneElement(piece, { key: nextKey() }) : piece));
+      if (row < paragraph.length - 1) children.push(import_react12.default.createElement("br", { key: nextKey() }));
     });
-    blocks.push(import_react11.default.createElement("p", { key: nextKey(), className: "ph-ai-md__p" }, children));
+    blocks.push(import_react12.default.createElement("p", { key: nextKey(), className: "ph-ai-md__p" }, children));
   }
   return blocks;
 }
 function Markdown(props) {
-  return import_react11.default.createElement("div", { className: "ph-ai-md " + (props && props.className ? props.className : "") }, renderMarkdown(props && props.text, { keyPrefix: props && props.keyPrefix || "md" }));
+  return import_react12.default.createElement("div", { className: "ph-ai-md " + (props && props.className ? props.className : "") }, renderMarkdown(props && props.text, { keyPrefix: props && props.keyPrefix || "md" }));
 }
 
 // src/surfaces/notes/cards.jsx
@@ -6478,25 +9023,25 @@ function FigureBlock(props) {
   const block = props.block;
   const captionText = captionWithoutLabel(block);
   const onClick = figureClick(props, block);
-  const media = import_react12.default.createElement("img", {
+  const media = import_react13.default.createElement("img", {
     className: "ph-n-doc__figure-img",
     src: block.imageUrl || "/pappers-hall/figure/" + block.figureId + ".png",
     alt: block.caption || (block.label ? t("notes.figure.label", { label: block.label }) : ""),
     loading: "lazy"
   });
-  return import_react12.default.createElement(
+  return import_react13.default.createElement(
     "figure",
     { className: "ph-n-doc__figure", "data-figure-id": block.figureId },
-    onClick ? import_react12.default.createElement("button", { type: "button", className: "ph-n-doc__figure-media", onClick, title: t("notes.figure.open") }, media) : import_react12.default.createElement("div", { className: "ph-n-doc__figure-media" }, media),
-    import_react12.default.createElement(
+    onClick ? import_react13.default.createElement("button", { type: "button", className: "ph-n-doc__figure-media", onClick, title: t("notes.figure.open") }, media) : import_react13.default.createElement("div", { className: "ph-n-doc__figure-media" }, media),
+    import_react13.default.createElement(
       "figcaption",
       { className: "ph-n-doc__figure-cap" },
-      import_react12.default.createElement("span", { className: "ph-n-doc__figure-label" }, t("notes.figure.label", { label: block.label || "?" })),
-      import_react12.default.createElement("span", { className: "ph-n-doc__figure-text" }, captionText),
-      onClick ? import_react12.default.createElement(
+      import_react13.default.createElement("span", { className: "ph-n-doc__figure-label" }, t("notes.figure.label", { label: block.label || "?" })),
+      import_react13.default.createElement("span", { className: "ph-n-doc__figure-text" }, captionText),
+      onClick ? import_react13.default.createElement(
         "button",
         { type: "button", className: "ph-n-doc__figure-jump", onClick, title: t("notes.figure.open") },
-        import_react12.default.createElement(Icon, { name: "external", size: 11 }),
+        import_react13.default.createElement(Icon, { name: "external", size: 11 }),
         t("notes.figure.openShort")
       ) : null
     )
@@ -6504,14 +9049,14 @@ function FigureBlock(props) {
 }
 function ColumnsBlock(props) {
   const columns = Array.isArray(props.block.columns) ? props.block.columns : [];
-  return import_react12.default.createElement(
+  return import_react13.default.createElement(
     "div",
     { className: "ph-n-doc__columns" },
     columns.map(
-      (column, index) => import_react12.default.createElement(
+      (column, index) => import_react13.default.createElement(
         "div",
         { key: index, className: "ph-n-doc__col" },
-        (column.blocks || []).map((block, blockIndex) => import_react12.default.createElement(Block, { key: blockIndex, block, t: props.t, onOpenFigure: props.onOpenFigure }))
+        (column.blocks || []).map((block, blockIndex) => import_react13.default.createElement(Block, { key: blockIndex, block, t: props.t, onOpenFigure: props.onOpenFigure }))
       )
     )
   );
@@ -6519,42 +9064,42 @@ function ColumnsBlock(props) {
 function Block(props) {
   const block = props.block;
   if (!block || !block.type) return null;
-  if (block.type === "heading") return import_react12.default.createElement("h4", { className: "ph-n-doc__h" }, block.text);
-  if (block.type === "paragraph") return import_react12.default.createElement("p", { className: "ph-n-doc__p" }, block.text);
-  if (block.type === "quote") return import_react12.default.createElement("blockquote", { className: "ph-n-doc__quote" }, block.text);
+  if (block.type === "heading") return import_react13.default.createElement("h4", { className: "ph-n-doc__h" }, block.text);
+  if (block.type === "paragraph") return import_react13.default.createElement("p", { className: "ph-n-doc__p" }, block.text);
+  if (block.type === "quote") return import_react13.default.createElement("blockquote", { className: "ph-n-doc__quote" }, block.text);
   if (block.type === "bullets") {
-    return import_react12.default.createElement(
+    return import_react13.default.createElement(
       "ul",
       { className: "ph-n-doc__ul" },
-      (block.items || []).map((item, index) => import_react12.default.createElement("li", { key: index }, item))
+      (block.items || []).map((item, index) => import_react13.default.createElement("li", { key: index }, item))
     );
   }
   if (block.type === "table") {
     const width = block.width || Math.max(block.headers.length, ...block.rows.map((row) => row.length));
-    const head = block.headers.length > 0 ? import_react12.default.createElement(
+    const head = block.headers.length > 0 ? import_react13.default.createElement(
       "thead",
       null,
-      import_react12.default.createElement(
+      import_react13.default.createElement(
         "tr",
         null,
-        Array.from({ length: width }, (_, index) => import_react12.default.createElement("th", { key: index }, block.headers[index] || ""))
+        Array.from({ length: width }, (_, index) => import_react13.default.createElement("th", { key: index }, block.headers[index] || ""))
       )
     ) : null;
-    return import_react12.default.createElement(
+    return import_react13.default.createElement(
       "div",
       { className: "ph-n-doc__tablewrap" },
-      import_react12.default.createElement(
+      import_react13.default.createElement(
         "table",
         { className: "ph-n-doc__table" },
         head,
-        import_react12.default.createElement(
+        import_react13.default.createElement(
           "tbody",
           null,
           block.rows.map(
-            (row, rowIndex) => import_react12.default.createElement(
+            (row, rowIndex) => import_react13.default.createElement(
               "tr",
               { key: rowIndex },
-              Array.from({ length: width }, (_, cellIndex) => import_react12.default.createElement("td", { key: cellIndex }, row[cellIndex] || ""))
+              Array.from({ length: width }, (_, cellIndex) => import_react13.default.createElement("td", { key: cellIndex }, row[cellIndex] || ""))
             )
           )
         )
@@ -6564,20 +9109,20 @@ function Block(props) {
   if (block.type === "callout") {
     const tone = block.tone === "warn" || block.tone === "success" ? " ph-n-doc__callout--" + block.tone : "";
     const icon = block.tone === "warn" ? "warning" : block.tone === "success" ? "checkCircle" : "info";
-    return import_react12.default.createElement(
+    return import_react13.default.createElement(
       "div",
       { className: "ph-n-doc__callout" + tone },
-      import_react12.default.createElement(Icon, { name: icon, size: 14, className: "ph-n-doc__callout-icon" }),
-      import_react12.default.createElement(
+      import_react13.default.createElement(Icon, { name: icon, size: 14, className: "ph-n-doc__callout-icon" }),
+      import_react13.default.createElement(
         "div",
         { className: "ph-n-doc__callout-body" },
-        block.title ? import_react12.default.createElement("div", { className: "ph-n-doc__callout-title" }, block.title) : null,
-        import_react12.default.createElement("div", null, block.text)
+        block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__callout-title" }, block.title) : null,
+        import_react13.default.createElement("div", null, block.text)
       )
     );
   }
-  if (block.type === "figure") return import_react12.default.createElement(FigureBlock, { t: props.t, block, onOpenFigure: props.onOpenFigure });
-  if (block.type === "columns") return import_react12.default.createElement(ColumnsBlock, { t: props.t, block, onOpenFigure: props.onOpenFigure });
+  if (block.type === "figure") return import_react13.default.createElement(FigureBlock, { t: props.t, block, onOpenFigure: props.onOpenFigure });
+  if (block.type === "columns") return import_react13.default.createElement(ColumnsBlock, { t: props.t, block, onOpenFigure: props.onOpenFigure });
   return null;
 }
 function isWideBlock(block) {
@@ -6590,12 +9135,12 @@ function SectionBadges(props) {
   const t = props.t;
   const row = props.row;
   const incomplete = props.incomplete;
-  return import_react12.default.createElement(
+  return import_react13.default.createElement(
     "span",
     { className: "ph-n-doc__badges" },
-    row.beautified ? import_react12.default.createElement("span", { className: "ph-n-doc__badge ph-n-doc__badge--ai", title: t("notes.cards.beautifiedHint") }, import_react12.default.createElement(Icon, { name: "sparkle", size: 10 }), "AI") : import_react12.default.createElement("span", { className: "ph-n-doc__badge", title: t("notes.cards.originalHint") }, t("notes.cards.original")),
-    incomplete ? import_react12.default.createElement("span", { className: "ph-n-doc__badge ph-n-doc__badge--warn", title: t("notes.cards.incompleteHint") }, t("notes.sections.incomplete")) : null,
-    props.onToggleIncomplete ? import_react12.default.createElement(
+    row.beautified ? import_react13.default.createElement("span", { className: "ph-n-doc__badge ph-n-doc__badge--ai", title: t("notes.cards.beautifiedHint") }, import_react13.default.createElement(Icon, { name: "sparkle", size: 10 }), "AI") : import_react13.default.createElement("span", { className: "ph-n-doc__badge", title: t("notes.cards.originalHint") }, t("notes.cards.original")),
+    incomplete ? import_react13.default.createElement("span", { className: "ph-n-doc__badge ph-n-doc__badge--warn", title: t("notes.cards.incompleteHint") }, t("notes.sections.incomplete")) : null,
+    props.onToggleIncomplete ? import_react13.default.createElement(
       "button",
       {
         type: "button",
@@ -6612,13 +9157,13 @@ function NoteCards(props) {
   const rows = Array.isArray(props.rows) ? props.rows : [];
   const incomplete = new Set(Array.isArray(props.incompleteIds) ? props.incompleteIds : []);
   if (rows.length === 0) {
-    return import_react12.default.createElement(
+    return import_react13.default.createElement(
       "div",
       { className: "ph-n-doc__empty" },
-      import_react12.default.createElement("p", { className: "ph-n-caption" }, t("notes.cards.empty"))
+      import_react13.default.createElement("p", { className: "ph-n-caption" }, t("notes.cards.empty"))
     );
   }
-  return import_react12.default.createElement(
+  return import_react13.default.createElement(
     "div",
     { className: "ph-n-doc" },
     rows.map((row) => {
@@ -6629,29 +9174,29 @@ function NoteCards(props) {
       if (!row.beautified) classes.push("ph-n-doc__sec--original");
       if (isIncomplete) classes.push("ph-n-doc__sec--incomplete");
       const heading = headingLabel(row);
-      const body = row.beautified ? import_react12.default.createElement(
+      const body = row.beautified ? import_react13.default.createElement(
         "div",
         { className: "ph-n-doc__body" + (style === "columns" ? " ph-n-doc__flow" : "") },
         (row.blocks || []).map(
-          (block, index) => import_react12.default.createElement(
+          (block, index) => import_react13.default.createElement(
             "div",
             { key: index, className: "ph-n-doc__block" + (isWideBlock(block) ? " ph-n-doc__block--wide" : "") },
-            import_react12.default.createElement(Block, { t, block, onOpenFigure: props.onOpenFigure })
+            import_react13.default.createElement(Block, { t, block, onOpenFigure: props.onOpenFigure })
           )
         )
-      ) : import_react12.default.createElement(
+      ) : import_react13.default.createElement(
         "div",
         { className: "ph-n-doc__body ph-n-doc__body--original" },
-        import_react12.default.createElement(Markdown, { text: section.text || "", className: "ph-n-md", keyPrefix: "sec-" + section.id })
+        import_react13.default.createElement(Markdown, { text: section.text || "", className: "ph-n-md", keyPrefix: "sec-" + section.id })
       );
-      return import_react12.default.createElement(
+      return import_react13.default.createElement(
         "section",
         { key: section.id, className: classes.join(" "), "data-section-id": section.id, "data-style": style, "data-beautified": row.beautified ? "true" : "false" },
-        import_react12.default.createElement(
+        import_react13.default.createElement(
           "div",
           { className: "ph-n-doc__eyebrow" },
-          heading ? import_react12.default.createElement("h3", { className: "ph-n-doc__heading", title: heading }, heading) : import_react12.default.createElement("span", { className: "ph-n-doc__heading ph-n-doc__heading--none" }, t("notes.section.untitled")),
-          import_react12.default.createElement(SectionBadges, {
+          heading ? import_react13.default.createElement("h3", { className: "ph-n-doc__heading", title: heading }, heading) : import_react13.default.createElement("span", { className: "ph-n-doc__heading ph-n-doc__heading--none" }, t("notes.section.untitled")),
+          import_react13.default.createElement(SectionBadges, {
             t,
             row,
             incomplete: isIncomplete,
@@ -6659,17 +9204,17 @@ function NoteCards(props) {
           })
         ),
         body,
-        !row.beautified && !isIncomplete ? import_react12.default.createElement("p", { className: "ph-n-doc__note" }, t("notes.cards.staleHint")) : null
+        !row.beautified && !isIncomplete ? import_react13.default.createElement("p", { className: "ph-n-doc__note" }, t("notes.cards.staleHint")) : null
       );
     })
   );
 }
 
 // src/surfaces/notes/dialogs.jsx
-var import_react13 = __toESM(require("react"), 1);
+var import_react14 = __toESM(require("react"), 1);
 function Modal(props) {
   const t = props.t;
-  import_react13.default.useEffect(() => {
+  import_react14.default.useEffect(() => {
     if (typeof document === "undefined") return void 0;
     const onKey = (event) => {
       if (event.key === "Escape" && !props.busy) {
@@ -6680,27 +9225,27 @@ function Modal(props) {
     document.addEventListener("keydown", onKey, true);
     return () => document.removeEventListener("keydown", onKey, true);
   }, [props.busy, props.onClose]);
-  return import_react13.default.createElement(
+  return import_react14.default.createElement(
     "div",
     { className: "ph-n-modal-backdrop", onMouseDown: (event) => {
       if (event.target === event.currentTarget && !props.busy && props.onClose) props.onClose();
     } },
-    import_react13.default.createElement(
+    import_react14.default.createElement(
       "div",
       { className: "ph-n-modal" + (props.wide ? " ph-n-modal--wide" : ""), role: "dialog", "aria-modal": "true", "aria-label": props.title },
-      import_react13.default.createElement(
+      import_react14.default.createElement(
         "div",
         { className: "ph-n-modal__head" },
-        import_react13.default.createElement(
+        import_react14.default.createElement(
           "div",
           { className: "ph-n-modal__titles" },
-          import_react13.default.createElement("h2", { className: "ph-n-modal__title" }, props.title),
-          props.desc ? import_react13.default.createElement("p", { className: "ph-n-modal__desc" }, props.desc) : null
+          import_react14.default.createElement("h2", { className: "ph-n-modal__title" }, props.title),
+          props.desc ? import_react14.default.createElement("p", { className: "ph-n-modal__desc" }, props.desc) : null
         ),
-        import_react13.default.createElement(IconButton, { icon: "close", title: t("common.close"), onClick: props.busy ? void 0 : props.onClose, disabled: props.busy })
+        import_react14.default.createElement(IconButton, { icon: "close", title: t("common.close"), onClick: props.busy ? void 0 : props.onClose, disabled: props.busy })
       ),
-      import_react13.default.createElement("div", { className: "ph-n-modal__body ph-n-scroll" }, props.children),
-      import_react13.default.createElement("div", { className: "ph-n-modal__foot" }, props.footer)
+      import_react14.default.createElement("div", { className: "ph-n-modal__body ph-n-scroll" }, props.children),
+      import_react14.default.createElement("div", { className: "ph-n-modal__foot" }, props.footer)
     )
   );
 }
@@ -6727,15 +9272,15 @@ function BeautifyDialog(props) {
     unbeautified: completeSections.filter((section) => !beautified.has(section.id)),
     selection: selectionSections
   };
-  const [scope, setScope] = import_react13.default.useState(() => scene.unbeautified.length > 0 ? "unbeautified" : "all");
-  const [direction, setDirection] = import_react13.default.useState("scientific");
-  const [layout, setLayout] = import_react13.default.useState("auto");
-  const [status, setStatus] = import_react13.default.useState({ phase: "idle", message: "", meta: null });
-  const [ai, setAi] = import_react13.default.useState(() => ({ loading: true, available: null, reason: "", model: "" }));
-  const [figures, setFigures] = import_react13.default.useState({ status: "loading", candidates: [] });
-  const [useFigures, setUseFigures] = import_react13.default.useState(false);
+  const [scope, setScope] = import_react14.default.useState(() => scene.unbeautified.length > 0 ? "unbeautified" : "all");
+  const [direction, setDirection] = import_react14.default.useState("scientific");
+  const [layout, setLayout] = import_react14.default.useState("auto");
+  const [status, setStatus] = import_react14.default.useState({ phase: "idle", message: "", meta: null });
+  const [ai, setAi] = import_react14.default.useState(() => ({ loading: true, available: null, reason: "", model: "" }));
+  const [figures, setFigures] = import_react14.default.useState({ status: "loading", candidates: [] });
+  const [useFigures, setUseFigures] = import_react14.default.useState(false);
   const busy2 = status.phase === "running";
-  import_react13.default.useEffect(() => {
+  import_react14.default.useEffect(() => {
     let alive = true;
     if (!service || typeof service.figureCandidates !== "function") {
       setFigures({ status: "ready", candidates: [] });
@@ -6756,7 +9301,7 @@ function BeautifyDialog(props) {
       alive = false;
     };
   }, [props.note, props.paperLinks, service]);
-  import_react13.default.useEffect(() => {
+  import_react14.default.useEffect(() => {
     let alive = true;
     if (props.aiStatus) {
       setAi({
@@ -6821,7 +9366,7 @@ function BeautifyDialog(props) {
     { id: "all", label: t("notes.beautify.scope.all"), count: scene.all.length }
   ];
   if (props.selection) scopeItems.push({ id: "selection", label: t("notes.beautify.scope.selection"), count: scene.selection.length });
-  return import_react13.default.createElement(
+  return import_react14.default.createElement(
     Modal,
     {
       t,
@@ -6831,13 +9376,13 @@ function BeautifyDialog(props) {
       busy: busy2,
       wide: true,
       footer: [
-        import_react13.default.createElement(
+        import_react14.default.createElement(
           "button",
           { key: "cancel", type: "button", className: "ph-btn ph-btn--secondary ph-btn--md", onClick: props.onClose, disabled: busy2 },
-          import_react13.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
+          import_react14.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
         ),
-        import_react13.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
-        import_react13.default.createElement(
+        import_react14.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
+        import_react14.default.createElement(
           "button",
           {
             key: "start",
@@ -6847,26 +9392,26 @@ function BeautifyDialog(props) {
             disabled: busy2 || activeSections.length === 0 || ai.available === false,
             title: ai.available === false ? t("notes.beautify.aiUnavailable") : void 0
           },
-          busy2 ? import_react13.default.createElement("span", { className: "ph-spinner ph-spinner--inline", "aria-hidden": "true" }) : import_react13.default.createElement(Icon, { name: "sparkle", size: 14 }),
-          import_react13.default.createElement("span", { className: "ph-btn__label" }, busy2 ? t("notes.beautify.running") : t("notes.beautify.start"))
+          busy2 ? import_react14.default.createElement("span", { className: "ph-spinner ph-spinner--inline", "aria-hidden": "true" }) : import_react14.default.createElement(Icon, { name: "sparkle", size: 14 }),
+          import_react14.default.createElement("span", { className: "ph-btn__label" }, busy2 ? t("notes.beautify.running") : t("notes.beautify.start"))
         )
       ]
     },
-    ai.loading ? import_react13.default.createElement("div", { className: "ph-n-progress" }, import_react13.default.createElement(Spinner), import_react13.default.createElement("span", null, t("notes.beautify.checkingAi"))) : ai.available === false ? import_react13.default.createElement(
+    ai.loading ? import_react14.default.createElement("div", { className: "ph-n-progress" }, import_react14.default.createElement(Spinner), import_react14.default.createElement("span", null, t("notes.beautify.checkingAi"))) : ai.available === false ? import_react14.default.createElement(
       "div",
       { className: "ph-n-error" },
-      import_react13.default.createElement(Icon, { name: "warning", size: 14 }),
-      import_react13.default.createElement("span", null, t("notes.beautify.unavailable", { reason: ai.reason || t("common.unavailable") }))
+      import_react14.default.createElement(Icon, { name: "warning", size: 14 }),
+      import_react14.default.createElement("span", null, t("notes.beautify.unavailable", { reason: ai.reason || t("common.unavailable") }))
     ) : null,
-    import_react13.default.createElement(
+    import_react14.default.createElement(
       "div",
       { className: "ph-n-field" },
-      import_react13.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.direction")),
-      import_react13.default.createElement(
+      import_react14.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.direction")),
+      import_react14.default.createElement(
         "div",
         { className: "ph-n-choices" },
         DIRECTIONS.map(
-          (item) => import_react13.default.createElement(
+          (item) => import_react14.default.createElement(
             "button",
             {
               key: item.id,
@@ -6876,79 +9421,79 @@ function BeautifyDialog(props) {
               "aria-pressed": direction === item.id ? "true" : "false",
               disabled: busy2
             },
-            import_react13.default.createElement("span", { className: "ph-n-choice__title" }, t(item.title)),
-            import_react13.default.createElement("span", { className: "ph-n-choice__desc" }, t(item.desc))
+            import_react14.default.createElement("span", { className: "ph-n-choice__title" }, t(item.title)),
+            import_react14.default.createElement("span", { className: "ph-n-choice__desc" }, t(item.desc))
           )
         )
       ),
-      import_react13.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.directionHint"))
+      import_react14.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.directionHint"))
     ),
-    import_react13.default.createElement(
+    import_react14.default.createElement(
       "div",
       { className: "ph-n-field" },
-      import_react13.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.layout")),
-      import_react13.default.createElement(
+      import_react14.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.layout")),
+      import_react14.default.createElement(
         "div",
         { className: "ph-n-radio-row" },
         LAYOUTS.map(
-          (item) => import_react13.default.createElement(
+          (item) => import_react14.default.createElement(
             "label",
             { key: item.id, className: "ph-n-radio", onClick: () => setLayout(item.id) },
-            import_react13.default.createElement("input", { type: "radio", checked: layout === item.id, onChange: () => setLayout(item.id), disabled: busy2, name: "ph-n-layout" }),
-            import_react13.default.createElement("span", null, t(item.label))
+            import_react14.default.createElement("input", { type: "radio", checked: layout === item.id, onChange: () => setLayout(item.id), disabled: busy2, name: "ph-n-layout" }),
+            import_react14.default.createElement("span", null, t(item.label))
           )
         )
       )
     ),
-    import_react13.default.createElement(
+    import_react14.default.createElement(
       "div",
       { className: "ph-n-field" },
-      import_react13.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.scope")),
-      import_react13.default.createElement(
+      import_react14.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.scope")),
+      import_react14.default.createElement(
         "div",
         { className: "ph-n-radio-row" },
         scopeItems.map(
-          (item) => import_react13.default.createElement(
+          (item) => import_react14.default.createElement(
             "label",
             { key: item.id, className: "ph-n-radio", onClick: () => setScope(item.id) },
-            import_react13.default.createElement("input", {
+            import_react14.default.createElement("input", {
               type: "radio",
               checked: scope === item.id,
               onChange: () => setScope(item.id),
               disabled: busy2 || item.count === 0,
               name: "ph-n-scope"
             }),
-            import_react13.default.createElement("span", null, item.label + " (" + item.count + ")")
+            import_react14.default.createElement("span", null, item.label + " (" + item.count + ")")
           )
         )
       )
     ),
-    import_react13.default.createElement(
+    import_react14.default.createElement(
       "div",
       { className: "ph-n-field" },
-      import_react13.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.figures")),
-      figures.status === "loading" ? import_react13.default.createElement("div", { className: "ph-n-progress" }, import_react13.default.createElement(Spinner), import_react13.default.createElement("span", null, t("notes.beautify.figuresLoading"))) : figures.candidates.length > 0 ? import_react13.default.createElement(
+      import_react14.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.figures")),
+      figures.status === "loading" ? import_react14.default.createElement("div", { className: "ph-n-progress" }, import_react14.default.createElement(Spinner), import_react14.default.createElement("span", null, t("notes.beautify.figuresLoading"))) : figures.candidates.length > 0 ? import_react14.default.createElement(
         "div",
         { className: "ph-n-radio-row" },
-        import_react13.default.createElement(
+        import_react14.default.createElement(
           "label",
           { className: "ph-n-radio", onClick: () => setUseFigures((value) => !value) },
-          import_react13.default.createElement("input", {
+          import_react14.default.createElement("input", {
             type: "checkbox",
             checked: useFigures,
             onChange: () => setUseFigures((value) => !value),
             disabled: busy2
           }),
-          import_react13.default.createElement("span", null, t("notes.beautify.useFigures", { count: figures.candidates.length }))
+          import_react14.default.createElement("span", null, t("notes.beautify.useFigures", { count: figures.candidates.length }))
         )
-      ) : import_react13.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.noFigures")),
-      import_react13.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.figuresHint"))
+      ) : import_react14.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.noFigures")),
+      import_react14.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.figuresHint"))
     ),
-    import_react13.default.createElement(
+    import_react14.default.createElement(
       "div",
       { className: "ph-n-summary" },
-      import_react13.default.createElement(Icon, { name: "info", size: 14, className: "ph-n-summary__icon" }),
-      import_react13.default.createElement(
+      import_react14.default.createElement(Icon, { name: "info", size: 14, className: "ph-n-summary__icon" }),
+      import_react14.default.createElement(
         "div",
         null,
         t("notes.beautify.sections", { count: activeSections.length }),
@@ -6956,21 +9501,21 @@ function BeautifyDialog(props) {
         skippedIncomplete ? " \xB7 " + t("notes.beautify.noComplete") : ""
       )
     ),
-    status.phase === "running" ? import_react13.default.createElement("div", { className: "ph-n-progress" }, import_react13.default.createElement(Spinner), import_react13.default.createElement("span", null, t("notes.beautify.running"))) : null,
-    status.phase === "error" ? import_react13.default.createElement("div", { className: "ph-n-error" }, import_react13.default.createElement(Icon, { name: "warning", size: 14 }), import_react13.default.createElement("span", null, status.message)) : null
+    status.phase === "running" ? import_react14.default.createElement("div", { className: "ph-n-progress" }, import_react14.default.createElement(Spinner), import_react14.default.createElement("span", null, t("notes.beautify.running"))) : null,
+    status.phase === "error" ? import_react14.default.createElement("div", { className: "ph-n-error" }, import_react14.default.createElement(Icon, { name: "warning", size: 14 }), import_react14.default.createElement("span", null, status.message)) : null
   );
 }
 function RevisionsDialog(props) {
   const t = props.t;
   const service = props.service;
-  const [state, setState] = import_react13.default.useState({ status: "loading", items: [], error: "" });
-  const [confirming, setConfirming] = import_react13.default.useState(0);
-  const [busy2, setBusy] = import_react13.default.useState(false);
-  const load = import_react13.default.useCallback(() => {
+  const [state, setState] = import_react14.default.useState({ status: "loading", items: [], error: "" });
+  const [confirming, setConfirming] = import_react14.default.useState(0);
+  const [busy2, setBusy] = import_react14.default.useState(false);
+  const load = import_react14.default.useCallback(() => {
     setState({ status: "loading", items: [], error: "" });
     Promise.resolve(service.revisions(props.noteId)).then((items2) => setState({ status: "ready", items: Array.isArray(items2) ? items2 : [], error: "" })).catch((error) => setState({ status: "error", items: [], error: String(error && error.message || error) }));
   }, [props.noteId, service]);
-  import_react13.default.useEffect(() => {
+  import_react14.default.useEffect(() => {
     load();
   }, [load]);
   const restore = (revision) => {
@@ -6990,7 +9535,7 @@ function RevisionsDialog(props) {
     const translated = t(key);
     return translated === key ? t("notes.history.reason.update") : translated;
   };
-  return import_react13.default.createElement(
+  return import_react14.default.createElement(
     Modal,
     {
       t,
@@ -6999,49 +9544,49 @@ function RevisionsDialog(props) {
       onClose: props.onClose,
       busy: busy2,
       footer: [
-        import_react13.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
-        import_react13.default.createElement(
+        import_react14.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
+        import_react14.default.createElement(
           "button",
           { key: "close", type: "button", className: "ph-btn ph-btn--secondary ph-btn--md", onClick: props.onClose, disabled: busy2 },
-          import_react13.default.createElement("span", { className: "ph-btn__label" }, t("common.close"))
+          import_react14.default.createElement("span", { className: "ph-btn__label" }, t("common.close"))
         )
       ]
     },
-    state.status === "loading" ? import_react13.default.createElement("div", { className: "ph-n-progress" }, import_react13.default.createElement(Spinner), import_react13.default.createElement("span", null, t("notes.history.loading"))) : null,
-    state.status === "error" ? import_react13.default.createElement(
+    state.status === "loading" ? import_react14.default.createElement("div", { className: "ph-n-progress" }, import_react14.default.createElement(Spinner), import_react14.default.createElement("span", null, t("notes.history.loading"))) : null,
+    state.status === "error" ? import_react14.default.createElement(
       "div",
       { className: "ph-n-error" },
-      import_react13.default.createElement(Icon, { name: "warning", size: 14 }),
-      import_react13.default.createElement("span", null, state.error || t("common.unavailable")),
-      import_react13.default.createElement(
+      import_react14.default.createElement(Icon, { name: "warning", size: 14 }),
+      import_react14.default.createElement("span", null, state.error || t("common.unavailable")),
+      import_react14.default.createElement(
         "button",
         { type: "button", className: "ph-btn ph-btn--secondary ph-btn--sm", onClick: load },
-        import_react13.default.createElement("span", { className: "ph-btn__label" }, t("common.retry"))
+        import_react14.default.createElement("span", { className: "ph-btn__label" }, t("common.retry"))
       )
     ) : null,
-    state.status === "ready" && state.items.length === 0 ? import_react13.default.createElement(EmptyState, { compact: true, icon: "history", title: t("notes.history.empty") }) : null,
-    state.items.length > 0 ? import_react13.default.createElement(
+    state.status === "ready" && state.items.length === 0 ? import_react14.default.createElement(EmptyState, { compact: true, icon: "history", title: t("notes.history.empty") }) : null,
+    state.items.length > 0 ? import_react14.default.createElement(
       "div",
       { className: "ph-n-revlist" },
       state.items.map(
-        (item, index) => import_react13.default.createElement(
+        (item, index) => import_react14.default.createElement(
           "div",
           { key: String(item.revision) + "-" + index, className: "ph-n-revrow" + (item.revision === props.currentRevision ? " ph-n-revrow--current" : "") },
-          import_react13.default.createElement(
+          import_react14.default.createElement(
             "div",
             { className: "ph-n-revrow__main" },
-            import_react13.default.createElement(
+            import_react14.default.createElement(
               "span",
               { className: "ph-n-revrow__label" },
               "r" + item.revision + " \xB7 " + reasonLabel3(item.reason) + (item.revision === props.currentRevision ? " \xB7 " + t("notes.history.current") : "")
             ),
-            import_react13.default.createElement(
+            import_react14.default.createElement(
               "span",
               { className: "ph-n-revrow__meta" },
               formatNoteTime(item.createdAt) + " \xB7 " + t("notes.history.length", { count: item.contentMdLength || 0 }) + (item.hasContentJson ? " \xB7 " + t("notes.cards.beautified") : "")
             )
           ),
-          import_react13.default.createElement(
+          import_react14.default.createElement(
             "button",
             {
               type: "button",
@@ -7050,24 +9595,24 @@ function RevisionsDialog(props) {
               disabled: busy2 || item.revision === props.currentRevision,
               title: t("notes.history.restore")
             },
-            import_react13.default.createElement("span", { className: "ph-btn__label" }, confirming === item.revision ? t("notes.history.restoreConfirm") : t("notes.history.restore"))
+            import_react14.default.createElement("span", { className: "ph-btn__label" }, confirming === item.revision ? t("notes.history.restoreConfirm") : t("notes.history.restore"))
           )
         )
       )
     ) : null,
-    import_react13.default.createElement("p", { className: "ph-n-field__hint" }, t("notes.history.restoreHint"))
+    import_react14.default.createElement("p", { className: "ph-n-field__hint" }, t("notes.history.restoreHint"))
   );
 }
 function PaperLinkDialog(props) {
   const t = props.t;
   const api = props.api;
   const initial = Array.isArray(props.note && props.note.paperIds) ? props.note.paperIds : [];
-  const [selected, setSelected] = import_react13.default.useState(() => new Set(initial));
-  const [query, setQuery] = import_react13.default.useState("");
-  const [state, setState] = import_react13.default.useState({ status: "idle", items: [], error: "" });
-  const [busy2, setBusy] = import_react13.default.useState(false);
-  const debounced = import_react13.default.useRef("");
-  import_react13.default.useEffect(() => {
+  const [selected, setSelected] = import_react14.default.useState(() => new Set(initial));
+  const [query, setQuery] = import_react14.default.useState("");
+  const [state, setState] = import_react14.default.useState({ status: "idle", items: [], error: "" });
+  const [busy2, setBusy] = import_react14.default.useState(false);
+  const debounced = import_react14.default.useRef("");
+  import_react14.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       debounced.current = query;
       setState((previous) => Object.assign({}, previous, { status: "loading" }));
@@ -7098,7 +9643,7 @@ function PaperLinkDialog(props) {
     chain.then(() => props.onClose && props.onClose()).catch(() => setBusy(false));
   };
   const titleOf = (paper) => paper && (paper.titleZh || paper.displayTitle || paper.title) || t("common.untitled");
-  return import_react13.default.createElement(
+  return import_react14.default.createElement(
     Modal,
     {
       t,
@@ -7107,42 +9652,42 @@ function PaperLinkDialog(props) {
       onClose: props.onClose,
       busy: busy2,
       footer: [
-        import_react13.default.createElement(
+        import_react14.default.createElement(
           "button",
           { key: "cancel", type: "button", className: "ph-btn ph-btn--secondary ph-btn--md", onClick: props.onClose, disabled: busy2 },
-          import_react13.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
+          import_react14.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
         ),
-        import_react13.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
-        import_react13.default.createElement(
+        import_react14.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
+        import_react14.default.createElement(
           "button",
           { key: "save", type: "button", className: "ph-btn ph-btn--primary ph-btn--md", onClick: save, disabled: busy2 },
-          busy2 ? import_react13.default.createElement("span", { className: "ph-spinner ph-spinner--inline", "aria-hidden": "true" }) : null,
-          import_react13.default.createElement("span", { className: "ph-btn__label" }, t("notes.papers.save"))
+          busy2 ? import_react14.default.createElement("span", { className: "ph-spinner ph-spinner--inline", "aria-hidden": "true" }) : null,
+          import_react14.default.createElement("span", { className: "ph-btn__label" }, t("notes.papers.save"))
         )
       ]
     },
-    import_react13.default.createElement(SearchInput, { value: query, onChange: setQuery, placeholder: t("notes.papers.search"), clearLabel: t("common.clear") }),
-    import_react13.default.createElement(
+    import_react14.default.createElement(SearchInput, { value: query, onChange: setQuery, placeholder: t("notes.papers.search"), clearLabel: t("common.clear") }),
+    import_react14.default.createElement(
       "div",
       { className: "ph-n-paperpick" },
-      state.status === "loading" ? import_react13.default.createElement("div", { className: "ph-n-progress" }, import_react13.default.createElement(Spinner), import_react13.default.createElement("span", null, t("common.loading"))) : null,
-      state.status === "error" ? import_react13.default.createElement("div", { className: "ph-n-error" }, import_react13.default.createElement(Icon, { name: "warning", size: 14 }), import_react13.default.createElement("span", null, state.error)) : null,
-      state.status === "ready" && state.items.length === 0 ? import_react13.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch") }) : null,
-      import_react13.default.createElement(
+      state.status === "loading" ? import_react14.default.createElement("div", { className: "ph-n-progress" }, import_react14.default.createElement(Spinner), import_react14.default.createElement("span", null, t("common.loading"))) : null,
+      state.status === "error" ? import_react14.default.createElement("div", { className: "ph-n-error" }, import_react14.default.createElement(Icon, { name: "warning", size: 14 }), import_react14.default.createElement("span", null, state.error)) : null,
+      state.status === "ready" && state.items.length === 0 ? import_react14.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch") }) : null,
+      import_react14.default.createElement(
         "div",
         { className: "ph-n-paperpick__list" },
         state.items.map(
-          (paper) => import_react13.default.createElement(
+          (paper) => import_react14.default.createElement(
             "label",
             { key: paper.id, className: "ph-n-paperpick__row" },
-            import_react13.default.createElement("input", { type: "checkbox", checked: selected.has(paper.id), onChange: () => toggle(paper.id) }),
-            import_react13.default.createElement("span", { className: "ph-n-paperpick__title", title: titleOf(paper) }, titleOf(paper)),
-            paper.year ? import_react13.default.createElement("span", { className: "ph-n-caption" }, String(paper.year)) : null
+            import_react14.default.createElement("input", { type: "checkbox", checked: selected.has(paper.id), onChange: () => toggle(paper.id) }),
+            import_react14.default.createElement("span", { className: "ph-n-paperpick__title", title: titleOf(paper) }, titleOf(paper)),
+            paper.year ? import_react14.default.createElement("span", { className: "ph-n-caption" }, String(paper.year)) : null
           )
         )
       )
     ),
-    selected.size > 0 ? import_react13.default.createElement("div", { className: "ph-n-summary" }, import_react13.default.createElement(Icon, { name: "link", size: 14, className: "ph-n-summary__icon" }), import_react13.default.createElement("span", null, t("notes.papers.selected", { count: selected.size }))) : import_react13.default.createElement("div", { className: "ph-n-summary" }, import_react13.default.createElement(Icon, { name: "info", size: 14, className: "ph-n-summary__icon" }), import_react13.default.createElement("span", null, t("notes.papers.none")))
+    selected.size > 0 ? import_react14.default.createElement("div", { className: "ph-n-summary" }, import_react14.default.createElement(Icon, { name: "link", size: 14, className: "ph-n-summary__icon" }), import_react14.default.createElement("span", null, t("notes.papers.selected", { count: selected.size }))) : import_react14.default.createElement("div", { className: "ph-n-summary" }, import_react14.default.createElement(Icon, { name: "info", size: 14, className: "ph-n-summary__icon" }), import_react14.default.createElement("span", null, t("notes.papers.none")))
   );
 }
 
@@ -7151,8 +9696,8 @@ function draftTimeLabel(value) {
   return formatNoteTime(value) || "";
 }
 function Menu(props) {
-  const ref = import_react14.default.useRef(null);
-  import_react14.default.useEffect(() => {
+  const ref = import_react15.default.useRef(null);
+  import_react15.default.useEffect(() => {
     const onDown = (event) => {
       if (ref.current && !ref.current.contains(event.target)) props.onClose();
     };
@@ -7166,11 +9711,11 @@ function Menu(props) {
       document.removeEventListener("keydown", onKey);
     };
   }, [props]);
-  return import_react14.default.createElement(
+  return import_react15.default.createElement(
     "div",
     { className: "ph-n-menu", ref, role: "menu" },
     (props.items || []).filter(Boolean).map(
-      (item) => import_react14.default.createElement(
+      (item) => import_react15.default.createElement(
         "button",
         {
           key: item.id,
@@ -7184,8 +9729,8 @@ function Menu(props) {
           disabled: item.disabled,
           title: item.title
         },
-        item.icon ? import_react14.default.createElement(Icon, { name: item.icon, size: 14 }) : null,
-        import_react14.default.createElement("span", { className: "ph-n-menu__label" }, item.label)
+        item.icon ? import_react15.default.createElement(Icon, { name: item.icon, size: 14 }) : null,
+        import_react15.default.createElement("span", { className: "ph-n-menu__label" }, item.label)
       )
     )
   );
@@ -7196,74 +9741,74 @@ function NoteEditor(props) {
   const compact = props.variant === "compact";
   const note = props.note && props.note.id ? props.note : null;
   const noteId = note ? String(note.id) : "";
-  const [title, setTitle] = import_react14.default.useState(note ? note.title : "");
-  const [content, setContent] = import_react14.default.useState(note ? note.contentMd : "");
-  const [contentJson, setContentJson] = import_react14.default.useState(note ? note.contentJson : null);
-  const [viewMode, setViewMode] = import_react14.default.useState(note && note.contentJson ? "cards" : "original");
-  const [saveState, setSaveState] = import_react14.default.useState({ status: note ? "saved" : "idle", at: 0, message: "" });
-  const [conflict, setConflict] = import_react14.default.useState(null);
-  const [draftFound, setDraftFound] = import_react14.default.useState(null);
-  const [incompleteIds, setIncompleteIds] = import_react14.default.useState(() => note ? resolveIncompleteSections(note.id, sectionizeMarkdown(note.contentMd)) : []);
-  const [beautifyOpen, setBeautifyOpen] = import_react14.default.useState(false);
-  const [beautifySelection, setBeautifySelection] = import_react14.default.useState(null);
-  const [historyOpen, setHistoryOpen] = import_react14.default.useState(false);
-  const [linkOpen, setLinkOpen] = import_react14.default.useState(false);
-  const [menuOpen, setMenuOpen] = import_react14.default.useState(false);
-  const [deleting, setDeleting] = import_react14.default.useState(false);
-  const [deleteOpen, setDeleteOpen] = import_react14.default.useState(false);
-  const [sectionsOpen, setSectionsOpen] = import_react14.default.useState(false);
-  const [aiStatus, setAiStatus] = import_react14.default.useState(props.aiStatus || null);
-  const [autoFix, setAutoFix] = import_react14.default.useState(() => readAutoFix(note ? note.id : ""));
-  const [autoIntro, setAutoIntro] = import_react14.default.useState(false);
-  const [autoOverlay, setAutoOverlay] = import_react14.default.useState(null);
-  const [autoRunning, setAutoRunning] = import_react14.default.useState(false);
-  const [autoStatus, setAutoStatus] = import_react14.default.useState(null);
-  const titleRef = import_react14.default.useRef(null);
-  const contentRef = import_react14.default.useRef(null);
-  const textareaRef = import_react14.default.useRef(null);
-  const noteRef = import_react14.default.useRef(note);
-  const revisionRef = import_react14.default.useRef(note ? note.revision : 0);
-  const localRef = import_react14.default.useRef({ title: note ? note.title : "", content: note ? note.contentMd : "" });
-  const dirtyRef = import_react14.default.useRef(false);
-  const debounceRef = import_react14.default.useRef(null);
-  const retryRef = import_react14.default.useRef(null);
-  const retryCountRef = import_react14.default.useRef(0);
-  const saveSeqRef = import_react14.default.useRef(0);
-  const saveOpRef = import_react14.default.useRef({ id: "", snapshot: "" });
-  const mountedRef = import_react14.default.useRef(true);
-  const loadKeyRef = import_react14.default.useRef("");
-  const onSavedRef = import_react14.default.useRef(props.onSaved);
+  const [title, setTitle] = import_react15.default.useState(note ? note.title : "");
+  const [content, setContent] = import_react15.default.useState(note ? note.contentMd : "");
+  const [contentJson, setContentJson] = import_react15.default.useState(note ? note.contentJson : null);
+  const [viewMode, setViewMode] = import_react15.default.useState(note && note.contentJson ? "cards" : "original");
+  const [saveState, setSaveState] = import_react15.default.useState({ status: note ? "saved" : "idle", at: 0, message: "" });
+  const [conflict, setConflict] = import_react15.default.useState(null);
+  const [draftFound, setDraftFound] = import_react15.default.useState(null);
+  const [incompleteIds, setIncompleteIds] = import_react15.default.useState(() => note ? resolveIncompleteSections(note.id, sectionizeMarkdown(note.contentMd)) : []);
+  const [beautifyOpen, setBeautifyOpen] = import_react15.default.useState(false);
+  const [beautifySelection, setBeautifySelection] = import_react15.default.useState(null);
+  const [historyOpen, setHistoryOpen] = import_react15.default.useState(false);
+  const [linkOpen, setLinkOpen] = import_react15.default.useState(false);
+  const [menuOpen, setMenuOpen] = import_react15.default.useState(false);
+  const [deleting, setDeleting] = import_react15.default.useState(false);
+  const [deleteOpen, setDeleteOpen] = import_react15.default.useState(false);
+  const [sectionsOpen, setSectionsOpen] = import_react15.default.useState(false);
+  const [aiStatus, setAiStatus] = import_react15.default.useState(props.aiStatus || null);
+  const [autoFix, setAutoFix] = import_react15.default.useState(() => readAutoFix(note ? note.id : ""));
+  const [autoIntro, setAutoIntro] = import_react15.default.useState(false);
+  const [autoOverlay, setAutoOverlay] = import_react15.default.useState(null);
+  const [autoRunning, setAutoRunning] = import_react15.default.useState(false);
+  const [autoStatus, setAutoStatus] = import_react15.default.useState(null);
+  const titleRef = import_react15.default.useRef(null);
+  const contentRef = import_react15.default.useRef(null);
+  const textareaRef = import_react15.default.useRef(null);
+  const noteRef = import_react15.default.useRef(note);
+  const revisionRef = import_react15.default.useRef(note ? note.revision : 0);
+  const localRef = import_react15.default.useRef({ title: note ? note.title : "", content: note ? note.contentMd : "" });
+  const dirtyRef = import_react15.default.useRef(false);
+  const debounceRef = import_react15.default.useRef(null);
+  const retryRef = import_react15.default.useRef(null);
+  const retryCountRef = import_react15.default.useRef(0);
+  const saveSeqRef = import_react15.default.useRef(0);
+  const saveOpRef = import_react15.default.useRef({ id: "", snapshot: "" });
+  const mountedRef = import_react15.default.useRef(true);
+  const loadKeyRef = import_react15.default.useRef("");
+  const onSavedRef = import_react15.default.useRef(props.onSaved);
   onSavedRef.current = props.onSaved;
-  const contentJsonRef = import_react14.default.useRef(note ? note.contentJson : null);
-  const incompleteRef = import_react14.default.useRef(incompleteIds);
-  const autoEnabledRef = import_react14.default.useRef(false);
-  const autoDirectionRef = import_react14.default.useRef(DEFAULT_AUTOFIX_DIRECTION);
-  const autoBusyRef = import_react14.default.useRef(false);
-  const autoTimerRef = import_react14.default.useRef(null);
-  const autoOverlayRef = import_react14.default.useRef(null);
-  const autoOverlayTimerRef = import_react14.default.useRef(null);
-  const autoStatusTimerRef = import_react14.default.useRef(null);
-  const autoLastAtRef = import_react14.default.useRef(0);
-  const autoFailRef = import_react14.default.useRef("");
-  const sameNoteRef = import_react14.default.useRef("");
-  import_react14.default.useEffect(() => {
+  const contentJsonRef = import_react15.default.useRef(note ? note.contentJson : null);
+  const incompleteRef = import_react15.default.useRef(incompleteIds);
+  const autoEnabledRef = import_react15.default.useRef(false);
+  const autoDirectionRef = import_react15.default.useRef(DEFAULT_AUTOFIX_DIRECTION);
+  const autoBusyRef = import_react15.default.useRef(false);
+  const autoTimerRef = import_react15.default.useRef(null);
+  const autoOverlayRef = import_react15.default.useRef(null);
+  const autoOverlayTimerRef = import_react15.default.useRef(null);
+  const autoStatusTimerRef = import_react15.default.useRef(null);
+  const autoLastAtRef = import_react15.default.useRef(0);
+  const autoFailRef = import_react15.default.useRef("");
+  const sameNoteRef = import_react15.default.useRef("");
+  import_react15.default.useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
   }, []);
-  import_react14.default.useEffect(() => {
+  import_react15.default.useEffect(() => {
     contentJsonRef.current = contentJson;
   }, [contentJson]);
-  import_react14.default.useEffect(() => {
+  import_react15.default.useEffect(() => {
     incompleteRef.current = incompleteIds;
   }, [incompleteIds]);
-  import_react14.default.useEffect(() => {
+  import_react15.default.useEffect(() => {
     autoEnabledRef.current = autoFix.enabled;
     autoDirectionRef.current = autoFix.direction;
   }, [autoFix]);
   const loadKey = note ? String(note.id) + ":" + String(note.revision) + ":" + String(note.updatedAt || "") : "";
-  import_react14.default.useEffect(() => {
+  import_react15.default.useEffect(() => {
     if (loadKey === loadKeyRef.current) return;
     loadKeyRef.current = loadKey;
     if (!note) return;
@@ -7306,7 +9851,7 @@ function NoteEditor(props) {
       autoOverlayTimerRef.current = null;
     }
   }, [loadKey, note]);
-  const buildDraftPayload = import_react14.default.useCallback(() => {
+  const buildDraftPayload = import_react15.default.useCallback(() => {
     const current = noteRef.current;
     if (!current) return null;
     return {
@@ -7316,7 +9861,7 @@ function NoteEditor(props) {
       baseRevision: revisionRef.current
     };
   }, []);
-  const persist = import_react14.default.useCallback(
+  const persist = import_react15.default.useCallback(
     (options) => {
       const current = noteRef.current;
       if (!current || !current.id) return Promise.resolve(null);
@@ -7375,21 +9920,21 @@ function NoteEditor(props) {
     },
     [buildDraftPayload, service]
   );
-  const scheduleSave = import_react14.default.useCallback(() => {
+  const scheduleSave = import_react15.default.useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       debounceRef.current = null;
       persist();
     }, 800);
   }, [persist]);
-  const flush = import_react14.default.useCallback(() => {
+  const flush = import_react15.default.useCallback(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
       debounceRef.current = null;
     }
     return persist();
   }, [persist]);
-  const applyLocal = import_react14.default.useCallback(
+  const applyLocal = import_react15.default.useCallback(
     (patch) => {
       localRef.current = Object.assign({}, localRef.current, patch);
       if ("title" in patch) setTitle(patch.title);
@@ -7403,7 +9948,7 @@ function NoteEditor(props) {
     },
     [scheduleSave]
   );
-  import_react14.default.useEffect(() => {
+  import_react15.default.useEffect(() => {
     const onPageHide = () => {
       if (!dirtyRef.current || !noteRef.current) return;
       const draft = buildDraftPayload();
@@ -7439,12 +9984,12 @@ function NoteEditor(props) {
       }
     };
   }, [buildDraftPayload, service]);
-  const sections = import_react14.default.useMemo(() => sectionizeMarkdown(content), [content]);
-  const cardRows = import_react14.default.useMemo(() => matchSectionCards(content, contentJson).sections, [content, contentJson]);
-  const beautifiedIds = import_react14.default.useMemo(() => cardRows.filter((row) => row.beautified).map((row) => row.section.id), [cardRows]);
+  const sections = import_react15.default.useMemo(() => sectionizeMarkdown(content), [content]);
+  const cardRows = import_react15.default.useMemo(() => matchSectionCards(content, contentJson).sections, [content, contentJson]);
+  const beautifiedIds = import_react15.default.useMemo(() => cardRows.filter((row) => row.beautified).map((row) => row.section.id), [cardRows]);
   const incompleteSet = new Set(incompleteIds);
   const incompleteCount = incompleteIds.length;
-  const toggleIncomplete = import_react14.default.useCallback(
+  const toggleIncomplete = import_react15.default.useCallback(
     (sectionId) => {
       if (!noteId) return;
       const next = new Set(incompleteIds);
@@ -7484,14 +10029,14 @@ function NoteEditor(props) {
       throw error;
     });
   }
-  const persistCards = import_react14.default.useCallback(
+  const persistCards = import_react15.default.useCallback(
     (nextContentJson) => {
       const flushFirst = dirtyRef.current ? flush() : Promise.resolve(null);
       return flushFirst.then(() => saveContentJson(nextContentJson, { switchView: true }));
     },
     [flush]
   );
-  const openBeautify = import_react14.default.useCallback(() => {
+  const openBeautify = import_react15.default.useCallback(() => {
     cancelPendingAuto();
     const textarea = textareaRef.current;
     let selection = null;
@@ -7509,7 +10054,7 @@ function NoteEditor(props) {
       });
     }
   }, [aiStatus, compact, service]);
-  const reloadNote = import_react14.default.useCallback(() => {
+  const reloadNote = import_react15.default.useCallback(() => {
     if (!noteId) return;
     const current = noteRef.current;
     Promise.resolve(service.get(noteId)).then((fresh) => {
@@ -7532,7 +10077,7 @@ function NoteEditor(props) {
     }).catch(() => {
     });
   }, [noteId, service]);
-  const overwriteConflict = import_react14.default.useCallback(() => {
+  const overwriteConflict = import_react15.default.useCallback(() => {
     setConflict(null);
     flush();
     persist({ force: true });
@@ -7540,7 +10085,7 @@ function NoteEditor(props) {
       if (dirtyRef.current) persist({ force: true });
     }, 10);
   }, [flush, persist]);
-  const deleteNote = import_react14.default.useCallback(() => {
+  const deleteNote = import_react15.default.useCallback(() => {
     if (!note || deleting) return;
     setDeleting(true);
     Promise.resolve(service.remove([note.id])).then(() => {
@@ -7552,7 +10097,7 @@ function NoteEditor(props) {
       if (props.notify) props.notify("error", t("notes.deleteFailed", { message: String(error && error.message || error) }));
     });
   }, [deleting, note, props, service, t]);
-  const clearFormat = import_react14.default.useCallback(() => {
+  const clearFormat = import_react15.default.useCallback(() => {
     if (!note) return;
     Promise.resolve(service.update({ id: note.id, patch: { contentJson: null }, expectedRevision: revisionRef.current || void 0 })).then((saved) => {
       if (saved) {
@@ -7567,7 +10112,7 @@ function NoteEditor(props) {
       if (props.notify) props.notify("error", t("notes.clearFormatFailed", { message: String(error && error.message || error) }));
     });
   }, [note, props, service, t]);
-  const exportNote = import_react14.default.useCallback(() => {
+  const exportNote = import_react15.default.useCallback(() => {
     if (!note) return;
     const fallback = () => {
       const markdown = noteToMarkdown(Object.assign({}, note, { title: localRef.current.title, contentMd: localRef.current.content }));
@@ -7819,13 +10364,13 @@ function NoteEditor(props) {
     setAutoIntro(false);
   }
   if (!note) {
-    return import_react14.default.createElement(
+    return import_react15.default.createElement(
       "div",
       { className: "ph-n-editor" },
-      import_react14.default.createElement(
+      import_react15.default.createElement(
         "div",
         { className: "ph-n-main__empty" },
-        import_react14.default.createElement(EmptyState, { icon: "note", title: t("notes.editor.emptyTitle"), desc: t("notes.editor.emptyDesc") })
+        import_react15.default.createElement(EmptyState, { icon: "note", title: t("notes.editor.emptyTitle"), desc: t("notes.editor.emptyDesc") })
       )
     );
   }
@@ -7846,18 +10391,18 @@ function NoteEditor(props) {
     contentJson ? { id: "clearFormat", icon: "restore", label: t("notes.clearFormat"), run: clearFormat, title: t("notes.clearFormatHint") } : null,
     { id: "delete", icon: "trash", label: t("notes.delete"), run: () => setDeleteOpen(true), danger: true, title: t("notes.deleteConfirm") }
   ];
-  return import_react14.default.createElement(
+  return import_react15.default.createElement(
     "div",
     { className: "ph-n-editor" + (compact ? " ph-n-editor--compact" : "") },
     /* head ------------------------------------------------------------------ */
-    import_react14.default.createElement(
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-editor__head" },
-      import_react14.default.createElement(
+      import_react15.default.createElement(
         "div",
         { className: "ph-n-editor__titlerow" },
-        props.onOpenNoteLibrary && compact ? import_react14.default.createElement(IconButton, { icon: "external", title: t("notes.library.open"), onClick: () => props.onOpenNoteLibrary(note.id), className: "ph-n-editor__back" }) : null,
-        import_react14.default.createElement("input", {
+        props.onOpenNoteLibrary && compact ? import_react15.default.createElement(IconButton, { icon: "external", title: t("notes.library.open"), onClick: () => props.onOpenNoteLibrary(note.id), className: "ph-n-editor__back" }) : null,
+        import_react15.default.createElement("input", {
           ref: titleRef,
           className: "ph-n-editor__title",
           value: title,
@@ -7872,10 +10417,10 @@ function NoteEditor(props) {
             }
           }
         }),
-        import_react14.default.createElement(
+        import_react15.default.createElement(
           "div",
           { className: "ph-n-editor__actions" },
-          import_react14.default.createElement(Button, {
+          import_react15.default.createElement(Button, {
             size: "sm",
             variant: "soft",
             icon: "sparkle",
@@ -7883,26 +10428,26 @@ function NoteEditor(props) {
             title: autoRunning ? t("notes.beautifyBusy") : t("notes.beautify"),
             disabled: sections.length === 0 || autoRunning
           }, compact ? null : t("notes.beautify")),
-          contentJson ? import_react14.default.createElement(IconButton, {
+          contentJson ? import_react15.default.createElement(IconButton, {
             icon: viewMode === "cards" ? "book" : "layers",
             title: viewMode === "cards" ? t("notes.view.original") : t("notes.view.cards"),
             onClick: () => setViewMode(viewMode === "cards" ? "original" : "cards"),
             active: viewMode === "cards"
           }) : null,
-          import_react14.default.createElement(IconButton, { icon: "history", title: t("notes.history"), onClick: () => setHistoryOpen(true) }),
-          import_react14.default.createElement(
+          import_react15.default.createElement(IconButton, { icon: "history", title: t("notes.history"), onClick: () => setHistoryOpen(true) }),
+          import_react15.default.createElement(
             "div",
             { style: { position: "relative" } },
-            import_react14.default.createElement(IconButton, { icon: "more", title: t("notes.menu"), onClick: () => setMenuOpen((value) => !value), active: menuOpen }),
-            menuOpen ? import_react14.default.createElement(Menu, { items: menuItems, onClose: () => setMenuOpen(false) }) : null
+            import_react15.default.createElement(IconButton, { icon: "more", title: t("notes.menu"), onClick: () => setMenuOpen((value) => !value), active: menuOpen }),
+            menuOpen ? import_react15.default.createElement(Menu, { items: menuItems, onClose: () => setMenuOpen(false) }) : null
           )
         )
       ),
       /* meta row: folder + linked papers + save state ---------------------- */
-      import_react14.default.createElement(
+      import_react15.default.createElement(
         "div",
         { className: "ph-n-editor__meta" },
-        props.folders && props.folders.length > 0 ? import_react14.default.createElement(
+        props.folders && props.folders.length > 0 ? import_react15.default.createElement(
           "select",
           {
             className: "ph-select ph-select--sm",
@@ -7914,46 +10459,46 @@ function NoteEditor(props) {
               if (props.onMoveFolder) props.onMoveFolder(value);
             }
           },
-          import_react14.default.createElement("option", { value: "" }, t("notes.folder.uncategorized")),
-          props.folders.map((folder) => import_react14.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
+          import_react15.default.createElement("option", { value: "" }, t("notes.folder.uncategorized")),
+          props.folders.map((folder) => import_react15.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
         ) : null,
         papers.length > 0 ? papers.map(
-          (link) => import_react14.default.createElement(
+          (link) => import_react15.default.createElement(
             "span",
             { key: link.paperId, className: "ph-n-chip" },
-            import_react14.default.createElement(Icon, { name: "book", size: 11 }),
-            import_react14.default.createElement("span", { className: "ph-n-chip__label", title: link.titleZh || link.title || link.paperId }, link.titleZh || link.title || link.paperId),
-            props.onOpenPaper ? import_react14.default.createElement(IconButton, { icon: "external", title: t("notes.papers.open"), onClick: () => props.onOpenPaper(link.paperId), size: 12 }) : null
+            import_react15.default.createElement(Icon, { name: "book", size: 11 }),
+            import_react15.default.createElement("span", { className: "ph-n-chip__label", title: link.titleZh || link.title || link.paperId }, link.titleZh || link.title || link.paperId),
+            props.onOpenPaper ? import_react15.default.createElement(IconButton, { icon: "external", title: t("notes.papers.open"), onClick: () => props.onOpenPaper(link.paperId), size: 12 }) : null
           )
-        ) : boundPaperId ? import_react14.default.createElement(
+        ) : boundPaperId ? import_react15.default.createElement(
           "span",
           { className: "ph-n-chip ph-n-chip--folder", title: t("notes.papers.boundToCurrentHint") },
-          import_react14.default.createElement(Icon, { name: "link", size: 11 }),
-          import_react14.default.createElement("span", { className: "ph-n-chip__label" }, t("notes.papers.boundToCurrent"))
-        ) : import_react14.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.none")),
-        props.linkable || props.linkable === void 0 ? import_react14.default.createElement(Button, { size: "sm", variant: "ghost", icon: "link", onClick: () => setLinkOpen(true), title: t("notes.papers.add") }, compact ? null : t("notes.papers.add")) : null,
-        import_react14.default.createElement("span", { className: "ph-n-editor__meta-spacer" }),
-        import_react14.default.createElement("span", { className: "ph-n-caption" }, t("notes.wordCount", { count: content.length })),
-        import_react14.default.createElement(
+          import_react15.default.createElement(Icon, { name: "link", size: 11 }),
+          import_react15.default.createElement("span", { className: "ph-n-chip__label" }, t("notes.papers.boundToCurrent"))
+        ) : import_react15.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.none")),
+        props.linkable || props.linkable === void 0 ? import_react15.default.createElement(Button, { size: "sm", variant: "ghost", icon: "link", onClick: () => setLinkOpen(true), title: t("notes.papers.add") }, compact ? null : t("notes.papers.add")) : null,
+        import_react15.default.createElement("span", { className: "ph-n-editor__meta-spacer" }),
+        import_react15.default.createElement("span", { className: "ph-n-caption" }, t("notes.wordCount", { count: content.length })),
+        import_react15.default.createElement(
           "span",
           { className: saveStateClass, title: saveState.message || stateLabel2, role: "status" },
-          saveState.status === "saving" ? import_react14.default.createElement(Spinner) : import_react14.default.createElement("span", { className: "ph-n-savestate__dot" }),
-          import_react14.default.createElement("span", null, stateLabel2),
-          saveState.status === "offline" || saveState.status === "error" ? import_react14.default.createElement("button", { type: "button", className: "ph-btn ph-btn--ghost ph-btn--sm ph-n-savestate__retry", onClick: () => {
+          saveState.status === "saving" ? import_react15.default.createElement(Spinner) : import_react15.default.createElement("span", { className: "ph-n-savestate__dot" }),
+          import_react15.default.createElement("span", null, stateLabel2),
+          saveState.status === "offline" || saveState.status === "error" ? import_react15.default.createElement("button", { type: "button", className: "ph-btn ph-btn--ghost ph-btn--sm ph-n-savestate__retry", onClick: () => {
             retryCountRef.current = 0;
             flush();
-          } }, import_react14.default.createElement("span", { className: "ph-btn__label" }, t("notes.retrySave"))) : null
+          } }, import_react15.default.createElement("span", { className: "ph-btn__label" }, t("notes.retrySave"))) : null
         )
       )
     ),
     /* auto-beautify controls (v2 边写边美化) -------------------------------- */
-    import_react14.default.createElement(
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-editor__toolbar" },
-      import_react14.default.createElement(
+      import_react15.default.createElement(
         "div",
         { className: "ph-n-autofix" },
-        import_react14.default.createElement(
+        import_react15.default.createElement(
           "button",
           {
             type: "button",
@@ -7962,11 +10507,11 @@ function NoteEditor(props) {
             title: t("notes.autofix.toggleHint"),
             "aria-pressed": autoFix.enabled ? "true" : "false"
           },
-          import_react14.default.createElement("span", { className: "ph-n-autofix__dot" + (autoRunning ? " ph-n-autofix__dot--pulse" : "") }),
+          import_react15.default.createElement("span", { className: "ph-n-autofix__dot" + (autoRunning ? " ph-n-autofix__dot--pulse" : "") }),
           t("notes.autofix.toggle"),
-          autoFix.enabled ? import_react14.default.createElement("span", { className: "ph-n-autofix__state" }, autoRunning ? t("notes.autofix.stateRunning") : t("notes.autofix.stateOn")) : null
+          autoFix.enabled ? import_react15.default.createElement("span", { className: "ph-n-autofix__state" }, autoRunning ? t("notes.autofix.stateRunning") : t("notes.autofix.stateOn")) : null
         ),
-        autoFix.enabled ? import_react14.default.createElement(
+        autoFix.enabled ? import_react15.default.createElement(
           "select",
           {
             className: "ph-n-autofix__select",
@@ -7979,33 +10524,33 @@ function NoteEditor(props) {
             ["plain", "notes.beautify.direction.plain"],
             ["vivid", "notes.beautify.direction.vivid"],
             ["scientific", "notes.beautify.direction.scientific"]
-          ].map(([value, key]) => import_react14.default.createElement("option", { key: value, value }, t(key)))
+          ].map(([value, key]) => import_react15.default.createElement("option", { key: value, value }, t(key)))
         ) : null,
-        autoStatus ? import_react14.default.createElement(
+        autoStatus ? import_react15.default.createElement(
           "span",
           {
             className: "ph-n-autofix__status" + (autoStatus.kind === "warn" ? " ph-n-autofix__status--warn" : autoStatus.kind === "ok" ? " ph-n-autofix__status--ok" : ""),
             title: autoStatus.text
           },
-          autoStatus.kind === "info" && autoRunning ? import_react14.default.createElement(Spinner) : null,
+          autoStatus.kind === "info" && autoRunning ? import_react15.default.createElement(Spinner) : null,
           autoStatus.text
         ) : null,
-        autoOverlay ? import_react14.default.createElement(
+        autoOverlay ? import_react15.default.createElement(
           "div",
           { className: "ph-n-autofix__overlay", role: "dialog", "aria-label": t("notes.autofix.overlayTitle") },
-          import_react14.default.createElement(
+          import_react15.default.createElement(
             "div",
             { className: "ph-n-autofix__overlay-head" },
-            import_react14.default.createElement(Icon, { name: "sparkle", size: 13 }),
+            import_react15.default.createElement(Icon, { name: "sparkle", size: 13 }),
             t("notes.autofix.overlayTitle")
           ),
-          import_react14.default.createElement(
+          import_react15.default.createElement(
             "div",
             { className: "ph-n-autofix__overlay-sub" },
             t("notes.autofix.overlaySub", { count: autoOverlay.sections.length, chars: autoOverlay.pendingChars }) + (autoOverlay.degraded ? " \xB7 " + t("notes.autofix.degraded") : "")
           ),
           autoOverlay.directions.map(
-            (option) => import_react14.default.createElement(
+            (option) => import_react15.default.createElement(
               "button",
               {
                 key: option.id,
@@ -8014,26 +10559,26 @@ function NoteEditor(props) {
                 onClick: () => adoptAutoDirection(option.id),
                 title: option.reason || ""
               },
-              import_react14.default.createElement(
+              import_react15.default.createElement(
                 "span",
                 { className: "ph-n-autofix__option-main" },
-                import_react14.default.createElement(
+                import_react15.default.createElement(
                   "span",
                   { className: "ph-n-autofix__option-label" },
                   option.label,
-                  option.id === autoOverlay.recommended ? import_react14.default.createElement("span", { className: "ph-n-autofix__option-tag" }, t("notes.autofix.recommended")) : null,
-                  option.useFigures ? import_react14.default.createElement(Icon, { name: "figure", size: 10 }) : null
+                  option.id === autoOverlay.recommended ? import_react15.default.createElement("span", { className: "ph-n-autofix__option-tag" }, t("notes.autofix.recommended")) : null,
+                  option.useFigures ? import_react15.default.createElement(Icon, { name: "figure", size: 10 }) : null
                 ),
-                option.reason ? import_react14.default.createElement("span", { className: "ph-n-autofix__option-reason" }, option.reason) : null
+                option.reason ? import_react15.default.createElement("span", { className: "ph-n-autofix__option-reason" }, option.reason) : null
               )
             )
           ),
-          import_react14.default.createElement(
+          import_react15.default.createElement(
             "div",
             { className: "ph-n-autofix__overlay-foot" },
-            import_react14.default.createElement("span", { className: "ph-n-caption" }, t("notes.autofix.autoAdopt")),
-            import_react14.default.createElement("span", { className: "ph-n-spacer" }),
-            import_react14.default.createElement(
+            import_react15.default.createElement("span", { className: "ph-n-caption" }, t("notes.autofix.autoAdopt")),
+            import_react15.default.createElement("span", { className: "ph-n-spacer" }),
+            import_react15.default.createElement(
               "button",
               { type: "button", className: "ph-n-autofix__toggle", onClick: ignoreAuto },
               t("notes.autofix.ignore")
@@ -8041,46 +10586,46 @@ function NoteEditor(props) {
           )
         ) : null
       ),
-      import_react14.default.createElement("span", { className: "ph-n-toolbar__spacer" }),
-      import_react14.default.createElement("span", { className: "ph-n-caption" }, autoFix.enabled ? t("notes.autofix.hint") : t("notes.autofix.offHint"))
+      import_react15.default.createElement("span", { className: "ph-n-toolbar__spacer" }),
+      import_react15.default.createElement("span", { className: "ph-n-caption" }, autoFix.enabled ? t("notes.autofix.hint") : t("notes.autofix.offHint"))
     ),
     /* banners --------------------------------------------------------------- */
-    import_react14.default.createElement(
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-editor__bars" },
-      autoIntro ? import_react14.default.createElement(
+      autoIntro ? import_react15.default.createElement(
         "div",
         { className: "ph-n-autofix__intro", role: "status" },
-        import_react14.default.createElement(Icon, { name: "sparkle", size: 14 }),
-        import_react14.default.createElement("span", null, t("notes.autofix.intro")),
-        import_react14.default.createElement("span", { className: "ph-n-spacer" }),
-        import_react14.default.createElement(
+        import_react15.default.createElement(Icon, { name: "sparkle", size: 14 }),
+        import_react15.default.createElement("span", null, t("notes.autofix.intro")),
+        import_react15.default.createElement("span", { className: "ph-n-spacer" }),
+        import_react15.default.createElement(
           "button",
           { type: "button", className: "ph-n-autofix__toggle", onClick: dismissAutoIntro },
           t("notes.autofix.introOk")
         )
       ) : null,
-      conflict ? import_react14.default.createElement(
+      conflict ? import_react15.default.createElement(
         "div",
         { className: "ph-n-banner ph-n-banner--warn" },
-        import_react14.default.createElement(Icon, { name: "warning", size: 14 }),
-        import_react14.default.createElement("span", null, t("notes.conflict.title", { revision: conflict.currentRevision || "?" })),
-        import_react14.default.createElement(
+        import_react15.default.createElement(Icon, { name: "warning", size: 14 }),
+        import_react15.default.createElement("span", null, t("notes.conflict.title", { revision: conflict.currentRevision || "?" })),
+        import_react15.default.createElement(
           "span",
           { className: "ph-n-banner__actions" },
-          import_react14.default.createElement(Button, { size: "sm", variant: "secondary", onClick: reloadNote }, t("notes.conflict.reload")),
-          import_react14.default.createElement(Button, { size: "sm", variant: "danger", onClick: overwriteConflict }, t("notes.conflict.keep"))
+          import_react15.default.createElement(Button, { size: "sm", variant: "secondary", onClick: reloadNote }, t("notes.conflict.reload")),
+          import_react15.default.createElement(Button, { size: "sm", variant: "danger", onClick: overwriteConflict }, t("notes.conflict.keep"))
         )
       ) : null,
-      draftFound ? import_react14.default.createElement(
+      draftFound ? import_react15.default.createElement(
         "div",
         { className: "ph-n-banner" },
-        import_react14.default.createElement(Icon, { name: "note", size: 14 }),
-        import_react14.default.createElement("span", null, t("notes.draftFound", { time: draftTimeLabel(draftFound.at) })),
-        import_react14.default.createElement(
+        import_react15.default.createElement(Icon, { name: "note", size: 14 }),
+        import_react15.default.createElement("span", null, t("notes.draftFound", { time: draftTimeLabel(draftFound.at) })),
+        import_react15.default.createElement(
           "span",
           { className: "ph-n-banner__actions" },
-          import_react14.default.createElement(Button, {
+          import_react15.default.createElement(Button, {
             size: "sm",
             variant: "secondary",
             onClick: () => {
@@ -8088,7 +10633,7 @@ function NoteEditor(props) {
               setDraftFound(null);
             }
           }, t("notes.draft.restore")),
-          import_react14.default.createElement(Button, {
+          import_react15.default.createElement(Button, {
             size: "sm",
             variant: "ghost",
             onClick: () => {
@@ -8098,15 +10643,15 @@ function NoteEditor(props) {
           }, t("notes.draft.discard"))
         )
       ) : null,
-      saveState.status === "error" ? import_react14.default.createElement(
+      saveState.status === "error" ? import_react15.default.createElement(
         "div",
         { className: "ph-n-banner ph-n-banner--error" },
-        import_react14.default.createElement(Icon, { name: "warning", size: 14 }),
-        import_react14.default.createElement("span", null, t("notes.saveFailedDetail", { message: saveState.message || t("common.unknownError") })),
-        import_react14.default.createElement(
+        import_react15.default.createElement(Icon, { name: "warning", size: 14 }),
+        import_react15.default.createElement("span", null, t("notes.saveFailedDetail", { message: saveState.message || t("common.unknownError") })),
+        import_react15.default.createElement(
           "span",
           { className: "ph-n-banner__actions" },
-          import_react14.default.createElement(Button, { size: "sm", variant: "secondary", onClick: () => {
+          import_react15.default.createElement(Button, { size: "sm", variant: "secondary", onClick: () => {
             retryCountRef.current = 0;
             flush();
           } }, t("notes.retrySave"))
@@ -8114,27 +10659,27 @@ function NoteEditor(props) {
       ) : null
     ),
     /* sections protection --------------------------------------------------- */
-    sections.length > 0 ? import_react14.default.createElement(
+    sections.length > 0 ? import_react15.default.createElement(
       "div",
       { className: "ph-n-sections" },
-      import_react14.default.createElement(
+      import_react15.default.createElement(
         "button",
         { type: "button", className: "ph-n-sections__head", onClick: () => setSectionsOpen((value) => !value), "aria-expanded": sectionsOpen ? "true" : "false" },
-        import_react14.default.createElement(Icon, { name: sectionsOpen ? "chevronDown" : "chevronRight", size: 12 }),
-        import_react14.default.createElement("span", null, t("notes.sections.title")),
-        import_react14.default.createElement("span", { className: "ph-n-sections__hint" }, t("notes.sections.count", { done: sections.length - incompleteCount, total: sections.length })),
-        incompleteCount > 0 ? import_react14.default.createElement(Badge, { tone: "warn" }, t("notes.sections.incompleteCount", { count: incompleteCount })) : null
+        import_react15.default.createElement(Icon, { name: sectionsOpen ? "chevronDown" : "chevronRight", size: 12 }),
+        import_react15.default.createElement("span", null, t("notes.sections.title")),
+        import_react15.default.createElement("span", { className: "ph-n-sections__hint" }, t("notes.sections.count", { done: sections.length - incompleteCount, total: sections.length })),
+        incompleteCount > 0 ? import_react15.default.createElement(Badge, { tone: "warn" }, t("notes.sections.incompleteCount", { count: incompleteCount })) : null
       ),
-      sectionsOpen ? import_react14.default.createElement(
+      sectionsOpen ? import_react15.default.createElement(
         "div",
         { className: "ph-n-sections__list" },
         sections.map((section) => {
           const incomplete = incompleteSet.has(section.id);
-          return import_react14.default.createElement(
+          return import_react15.default.createElement(
             "div",
             { key: section.id, className: "ph-n-sections__row" },
-            import_react14.default.createElement("span", { className: "ph-n-sections__heading", title: section.text || "" }, section.heading || t("notes.section.untitled")),
-            import_react14.default.createElement(
+            import_react15.default.createElement("span", { className: "ph-n-sections__heading", title: section.text || "" }, section.heading || t("notes.section.untitled")),
+            import_react15.default.createElement(
               "button",
               {
                 type: "button",
@@ -8146,17 +10691,17 @@ function NoteEditor(props) {
             )
           );
         }),
-        import_react14.default.createElement("p", { className: "ph-n-sections__hint" }, t("notes.sections.hint"))
+        import_react15.default.createElement("p", { className: "ph-n-sections__hint" }, t("notes.sections.hint"))
       ) : null
     ) : null,
     /* content --------------------------------------------------------------- */
-    import_react14.default.createElement(
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-editor__content" },
-      viewMode === "cards" && contentJson ? import_react14.default.createElement(
+      viewMode === "cards" && contentJson ? import_react15.default.createElement(
         "div",
         { className: "ph-n-editor__cards ph-n-scroll" },
-        import_react14.default.createElement(NoteCards, {
+        import_react15.default.createElement(NoteCards, {
           t,
           rows: cardRows,
           incompleteIds,
@@ -8165,7 +10710,7 @@ function NoteEditor(props) {
             if (props.onOpenPaper) props.onOpenPaper(paperId, page || 1);
           }
         })
-      ) : import_react14.default.createElement("textarea", {
+      ) : import_react15.default.createElement("textarea", {
         ref: textareaRef,
         className: "ph-n-editor__textarea ph-n-scroll",
         value: content,
@@ -8194,7 +10739,7 @@ function NoteEditor(props) {
       })
     ),
     /* dialogs --------------------------------------------------------------- */
-    beautifyOpen ? import_react14.default.createElement(BeautifyDialog, {
+    beautifyOpen ? import_react15.default.createElement(BeautifyDialog, {
       t,
       service,
       note: Object.assign({}, note, { contentMd: content }),
@@ -8216,7 +10761,7 @@ function NoteEditor(props) {
       },
       onClose: () => setBeautifyOpen(false)
     }) : null,
-    historyOpen ? import_react14.default.createElement(RevisionsDialog, {
+    historyOpen ? import_react15.default.createElement(RevisionsDialog, {
       t,
       service,
       noteId: note.id,
@@ -8239,7 +10784,7 @@ function NoteEditor(props) {
       },
       onClose: () => setHistoryOpen(false)
     }) : null,
-    deleteOpen ? import_react14.default.createElement(
+    deleteOpen ? import_react15.default.createElement(
       Modal,
       {
         t,
@@ -8250,21 +10795,21 @@ function NoteEditor(props) {
         },
         busy: deleting,
         footer: [
-          import_react14.default.createElement(
+          import_react15.default.createElement(
             "button",
             { key: "cancel", type: "button", className: "ph-btn ph-btn--secondary ph-btn--md", onClick: () => setDeleteOpen(false), disabled: deleting },
-            import_react14.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
+            import_react15.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
           ),
-          import_react14.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
-          import_react14.default.createElement(
+          import_react15.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
+          import_react15.default.createElement(
             "button",
             { key: "confirm", type: "button", className: "ph-btn ph-btn--danger ph-btn--md", onClick: deleteNote, disabled: deleting },
-            import_react14.default.createElement("span", { className: "ph-btn__label" }, t("common.confirm"))
+            import_react15.default.createElement("span", { className: "ph-btn__label" }, t("common.confirm"))
           )
         ]
       }
     ) : null,
-    linkOpen ? import_react14.default.createElement(PaperLinkDialog, {
+    linkOpen ? import_react15.default.createElement(PaperLinkDialog, {
       t,
       api: props.api,
       note,
@@ -8283,12 +10828,12 @@ function NoteEditor(props) {
 function NoteInline(props) {
   const t = props.t;
   const api = props.api;
-  const releaseStyles = import_react15.default.useMemo(() => ensureNotesStyles(), []);
-  const service = import_react15.default.useMemo(() => createNotesService(api), [api]);
-  const [state, setState] = import_react15.default.useState({ status: "loading", note: null, folders: [], error: null });
-  const [reload, setReload] = import_react15.default.useState(0);
-  import_react15.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  import_react15.default.useEffect(() => {
+  const releaseStyles = import_react16.default.useMemo(() => ensureNotesStyles(), []);
+  const service = import_react16.default.useMemo(() => createNotesService(api), [api]);
+  const [state, setState] = import_react16.default.useState({ status: "loading", note: null, folders: [], error: null });
+  const [reload, setReload] = import_react16.default.useState(0);
+  import_react16.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  import_react16.default.useEffect(() => {
     let alive = true;
     if (!props.noteId) {
       setState({ status: "empty", note: null, folders: [], error: null });
@@ -8343,7 +10888,7 @@ function NoteInline(props) {
 }
 
 // src/surfaces/library/toolbar.jsx
-var import_react16 = __toESM(require("react"), 1);
+var import_react17 = __toESM(require("react"), 1);
 function operationId(prefix) {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
   return (prefix ? prefix + "-" : "") + random;
@@ -8357,8 +10902,8 @@ var SORT_OPTIONS = [
 ];
 function LibraryToolbar(props) {
   const t = props.t;
-  const [narrow, setNarrow] = import_react16.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 980);
-  import_react16.default.useEffect(() => {
+  const [narrow, setNarrow] = import_react17.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 980);
+  import_react17.default.useEffect(() => {
     const onResize = () => setNarrow(typeof window !== "undefined" && window.innerWidth <= 980);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -8367,8 +10912,8 @@ function LibraryToolbar(props) {
   const api = props.api;
   const snapshot4 = props.snapshot;
   const controller = props.controller;
-  const [importing, setImporting] = import_react16.default.useState(false);
-  const fileRef = import_react16.default.useRef(null);
+  const [importing, setImporting] = import_react17.default.useState(false);
+  const fileRef = import_react17.default.useRef(null);
   const importFiles = (fileList) => {
     const files = Array.prototype.slice.call(fileList || []);
     if (files.length === 0) return;
@@ -8468,11 +11013,11 @@ function BatchBar(props) {
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const { push } = useToasts();
-  const [tagOpen, setTagOpen] = import_react16.default.useState(false);
-  const [tagValue, setTagValue] = import_react16.default.useState("");
-  const [collectionOpen, setCollectionOpen] = import_react16.default.useState(false);
-  const [busy2, setBusy] = import_react16.default.useState("");
-  const [armed, setArmed] = import_react16.default.useState(false);
+  const [tagOpen, setTagOpen] = import_react17.default.useState(false);
+  const [tagValue, setTagValue] = import_react17.default.useState("");
+  const [collectionOpen, setCollectionOpen] = import_react17.default.useState(false);
+  const [busy2, setBusy] = import_react17.default.useState("");
+  const [armed, setArmed] = import_react17.default.useState(false);
   const count = snapshot4.selection.length;
   const selectedPapers = (snapshot4.items || []).filter((paper) => snapshot4.selection.indexOf(paper.id) >= 0);
   const allFavorite = selectedPapers.length > 0 && selectedPapers.every((paper) => paper.favorite === true);
@@ -8522,7 +11067,7 @@ function BatchBar(props) {
     h("span", { className: "ph-batch__count" }, t("library.selectedCount", { count })),
     h("span", { className: "ph-batch__divider" }),
     trashMode ? h(
-      import_react16.default.Fragment,
+      import_react17.default.Fragment,
       null,
       h(Button, { size: "sm", icon: "restore", loading: busy2 === "restore", onClick: () => {
         setBusy("restore");
@@ -8540,7 +11085,7 @@ function BatchBar(props) {
         }).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
       } }, armed ? t("library.batch.purgeConfirm") : t("library.batch.purge"))
     ) : h(
-      import_react16.default.Fragment,
+      import_react17.default.Fragment,
       null,
       h(Button, { size: "sm", icon: "star", onClick: () => {
         const next = !allFavorite;
@@ -8625,7 +11170,7 @@ function BatchBar(props) {
 }
 
 // src/surfaces/library/item-table.jsx
-var import_react17 = __toESM(require("react"), 1);
+var import_react18 = __toESM(require("react"), 1);
 
 // src/core/dnd.js
 var MATERIAL_MIME2 = "application/x-pappers-hall-material";
@@ -9019,8 +11564,8 @@ function TableRow(props) {
 function GridCard(props) {
   const t = props.t;
   const paper = props.paper;
-  const [failed, setFailed] = import_react17.default.useState(false);
-  import_react17.default.useEffect(() => setFailed(false), [paper.id]);
+  const [failed, setFailed] = import_react18.default.useState(false);
+  import_react18.default.useEffect(() => setFailed(false), [paper.id]);
   return h(
     "article",
     {
@@ -9061,10 +11606,10 @@ function ItemTable(props) {
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const items2 = snapshot4.items || [];
-  const selection = import_react17.default.useMemo(() => new Set(snapshot4.selection || []), [snapshot4.selection]);
-  const selectedPapers = import_react17.default.useMemo(() => items2.filter((paper) => selection.has(paper.id)), [items2, selection]);
-  const scrollRef = import_react17.default.useRef(null);
-  const [focused, setFocused] = import_react17.default.useState(0);
+  const selection = import_react18.default.useMemo(() => new Set(snapshot4.selection || []), [snapshot4.selection]);
+  const selectedPapers = import_react18.default.useMemo(() => items2.filter((paper) => selection.has(paper.id)), [items2, selection]);
+  const scrollRef = import_react18.default.useRef(null);
+  const [focused, setFocused] = import_react18.default.useState(0);
   const ensureVisible = (index) => {
     const container = scrollRef.current;
     if (!container) return;
@@ -9219,10 +11764,10 @@ function ItemTable(props) {
 }
 
 // src/surfaces/library/details.jsx
-var import_react19 = __toESM(require("react"), 1);
+var import_react20 = __toESM(require("react"), 1);
 
 // src/surfaces/library/metrics.jsx
-var import_react18 = __toESM(require("react"), 1);
+var import_react19 = __toESM(require("react"), 1);
 function num(value) {
   if (value === null || value === void 0 || value === "") return null;
   const n = Number(value);
@@ -9270,13 +11815,13 @@ function MetricsSection(props) {
   const t = props.t;
   const detail = props.detail;
   const metrics = detail && detail.metrics || {};
-  const [editing, setEditing] = import_react18.default.useState(false);
-  const [busy2, setBusy] = import_react18.default.useState(false);
-  const [failed, setFailed] = import_react18.default.useState("");
-  const [form, setForm] = import_react18.default.useState({});
-  const [saving, setSaving] = import_react18.default.useState(false);
-  const [armed, setArmed] = import_react18.default.useState(false);
-  import_react18.default.useEffect(() => {
+  const [editing, setEditing] = import_react19.default.useState(false);
+  const [busy2, setBusy] = import_react19.default.useState(false);
+  const [failed, setFailed] = import_react19.default.useState("");
+  const [form, setForm] = import_react19.default.useState({});
+  const [saving, setSaving] = import_react19.default.useState(false);
+  const [armed, setArmed] = import_react19.default.useState(false);
+  import_react19.default.useEffect(() => {
     setEditing(false);
     setFailed("");
   }, [detail && detail.id]);
@@ -9410,14 +11955,14 @@ function MetricsSection(props) {
 // src/surfaces/library/details.jsx
 function Field(props) {
   if (props.value == null || props.value === "") return null;
-  return h(import_react19.default.Fragment, null, h("dt", null, props.label), h("dd", { className: props.mono ? "ph-mono" : void 0 }, props.value));
+  return h(import_react20.default.Fragment, null, h("dt", null, props.label), h("dd", { className: props.mono ? "ph-mono" : void 0 }, props.value));
 }
 var figureDragActive = false;
 function figureUrl(figure) {
   return figure && figure.imageUrl || (figure && figure.id ? "/pappers-hall/figure/" + figure.id + ".png?width=480" : "");
 }
 function AbstractBlock(props) {
-  const [open, setOpen] = import_react19.default.useState(false);
+  const [open, setOpen] = import_react20.default.useState(false);
   const t = props.t;
   if (!props.text) {
     return h(
@@ -9445,12 +11990,12 @@ function InfoTab(props) {
   const detail = props.detail;
   const summary = props.summary;
   const controller = props.controller;
-  const [editing, setEditing] = import_react19.default.useState(false);
-  const [titleZh, setTitleZh] = import_react19.default.useState(firstText(detail && detail.titleZh, summary && summary.titleZh));
-  const [saving, setSaving] = import_react19.default.useState(false);
+  const [editing, setEditing] = import_react20.default.useState(false);
+  const [titleZh, setTitleZh] = import_react20.default.useState(firstText(detail && detail.titleZh, summary && summary.titleZh));
+  const [saving, setSaving] = import_react20.default.useState(false);
   const fileInfo = detail && detail.fileInfo || {};
   const sources = Array.isArray(detail && detail.sources) ? detail.sources : [];
-  import_react19.default.useEffect(() => {
+  import_react20.default.useEffect(() => {
     setTitleZh(firstText(detail && detail.titleZh, summary && summary.titleZh));
     setEditing(false);
   }, [detail && detail.id, detail && detail.titleZh, summary && summary.titleZh]);
@@ -9666,7 +12211,7 @@ function TagsTab(props) {
   const t = props.t;
   const detail = props.detail;
   const controller = props.controller;
-  const [value, setValue] = import_react19.default.useState("");
+  const [value, setValue] = import_react20.default.useState("");
   const tags = Array.isArray(detail.tags) ? detail.tags : [];
   const suggestions = (props.tags || []).filter((tag) => tags.indexOf(tag.name) < 0 && (!value || String(tag.name).toLowerCase().includes(value.toLowerCase()))).slice(0, 8);
   const add = () => {
@@ -9842,21 +12387,21 @@ function DetailsPane(props) {
     "div",
     { className: "ph-details" },
     head,
-    !detail ? null : h("div", { className: "ph-details__tabs" }, h(TabStrip, { items: tabs, value: tab, onChange: (value) => controller.setDetailTab(value), "aria-label": t("library.details.tab.info"), variant: "underline" })),
+    !detail ? null : h("div", { className: "ph-details__tabs" }, h(TabStrip, { items: tabs, value: tab, onChange: (value) => controller.setDetailTab(value), "aria-label": t("library.details.tab.info"), variant: "pill" })),
     body
   );
 }
 
 // src/surfaces/library/duplicates.jsx
-var import_react20 = __toESM(require("react"), 1);
+var import_react21 = __toESM(require("react"), 1);
 function DuplicatesPane(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const duplicates = snapshot4.duplicates || { status: "idle", groups: [], error: null };
-  const [primary, setPrimary] = import_react20.default.useState({});
-  const [busy2, setBusy] = import_react20.default.useState("");
-  import_react20.default.useEffect(() => {
+  const [primary, setPrimary] = import_react21.default.useState({});
+  const [busy2, setBusy] = import_react21.default.useState("");
+  import_react21.default.useEffect(() => {
     if (duplicates.status === "idle") controller.loadDuplicates();
   }, [duplicates.status, controller]);
   if (duplicates.status === "loading" || duplicates.status === "idle") {
@@ -9900,18 +12445,18 @@ function DuplicatesPane(props) {
 }
 
 // src/surfaces/library/dialogs.jsx
-var import_react21 = __toESM(require("react"), 1);
+var import_react22 = __toESM(require("react"), 1);
 function useDebounced(value, delay) {
-  const [debounced, setDebounced] = import_react21.default.useState(value);
-  import_react21.default.useEffect(() => {
+  const [debounced, setDebounced] = import_react22.default.useState(value);
+  import_react22.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(value), delay == null ? 240 : delay);
     return () => clearTimeout(timer2);
   }, [value, delay]);
   return debounced;
 }
 function Dialog(props) {
-  const ref = import_react21.default.useRef(null);
-  import_react21.default.useEffect(() => {
+  const ref = import_react22.default.useRef(null);
+  import_react22.default.useEffect(() => {
     const onKey = (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -9936,18 +12481,18 @@ function Dialog(props) {
 }
 function CommandPalette(props) {
   const t = props.t;
-  const [query, setQuery] = import_react21.default.useState("");
-  const [index, setIndex] = import_react21.default.useState(0);
-  const inputRef = import_react21.default.useRef(null);
+  const [query, setQuery] = import_react22.default.useState("");
+  const [index, setIndex] = import_react22.default.useState(0);
+  const inputRef = import_react22.default.useRef(null);
   const commands = (props.commands || []).filter((command) => !query || String(command.label + " " + (command.hint || "")).toLowerCase().indexOf(query.toLowerCase()) >= 0);
-  import_react21.default.useEffect(() => {
+  import_react22.default.useEffect(() => {
     if (props.open) {
       setQuery("");
       setIndex(0);
       setTimeout(() => inputRef.current && inputRef.current.focus(), 30);
     }
   }, [props.open]);
-  import_react21.default.useEffect(() => {
+  import_react22.default.useEffect(() => {
     setIndex(0);
   }, [query]);
   if (!props.open) return null;
@@ -9998,17 +12543,17 @@ function CommandPalette(props) {
 function CitationDialog(props) {
   const t = props.t;
   const api = props.api;
-  const [query, setQuery] = import_react21.default.useState("");
+  const [query, setQuery] = import_react22.default.useState("");
   const debounced = useDebounced(query, 260);
-  const [results, setResults] = import_react21.default.useState([]);
-  const [picked, setPicked] = import_react21.default.useState(null);
-  const [style, setStyle] = import_react21.default.useState("bibtex");
-  const [preview, setPreview] = import_react21.default.useState("");
-  const [busy2, setBusy] = import_react21.default.useState(false);
-  const [error, setError] = import_react21.default.useState("");
-  const [tick, setTick] = import_react21.default.useState(0);
-  const dialogRef = import_react21.default.useRef(null);
-  import_react21.default.useEffect(() => {
+  const [results, setResults] = import_react22.default.useState([]);
+  const [picked, setPicked] = import_react22.default.useState(null);
+  const [style, setStyle] = import_react22.default.useState("bibtex");
+  const [preview, setPreview] = import_react22.default.useState("");
+  const [busy2, setBusy] = import_react22.default.useState(false);
+  const [error, setError] = import_react22.default.useState("");
+  const [tick, setTick] = import_react22.default.useState(0);
+  const dialogRef = import_react22.default.useRef(null);
+  import_react22.default.useEffect(() => {
     if (!props.open) return;
     setQuery("");
     setPicked(null);
@@ -10016,7 +12561,7 @@ function CitationDialog(props) {
     setError("");
     setTimeout(() => dialogRef.current && dialogRef.current.focus(), 30);
   }, [props.open]);
-  import_react21.default.useEffect(() => {
+  import_react22.default.useEffect(() => {
     if (!props.open) return void 0;
     let alive = true;
     api("library.list", { query: debounced.trim() || void 0, state: "active", sort: "recent", limit: 8 }).then((value) => {
@@ -10028,7 +12573,7 @@ function CitationDialog(props) {
       alive = false;
     };
   }, [api, debounced, props.open, tick]);
-  import_react21.default.useEffect(() => {
+  import_react22.default.useEffect(() => {
     if (!picked) {
       setPreview("");
       return void 0;
@@ -10117,15 +12662,15 @@ function GlobalSearch(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const controller = props.controller;
-  const [value, setValue] = import_react22.default.useState(snapshot4.filters.query || "");
-  const external = import_react22.default.useRef(snapshot4.filters.query || "");
-  import_react22.default.useEffect(() => {
+  const [value, setValue] = import_react23.default.useState(snapshot4.filters.query || "");
+  const external = import_react23.default.useRef(snapshot4.filters.query || "");
+  import_react23.default.useEffect(() => {
     if (snapshot4.filters.query !== external.current) {
       external.current = snapshot4.filters.query || "";
       setValue(snapshot4.filters.query || "");
     }
   }, [snapshot4.filters.query]);
-  import_react22.default.useEffect(() => {
+  import_react23.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       if (value !== snapshot4.filters.query) controller.setQuery(value);
     }, 260);
@@ -10149,8 +12694,8 @@ function StatusBar(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const library = props.library;
-  const [busy2, setBusy] = import_react22.default.useState("");
-  const [errorText, setErrorText] = import_react22.default.useState("");
+  const [busy2, setBusy] = import_react23.default.useState("");
+  const [errorText, setErrorText] = import_react23.default.useState("");
   const status = snapshot4.statusData;
   const counts = snapshot4.counts || status && status.counts || {};
   const index = status && status.index || {};
@@ -10161,7 +12706,7 @@ function StatusBar(props) {
   const running = Number(jobs.running) || 0;
   const paused = jobs.globalPaused === true || jobs.state === "paused";
   const offline = snapshot4.offline;
-  import_react22.default.useEffect(() => {
+  import_react23.default.useEffect(() => {
     const timer2 = setInterval(() => library.refreshStatus(), STATUS_POLL_MS);
     return () => clearInterval(timer2);
   }, [library]);
@@ -10231,9 +12776,9 @@ function StatusBar(props) {
   );
 }
 function PaneResizer(props) {
-  const [active, setActive] = import_react22.default.useState(false);
-  const start = import_react22.default.useRef(null);
-  const latest = import_react22.default.useRef(null);
+  const [active, setActive] = import_react23.default.useState(false);
+  const start = import_react23.default.useRef(null);
+  const latest = import_react23.default.useRef(null);
   const onMouseDown = (event) => {
     event.preventDefault();
     start.current = { x: event.clientX, width: props.width };
@@ -10276,9 +12821,9 @@ function ContextMenu(props) {
   const menu = props.menu;
   const paper = props.paper;
   const library = props.library;
-  const [submenu, setSubmenu] = import_react22.default.useState(false);
-  const [armed, setArmed] = import_react22.default.useState(false);
-  const ref = import_react22.default.useRef(null);
+  const [submenu, setSubmenu] = import_react23.default.useState(false);
+  const [armed, setArmed] = import_react23.default.useState(false);
+  const ref = import_react23.default.useRef(null);
   const style = { left: Math.min(menu.x, (typeof window !== "undefined" ? window.innerWidth : 800) - 220) + "px", top: Math.min(menu.y, (typeof window !== "undefined" ? window.innerHeight : 600) - 280) + "px" };
   if (!paper) return null;
   const close = () => library.closeContextMenu();
@@ -10298,7 +12843,7 @@ function ContextMenu(props) {
       props.onShowDetails && props.onShowDetails();
     }) }, h(Icon, { name: "tag", size: 14 }), t("library.context.tag")),
     collections.length > 0 ? h(
-      import_react22.default.Fragment,
+      import_react23.default.Fragment,
       null,
       h("button", { type: "button", className: "ph-ctxmenu__item", onClick: () => setSubmenu(!submenu), "aria-expanded": submenu ? "true" : "false" }, h(Icon, { name: "collection", size: 14 }), t("library.context.collection")),
       submenu ? h("div", { className: "ph-ctxmenu__sub" }, collections.map((collection) => h("button", { key: collection.id, type: "button", className: "ph-ctxmenu__item", onClick: act(() => library.assignCollection(collection.id, [paper.id], true).then(() => props.pushToast("success", t("library.collection.assign") + " \xB7 " + collection.name)).catch((error) => props.pushToast("error", t("toast.failed", { message: describeError(t, error) })))) }, h("span", { className: "ph-collection__dot", "data-color": collection.color || "blue" }), collection.name))) : null
@@ -10306,7 +12851,7 @@ function ContextMenu(props) {
     h("button", { type: "button", className: "ph-ctxmenu__item", onClick: act(() => copyText(paper.id).then((ok) => props.pushToast(ok ? "success" : "warning", ok ? t("toast.copied") : t("common.unavailable")))) }, h(Icon, { name: "copy", size: 14 }), t("library.context.copyId")),
     h("div", { className: "ph-ctxmenu__sep" }),
     trashMode ? h(
-      import_react22.default.Fragment,
+      import_react23.default.Fragment,
       null,
       h("button", { type: "button", className: "ph-ctxmenu__item", onClick: act(() => library.setSelection([paper.id]) || library.restoreSelection().then(() => props.pushToast("success", t("toast.restored"))).catch((error) => props.pushToast("error", t("toast.failed", { message: describeError(t, error) })))) }, h(Icon, { name: "restore", size: 14 }), t("library.context.restore")),
       h("button", { type: "button", className: "ph-ctxmenu__item ph-ctxmenu__item--danger", onClick: () => {
@@ -10321,7 +12866,7 @@ function ContextMenu(props) {
 }
 function LibrarySkeleton() {
   return h(
-    import_react22.default.Fragment,
+    import_react23.default.Fragment,
     null,
     h("div", { className: "ph-pane ph-pane--left" }, h("div", { className: "ph-left-skeleton" }, [0, 1, 2, 3, 4].map((index) => h("div", { key: index, className: "ph-details__skeletonrow" }, h("span", { className: "ph-skeleton", style: { width: "16px", height: "16px" } }), h("span", { className: "ph-skeleton", style: { flex: 1, height: "11px" } }))))),
     h("div", { className: "ph-pane ph-pane--mid" }, h("div", { className: "ph-table-skeleton" }, [0, 1, 2, 3, 4, 5, 6, 7].map((index) => h("div", { key: index, className: "ph-table-skeleton__row" }, h("span", { className: "ph-skeleton", style: { width: 14, height: 14 } }), h("div", { className: "ph-table-skeleton__main" }, h("span", { className: "ph-skeleton", style: { width: "58%" } }), h("span", { className: "ph-skeleton", style: { width: "36%", height: 9 } })), h("span", { className: "ph-skeleton", style: { width: 72, height: 10 } }))))),
@@ -10329,8 +12874,8 @@ function LibrarySkeleton() {
   );
 }
 function useNarrowLayout() {
-  const [narrow, setNarrow] = import_react22.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 980);
-  import_react22.default.useEffect(() => {
+  const [narrow, setNarrow] = import_react23.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 980);
+  import_react23.default.useEffect(() => {
     const onResize = () => setNarrow(typeof window !== "undefined" && window.innerWidth <= 980);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -10342,20 +12887,20 @@ function LibraryShell(props) {
   const t = props.t;
   const api = props.api;
   const library = props.library;
-  const snapshot4 = import_react22.default.useSyncExternalStore(library.subscribe, library.getSnapshot, library.getSnapshot);
+  const snapshot4 = import_react23.default.useSyncExternalStore(library.subscribe, library.getSnapshot, library.getSnapshot);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [newCollectionOpen, setNewCollectionOpen] = import_react22.default.useState(false);
-  const [newCollectionName, setNewCollectionName] = import_react22.default.useState("");
-  const [dragWidth, setDragWidth] = import_react22.default.useState({ left: null, right: null });
-  const [paletteOpen, setPaletteOpen] = import_react22.default.useState(false);
-  const [citationOpen, setCitationOpen] = import_react22.default.useState(false);
-  const [helpOpen, setHelpOpen] = import_react22.default.useState(false);
-  const [inlineNoteId, setInlineNoteId] = import_react22.default.useState("");
-  import_react22.default.useEffect(() => {
+  const [newCollectionOpen, setNewCollectionOpen] = import_react23.default.useState(false);
+  const [newCollectionName, setNewCollectionName] = import_react23.default.useState("");
+  const [dragWidth, setDragWidth] = import_react23.default.useState({ left: null, right: null });
+  const [paletteOpen, setPaletteOpen] = import_react23.default.useState(false);
+  const [citationOpen, setCitationOpen] = import_react23.default.useState(false);
+  const [helpOpen, setHelpOpen] = import_react23.default.useState(false);
+  const [inlineNoteId, setInlineNoteId] = import_react23.default.useState("");
+  import_react23.default.useEffect(() => {
     if (snapshot4.status === "idle") library.refresh();
     else library.refreshStatus();
   }, []);
-  import_react22.default.useEffect(() => {
+  import_react23.default.useEffect(() => {
     installUndoShortcuts();
     const onKey = (event) => {
       const meta = event.metaKey || event.ctrlKey;
@@ -10379,7 +12924,7 @@ function LibraryShell(props) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
-  import_react22.default.useEffect(() => {
+  import_react23.default.useEffect(() => {
     const offView = bus.on("open-library-view", (payload) => {
       if (payload && payload.folderId) {
         library.setFolderFilter(String(payload.folderId));
@@ -10403,7 +12948,7 @@ function LibraryShell(props) {
       offPaper();
     };
   }, [library]);
-  import_react22.default.useEffect(() => {
+  import_react23.default.useEffect(() => {
     if (!snapshot4.contextMenu) return void 0;
     const close = () => library.closeContextMenu();
     const onKey = (event) => {
@@ -10417,7 +12962,7 @@ function LibraryShell(props) {
     };
   }, [snapshot4.contextMenu, library]);
   const contextPaper = snapshot4.contextMenu ? snapshot4.items.find((paper) => paper.id === snapshot4.contextMenu.paperId) : null;
-  const citePaper = import_react22.default.useCallback(
+  const citePaper = import_react23.default.useCallback(
     (paper) => {
       api("references.commit", { items: [{ kind: "paper", id: paper.id }], operationId: operationId2("refs") }).then((result) => {
         pendingStore.add(result, [{ kind: "paper", id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title }]);
@@ -10426,7 +12971,7 @@ function LibraryShell(props) {
     },
     [api, push, t]
   );
-  const exportPaper = import_react22.default.useCallback(
+  const exportPaper = import_react23.default.useCallback(
     (paper) => {
       api("export.bibtex", { ids: [paper.id] }).then((result) => {
         if (result && result.content) {
@@ -10437,20 +12982,20 @@ function LibraryShell(props) {
     },
     [api, push, t]
   );
-  const copyCitation = import_react22.default.useCallback((paper, style) => {
+  const copyCitation = import_react23.default.useCallback((paper, style) => {
     api("citation.format", { ids: [paper.id], style: style || "bibtex" }).then((result) => {
       if (!result || !result.content) return notify("info", t("common.unavailable"));
       copyText(String(result.content)).then((ok) => notify(ok ? "success" : "warning", ok ? t("common.copied") : t("common.unavailable")));
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const copyCitationKey = import_react22.default.useCallback((paper) => {
+  const copyCitationKey = import_react23.default.useCallback((paper) => {
     api("citation.key", { ids: [paper.id] }).then((result) => {
       const key = result && Array.isArray(result.keys) && result.keys[0] ? result.keys[0].key : "";
       if (!key) return notify("info", t("common.unavailable"));
       copyText(key).then((ok) => notify(ok ? "success" : "warning", ok ? t("common.copied") + " \xB7 " + key : t("common.unavailable")));
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const exportAnnotations = import_react22.default.useCallback((paper, format, action) => {
+  const exportAnnotations = import_react23.default.useCallback((paper, format, action) => {
     api("export.annotations", { paperId: paper.id, format: format || "markdown" }).then((result) => {
       const content = result && result.content ? String(result.content) : "";
       if (!content) return notify("info", t("annotations.exportEmpty"));
@@ -10462,16 +13007,16 @@ function LibraryShell(props) {
       }
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const insertCitation = import_react22.default.useCallback((paper) => {
+  const insertCitation = import_react23.default.useCallback((paper) => {
     if (!paper) return;
     deliverMaterials([{ kind: "paper", id: paper.id, title: paperTitle(t, paper) }], {}).then((result) => {
       if (!result.ok) return notify("error", t("dnd.failed", { message: result.reason || "" }));
       notify(result.inserted ? "success" : "warning", result.inserted ? t("citation.inserted") : t("dnd.queued", { count: 1 }));
     });
   }, [t]);
-  const updateMetrics = import_react22.default.useCallback((ids) => library.refreshMetrics(ids), [library]);
-  const editMetrics = import_react22.default.useCallback((paperId, fields) => library.updateMetrics(paperId, fields), [library]);
-  const resetMetrics = import_react22.default.useCallback(
+  const updateMetrics = import_react23.default.useCallback((ids) => library.refreshMetrics(ids), [library]);
+  const editMetrics = import_react23.default.useCallback((paperId, fields) => library.updateMetrics(paperId, fields), [library]);
+  const resetMetrics = import_react23.default.useCallback(
     (paperId) => api("metrics.reset", { paperId: String(paperId) }).catch(() => api("metrics.update", { paperId: String(paperId), fields: { impactFactor: null, fiveYearImpactFactor: null, impactFactorYear: null, quartile: null, citationCount: null, hIndex: null, issn: null, publisher: null } })).then(() => library.selectPaper(String(paperId), { tab: "info" })),
     [api, library]
   );
@@ -10506,7 +13051,7 @@ function LibraryShell(props) {
   ].filter(Boolean);
   const openContext = (menu) => library.openContextMenu(menu);
   const openPaper = (paperId, page) => props.onOpenPaper(paperId, page);
-  const rootRef = import_react22.default.useRef(null);
+  const rootRef = import_react23.default.useRef(null);
   if (snapshot4.offline) {
     return h(
       "div",
@@ -10553,7 +13098,7 @@ function LibraryShell(props) {
     })
   ) : h(
     "div",
-    { className: "ph-pane ph-pane--mid" },
+    { className: "ph-pane ph-pane--mid" + (snapshot4.selection.length > 0 ? " ph-pane--batch" : "") },
     h(LibraryToolbar, { t, api, snapshot: snapshot4, controller: library, pushToast: push }),
     h(SearchFilters, { t, snapshot: snapshot4, controller: library }),
     snapshot4.filters.view === "duplicates" ? h(DuplicatesPane, { t, snapshot: snapshot4, controller: library, pushToast: push }) : h(ItemTable, {
@@ -10649,7 +13194,7 @@ function LibraryShell(props) {
         }
       },
       loadingFirst ? h(LibrarySkeleton, { t }) : h(
-        import_react22.default.Fragment,
+        import_react23.default.Fragment,
         null,
         mobileBackdrop,
         left,
@@ -10677,14 +13222,14 @@ function LibraryShell(props) {
 }
 
 // src/surfaces/figure-search.jsx
-var import_react23 = __toESM(require("react"), 1);
+var import_react24 = __toESM(require("react"), 1);
 function operationId3(prefix) {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
   return (prefix ? prefix + "-" : "") + random;
 }
 function useDebounced2(value, delay) {
-  const [debounced, setDebounced] = import_react23.default.useState(value);
-  import_react23.default.useEffect(() => {
+  const [debounced, setDebounced] = import_react24.default.useState(value);
+  import_react24.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(value), delay == null ? 300 : delay);
     return () => clearTimeout(timer2);
   }, [value, delay]);
@@ -10723,8 +13268,8 @@ function paperTitle2(t, paper) {
   return paper.titleZh || paper.displayTitle || paper.title || t("common.untitled");
 }
 function FigureThumb(props) {
-  const [failed, setFailed] = import_react23.default.useState(false);
-  import_react23.default.useEffect(() => setFailed(false), [props.src]);
+  const [failed, setFailed] = import_react24.default.useState(false);
+  import_react24.default.useEffect(() => setFailed(false), [props.src]);
   if (failed || !props.src) return h(Icon, { name: "figure", size: 24 });
   return h("img", { src: props.src, alt: props.alt || "", loading: "lazy", decoding: "async", draggable: false, onError: () => setFailed(true) });
 }
@@ -10776,16 +13321,16 @@ function FigureSearch(props) {
   const api = props.api;
   const { toasts, push } = useToasts();
   const focus = props.focusFigure || null;
-  const [query, setQuery] = import_react23.default.useState(props.initialQuery || "");
+  const [query, setQuery] = import_react24.default.useState(props.initialQuery || "");
   const debounced = useDebounced2(query, 320);
-  const [upload, setUpload] = import_react23.default.useState(null);
-  const [readOnly, setReadOnly] = import_react23.default.useState(false);
-  const [annotatedOnly, setAnnotatedOnly] = import_react23.default.useState(false);
-  const [mode, setMode] = import_react23.default.useState(focus && focus.figureId ? "figure" : "text");
-  const [revision, setRevision] = import_react23.default.useState(0);
-  const [state, setState] = import_react23.default.useState({ status: "idle", data: null, error: null });
-  const fileRef = import_react23.default.useRef(null);
-  import_react23.default.useEffect(() => {
+  const [upload, setUpload] = import_react24.default.useState(null);
+  const [readOnly, setReadOnly] = import_react24.default.useState(false);
+  const [annotatedOnly, setAnnotatedOnly] = import_react24.default.useState(false);
+  const [mode, setMode] = import_react24.default.useState(focus && focus.figureId ? "figure" : "text");
+  const [revision, setRevision] = import_react24.default.useState(0);
+  const [state, setState] = import_react24.default.useState({ status: "idle", data: null, error: null });
+  const fileRef = import_react24.default.useRef(null);
+  import_react24.default.useEffect(() => {
     if (focus && focus.figureId) {
       setMode("figure");
       setQuery("");
@@ -10793,7 +13338,7 @@ function FigureSearch(props) {
       setRevision((value) => value + 1);
     }
   }, [focus && focus.figureId, focus && focus.paperId]);
-  import_react23.default.useEffect(() => {
+  import_react24.default.useEffect(() => {
     let alive = true;
     const controller = new AbortController();
     const value = debounced.trim();
@@ -11074,7 +13619,7 @@ function FigureSearch(props) {
 }
 
 // src/surfaces/reader/shell.jsx
-var import_react37 = __toESM(require("react"), 1);
+var import_react38 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/styles.js
 var STYLE_ID2 = "ph-reader-styles";
@@ -11242,7 +13787,7 @@ var READER_CSS = `
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 .ph-r-pager__input:focus {
-  border-color: var(--dsw-alias-state-business-primary);
+  border-color: var(--ph-accent-text, #7d2ae8);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-state-business-primary) 22%, transparent);
 }
 .ph-r-pager__total {
@@ -11322,7 +13867,7 @@ var READER_CSS = `
 }
 .ph-r-toolbtn:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .ph-r-toolbtn--active {
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 13%, transparent);
   border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 30%, transparent);
 }
@@ -11366,7 +13911,7 @@ var READER_CSS = `
   border-color: transparent;
 }
 .ph-r-btn--solid:hover:not(:disabled) { background: var(--dsw-alias-button-primary-hover, var(--dsw-alias-state-business-primary)); }
-.ph-r-btn--active { color: var(--dsw-alias-state-business-primary); }
+.ph-r-btn--active { color: var(--ph-accent-text, #7d2ae8); }
 .ph-r-btn__label { display: inline-block; }
 
 .ph-r-iconbtn {
@@ -11386,7 +13931,7 @@ var READER_CSS = `
 }
 .ph-r-iconbtn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .ph-r-iconbtn:disabled { opacity: 0.4; cursor: default; }
-.ph-r-iconbtn--active { color: var(--dsw-alias-state-business-primary); background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent); }
+.ph-r-iconbtn--active { color: var(--ph-accent-text, #7d2ae8); background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent); }
 
 .ph-r-spinner {
   display: inline-block;
@@ -11430,7 +13975,7 @@ var READER_CSS = `
   background: var(--dsw-alias-bg-layer-2);
   white-space: nowrap;
 }
-.ph-r-badge--business { color: var(--dsw-alias-state-business-primary); background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent); }
+.ph-r-badge--business { color: var(--ph-accent-text, #7d2ae8); background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent); }
 .ph-r-badge--success { color: var(--dsw-alias-state-success-primary); background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 12%, transparent); }
 .ph-r-badge--warn { color: var(--dsw-alias-state-warn-label); background: var(--dsw-alias-state-warn-tertiary); }
 .ph-r-badge--error { color: var(--dsw-alias-state-error-primary); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent); }
@@ -11501,7 +14046,7 @@ var READER_CSS = `
   line-height: 16px;
   text-align: center;
 }
-.ph-r-tab--active .ph-r-tab__count { color: var(--dsw-alias-state-business-primary); background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent); }
+.ph-r-tab--active .ph-r-tab__count { color: var(--ph-accent-text, #7d2ae8); background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent); }
 
 .ph-r-chipwrap { display: inline-flex; align-items: center; max-width: 100%; }
 .ph-r-chip {
@@ -11524,7 +14069,7 @@ var READER_CSS = `
 button.ph-r-chip { cursor: pointer; }
 button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--dsw-alias-label-primary); }
 .ph-r-chip--active {
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 32%, transparent);
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);
 }
@@ -11607,7 +14152,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
 .ph-r-rail__thumb img { display: block; width: 100%; height: auto; }
 .ph-r-rail__item:hover .ph-r-rail__thumb { transform: translateY(-1px); box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--dsw-alias-label-primary) 34%, transparent); }
 .ph-r-rail__item--active .ph-r-rail__thumb {
-  border-color: var(--dsw-alias-state-business-primary);
+  border-color: var(--ph-accent-text, #7d2ae8);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-state-business-primary) 26%, transparent);
 }
 .ph-r-rail__num {
@@ -11620,7 +14165,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   transition: color 140ms ease, background-color 140ms ease;
 }
 .ph-r-rail__item--active .ph-r-rail__num {
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);
   font-weight: 600;
 }
@@ -12050,7 +14595,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 .ph-r-popover__textarea:focus {
-  border-color: var(--dsw-alias-state-business-primary);
+  border-color: var(--ph-accent-text, #7d2ae8);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);
 }
 .ph-r-popover__colors { display: flex; align-items: center; gap: 5px; }
@@ -12139,7 +14684,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   transition: background-color 130ms ease, color 130ms ease;
 }
 .ph-r-outline__item:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-.ph-r-outline__item--active { color: var(--dsw-alias-state-business-primary); background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 9%, transparent); }
+.ph-r-outline__item--active { color: var(--ph-accent-text, #7d2ae8); background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 9%, transparent); }
 .ph-r-outline__level { flex: none; width: 14px; color: var(--dsw-alias-label-caption); font-size: 10px; text-align: center; font-variant-numeric: tabular-nums; }
 .ph-r-outline__label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ph-r-outline__page { flex: none; font-size: 10.5px; color: var(--dsw-alias-label-tertiary); font-variant-numeric: tabular-nums; }
@@ -12167,7 +14712,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   box-shadow: 0 6px 18px -12px color-mix(in srgb, var(--dsw-alias-label-primary) 40%, transparent);
   transform: translateY(-1px);
 }
-.ph-r-annotcard--active { border-color: var(--dsw-alias-state-business-primary); box-shadow: 0 0 0 1px color-mix(in srgb, var(--dsw-alias-state-business-primary) 24%, transparent); }
+.ph-r-annotcard--active { border-color: var(--ph-accent-text, #7d2ae8); box-shadow: 0 0 0 1px color-mix(in srgb, var(--dsw-alias-state-business-primary) 24%, transparent); }
 .ph-r-annotcard__head { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 .ph-r-annotcard__swatch { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .ph-r-annotcard__page { font-size: 10.5px; color: var(--dsw-alias-label-tertiary); }
@@ -12394,7 +14939,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   border-radius: 5px;
   cursor: pointer;
 }
-.ph-r-ai__source:hover { color: var(--dsw-alias-state-business-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent); }
+.ph-r-ai__source:hover { color: var(--ph-accent-text, #7d2ae8); border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent); }
 .ph-r-ai__answer-actions { display: flex; align-items: center; gap: 4px; }
 .ph-r-ai__composer { flex: none; border-top: 1px solid var(--dsw-alias-border-l2); padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 6px; background: var(--dsw-alias-bg-base); }
 .ph-r-ai__context { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
@@ -12415,7 +14960,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   outline: none;
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
-.ph-r-ai__input:focus { border-color: var(--dsw-alias-state-business-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent); }
+.ph-r-ai__input:focus { border-color: var(--ph-accent-text, #7d2ae8); box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent); }
 .ph-r-ai__input:disabled { opacity: 0.6; }
 .ph-r-ai__tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .ph-r-ai__toggle {
@@ -12436,7 +14981,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
 }
 .ph-r-ai__toggle:hover { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l3); }
 .ph-r-ai__toggle--on {
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 36%, transparent);
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);
 }
@@ -12656,13 +15201,13 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
 .ph-r-selbar__sep { width: 1px; height: 16px; background: var(--dsw-alias-border-l2); margin: 0 2px; flex: none; }
 .ph-r-selbar .ph-r-toolbtn { height: 26px; font-size: 11.5px; }
 .ph-r-toolbtn--primary {
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);
   border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 30%, transparent);
   font-weight: 600;
 }
 .ph-r-toolbtn--primary:hover {
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 16%, transparent);
 }
 
@@ -12716,7 +15261,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
 .ph-r-bi__engine--cached { color: var(--dsw-alias-state-success-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 36%, transparent); }
 .ph-r-bi__enginepref { color: var(--dsw-alias-label-tertiary); }
 .ph-r-bi__engineused { color: var(--dsw-alias-label-secondary); }
-.ph-r-resultcard__engine { font-size: 10px; color: var(--dsw-alias-state-business-primary); font-weight: 600; }
+.ph-r-resultcard__engine { font-size: 10px; color: var(--ph-accent-text, #7d2ae8); font-weight: 600; }
 .ph-r-resultcard__loading .ph-r-resultcard__meta { margin-left: auto; }
 
 /* v0.3 popover: 340px max, viewport height, internal scroll, compact structure */
@@ -12760,7 +15305,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   appearance: none;
   border: 0;
   background: transparent;
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   font: inherit;
   font-size: 10.5px;
   padding: 2px 0;
@@ -12784,7 +15329,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   line-height: 1.6;
   outline: none;
 }
-.ph-r-popover__textarea:focus { border-color: var(--dsw-alias-state-business-primary); }
+.ph-r-popover__textarea:focus { border-color: var(--ph-accent-text, #7d2ae8); }
 .ph-r-popover__row { display: flex; align-items: center; gap: 8px; }
 .ph-r-popover__hint { font-size: 10.5px; color: var(--dsw-alias-label-tertiary); }
 .ph-r-popover__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
@@ -12872,7 +15417,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   padding: 0 6px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   font-size: 9.5px;
   font-weight: 600;
 }
@@ -12934,7 +15479,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
 .ph-ai-md__table th, .ph-ai-md__table td { border-bottom: 1px solid var(--dsw-alias-border-l1); padding: 5px 8px; text-align: left; vertical-align: top; }
 .ph-ai-md__table th { background: var(--dsw-alias-bg-layer-2); font-weight: 600; color: var(--dsw-alias-label-secondary); white-space: nowrap; }
 .ph-ai-md__table tr:last-child td { border-bottom: none; }
-.ph-ai-md a { color: var(--dsw-alias-state-business-primary); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+.ph-ai-md a { color: var(--ph-accent-text, #7d2ae8); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
 .ph-r-ai__answer-text { white-space: normal; }
 .ph-r-ai__answer-text .ph-ai-md { font-size: 12.5px; }
 .ph-r-ai__msg--user .ph-r-ai__bubble { max-width: 88%; background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 8%, transparent); }
@@ -13016,12 +15561,12 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
 }
 .ph-r-floattools__btn:disabled { opacity: 0.45; cursor: default; }
 .ph-r-floattools__btn--armed {
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 12%, transparent);
   border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 34%, transparent);
 }
 .ph-r-floattools__btn--active {
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--ph-accent-text, #7d2ae8);
   background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);
   border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);
   font-weight: 600;
@@ -13081,7 +15626,7 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   box-shadow: 0 10px 34px -16px color-mix(in srgb, var(--dsw-alias-label-primary) 52%, transparent);
   animation: ph-r-tools-tip-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.ph-r-tools-tip__head { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--dsw-alias-state-business-primary); }
+.ph-r-tools-tip__head { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ph-accent-text, #7d2ae8); }
 .ph-r-tools-tip__text { margin: 5px 0 8px; font-size: 11.8px; line-height: 1.6; color: var(--dsw-alias-label-secondary); }
 .ph-r-tools-tip__actions { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
 @keyframes ph-r-tools-tip-in { from { opacity: 0; transform: translateY(6px) scale(0.985); } to { opacity: 1; transform: none; } }
@@ -13152,6 +15697,279 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   .ph-r-floattools__label { font-size: 11.5px; }
 }
 
+/* ========================================================================== *
+ * v0.19 design layer \u2014 reading-first typography and calmer chrome
+ * Consumes the shared tokens from core/styles.css; all structural and
+ * geometry rules above (text layer, marks, selection) are left untouched.
+ * ========================================================================== */
+.ph-r-reader {
+  font-size: var(--ph-fs-13, 13px);
+  line-height: var(--ph-lh-ui, 1.5);
+  background: var(--ph-bg, var(--dsw-alias-bg-base));
+}
+.ph-r-reader ::selection { background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 22%, transparent); }
+
+/* ---- toolbar ------------------------------------------------------------- */
+.ph-r-toolbar { border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-r-toolbar__row { padding: 0 var(--ph-s4, 16px); }
+.ph-r-toolbar__row--main { height: 56px; transition: height var(--ph-base, 200ms) var(--ph-ease, ease); }
+.ph-r-reader--scrolled .ph-r-toolbar__row--main { height: 44px; }
+.ph-r-toolbar__row--tools { height: 44px; gap: 7px; border-top-color: var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-r-toolbar__title { font-size: var(--ph-fs-15, 15px); font-weight: var(--ph-fw-semi, 600); letter-spacing: -0.006em; }
+.ph-r-reader--scrolled .ph-r-toolbar__title { font-size: var(--ph-fs-13, 13px); }
+.ph-r-toolbar__badge { font-size: var(--ph-fs-11, 11px); color: var(--ph-ink-3, var(--dsw-alias-label-tertiary)); }
+.ph-r-toolbar__meta { font-size: var(--ph-fs-11, 11px); color: var(--ph-ink-3, var(--dsw-alias-label-tertiary)); gap: 7px; }
+.ph-r-reader--scrolled .ph-r-toolbar {
+  background: color-mix(in srgb, var(--ph-bg, #fff) 78%, transparent);
+  backdrop-filter: saturate(160%) blur(16px);
+  -webkit-backdrop-filter: saturate(160%) blur(16px);
+  box-shadow: 0 8px 24px -22px rgba(0, 0, 0, 0.18);
+}
+
+.ph-r-pager { border-radius: var(--ph-r-sm, 8px); background: var(--ph-surface-2, var(--dsw-alias-bg-layer-2)); padding: 3px; }
+.ph-r-pager__input { height: 26px; border-radius: var(--ph-r-xs, 6px); font-size: var(--ph-fs-12, 12px); font-variant-numeric: tabular-nums; }
+.ph-r-pager__input:focus { box-shadow: var(--ph-ring, 0 0 0 3px rgba(0, 0, 0, 0.1)); }
+.ph-r-pager__total { font-size: var(--ph-fs-11, 11px); }
+.ph-r-zoom__value { font-size: var(--ph-fs-12, 12px); border-radius: var(--ph-r-xs, 6px); }
+.ph-r-segment { border-radius: var(--ph-r-sm, 8px); padding: 3px; background: var(--ph-surface-2, var(--dsw-alias-bg-layer-2)); }
+.ph-r-segment__item { border-radius: var(--ph-r-xs, 6px); font-size: var(--ph-fs-12, 12px); padding: 6px 11px; font-weight: var(--ph-fw-medium, 500); }
+.ph-r-segment__item--active { font-weight: var(--ph-fw-semi, 600); box-shadow: var(--ph-shadow-1, 0 1px 2px rgba(0, 0, 0, 0.08)), 0 0 0 0.5px var(--ph-line, rgba(0, 0, 0, 0.08)); }
+.ph-r-toolbtn { height: 29px; border-radius: var(--ph-r-sm, 8px); font-size: var(--ph-fs-12, 12px); gap: 6px; }
+.ph-r-toolbtn--active { border-color: var(--ph-accent-line, var(--dsw-alias-border-l3)); }
+.ph-r-toolbtn--icon { width: 29px; }
+
+/* ---- base controls ------------------------------------------------------- */
+.ph-r-btn { border-radius: var(--ph-r-sm, 8px); font-size: var(--ph-fs-13, 13px); font-weight: var(--ph-fw-medium, 500); transition: background-color var(--ph-fast, 140ms) var(--ph-ease, ease), border-color var(--ph-fast, 140ms) var(--ph-ease, ease), color var(--ph-fast, 140ms) var(--ph-ease, ease), box-shadow var(--ph-fast, 140ms) var(--ph-ease, ease); }
+.ph-r-btn--md { height: 32px; padding: 0 13px; }
+.ph-r-btn--sm { height: 27px; padding: 0 10px; font-size: var(--ph-fs-12, 12px); }
+.ph-r-btn--soft { background: var(--ph-surface-2, var(--dsw-alias-bg-layer-2)); border-color: var(--ph-line, var(--dsw-alias-border-l2)); }
+.ph-r-btn--soft:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
+.ph-r-btn--solid { box-shadow: var(--ph-shadow-1, none); }
+.ph-r-iconbtn { width: 29px; height: 29px; border-radius: var(--ph-r-sm, 8px); transition: background-color var(--ph-fast, 140ms) var(--ph-ease, ease), color var(--ph-fast, 140ms) var(--ph-ease, ease); }
+.ph-r-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.ph-r-badge { height: 19px; border-radius: var(--ph-r-pill, 999px); font-size: 10.5px; padding: 0 7px; }
+.ph-r-spinner { border-width: 1.7px; }
+.ph-r-empty__title { font-size: var(--ph-fs-13, 13px); }
+.ph-r-empty__desc { font-size: var(--ph-fs-12, 12px); line-height: 1.6; color: var(--ph-ink-3, var(--dsw-alias-label-tertiary)); }
+.ph-r-chip { height: 25px; border-radius: var(--ph-r-pill, 999px); font-size: var(--ph-fs-11, 11px); }
+
+.ph-r-tabs { padding: 0 var(--ph-s2, 8px); border-bottom-color: var(--ph-line-soft, var(--dsw-alias-border-l1)); gap: 1px; }
+.ph-r-tab { height: 42px; font-size: var(--ph-fs-12, 12px); font-weight: var(--ph-fw-medium, 500); padding: 0 10px; }
+.ph-r-tab--active { font-weight: var(--ph-fw-semi, 600); }
+.ph-r-tab--active::after { left: 8px; right: 8px; height: 2px; }
+.ph-r-tab__count { border-radius: var(--ph-r-pill, 999px); font-size: 10.5px; height: 17px; line-height: 17px; }
+
+/* ---- rail + canvas ------------------------------------------------------- */
+.ph-r-reader { --ph-r-rail: 120px; }
+.ph-r-rail {
+  padding: var(--ph-s2, 8px) 0 var(--ph-s6, 24px);
+  border-right: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1));
+  background: var(--ph-surface-1, var(--dsw-alias-bg-layer-1));
+}
+.ph-r-rail__item { padding: 6px 0 8px; gap: 4px; }
+.ph-r-rail__thumb { border-radius: 3px; border-color: var(--ph-line, var(--dsw-alias-border-l2)); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06); }
+.ph-r-rail__item:hover .ph-r-rail__thumb { box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.28); }
+.ph-r-rail__num { font-size: var(--ph-fs-11, 11px); border-radius: var(--ph-r-xs, 6px); min-width: 26px; text-align: center; }
+.ph-r-rail__item--active .ph-r-rail__num { font-weight: var(--ph-fw-semi, 600); }
+.ph-r-rail__indicator { width: 2.5px; border-radius: 0 3px 3px 0; }
+
+.ph-r-canvas {
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(0, 0, 0, 0.18), transparent 72%),
+    var(--ph-surface-1, var(--dsw-alias-bg-layer-1));
+}
+.ph-r-pages { padding: 22px var(--ph-s6, 24px) 56px; gap: 20px; }
+.ph-r-page {
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px -16px rgba(0, 0, 0, 0.18);
+  transition: box-shadow var(--ph-base, 200ms) var(--ph-ease, ease);
+}
+.ph-r-page:hover { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 12px 32px -14px rgba(0, 0, 0, 0.18); }
+.ph-r-page--active { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 14px 36px -14px rgba(0, 0, 0, 0.18); }
+.ph-r-page__chip { border-radius: var(--ph-r-xs, 6px); font-size: 10.5px; background: color-mix(in srgb, #000 56%, transparent); }
+.ph-r-page__structure { border-radius: var(--ph-r-xs, 6px); font-size: 10.5px; }
+
+/* ---- floating cards ------------------------------------------------------ */
+.ph-r-card {
+  border-radius: var(--ph-r-md, 12px);
+  border: 1px solid var(--ph-line, var(--dsw-alias-border-l2));
+  box-shadow: 0 16px 40px -18px rgba(0, 0, 0, 0.18), 0 2px 6px -1px rgba(0, 0, 0, 0.1);
+  background: var(--ph-bg, var(--dsw-alias-bg-base));
+}
+.ph-r-float { animation: ph-r-float-in var(--ph-base, 190ms) var(--ph-ease-out, ease); }
+.ph-r-selbar { border-radius: var(--ph-r-md, 12px); padding: 5px 7px; gap: 3px; }
+.ph-r-pen { width: 18px; height: 18px; transition: transform var(--ph-fast, 130ms) var(--ph-ease, ease), box-shadow var(--ph-fast, 130ms) var(--ph-ease, ease); }
+.ph-r-pen--current { box-shadow: 0 0 0 2px var(--ph-bg, #fff), 0 0 0 3.5px currentColor; }
+.ph-r-resultcard { padding: 12px 14px; gap: 8px; border-radius: var(--ph-r-md, 12px); }
+.ph-r-resultcard__head { font-size: var(--ph-fs-11, 11px); }
+.ph-r-resultcard__body { font-size: var(--ph-fs-13, 13px); line-height: 1.75; }
+.ph-r-resultcard__quote { font-size: var(--ph-fs-12, 12px); line-height: 1.55; }
+
+.ph-r-tip { border-radius: var(--ph-r-sm, 8px); font-size: var(--ph-fs-12, 12px); line-height: 1.6; padding: 8px 10px; }
+.ph-r-popover { border-radius: var(--ph-r-md, 12px); padding: 12px 14px 13px; gap: 8px; }
+.ph-r-popover__head { font-size: var(--ph-fs-11, 11px); }
+.ph-r-popover__head strong { font-size: var(--ph-fs-12, 12px); }
+.ph-r-popover__quote { border-radius: var(--ph-r-xs, 6px); font-size: var(--ph-fs-12, 12px); line-height: 1.65; border-left-color: var(--ph-line-strong, var(--dsw-alias-border-l3)); }
+.ph-r-popover__textarea { border-radius: var(--ph-r-sm, 8px); font-size: var(--ph-fs-12, 12px); line-height: 1.65; }
+.ph-r-popover__textarea:focus { box-shadow: var(--ph-ring, none); }
+.ph-r-popover__action { height: 29px; border-radius: var(--ph-r-xs, 6px); font-size: var(--ph-fs-11, 11px); }
+.ph-r-popover__translationtext { font-size: var(--ph-fs-12, 12px); line-height: 1.7; }
+
+/* ---- side panel ---------------------------------------------------------- */
+.ph-r-side { width: var(--ph-r-side, 372px); border-left: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); transition: width var(--ph-panel, 280ms) var(--ph-ease-out, cubic-bezier(0.16, 1, 0.3, 1)), opacity var(--ph-base, 200ms) var(--ph-ease, ease); }
+.ph-r-side__head { height: 42px; padding: 0 6px 0 var(--ph-s3, 12px); border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-r-side__hint { padding: 9px var(--ph-s4, 16px); font-size: var(--ph-fs-11, 11px); color: var(--ph-ink-4, var(--dsw-alias-label-caption)); background: var(--ph-surface-1, var(--dsw-alias-bg-layer-1)); border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+
+.ph-r-outline { padding: var(--ph-s2, 8px) var(--ph-s2, 8px) var(--ph-s6, 24px); gap: 1px; }
+.ph-r-outline__item { padding: 7px 9px; border-radius: var(--ph-r-sm, 8px); font-size: var(--ph-fs-12, 12px); line-height: 1.5; }
+.ph-r-outline__item--active { font-weight: var(--ph-fw-medium, 500); }
+.ph-r-outline__level { font-size: var(--ph-fs-11, 11px); }
+.ph-r-outline__page { font-size: var(--ph-fs-11, 11px); }
+
+.ph-r-annotlist { padding: var(--ph-s3, 12px); gap: var(--ph-s2, 8px); }
+.ph-r-annotcard {
+  padding: 10px 11px;
+  border-radius: var(--ph-r-sm, 8px);
+  gap: 6px;
+  transition: border-color var(--ph-fast, 140ms) var(--ph-ease, ease), box-shadow var(--ph-base, 200ms) var(--ph-ease, ease), transform var(--ph-fast, 140ms) var(--ph-ease, ease);
+}
+.ph-r-annotcard:hover { transform: translateY(-1px); box-shadow: var(--ph-shadow-2, none); }
+.ph-r-annotcard__quote { font-size: var(--ph-fs-12, 12px); line-height: 1.6; }
+.ph-r-annotcard__comment { font-size: var(--ph-fs-12, 12px); line-height: 1.65; }
+.ph-r-annotcard__foot { font-size: var(--ph-fs-11, 11px); }
+.ph-r-annotcard__actions { opacity: 0; transition: opacity var(--ph-fast, 140ms) var(--ph-ease, ease); }
+.ph-r-annotcard:hover .ph-r-annotcard__actions,
+.ph-r-annotcard:focus-within .ph-r-annotcard__actions { opacity: 1; }
+.ph-r-annotfilters { padding: 8px var(--ph-s2, 8px) 9px; gap: 5px; border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-r-annotfilters__chip { height: 23px; border-radius: var(--ph-r-pill, 999px); font-size: var(--ph-fs-11, 11px); padding: 0 9px; }
+
+.ph-r-bi__head { padding: var(--ph-s3, 12px) var(--ph-s3, 12px); gap: 7px; border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-r-bi__title { font-size: var(--ph-fs-13, 13px); }
+.ph-r-bi__body { padding: var(--ph-s3, 12px) var(--ph-s3, 12px) var(--ph-s8, 32px); }
+.ph-r-bi__list { gap: var(--ph-s3, 12px); }
+.ph-r-bi__card {
+  border-radius: var(--ph-r-sm, 8px);
+  border-color: var(--ph-line-soft, var(--dsw-alias-border-l1));
+  padding: 11px 13px 12px;
+  transition: border-color var(--ph-fast, 140ms) var(--ph-ease, ease), background-color var(--ph-fast, 140ms) var(--ph-ease, ease);
+}
+.ph-r-bi__card:hover { border-color: var(--ph-line, var(--dsw-alias-border-l2)); }
+.ph-r-bi__card--caption { border-left-width: 2.5px; }
+.ph-r-bi__role { font-size: 10.5px; letter-spacing: 0.07em; }
+.ph-r-bi__original { font-size: 13px; line-height: 1.78; }
+.ph-r-bi__translation { font-size: 13.5px; line-height: 1.85; }
+.ph-r-bi__card--heading .ph-r-bi__original { font-size: 14px; }
+.ph-r-bi__card--caption .ph-r-bi__original { font-size: 12px; line-height: 1.68; }
+.ph-r-bi__progresslabel { font-size: var(--ph-fs-11, 11px); }
+
+.ph-r-ai__status { padding: 8px var(--ph-s3, 12px); font-size: var(--ph-fs-11, 11px); background: var(--ph-surface-1, var(--dsw-alias-bg-layer-1)); border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-r-ai__body { padding: var(--ph-s3, 12px) var(--ph-s3, 12px) var(--ph-s4, 16px); gap: var(--ph-s3, 12px); }
+.ph-r-ai__suggestion { border-radius: var(--ph-r-sm, 8px); font-size: var(--ph-fs-12, 12px); padding: 9px 11px; line-height: 1.55; }
+.ph-r-ai__bubble { border-radius: var(--ph-r-md, 12px) var(--ph-r-md, 12px) 4px var(--ph-r-md, 12px); font-size: var(--ph-fs-12, 12px); line-height: 1.7; padding: 9px 11px; }
+.ph-r-ai__answer { border-radius: 4px var(--ph-r-md, 12px) var(--ph-r-md, 12px) var(--ph-r-md, 12px); padding: 10px 12px; gap: 8px; }
+.ph-r-ai__answer-text { font-size: var(--ph-fs-13, 13px); line-height: 1.78; }
+.ph-r-ai__composer { padding: var(--ph-s2, 8px) var(--ph-s3, 12px) var(--ph-s3, 12px); gap: 7px; border-top: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-r-ai__input { border-radius: var(--ph-r-sm, 8px); font-size: var(--ph-fs-12, 12px); line-height: 1.65; min-height: 58px; }
+.ph-r-ai__input:focus { box-shadow: var(--ph-ring, none); }
+.ph-r-ai__toggle { height: 25px; border-radius: var(--ph-r-pill, 999px); font-size: var(--ph-fs-11, 11px); padding: 0 9px; }
+.ph-r-ai__source { border-radius: var(--ph-r-xs, 6px); font-size: 10.5px; padding: 2px 8px; }
+.ph-r-ai__meta { font-size: 10.5px; }
+.ph-r-ai__mode { border-radius: var(--ph-r-xs, 6px); }
+
+/* ---- translation sheet --------------------------------------------------- */
+.ph-r-tr { border-top-left-radius: var(--ph-r-lg, 14px); border-top-right-radius: var(--ph-r-lg, 14px); border-top: 1px solid var(--ph-line, var(--dsw-alias-border-l2)); box-shadow: 0 -14px 36px -24px rgba(0, 0, 0, 0.18); }
+.ph-r-tr__head { height: 42px; padding: 0 var(--ph-s2, 8px) 0 var(--ph-s4, 16px); border-bottom: 1px solid var(--ph-line-soft, var(--dsw-alias-border-l1)); }
+.ph-r-tr__title { font-size: var(--ph-fs-12, 12px); }
+.ph-r-tr__mode { border-radius: var(--ph-r-xs, 6px); font-size: var(--ph-fs-11, 11px); padding: 3px 11px; }
+.ph-r-tr__modes { border-radius: var(--ph-r-sm, 8px); padding: 3px; }
+
+/* ---- floating annotation tools ------------------------------------------ */
+.ph-r-floattools__bar { border-radius: var(--ph-r-md, 12px); border-color: var(--ph-line, var(--dsw-alias-border-l2)); box-shadow: 0 8px 26px -12px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.08); }
+.ph-r-floattools__btn { height: 31px; border-radius: var(--ph-r-sm, 8px); font-size: var(--ph-fs-12, 12px); }
+.ph-r-floattools__kbd { border-radius: var(--ph-r-xs, 6px); font-size: 10px; }
+.ph-r-tools-tip { border-radius: var(--ph-r-md, 12px); box-shadow: 0 12px 36px -18px rgba(0, 0, 0, 0.18); }
+.ph-r-tools-tip__text { font-size: var(--ph-fs-12, 12px); line-height: 1.65; }
+
+/* ---- toasts + find ------------------------------------------------------- */
+.ph-r-toast { border-radius: var(--ph-r-sm, 8px); font-size: var(--ph-fs-12, 12px); padding: 8px 12px; }
+.ph-r-toast__action { border-radius: var(--ph-r-xs, 6px); font-size: var(--ph-fs-11, 11px); }
+.ph-r-find { border-radius: var(--ph-r-sm, 8px); }
+.ph-r-find__count { font-size: var(--ph-fs-11, 11px); }
+.ph-r-modehint { border-radius: var(--ph-r-md, 10px); font-size: var(--ph-fs-12, 12px); }
+
+/* ---- focus + responsive -------------------------------------------------- */
+.ph-r-reader button:focus-visible,
+.ph-r-reader [tabindex]:focus-visible,
+.ph-r-reader input:focus-visible,
+.ph-r-reader textarea:focus-visible {
+  outline: 2px solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: 2px;
+}
+@media (max-width: 1320px) { .ph-r-reader { --ph-r-side: 336px; } }
+@media (max-width: 1120px) { .ph-r-reader { --ph-r-side: 312px; --ph-r-rail: 108px; } }
+@media (max-width: 940px) {
+  .ph-r-reader { --ph-r-side: 300px; }
+  .ph-r-pages { padding: 16px 16px 40px; gap: 16px; }
+}
+@media (max-width: 820px) {
+  .ph-r-side { position: absolute; right: 0; top: 0; bottom: 0; z-index: 35; box-shadow: var(--ph-shadow-3, 0 0 28px rgba(0, 0, 0, 0.18)); }
+  .ph-r-toolbar__row { padding: 0 var(--ph-s3, 12px); }
+  .ph-r-toolbar__meta { display: none; }
+}
+/* toolbar labels collapse to icons before the row can overflow */
+@media (max-width: 1240px) {
+  .ph-r-toolbar__actions .ph-r-btn__label { display: none; }
+  .ph-r-toolbar__actions .ph-r-btn--sm { width: 28px; padding: 0; gap: 0; justify-content: center; }
+  .ph-r-toolbar__actions a.ph-r-btn--sm { width: 28px; padding: 0; justify-content: center; }
+}
+@media (max-width: 860px) {
+  .ph-r-toolbar__back .ph-r-btn__label { display: none; }
+  .ph-r-toolbar__back { width: 28px; padding: 0; gap: 0; }
+  .ph-r-find__input { width: 112px; }
+}
+/* state overrides must follow the width declarations above */
+.ph-r-side--closed { width: 0 !important; opacity: 0; border-left-color: transparent; }
+.ph-r-side--closed .ph-r-side__body { visibility: hidden; }
+/* ---- v0.22 colour pass: blue reading chrome, purple AI ------------------ */
+.ph-r-reader {
+  --ph-r-pen-yellow: #ffb020;
+  --ph-r-pen-green: #00b894;
+  --ph-r-pen-blue: #0d99ff;
+  --ph-r-pen-red: #ff5757;
+  --ph-r-pen-purple: #9b87f5;
+}
+.ph-r-toolbar::after { display: none; }
+.ph-r-side__head { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 4%, var(--dsw-alias-bg-base)); }
+.ph-r-bi__head { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 3%, var(--dsw-alias-bg-base)); }
+
+.ph-r-tab--active::after { background: var(--ph-accent, #3ea6ff); }
+.ph-r-rail__indicator { background: var(--ph-accent, #3ea6ff); }
+.ph-r-bi__barfill { background: var(--ph-accent, #3ea6ff); }
+.ph-r-toolbtn--active,
+.ph-r-toolbtn--primary {
+  color: var(--ph-accent-text, #0b6fc4);
+  background: var(--ph-accent-soft, rgba(62, 166, 255, 0.14));
+  border-color: var(--ph-accent-line, rgba(62, 166, 255, 0.4));
+}
+.ph-r-ai__mode--active { color: var(--ph-soft-text, #655ba1); }
+
+/* AI marks use the light purple secondary accent */
+.ph-r-ai__fast {
+  background: var(--ph-soft-bg, rgba(155, 135, 245, 0.16));
+  color: var(--ph-soft-text, #655ba1);
+  font-weight: 600;
+}
+.ph-r-ai__toggle--on {
+  color: var(--ph-soft-text, #655ba1);
+  border-color: var(--ph-soft-line, rgba(155, 135, 245, 0.4));
+  background: var(--ph-soft-bg, rgba(155, 135, 245, 0.16));
+}
+.ph-r-ai__status { background: color-mix(in srgb, var(--ph-hue-secondary, #9b87f5) 3%, var(--dsw-alias-bg-base)); }
+
+.ph-r-annotcard:hover { border-color: var(--ph-accent-line, rgba(62, 166, 255, 0.4)); }
+.ph-r-outline__item:not(.ph-r-outline__item--active):hover { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 7%, transparent); }
+.ph-r-ai__suggestion:hover { border-color: var(--ph-accent-line, rgba(62, 166, 255, 0.4)); }
+.ph-r-outline__item--active:hover { background: color-mix(in srgb, var(--ph-accent, #3ea6ff) 10%, transparent); color: var(--ph-accent-text, #0b6fc4); }
 `;
 var styleRefCount = 0;
 function ensureReaderStyles() {
@@ -13183,10 +16001,10 @@ function ensureReaderStyles() {
 }
 
 // src/surfaces/reader/ai-panel.jsx
-var import_react25 = __toESM(require("react"), 1);
+var import_react26 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/shared.jsx
-var import_react24 = __toESM(require("react"), 1);
+var import_react25 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/messages.js
 var READER_ZH = {
@@ -14405,11 +17223,11 @@ function findBlockMatches(pageData, query) {
 function useAsync(load, deps, options) {
   const opts = options || {};
   const enabled = opts.enabled !== false;
-  const [state, setState] = import_react24.default.useState({ status: enabled ? "loading" : "idle", data: opts.initialData, error: null });
-  const [tick, setTick] = import_react24.default.useState(0);
-  const loadRef = import_react24.default.useRef(load);
+  const [state, setState] = import_react25.default.useState({ status: enabled ? "loading" : "idle", data: opts.initialData, error: null });
+  const [tick, setTick] = import_react25.default.useState(0);
+  const loadRef = import_react25.default.useRef(load);
   loadRef.current = load;
-  import_react24.default.useEffect(() => {
+  import_react25.default.useEffect(() => {
     if (!enabled) {
       setState({ status: "idle", data: opts.initialData, error: null });
       return void 0;
@@ -14448,12 +17266,12 @@ function useAsync(load, deps, options) {
       }
     };
   }, deps.concat([tick, enabled]));
-  const reload = import_react24.default.useCallback(() => setTick((value) => value + 1), []);
+  const reload = import_react25.default.useCallback(() => setTick((value) => value + 1), []);
   return { status: state.status, data: state.data, error: state.error, reload };
 }
 function useElementSize(ref) {
-  const [size, setSize] = import_react24.default.useState({ width: 0, height: 0 });
-  import_react24.default.useEffect(() => {
+  const [size, setSize] = import_react25.default.useState({ width: 0, height: 0 });
+  import_react25.default.useEffect(() => {
     const element2 = ref.current;
     if (!element2) return void 0;
     let frame2 = 0;
@@ -14524,8 +17342,8 @@ function assessTranslationReliability(result, quote) {
   return { unreliable: Boolean(flagged || garbled), reason: firstText3(hostReason), garbled };
 }
 function usePrefersReducedMotion() {
-  const [reduced, setReduced] = import_react24.default.useState(false);
-  import_react24.default.useEffect(() => {
+  const [reduced, setReduced] = import_react25.default.useState(false);
+  import_react25.default.useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return void 0;
     let query = null;
     try {
@@ -14594,11 +17412,11 @@ function Icon2(props) {
   const size = Number(props && props.size) || 16;
   const shapes = ICONS2[props && props.name] || ICONS2.book;
   const children = shapes.map((shape, index) => {
-    if (shape[0] === "path") return import_react24.default.createElement("path", { key: index, d: shape[1] });
-    if (shape[0] === "circle") return import_react24.default.createElement("circle", Object.assign({ key: index }, shape[1]));
-    return import_react24.default.createElement("rect", Object.assign({ key: index }, shape[1]));
+    if (shape[0] === "path") return import_react25.default.createElement("path", { key: index, d: shape[1] });
+    if (shape[0] === "circle") return import_react25.default.createElement("circle", Object.assign({ key: index }, shape[1]));
+    return import_react25.default.createElement("rect", Object.assign({ key: index }, shape[1]));
   });
-  return import_react24.default.createElement(
+  return import_react25.default.createElement(
     "svg",
     {
       className: cx("ph-r-icon", props && props.className),
@@ -14618,7 +17436,7 @@ function Icon2(props) {
 }
 function Spinner2(props) {
   const size = Number(props && props.size) || 14;
-  return import_react24.default.createElement("span", {
+  return import_react25.default.createElement("span", {
     className: cx("ph-r-spinner", props && props.className),
     style: { width: size, height: size },
     "aria-hidden": "true"
@@ -14629,7 +17447,7 @@ function Btn(props) {
   const size = props.size || "md";
   const iconOnly = Boolean(props.iconOnly);
   const label = props.label || props.title || (iconOnly ? "" : void 0);
-  return import_react24.default.createElement(
+  return import_react25.default.createElement(
     "button",
     {
       type: "button",
@@ -14651,12 +17469,12 @@ function Btn(props) {
       onMouseDown: props.onMouseDown,
       onKeyDown: props.onKeyDown
     },
-    props.icon ? import_react24.default.createElement(Icon2, { name: props.icon, size: size === "sm" ? 14 : 16 }) : null,
-    !iconOnly && props.children != null ? import_react24.default.createElement("span", { className: "ph-r-btn__label" }, props.children) : null
+    props.icon ? import_react25.default.createElement(Icon2, { name: props.icon, size: size === "sm" ? 14 : 16 }) : null,
+    !iconOnly && props.children != null ? import_react25.default.createElement("span", { className: "ph-r-btn__label" }, props.children) : null
   );
 }
 function IconBtn(props) {
-  return import_react24.default.createElement(
+  return import_react25.default.createElement(
     "button",
     {
       type: "button",
@@ -14668,64 +17486,72 @@ function IconBtn(props) {
       "aria-pressed": props.active ? "true" : void 0,
       tabIndex: props.tabIndex
     },
-    import_react24.default.createElement(Icon2, { name: props.icon, size: props.size || 16 })
+    import_react25.default.createElement(Icon2, { name: props.icon, size: props.size || 16 })
   );
 }
 function Tabs(props) {
   const items2 = arrayOf3(props.items);
-  return import_react24.default.createElement(
+  const slider = useSlidingThumb();
+  return import_react25.default.createElement(
     "div",
-    { className: cx("ph-r-tabs", props.className), role: "tablist", "aria-label": props["aria-label"] },
+    {
+      className: cx("ph-r-tabs", slider.rect && "ph-r-tabs--sliding", props.className),
+      ref: slider.ref,
+      role: "tablist",
+      "aria-label": props["aria-label"]
+    },
+    import_react25.default.createElement(SlidingThumb, { rect: slider.rect, className: "ph-thumb--pill", inset: 6, popKey: props.value }),
     items2.map(
-      (item) => import_react24.default.createElement(
+      (item) => import_react25.default.createElement(
         "button",
         {
           key: item.id,
           type: "button",
           role: "tab",
           "aria-selected": item.id === props.value ? "true" : "false",
+          "data-ph-active": item.id === props.value ? "true" : void 0,
           className: cx("ph-r-tab", item.id === props.value && "ph-r-tab--active"),
           onClick: () => props.onChange(item.id),
           title: item.title
         },
-        import_react24.default.createElement("span", null, item.label),
-        item.count != null ? import_react24.default.createElement("span", { className: "ph-r-tab__count" }, String(item.count)) : null
+        import_react25.default.createElement("span", null, item.label),
+        item.count != null ? import_react25.default.createElement("span", { className: "ph-r-tab__count" }, String(item.count)) : null
       )
     )
   );
 }
 function Badge2(props) {
-  return import_react24.default.createElement(
+  return import_react25.default.createElement(
     "span",
     { className: cx("ph-r-badge", props && props.tone && "ph-r-badge--" + props.tone, props && props.className), title: props && props.title },
     props && props.children
   );
 }
 function Empty(props) {
-  return import_react24.default.createElement(
+  return import_react25.default.createElement(
     "div",
     { className: cx("ph-r-empty", props.tone && "ph-r-empty--" + props.tone, props.className) },
-    props.icon ? import_react24.default.createElement(Icon2, { name: props.icon, size: 22, className: "ph-r-empty__icon" }) : null,
-    import_react24.default.createElement("p", { className: "ph-r-empty__title" }, props.title || ""),
-    props.desc ? import_react24.default.createElement("p", { className: "ph-r-empty__desc" }, props.desc) : null,
-    props.action ? import_react24.default.createElement("div", { className: "ph-r-empty__action" }, props.action) : null
+    props.icon ? import_react25.default.createElement(Icon2, { name: props.icon, size: 22, className: "ph-r-empty__icon" }) : null,
+    import_react25.default.createElement("p", { className: "ph-r-empty__title" }, props.title || ""),
+    props.desc ? import_react25.default.createElement("p", { className: "ph-r-empty__desc" }, props.desc) : null,
+    props.action ? import_react25.default.createElement("div", { className: "ph-r-empty__action" }, props.action) : null
   );
 }
 function Chip(props) {
   const content = [
-    props.icon ? import_react24.default.createElement(Icon2, { key: "icon", name: props.icon, size: 13 }) : null,
-    import_react24.default.createElement("span", { key: "label", className: "ph-r-chip__label" }, props.children)
+    props.icon ? import_react25.default.createElement(Icon2, { key: "icon", name: props.icon, size: 13 }) : null,
+    import_react25.default.createElement("span", { key: "label", className: "ph-r-chip__label" }, props.children)
   ];
-  const body = props.onClick ? import_react24.default.createElement("button", { type: "button", className: cx("ph-r-chip", props.active && "ph-r-chip--active", props.className), onClick: props.onClick, title: props.title }, content) : import_react24.default.createElement("span", { className: cx("ph-r-chip", props.active && "ph-r-chip--active", props.className), title: props.title }, content);
+  const body = props.onClick ? import_react25.default.createElement("button", { type: "button", className: cx("ph-r-chip", props.active && "ph-r-chip--active", props.className), onClick: props.onClick, title: props.title }, content) : import_react25.default.createElement("span", { className: cx("ph-r-chip", props.active && "ph-r-chip--active", props.className), title: props.title }, content);
   if (!props.onRemove) return body;
-  return import_react24.default.createElement(
+  return import_react25.default.createElement(
     "span",
     { className: cx("ph-r-chipwrap", props.className) },
     body,
-    import_react24.default.createElement(
+    import_react25.default.createElement(
       "button",
       { type: "button", className: "ph-r-chip__remove", onClick: props.onRemove, title: props.removeLabel, "aria-label": props.removeLabel },
-      import_react24.default.createElement(Icon2, { name: "close", size: 11 })
+      import_react25.default.createElement(Icon2, { name: "close", size: 11 })
     )
   );
 }
@@ -14749,27 +17575,27 @@ function AnswerBlock(props) {
   const reason = firstText3(message.reason, t("reader.ai.reasonFallback"));
   const sources = arrayOf3(message.sources);
   const imageHint = !ok && message.includeImage && /image|vision|图像|图片/i.test(String(reason));
-  return import_react25.default.createElement(
+  return import_react26.default.createElement(
     "div",
     { className: "ph-r-ai__msg" },
-    import_react25.default.createElement("div", { className: "ph-r-ai__role" }, t("reader.ai.title")),
-    import_react25.default.createElement(
+    import_react26.default.createElement("div", { className: "ph-r-ai__role" }, t("reader.ai.title")),
+    import_react26.default.createElement(
       "div",
       { className: cx("ph-r-ai__answer", !ok && "ph-r-ai__answer--bad") },
-      ok ? import_react25.default.createElement("div", { className: "ph-r-ai__answer-text" }, import_react25.default.createElement(Markdown, { text: answer || t("reader.ai.noAnswer") })) : import_react25.default.createElement(
+      ok ? import_react26.default.createElement("div", { className: "ph-r-ai__answer-text" }, import_react26.default.createElement(Markdown, { text: answer || t("reader.ai.noAnswer") })) : import_react26.default.createElement(
         "div",
         { className: "ph-r-ai__answer-warn" },
         message.status === "error" ? t("reader.ai.error", { message: reason }) : t("reader.ai.unavailable", { reason })
       ),
-      ok && sources.length > 0 ? import_react25.default.createElement(
+      ok && sources.length > 0 ? import_react26.default.createElement(
         "div",
         { className: "ph-r-ai__sources" },
-        import_react25.default.createElement("span", { className: "ph-r-ai__sourcelabel" }, t("reader.ai.sources")),
+        import_react26.default.createElement("span", { className: "ph-r-ai__sourcelabel" }, t("reader.ai.sources")),
         sources.map((source, index) => {
           const isFigure = source && source.kind === "figure";
           const page = num2(source && source.page, 0);
           const label = firstText3(source && source.label, source && source.figureId);
-          return import_react25.default.createElement(
+          return import_react26.default.createElement(
             "button",
             {
               key: index,
@@ -14782,15 +17608,15 @@ function AnswerBlock(props) {
           );
         })
       ) : null,
-      ok ? import_react25.default.createElement(
+      ok ? import_react26.default.createElement(
         "div",
         { className: "ph-r-ai__meta" },
-        message.cached ? import_react25.default.createElement("span", null, t("reader.ai.metaCached", { model: firstText3(message.model, message.provider, "AI") })) : message.provider || message.model ? import_react25.default.createElement("span", null, t("reader.ai.meta", {
+        message.cached ? import_react26.default.createElement("span", null, t("reader.ai.metaCached", { model: firstText3(message.model, message.provider, "AI") })) : message.provider || message.model ? import_react26.default.createElement("span", null, t("reader.ai.meta", {
           model: firstText3(message.model, message.provider, "AI"),
           elapsed: num2(message.elapsedMs, 0)
         })) : null,
-        !message.cached && message.elapsedMs && !message.provider && !message.model ? import_react25.default.createElement("span", null, String(formatElapsed(message.elapsedMs))) : null,
-        message.fast ? import_react25.default.createElement(
+        !message.cached && message.elapsedMs && !message.provider && !message.model ? import_react26.default.createElement("span", null, String(formatElapsed(message.elapsedMs))) : null,
+        message.fast ? import_react26.default.createElement(
           "span",
           {
             className: "ph-r-ai__fast",
@@ -14798,56 +17624,57 @@ function AnswerBlock(props) {
           },
           t("reader.ai.fastBadge")
         ) : null
-      ) : imageHint ? import_react25.default.createElement(
+      ) : imageHint ? import_react26.default.createElement(
         "div",
         { className: "ph-r-ai__answer-actions" },
-        import_react25.default.createElement(
+        import_react26.default.createElement(
           Btn,
           { size: "sm", variant: "soft", icon: "image", onClick: props.onDisableImage },
           t("reader.ai.imageUnsupported")
         )
       ) : null,
-      ok ? import_react25.default.createElement(
+      ok ? import_react26.default.createElement(
         "div",
         { className: "ph-r-ai__answer-actions" },
-        import_react25.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: () => props.onCopyAnswer(answer) }, t("reader.ai.answer.copy")),
-        import_react25.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: () => props.onCiteAnswer(message) }, t("reader.ai.answer.cite"))
+        import_react26.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: () => props.onCopyAnswer(answer) }, t("reader.ai.answer.copy")),
+        import_react26.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: () => props.onCiteAnswer(message) }, t("reader.ai.answer.cite"))
       ) : null
     )
   );
 }
 function QuestionBlock(props) {
   const t = props.t;
-  return import_react25.default.createElement(
+  return import_react26.default.createElement(
     "div",
     { className: "ph-r-ai__msg ph-r-ai__msg--user" },
-    import_react25.default.createElement("div", { className: "ph-r-ai__role" }, t("reader.ai.you")),
-    props.quote ? import_react25.default.createElement("blockquote", { className: "ph-r-ai__quote" }, props.quote.length > 180 ? props.quote.slice(0, 180) + "\u2026" : props.quote) : null,
-    import_react25.default.createElement("div", { className: "ph-r-ai__bubble" }, props.text),
-    props.includeImage ? import_react25.default.createElement("span", { className: "ph-r-ai__hint" }, "\u{1F5BC} " + t("reader.ai.includeImage")) : null
+    import_react26.default.createElement("div", { className: "ph-r-ai__role" }, t("reader.ai.you")),
+    props.quote ? import_react26.default.createElement("blockquote", { className: "ph-r-ai__quote" }, props.quote.length > 180 ? props.quote.slice(0, 180) + "\u2026" : props.quote) : null,
+    import_react26.default.createElement("div", { className: "ph-r-ai__bubble" }, props.text),
+    props.includeImage ? import_react26.default.createElement("span", { className: "ph-r-ai__hint" }, "\u{1F5BC} " + t("reader.ai.includeImage")) : null
   );
 }
 function AiPanel(props) {
   const t = props.t;
   const api = props.api;
-  const [draft, setDraft] = import_react25.default.useState("");
-  const [messages, setMessages] = import_react25.default.useState([]);
-  const [busy2, setBusy] = import_react25.default.useState(false);
-  const [includeImage, setIncludeImage] = import_react25.default.useState(false);
-  const [mode, setMode] = import_react25.default.useState("deep");
-  const [extraQuote, setExtraQuote] = import_react25.default.useState("");
-  const bodyRef = import_react25.default.useRef(null);
-  const inputRef = import_react25.default.useRef(null);
-  const requestRef = import_react25.default.useRef(0);
-  const mountedRef = import_react25.default.useRef(true);
+  const [draft, setDraft] = import_react26.default.useState("");
+  const [messages, setMessages] = import_react26.default.useState([]);
+  const [busy2, setBusy] = import_react26.default.useState(false);
+  const [includeImage, setIncludeImage] = import_react26.default.useState(false);
+  const [mode, setMode] = import_react26.default.useState("deep");
+  const modeSlider = useSlidingThumb();
+  const [extraQuote, setExtraQuote] = import_react26.default.useState("");
+  const bodyRef = import_react26.default.useRef(null);
+  const inputRef = import_react26.default.useRef(null);
+  const requestRef = import_react26.default.useRef(0);
+  const mountedRef = import_react26.default.useRef(true);
   const statusState = useAsync(() => api("ai.status", {}), [props.paperId]);
-  import_react25.default.useEffect(() => {
+  import_react26.default.useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
   }, []);
-  import_react25.default.useEffect(() => {
+  import_react26.default.useEffect(() => {
     const element2 = bodyRef.current;
     if (!element2) return;
     element2.scrollTop = element2.scrollHeight;
@@ -14861,7 +17688,7 @@ function AiPanel(props) {
   );
   const maxChars = status && status.limits && status.limits.maxInputChars ? num2(status.limits.maxInputChars, 0) : 0;
   const selection = props.selection && props.selection.quote ? props.selection : null;
-  const ask = import_react25.default.useCallback(
+  const ask = import_react26.default.useCallback(
     (promptText, options) => {
       const opts = options || {};
       const prompt = String(promptText || "").trim();
@@ -14939,7 +17766,7 @@ function AiPanel(props) {
     },
     [api, busy2, extraQuote, includeImage, mode, props.page, props.paperId, props.sessionId, selection, t]
   );
-  import_react25.default.useEffect(() => {
+  import_react26.default.useEffect(() => {
     const request2 = props.request;
     if (!request2 || !request2.seq || request2.seq === requestRef.current) return;
     requestRef.current = request2.seq;
@@ -14981,18 +17808,18 @@ function AiPanel(props) {
   const copyAnswer = (text2) => {
     copyText2(text2).then((ok) => props.notify(ok ? "success" : "error", ok ? t("reader.ai.answer.copied") : t("reader.toast.copyFailed")));
   };
-  const contextChips = import_react25.default.createElement(
+  const contextChips = import_react26.default.createElement(
     "div",
     { className: "ph-r-ai__context" },
-    import_react25.default.createElement(Icon2, { name: "book", size: 12 }),
-    props.paper ? import_react25.default.createElement(Chip, { title: paperChipTitle(props.paper) }, paperChipTitle(props.paper) || t("reader.ai.context.paper")) : import_react25.default.createElement(Chip, null, t("reader.ai.context.paper")),
-    import_react25.default.createElement(Chip, { icon: "pages" }, t("reader.ai.context.page", { page: props.page })),
-    selection ? import_react25.default.createElement(Chip, {
+    import_react26.default.createElement(Icon2, { name: "book", size: 12 }),
+    props.paper ? import_react26.default.createElement(Chip, { title: paperChipTitle(props.paper) }, paperChipTitle(props.paper) || t("reader.ai.context.paper")) : import_react26.default.createElement(Chip, null, t("reader.ai.context.paper")),
+    import_react26.default.createElement(Chip, { icon: "pages" }, t("reader.ai.context.page", { page: props.page })),
+    selection ? import_react26.default.createElement(Chip, {
       icon: "highlighter",
       title: selection.quote,
       onRemove: props.onClearSelection,
       removeLabel: t("reader.ai.context.clear")
-    }, t("reader.ai.context.selection") + " \xB7 " + (selection.quote.length > 14 ? selection.quote.slice(0, 14) + "\u2026" : selection.quote)) : extraQuote ? import_react25.default.createElement(Chip, {
+    }, t("reader.ai.context.selection") + " \xB7 " + (selection.quote.length > 14 ? selection.quote.slice(0, 14) + "\u2026" : selection.quote)) : extraQuote ? import_react26.default.createElement(Chip, {
       icon: "highlighter",
       title: extraQuote,
       onRemove: () => setExtraQuote(""),
@@ -15005,39 +17832,39 @@ function AiPanel(props) {
     { key: "figure", prompt: t("reader.ai.prompt.figure"), label: t("reader.ai.suggestion.figure") },
     { key: "relation", prompt: t("reader.ai.suggestion.relation"), label: t("reader.ai.suggestion.relation") }
   ];
-  return import_react25.default.createElement(
+  return import_react26.default.createElement(
     "div",
     { className: "ph-r-ai" },
-    import_react25.default.createElement(
+    import_react26.default.createElement(
       "div",
       {
         className: cx("ph-r-ai__status", statusState.status === "ready" && status && status.available ? "ph-r-ai__status--ok" : statusState.status === "loading" ? "" : "ph-r-ai__status--bad"),
         title: statusReason
       },
-      statusState.status === "loading" ? import_react25.default.createElement(Spinner2, { size: 11 }) : import_react25.default.createElement(Icon2, { name: statusUnavailable ? "warning" : "sparkles", size: 12 }),
-      statusState.status === "loading" ? import_react25.default.createElement("span", null, t("reader.ai.status.loading")) : statusUnavailable ? import_react25.default.createElement("span", null, t("reader.ai.status.unavailable", { reason: statusReason })) : import_react25.default.createElement("span", null, t("reader.ai.status.available", { model: firstText3(status && status.model, status && status.provider, "AI") })),
-      statusState.status === "ready" && status && status.provider && status.model ? import_react25.default.createElement(Badge2, null, String(status.provider)) : null,
-      import_react25.default.createElement("span", { className: "ph-r-ai__spacer" }),
-      statusState.status === "error" && statusState.reload ? import_react25.default.createElement(IconBtn, { icon: "refresh", title: t("reader.retry"), onClick: statusState.reload }) : null,
-      messages.length > 0 ? import_react25.default.createElement(
+      statusState.status === "loading" ? import_react26.default.createElement(Spinner2, { size: 11 }) : import_react26.default.createElement(Icon2, { name: statusUnavailable ? "warning" : "sparkles", size: 12 }),
+      statusState.status === "loading" ? import_react26.default.createElement("span", null, t("reader.ai.status.loading")) : statusUnavailable ? import_react26.default.createElement("span", null, t("reader.ai.status.unavailable", { reason: statusReason })) : import_react26.default.createElement("span", null, t("reader.ai.status.available", { model: firstText3(status && status.model, status && status.provider, "AI") })),
+      statusState.status === "ready" && status && status.provider && status.model ? import_react26.default.createElement(Badge2, null, String(status.provider)) : null,
+      import_react26.default.createElement("span", { className: "ph-r-ai__spacer" }),
+      statusState.status === "error" && statusState.reload ? import_react26.default.createElement(IconBtn, { icon: "refresh", title: t("reader.retry"), onClick: statusState.reload }) : null,
+      messages.length > 0 ? import_react26.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => setMessages([]), title: t("reader.ai.newChat") },
-        import_react25.default.createElement(Icon2, { name: "close", size: 12 }),
-        import_react25.default.createElement("span", null, t("reader.ai.newChat"))
+        import_react26.default.createElement(Icon2, { name: "close", size: 12 }),
+        import_react26.default.createElement("span", null, t("reader.ai.newChat"))
       ) : null
     ),
-    import_react25.default.createElement(
+    import_react26.default.createElement(
       "div",
       { ref: bodyRef, className: "ph-r-ai__body ph-r-scroll", "data-ph-ai-messages": String(messages.length) },
-      empty ? import_react25.default.createElement(
+      empty ? import_react26.default.createElement(
         "div",
         { className: "ph-r-ai__empty" },
-        import_react25.default.createElement(Empty, { icon: "sparkles", title: t("reader.ai.title"), desc: t("reader.ai.empty") }),
-        import_react25.default.createElement(
+        import_react26.default.createElement(Empty, { icon: "sparkles", title: t("reader.ai.title"), desc: t("reader.ai.empty") }),
+        import_react26.default.createElement(
           "div",
           { className: "ph-r-ai__suggestions" },
           suggestions.map(
-            (item) => import_react25.default.createElement(
+            (item) => import_react26.default.createElement(
               "button",
               {
                 key: item.key,
@@ -15051,7 +17878,7 @@ function AiPanel(props) {
           )
         )
       ) : messages.map(
-        (message) => message.role === "user" ? import_react25.default.createElement(QuestionBlock, { key: message.id, t, text: message.text, quote: message.quote, includeImage: message.includeImage }) : import_react25.default.createElement(AnswerBlock, {
+        (message) => message.role === "user" ? import_react26.default.createElement(QuestionBlock, { key: message.id, t, text: message.text, quote: message.quote, includeImage: message.includeImage }) : import_react26.default.createElement(AnswerBlock, {
           key: message.id,
           t,
           message,
@@ -15064,21 +17891,21 @@ function AiPanel(props) {
           }
         })
       ),
-      busy2 ? import_react25.default.createElement(
+      busy2 ? import_react26.default.createElement(
         "div",
         { className: "ph-r-ai__busy" },
-        import_react25.default.createElement(Spinner2, { size: 12 }),
-        import_react25.default.createElement("span", null, t("reader.ai.asking"))
+        import_react26.default.createElement(Spinner2, { size: 12 }),
+        import_react26.default.createElement("span", null, t("reader.ai.asking"))
       ) : null
     ),
-    import_react25.default.createElement(
+    import_react26.default.createElement(
       "div",
       { className: "ph-r-ai__composer" },
       contextChips,
-      import_react25.default.createElement(
+      import_react26.default.createElement(
         "div",
         { className: "ph-r-ai__inputrow" },
-        import_react25.default.createElement("textarea", {
+        import_react26.default.createElement("textarea", {
           ref: inputRef,
           className: "ph-r-ai__input",
           value: draft,
@@ -15089,7 +17916,7 @@ function AiPanel(props) {
           onChange: (event) => setDraft(event.target.value),
           onKeyDown
         }),
-        import_react25.default.createElement(
+        import_react26.default.createElement(
           "button",
           {
             type: "button",
@@ -15099,33 +17926,40 @@ function AiPanel(props) {
             title: t("reader.ai.send"),
             "aria-label": t("reader.ai.send")
           },
-          import_react25.default.createElement(Icon2, { name: "send", size: 15 })
+          import_react26.default.createElement(Icon2, { name: "send", size: 15 })
         )
       ),
-      import_react25.default.createElement(
+      import_react26.default.createElement(
         "div",
         { className: "ph-r-ai__tools" },
-        import_react25.default.createElement(
+        import_react26.default.createElement(
           "div",
-          { className: "ph-r-ai__modes", role: "group", "aria-label": t("reader.ai.mode.label") },
+          {
+            className: cx("ph-r-ai__modes", modeSlider.rect && "ph-r-ai__modes--sliding"),
+            ref: modeSlider.ref,
+            role: "group",
+            "aria-label": t("reader.ai.mode.label")
+          },
+          import_react26.default.createElement(SlidingThumb, { rect: modeSlider.rect, popKey: mode }),
           ["fast", "deep"].map(
-            (value) => import_react25.default.createElement(
+            (value) => import_react26.default.createElement(
               "button",
               {
                 key: value,
                 type: "button",
+                "data-ph-active": mode === value ? "true" : void 0,
                 className: cx("ph-r-ai__mode", mode === value && "ph-r-ai__mode--active"),
                 title: t("reader.ai.mode." + value + "Hint"),
                 "aria-pressed": mode === value ? "true" : "false",
                 onClick: () => setMode(value),
                 disabled: busy2
               },
-              value === "fast" ? import_react25.default.createElement(Icon2, { name: "sparkles", size: 11 }) : null,
+              value === "fast" ? import_react26.default.createElement(Icon2, { name: "sparkles", size: 11 }) : null,
               t("reader.ai.mode." + value)
             )
           )
         ),
-        import_react25.default.createElement(
+        import_react26.default.createElement(
           "button",
           {
             type: "button",
@@ -15134,19 +17968,19 @@ function AiPanel(props) {
             title: t("reader.ai.includeImageHint"),
             "aria-pressed": includeImage ? "true" : "false"
           },
-          import_react25.default.createElement("span", { className: "ph-r-ai__check" }, includeImage ? import_react25.default.createElement(Icon2, { name: "check", size: 8 }) : null),
-          import_react25.default.createElement("span", null, t("reader.ai.includeImage"))
+          import_react26.default.createElement("span", { className: "ph-r-ai__check" }, includeImage ? import_react26.default.createElement(Icon2, { name: "check", size: 8 }) : null),
+          import_react26.default.createElement("span", null, t("reader.ai.includeImage"))
         ),
-        maxChars > 0 ? import_react25.default.createElement("span", { className: "ph-r-ai__hint" }, t("reader.ai.limit", { chars: maxChars })) : null,
-        import_react25.default.createElement("span", { className: "ph-r-ai__spacer" }),
-        busy2 ? import_react25.default.createElement("span", { className: "ph-r-ai__hint" }, t("reader.ai.asking")) : null
+        maxChars > 0 ? import_react26.default.createElement("span", { className: "ph-r-ai__hint" }, t("reader.ai.limit", { chars: maxChars })) : null,
+        import_react26.default.createElement("span", { className: "ph-r-ai__spacer" }),
+        busy2 ? import_react26.default.createElement("span", { className: "ph-r-ai__hint" }, t("reader.ai.asking")) : null
       )
     )
   );
 }
 
 // src/surfaces/reader/undo.js
-var import_react26 = __toESM(require("react"), 1);
+var import_react27 = __toESM(require("react"), 1);
 var MAX_ENTRIES2 = 60;
 function isUndoContext(value) {
   return Boolean(value && typeof value.push === "function" && typeof value.undoLast === "function");
@@ -15243,12 +18077,12 @@ function createUndoStore() {
 }
 var EMPTY_SNAPSHOT = { revision: 0, busy: false, canUndo: false, canRedo: false, labels: [] };
 function useReaderUndo(external) {
-  const storeRef = import_react26.default.useRef(null);
+  const storeRef = import_react27.default.useRef(null);
   if (storeRef.current === null) storeRef.current = createUndoStore();
   const store = storeRef.current;
   const externalActive = isUndoContext(external);
-  const localSnapshot = import_react26.default.useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
-  const subscribeExternal = import_react26.default.useCallback(
+  const localSnapshot = import_react27.default.useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const subscribeExternal = import_react27.default.useCallback(
     (listener) => {
       if (!externalActive) return () => {
       };
@@ -15263,7 +18097,7 @@ function useReaderUndo(external) {
     },
     [external, externalActive]
   );
-  const externalSnapshot = import_react26.default.useCallback(() => {
+  const externalSnapshot = import_react27.default.useCallback(() => {
     if (!externalActive) return EMPTY_SNAPSHOT;
     try {
       return external.getSnapshot() || EMPTY_SNAPSHOT;
@@ -15271,8 +18105,8 @@ function useReaderUndo(external) {
       return EMPTY_SNAPSHOT;
     }
   }, [external, externalActive]);
-  const externalState = import_react26.default.useSyncExternalStore(subscribeExternal, externalSnapshot, externalSnapshot);
-  const push = import_react26.default.useCallback(
+  const externalState = import_react27.default.useSyncExternalStore(subscribeExternal, externalSnapshot, externalSnapshot);
+  const push = import_react27.default.useCallback(
     (entry) => {
       if (externalActive) {
         try {
@@ -15290,7 +18124,7 @@ function useReaderUndo(external) {
     },
     [external, externalActive, store]
   );
-  const undo2 = import_react26.default.useCallback(async () => {
+  const undo2 = import_react27.default.useCallback(async () => {
     if (externalActive) {
       try {
         const result = await external.undoLast();
@@ -15303,7 +18137,7 @@ function useReaderUndo(external) {
     }
     return store.undo();
   }, [external, externalActive, store]);
-  const redo = import_react26.default.useCallback(async () => {
+  const redo = import_react27.default.useCallback(async () => {
     if (externalActive) {
       try {
         const result = await external.redoLast();
@@ -15331,7 +18165,7 @@ function useReaderUndo(external) {
 }
 
 // src/surfaces/reader/engines.js
-var import_react27 = __toESM(require("react"), 1);
+var import_react28 = __toESM(require("react"), 1);
 var PROVIDER_LABELS = {
   auto: "\u81EA\u52A8\uFF08Google \u2192 MyMemory \u2192 AI\uFF09",
   google: "Google \u7FFB\u8BD1",
@@ -15417,14 +18251,14 @@ function isProbablyChinese(text2) {
   return cjk >= 2 && cjk >= latin;
 }
 function useTranslationPreference(context, apiCall) {
-  const [snapshot4, setSnapshot] = import_react27.default.useState(() => {
+  const [snapshot4, setSnapshot] = import_react28.default.useState(() => {
     try {
       return context && typeof context.getSnapshot === "function" && context.getSnapshot() || null;
     } catch {
       return null;
     }
   });
-  import_react27.default.useEffect(() => {
+  import_react28.default.useEffect(() => {
     if (!context || typeof context.subscribe !== "function") return void 0;
     let unsubscribe = () => {
     };
@@ -15451,7 +18285,7 @@ function useTranslationPreference(context, apiCall) {
       }
     };
   }, [context]);
-  import_react27.default.useEffect(() => {
+  import_react28.default.useEffect(() => {
     if (context) return void 0;
     let alive = true;
     Promise.resolve().then(() => apiCall("translate.settings", {})).then((result) => {
@@ -15470,15 +18304,15 @@ function useTranslationPreference(context, apiCall) {
 }
 
 // src/surfaces/reader/annotation-layer.jsx
-var import_react28 = __toESM(require("react"), 1);
+var import_react29 = __toESM(require("react"), 1);
 function ColorPens(props) {
   const value = props.value || "yellow";
   const rt = props.t;
-  return import_react28.default.createElement(
+  return import_react29.default.createElement(
     "div",
     { className: "ph-r-pens", role: "group", "aria-label": props.label || rt("reader.annot.color") },
     ANNOTATION_COLORS.map(
-      (name) => import_react28.default.createElement("button", {
+      (name) => import_react29.default.createElement("button", {
         key: name,
         type: "button",
         className: cx("ph-r-pen", "ph-r-pen--" + name, value === name && "ph-r-pen--current"),
@@ -15495,7 +18329,7 @@ function NotePin(props) {
   const annotation = props.annotation;
   const anchor = noteAnchor(annotation);
   if (!anchor) return null;
-  return import_react28.default.createElement(
+  return import_react29.default.createElement(
     "span",
     {
       className: cx(
@@ -15513,10 +18347,10 @@ function NotePin(props) {
       },
       "data-ph-annotation": annotation.id
     },
-    import_react28.default.createElement(
+    import_react29.default.createElement(
       "span",
       { className: cx("ph-r-note-pin", "ph-r-note-pin--" + annotation.color) },
-      import_react28.default.createElement(Icon2, { name: "sticky", size: 11 })
+      import_react29.default.createElement(Icon2, { name: "sticky", size: 11 })
     )
   );
 }
@@ -15526,12 +18360,12 @@ function AnnotationMarks(props) {
   for (const annotation of annotations) {
     if (!annotation || annotation.state === "trash") continue;
     if (annotation.kind === "note") {
-      marks.push(import_react28.default.createElement(NotePin, { key: annotation.id, annotation, activeId: props.activeId }));
+      marks.push(import_react29.default.createElement(NotePin, { key: annotation.id, annotation, activeId: props.activeId }));
       continue;
     }
     annotation.rects.forEach((rect, index) => {
       marks.push(
-        import_react28.default.createElement("span", {
+        import_react29.default.createElement("span", {
           key: annotation.id + ":" + index,
           className: cx(
             "ph-r-mark",
@@ -15547,7 +18381,7 @@ function AnnotationMarks(props) {
     });
   }
   if (marks.length === 0) return null;
-  return import_react28.default.createElement("div", { className: "ph-r-marks", "aria-hidden": "true", "data-ph-annotations": String(props.page || "") }, marks);
+  return import_react29.default.createElement("div", { className: "ph-r-marks", "aria-hidden": "true", "data-ph-annotations": String(props.page || "") }, marks);
 }
 function AnnotationTooltip(props) {
   const annotation = props.annotation;
@@ -15555,26 +18389,26 @@ function AnnotationTooltip(props) {
   const quote = firstText3(annotation.quote);
   const comment = firstText3(annotation.comment);
   if (!quote && !comment) return null;
-  return import_react28.default.createElement(
+  return import_react29.default.createElement(
     "div",
     { className: "ph-r-tip", style: props.style, role: "tooltip" },
-    quote ? import_react28.default.createElement("div", { className: "ph-r-tip__quote" }, quote.length > 180 ? quote.slice(0, 180) + "\u2026" : quote) : null,
-    comment ? import_react28.default.createElement("div", { className: "ph-r-tip__comment" }, comment.length > 220 ? comment.slice(0, 220) + "\u2026" : comment) : null
+    quote ? import_react29.default.createElement("div", { className: "ph-r-tip__quote" }, quote.length > 180 ? quote.slice(0, 180) + "\u2026" : quote) : null,
+    comment ? import_react29.default.createElement("div", { className: "ph-r-tip__comment" }, comment.length > 220 ? comment.slice(0, 220) + "\u2026" : comment) : null
   );
 }
 function AnnotationPopover(props) {
   const rt = props.t;
   const annotation = props.annotation;
   const annotationId = annotation.id;
-  const [comment, setComment] = import_react28.default.useState(() => firstText3(annotation.comment));
-  const [color, setColor] = import_react28.default.useState(annotation.color);
-  const [quoteExpanded, setQuoteExpanded] = import_react28.default.useState(false);
-  const [saving, setSaving] = import_react28.default.useState(false);
-  const [savedAt, setSavedAt] = import_react28.default.useState(0);
-  const [translation, setTranslation] = import_react28.default.useState(null);
-  const [translating, setTranslating] = import_react28.default.useState(false);
-  const savedCommentRef = import_react28.default.useRef(firstText3(annotation.comment));
-  import_react28.default.useEffect(() => {
+  const [comment, setComment] = import_react29.default.useState(() => firstText3(annotation.comment));
+  const [color, setColor] = import_react29.default.useState(annotation.color);
+  const [quoteExpanded, setQuoteExpanded] = import_react29.default.useState(false);
+  const [saving, setSaving] = import_react29.default.useState(false);
+  const [savedAt, setSavedAt] = import_react29.default.useState(0);
+  const [translation, setTranslation] = import_react29.default.useState(null);
+  const [translating, setTranslating] = import_react29.default.useState(false);
+  const savedCommentRef = import_react29.default.useRef(firstText3(annotation.comment));
+  import_react29.default.useEffect(() => {
     if (annotationId !== void 0) {
       setComment(firstText3(annotation.comment));
       setColor(annotation.color);
@@ -15584,9 +18418,9 @@ function AnnotationPopover(props) {
       setQuoteExpanded(false);
     }
   }, [annotationId]);
-  const updateRef = import_react28.default.useRef(props.onUpdate);
+  const updateRef = import_react29.default.useRef(props.onUpdate);
   updateRef.current = props.onUpdate;
-  import_react28.default.useEffect(() => {
+  import_react29.default.useEffect(() => {
     const next = comment.trim();
     if (next === savedCommentRef.current) return void 0;
     const timer2 = setTimeout(() => {
@@ -15629,7 +18463,7 @@ function AnnotationPopover(props) {
       setTranslation({ status: "error", reason: firstText3(error && error.message, "error") });
     }).then(() => setTranslating(false));
   };
-  const actionButton = (key, icon, label, onClick, options) => import_react28.default.createElement(
+  const actionButton = (key, icon, label, onClick, options) => import_react29.default.createElement(
     "button",
     {
       key,
@@ -15639,10 +18473,10 @@ function AnnotationPopover(props) {
       disabled: options && options.disabled,
       title: options && options.title || label
     },
-    import_react28.default.createElement(Icon2, { name: icon, size: 13 }),
-    import_react28.default.createElement("span", null, label)
+    import_react29.default.createElement(Icon2, { name: icon, size: 13 }),
+    import_react29.default.createElement("span", null, label)
   );
-  return import_react28.default.createElement(
+  return import_react29.default.createElement(
     "div",
     {
       className: cx("ph-r-card", "ph-r-popover"),
@@ -15651,35 +18485,35 @@ function AnnotationPopover(props) {
       "data-ph-popover": annotationId,
       onMouseDown: (event) => event.stopPropagation()
     },
-    import_react28.default.createElement(
+    import_react29.default.createElement(
       "div",
       { className: "ph-r-popover__head" },
-      import_react28.default.createElement("span", { className: "ph-r-annotcard__swatch", style: { background: colorHex(annotation.color) } }),
-      import_react28.default.createElement("strong", null, annotationKindLabel(rt, annotation.kind)),
-      import_react28.default.createElement("span", { className: "ph-r-popover__meta" }, rt("reader.annot.pageChip", { page: annotation.page })),
-      import_react28.default.createElement("span", { className: "ph-r-popover__meta" }, formatTime2(annotation.createdAt)),
-      import_react28.default.createElement("span", { className: "ph-r-popover__spacer" }),
-      import_react28.default.createElement(IconBtn, { icon: "close", title: rt("reader.close"), onClick: props.onClose })
+      import_react29.default.createElement("span", { className: "ph-r-annotcard__swatch", style: { background: colorHex(annotation.color) } }),
+      import_react29.default.createElement("strong", null, annotationKindLabel(rt, annotation.kind)),
+      import_react29.default.createElement("span", { className: "ph-r-popover__meta" }, rt("reader.annot.pageChip", { page: annotation.page })),
+      import_react29.default.createElement("span", { className: "ph-r-popover__meta" }, formatTime2(annotation.createdAt)),
+      import_react29.default.createElement("span", { className: "ph-r-popover__spacer" }),
+      import_react29.default.createElement(IconBtn, { icon: "close", title: rt("reader.close"), onClick: props.onClose })
     ),
-    quote ? import_react28.default.createElement(
+    quote ? import_react29.default.createElement(
       "div",
       { className: cx("ph-r-popover__quotewrap", longQuote && !quoteExpanded && "ph-r-popover__quotewrap--clamped") },
-      import_react28.default.createElement("blockquote", { className: "ph-r-popover__quote" }, quote),
-      longQuote ? import_react28.default.createElement(
+      import_react29.default.createElement("blockquote", { className: "ph-r-popover__quote" }, quote),
+      longQuote ? import_react29.default.createElement(
         "button",
         { type: "button", className: "ph-r-popover__expand", onClick: () => setQuoteExpanded((value) => !value) },
         quoteExpanded ? rt("reader.popover.collapseQuote") : rt("reader.popover.expandQuote")
       ) : null
     ) : null,
-    import_react28.default.createElement(
+    import_react29.default.createElement(
       "div",
       { className: "ph-r-popover__commenthead" },
-      import_react28.default.createElement("span", null, rt("reader.annot.comment")),
-      import_react28.default.createElement("span", { className: "ph-r-popover__spacer" }),
-      saving ? import_react28.default.createElement("span", { className: "ph-r-popover__autosave" }, rt("reader.popover.saving")) : savedAt ? import_react28.default.createElement("span", { className: "ph-r-popover__autosave ph-r-popover__autosave--ok" }, rt("reader.popover.saved")) : import_react28.default.createElement("span", { className: "ph-r-popover__autosave" }, rt("reader.popover.autosave")),
-      dirty ? import_react28.default.createElement("button", { type: "button", className: "ph-r-popover__expand", onClick: cancelComment }, rt("reader.popover.cancelEdit")) : null
+      import_react29.default.createElement("span", null, rt("reader.annot.comment")),
+      import_react29.default.createElement("span", { className: "ph-r-popover__spacer" }),
+      saving ? import_react29.default.createElement("span", { className: "ph-r-popover__autosave" }, rt("reader.popover.saving")) : savedAt ? import_react29.default.createElement("span", { className: "ph-r-popover__autosave ph-r-popover__autosave--ok" }, rt("reader.popover.saved")) : import_react29.default.createElement("span", { className: "ph-r-popover__autosave" }, rt("reader.popover.autosave")),
+      dirty ? import_react29.default.createElement("button", { type: "button", className: "ph-r-popover__expand", onClick: cancelComment }, rt("reader.popover.cancelEdit")) : null
     ),
-    import_react28.default.createElement("textarea", {
+    import_react29.default.createElement("textarea", {
       className: "ph-r-popover__textarea",
       value: comment,
       rows: 3,
@@ -15703,13 +18537,13 @@ function AnnotationPopover(props) {
         }
       }
     }),
-    import_react28.default.createElement(
+    import_react29.default.createElement(
       "div",
       { className: "ph-r-popover__row" },
-      import_react28.default.createElement("span", { className: "ph-r-popover__hint" }, rt("reader.annot.color")),
-      import_react28.default.createElement(ColorPens, { t: rt, value: color, onChange: changeColor })
+      import_react29.default.createElement("span", { className: "ph-r-popover__hint" }, rt("reader.annot.color")),
+      import_react29.default.createElement(ColorPens, { t: rt, value: color, onChange: changeColor })
     ),
-    import_react28.default.createElement(
+    import_react29.default.createElement(
       "div",
       { className: "ph-r-popover__grid" },
       quote ? actionButton("copy", "copy", rt("reader.popover.copyQuote"), () => props.onCopy(annotation)) : null,
@@ -15721,20 +18555,20 @@ function AnnotationPopover(props) {
       actionButton("cite", "quote", rt("reader.annot.cite"), () => props.onCite(annotation)),
       actionButton("delete", "trash", rt("reader.annot.delete"), () => props.onDelete(annotation))
     ),
-    translating ? import_react28.default.createElement("div", { className: "ph-r-popover__translation" }, import_react28.default.createElement(Spinner2, { size: 11 }), import_react28.default.createElement("span", null, rt("reader.popover.translating"))) : translation ? import_react28.default.createElement(
+    translating ? import_react29.default.createElement("div", { className: "ph-r-popover__translation" }, import_react29.default.createElement(Spinner2, { size: 11 }), import_react29.default.createElement("span", null, rt("reader.popover.translating"))) : translation ? import_react29.default.createElement(
       "div",
       { className: "ph-r-popover__translation" },
-      translation.status === "translated" || translation.translation ? import_react28.default.createElement("div", { className: "ph-r-popover__translationtext" }, firstText3(translation.translation)) : import_react28.default.createElement(
+      translation.status === "translated" || translation.translation ? import_react29.default.createElement("div", { className: "ph-r-popover__translationtext" }, firstText3(translation.translation)) : import_react29.default.createElement(
         "div",
         { className: "ph-r-resultcard__warn" },
         rt("reader.selection.quickUnavailable", { reason: firstText3(translation.reason, rt("reader.ai.reasonFallback")) })
       ),
-      import_react28.default.createElement(
+      import_react29.default.createElement(
         "div",
         { className: "ph-r-popover__translationmeta" },
-        translation.engine || translation.provider ? import_react28.default.createElement("span", null, engineBadge(translation.engine, translation.model, translation.latencyMs, translation.cached)) : translation.model ? import_react28.default.createElement("span", null, String(translation.model).split("/").pop()) : null,
-        translation.translation && props.onAiTranslate ? import_react28.default.createElement("button", { type: "button", className: "ph-r-popover__expand", onClick: aiTranslate, disabled: translating }, rt("reader.selection.aiRefine")) : null,
-        translation.translation ? import_react28.default.createElement(
+        translation.engine || translation.provider ? import_react29.default.createElement("span", null, engineBadge(translation.engine, translation.model, translation.latencyMs, translation.cached)) : translation.model ? import_react29.default.createElement("span", null, String(translation.model).split("/").pop()) : null,
+        translation.translation && props.onAiTranslate ? import_react29.default.createElement("button", { type: "button", className: "ph-r-popover__expand", onClick: aiTranslate, disabled: translating }, rt("reader.selection.aiRefine")) : null,
+        translation.translation ? import_react29.default.createElement(
           "button",
           {
             type: "button",
@@ -15754,11 +18588,11 @@ function AnnotationPopover(props) {
 }
 function NoteComposer(props) {
   const rt = props.t;
-  const [text2, setText] = import_react28.default.useState("");
-  const [color, setColor] = import_react28.default.useState(props.color || "yellow");
-  const [saving, setSaving] = import_react28.default.useState(false);
-  const textareaRef = import_react28.default.useRef(null);
-  import_react28.default.useEffect(() => {
+  const [text2, setText] = import_react29.default.useState("");
+  const [color, setColor] = import_react29.default.useState(props.color || "yellow");
+  const [saving, setSaving] = import_react29.default.useState(false);
+  const textareaRef = import_react29.default.useRef(null);
+  import_react29.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       if (textareaRef.current && typeof textareaRef.current.focus === "function") textareaRef.current.focus();
     }, 30);
@@ -15771,18 +18605,18 @@ function NoteComposer(props) {
     Promise.resolve(props.onSave({ text: value, color })).catch(() => {
     }).then(() => setSaving(false));
   };
-  return import_react28.default.createElement(
+  return import_react29.default.createElement(
     "div",
     { className: cx("ph-r-card", "ph-r-noteform"), style: props.style, onMouseDown: (event) => event.stopPropagation() },
-    import_react28.default.createElement(
+    import_react29.default.createElement(
       "div",
       { className: "ph-r-noteform__title" },
-      import_react28.default.createElement(Icon2, { name: "sticky", size: 14 }),
-      import_react28.default.createElement("span", null, rt("reader.note.title")),
-      import_react28.default.createElement("span", { className: "ph-r-popover__spacer" }),
-      import_react28.default.createElement(IconBtn, { icon: "close", title: rt("reader.note.cancel"), onClick: props.onCancel })
+      import_react29.default.createElement(Icon2, { name: "sticky", size: 14 }),
+      import_react29.default.createElement("span", null, rt("reader.note.title")),
+      import_react29.default.createElement("span", { className: "ph-r-popover__spacer" }),
+      import_react29.default.createElement(IconBtn, { icon: "close", title: rt("reader.note.cancel"), onClick: props.onCancel })
     ),
-    import_react28.default.createElement("textarea", {
+    import_react29.default.createElement("textarea", {
       ref: textareaRef,
       className: "ph-r-popover__textarea",
       value: text2,
@@ -15800,15 +18634,15 @@ function NoteComposer(props) {
         }
       }
     }),
-    import_react28.default.createElement(ColorPens, { t: rt, value: color, onChange: setColor }),
-    import_react28.default.createElement(
+    import_react29.default.createElement(ColorPens, { t: rt, value: color, onChange: setColor }),
+    import_react29.default.createElement(
       "div",
       { className: "ph-r-noteform__actions" },
-      import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", onClick: props.onCancel }, rt("reader.note.cancel")),
-      import_react28.default.createElement(
+      import_react29.default.createElement(Btn, { size: "sm", variant: "ghost", onClick: props.onCancel }, rt("reader.note.cancel")),
+      import_react29.default.createElement(
         Btn,
         { size: "sm", variant: "solid", onClick: save, disabled: saving || text2.trim() === "" },
-        saving ? import_react28.default.createElement(Spinner2, { size: 11 }) : import_react28.default.createElement(Icon2, { name: "check", size: 12 }),
+        saving ? import_react29.default.createElement(Spinner2, { size: 11 }) : import_react29.default.createElement(Icon2, { name: "check", size: 12 }),
         " ",
         rt("reader.note.save")
       )
@@ -15817,8 +18651,8 @@ function NoteComposer(props) {
 }
 function AnnotationListPanel(props) {
   const rt = props.t;
-  const [colorFilter, setColorFilter] = import_react28.default.useState("all");
-  const [kindFilter, setKindFilter] = import_react28.default.useState("all");
+  const [colorFilter, setColorFilter] = import_react29.default.useState("all");
+  const [kindFilter, setKindFilter] = import_react29.default.useState("all");
   const annotations = (props.annotations || []).slice().sort((left, right) => {
     return left.page - right.page || String(left.createdAt).localeCompare(String(right.createdAt));
   });
@@ -15828,19 +18662,19 @@ function AnnotationListPanel(props) {
     return true;
   });
   if (annotations.length === 0) {
-    return import_react28.default.createElement(Empty, {
+    return import_react29.default.createElement(Empty, {
       icon: "highlighter",
       title: rt("reader.annot.empty"),
       desc: rt("reader.annot.emptyDesc")
     });
   }
-  const filters = import_react28.default.createElement(
+  const filters = import_react29.default.createElement(
     "div",
     { className: "ph-r-annotfilters" },
-    import_react28.default.createElement(
+    import_react29.default.createElement(
       "div",
       { className: "ph-r-annotfilters__row" },
-      import_react28.default.createElement(
+      import_react29.default.createElement(
         "button",
         {
           type: "button",
@@ -15850,7 +18684,7 @@ function AnnotationListPanel(props) {
         rt("reader.annot.filter.allColors")
       ),
       ANNOTATION_COLORS.map(
-        (name) => import_react28.default.createElement(
+        (name) => import_react29.default.createElement(
           "button",
           {
             key: name,
@@ -15865,11 +18699,11 @@ function AnnotationListPanel(props) {
         )
       )
     ),
-    import_react28.default.createElement(
+    import_react29.default.createElement(
       "div",
       { className: "ph-r-annotfilters__row" },
       ["all", "highlight", "area", "note"].map(
-        (kind) => import_react28.default.createElement(
+        (kind) => import_react29.default.createElement(
           "button",
           {
             key: kind,
@@ -15880,18 +18714,18 @@ function AnnotationListPanel(props) {
           kind === "all" ? rt("reader.annot.filter.allKinds") : annotationKindLabel(rt, kind)
         )
       ),
-      import_react28.default.createElement("span", { className: "ph-r-annotfilters__count" }, rt("reader.annot.filter.count", { shown: filtered.length, total: annotations.length }))
+      import_react29.default.createElement("span", { className: "ph-r-annotfilters__count" }, rt("reader.annot.filter.count", { shown: filtered.length, total: annotations.length }))
     )
   );
-  return import_react28.default.createElement(
+  return import_react29.default.createElement(
     "div",
     { className: "ph-r-annotlistwrap" },
     filters,
-    filtered.length === 0 ? import_react28.default.createElement(Empty, { icon: "highlighter", title: rt("reader.annot.filter.empty"), desc: rt("reader.annot.filter.emptyDesc") }) : import_react28.default.createElement(
+    filtered.length === 0 ? import_react29.default.createElement(Empty, { icon: "highlighter", title: rt("reader.annot.filter.empty"), desc: rt("reader.annot.filter.emptyDesc") }) : import_react29.default.createElement(
       "div",
       { className: "ph-r-annotlist" },
       filtered.map(
-        (annotation) => import_react28.default.createElement(
+        (annotation) => import_react29.default.createElement(
           "div",
           {
             key: annotation.id,
@@ -15906,17 +18740,17 @@ function AnnotationListPanel(props) {
               }
             }
           },
-          import_react28.default.createElement(
+          import_react29.default.createElement(
             "div",
             { className: "ph-r-annotcard__head" },
-            import_react28.default.createElement("span", { className: "ph-r-annotcard__swatch", style: { background: colorHex(annotation.color) } }),
-            import_react28.default.createElement(Badge2, { tone: annotation.origin === "ai_explanation" ? "business" : "muted" }, annotationKindLabel(rt, annotation.kind)),
-            import_react28.default.createElement("span", { className: "ph-r-annotcard__page" }, rt("reader.annot.pageChip", { page: annotation.page })),
-            import_react28.default.createElement("span", { className: "ph-r-annotcard__spacer" }),
-            import_react28.default.createElement(
+            import_react29.default.createElement("span", { className: "ph-r-annotcard__swatch", style: { background: colorHex(annotation.color) } }),
+            import_react29.default.createElement(Badge2, { tone: annotation.origin === "ai_explanation" ? "business" : "muted" }, annotationKindLabel(rt, annotation.kind)),
+            import_react29.default.createElement("span", { className: "ph-r-annotcard__page" }, rt("reader.annot.pageChip", { page: annotation.page })),
+            import_react29.default.createElement("span", { className: "ph-r-annotcard__spacer" }),
+            import_react29.default.createElement(
               "span",
               { className: "ph-r-annotcard__actions" },
-              import_react28.default.createElement(IconBtn, {
+              import_react29.default.createElement(IconBtn, {
                 icon: "quote",
                 title: rt("reader.annot.cite"),
                 onClick: (event) => {
@@ -15924,7 +18758,7 @@ function AnnotationListPanel(props) {
                   props.onCite(annotation);
                 }
               }),
-              import_react28.default.createElement(IconBtn, {
+              import_react29.default.createElement(IconBtn, {
                 icon: "trash",
                 title: rt("reader.annot.delete"),
                 onClick: (event) => {
@@ -15934,13 +18768,13 @@ function AnnotationListPanel(props) {
               })
             )
           ),
-          annotation.quote ? import_react28.default.createElement("p", { className: "ph-r-annotcard__quote" }, annotation.quote) : null,
-          annotation.comment ? import_react28.default.createElement("div", { className: "ph-r-annotcard__comment" }, annotation.comment) : import_react28.default.createElement("div", { className: "ph-r-annotcard__foot" }, rt("reader.annot.commentEmpty")),
-          import_react28.default.createElement(
+          annotation.quote ? import_react29.default.createElement("p", { className: "ph-r-annotcard__quote" }, annotation.quote) : null,
+          annotation.comment ? import_react29.default.createElement("div", { className: "ph-r-annotcard__comment" }, annotation.comment) : import_react29.default.createElement("div", { className: "ph-r-annotcard__foot" }, rt("reader.annot.commentEmpty")),
+          import_react29.default.createElement(
             "div",
             { className: "ph-r-annotcard__foot" },
             formatTime2(annotation.createdAt),
-            annotation.page !== props.page ? import_react28.default.createElement("span", null, " \xB7 " + rt("reader.annot.jump", { page: annotation.page })) : null
+            annotation.page !== props.page ? import_react29.default.createElement("span", null, " \xB7 " + rt("reader.annot.jump", { page: annotation.page })) : null
           )
         )
       )
@@ -15949,7 +18783,7 @@ function AnnotationListPanel(props) {
 }
 
 // src/surfaces/reader/bilingual.jsx
-var import_react29 = __toESM(require("react"), 1);
+var import_react30 = __toESM(require("react"), 1);
 var DEFAULT_ROLES = /* @__PURE__ */ new Set(["body", "heading", "caption"]);
 var TRANSLATABLE_ROLES = /* @__PURE__ */ new Set(["body", "heading", "caption"]);
 var ROLE_KEYS = {
@@ -15989,11 +18823,11 @@ function BlockCard(props) {
   let translationBody = null;
   if (showTranslation) {
     if (translationText) {
-      translationBody = import_react29.default.createElement(
+      translationBody = import_react30.default.createElement(
         "p",
         { className: cx("ph-r-bi__translation", !showOriginal && "ph-r-bi__translation--only") },
         translationText,
-        entry.engine || entry.provider ? import_react29.default.createElement(
+        entry.engine || entry.provider ? import_react30.default.createElement(
           "span",
           {
             className: cx("ph-r-bi__engine", entry.cached && "ph-r-bi__engine--cached"),
@@ -16001,44 +18835,44 @@ function BlockCard(props) {
           },
           engineInitial(entry.engine, entry.provider, entry.cached)
         ) : null,
-        entry.cached ? import_react29.default.createElement(
+        entry.cached ? import_react30.default.createElement(
           "span",
           { className: "ph-r-bi__cached", title: t("reader.bilingual.cached") },
-          import_react29.default.createElement(Icon2, { name: "refresh", size: 9 }),
-          import_react29.default.createElement("span", null, t("reader.bilingual.cached"))
+          import_react30.default.createElement(Icon2, { name: "refresh", size: 9 }),
+          import_react30.default.createElement("span", null, t("reader.bilingual.cached"))
         ) : null
       );
     } else if (pending) {
-      translationBody = import_react29.default.createElement(
+      translationBody = import_react30.default.createElement(
         "div",
         { className: "ph-r-bi__pending" },
-        import_react29.default.createElement(Spinner2, { size: 11 }),
-        import_react29.default.createElement("span", null, t("reader.bilingual.translating"))
+        import_react30.default.createElement(Spinner2, { size: 11 }),
+        import_react30.default.createElement("span", null, t("reader.bilingual.translating"))
       );
     } else if (failed && translatable) {
-      translationBody = import_react29.default.createElement(
+      translationBody = import_react30.default.createElement(
         "div",
         { className: "ph-r-bi__unavailable" },
-        import_react29.default.createElement("span", null, t("reader.bilingual.blockFailed", { reason })),
-        import_react29.default.createElement(
+        import_react30.default.createElement("span", null, t("reader.bilingual.blockFailed", { reason })),
+        import_react30.default.createElement(
           Btn,
           { size: "sm", variant: "ghost", icon: "refresh", onClick: () => props.onTranslateBlock(block), disabled: props.pageBusy },
           t("reader.bilingual.retryBlock")
         )
       );
     } else if (props.pageBusy && translatable) {
-      translationBody = import_react29.default.createElement(
+      translationBody = import_react30.default.createElement(
         "div",
         { className: "ph-r-bi__pending" },
-        import_react29.default.createElement(Icon2, { name: "clock", size: 11 }),
-        import_react29.default.createElement("span", null, t("reader.bilingual.waiting"))
+        import_react30.default.createElement(Icon2, { name: "clock", size: 11 }),
+        import_react30.default.createElement("span", null, t("reader.bilingual.waiting"))
       );
     } else if (translatable) {
-      translationBody = import_react29.default.createElement(
+      translationBody = import_react30.default.createElement(
         "div",
         { className: "ph-r-bi__pending" },
-        import_react29.default.createElement("span", null, t("reader.bilingual.untranslated")),
-        import_react29.default.createElement(
+        import_react30.default.createElement("span", null, t("reader.bilingual.untranslated")),
+        import_react30.default.createElement(
           Btn,
           { size: "sm", variant: "ghost", icon: "translate", onClick: () => props.onTranslateBlock(block), disabled: props.pageBusy },
           t("reader.bilingual.translateBlock")
@@ -16046,20 +18880,20 @@ function BlockCard(props) {
       );
     }
   }
-  return import_react29.default.createElement(
+  return import_react30.default.createElement(
     "article",
     {
       className: cx("ph-r-bi__card", "ph-r-bi__card--" + role),
       "data-ph-block": String(block.id != null ? block.id : props.index),
       "data-ph-role": role
     },
-    import_react29.default.createElement(
+    import_react30.default.createElement(
       "div",
       { className: "ph-r-bi__role" },
-      import_react29.default.createElement(Icon2, { name: role === "caption" ? "figure" : role === "heading" ? "book" : "note", size: 11 }),
-      import_react29.default.createElement("span", null, t(roleKey)),
-      import_react29.default.createElement("span", { className: "ph-r-bi__spacer" }),
-      !translationText && translatable ? import_react29.default.createElement(
+      import_react30.default.createElement(Icon2, { name: role === "caption" ? "figure" : role === "heading" ? "book" : "note", size: 11 }),
+      import_react30.default.createElement("span", null, t(roleKey)),
+      import_react30.default.createElement("span", { className: "ph-r-bi__spacer" }),
+      !translationText && translatable ? import_react30.default.createElement(
         "button",
         {
           type: "button",
@@ -16069,11 +18903,11 @@ function BlockCard(props) {
           onClick: () => props.onTranslateBlock(block),
           title: t("reader.bilingual.translateBlock")
         },
-        pending ? import_react29.default.createElement(Spinner2, { size: 10 }) : import_react29.default.createElement(Icon2, { name: "translate", size: 11 }),
-        import_react29.default.createElement("span", null, t("reader.bilingual.translateBlock"))
+        pending ? import_react30.default.createElement(Spinner2, { size: 10 }) : import_react30.default.createElement(Icon2, { name: "translate", size: 11 }),
+        import_react30.default.createElement("span", null, t("reader.bilingual.translateBlock"))
       ) : null
     ),
-    showOriginal ? import_react29.default.createElement("p", { className: "ph-r-bi__original" }, String(block.text || "").trim()) : null,
+    showOriginal ? import_react30.default.createElement("p", { className: "ph-r-bi__original" }, String(block.text || "").trim()) : null,
     translationBody
   );
 }
@@ -16082,7 +18916,7 @@ function BilingualPanel(props) {
   const blocksEntry = props.blocksEntry || null;
   const status = blocksEntry ? blocksEntry.status : "idle";
   const allBlocks = orderBlocks(arrayOf3(blocksEntry && blocksEntry.data && blocksEntry.data.blocks));
-  const [showMarginal, setShowMarginal] = import_react29.default.useState(false);
+  const [showMarginal, setShowMarginal] = import_react30.default.useState(false);
   const visibleBlocks = showMarginal ? allBlocks : allBlocks.filter(
     (block) => DEFAULT_ROLES.has(String(block.role || "body")) && String(block.text || "").trim().length >= 2 && !looksLikePageMetadata(block.text)
   );
@@ -16102,17 +18936,17 @@ function BilingualPanel(props) {
   else if (translationStatus === "translated") pageButtonLabel = t("reader.bilingual.retranslate");
   else if (translationStatus === "partial") pageButtonLabel = t("reader.bilingual.continue");
   const pageButtonForce = translationStatus === "translated";
-  const header = import_react29.default.createElement(
+  const header = import_react30.default.createElement(
     "div",
     { className: "ph-r-bi__head" },
-    import_react29.default.createElement(
+    import_react30.default.createElement(
       "div",
       { className: "ph-r-bi__titleline" },
-      import_react29.default.createElement(Icon2, { name: "translate", size: 14 }),
-      import_react29.default.createElement("span", { className: "ph-r-bi__title" }, t("reader.bilingual.title")),
-      import_react29.default.createElement("span", { className: "ph-r-bi__page" }, t("reader.bilingual.page", { page: props.page })),
-      import_react29.default.createElement("span", { className: "ph-r-bi__spacer" }),
-      props.mode === "original" ? null : import_react29.default.createElement(
+      import_react30.default.createElement(Icon2, { name: "translate", size: 14 }),
+      import_react30.default.createElement("span", { className: "ph-r-bi__title" }, t("reader.bilingual.title")),
+      import_react30.default.createElement("span", { className: "ph-r-bi__page" }, t("reader.bilingual.page", { page: props.page })),
+      import_react30.default.createElement("span", { className: "ph-r-bi__spacer" }),
+      props.mode === "original" ? null : import_react30.default.createElement(
         Btn,
         {
           size: "sm",
@@ -16122,10 +18956,10 @@ function BilingualPanel(props) {
           onClick: () => props.onTranslatePage(pageButtonForce),
           title: pageButtonLabel
         },
-        pageBusy ? import_react29.default.createElement(Spinner2, { size: 11 }) : null,
+        pageBusy ? import_react30.default.createElement(Spinner2, { size: 11 }) : null,
         pageButtonLabel
       ),
-      props.mode === "original" || !props.onAiTranslatePage ? null : import_react29.default.createElement(
+      props.mode === "original" || !props.onAiTranslatePage ? null : import_react30.default.createElement(
         Btn,
         {
           size: "sm",
@@ -16138,31 +18972,31 @@ function BilingualPanel(props) {
         t("reader.bilingual.aiTranslatePage")
       )
     ),
-    import_react29.default.createElement(
+    import_react30.default.createElement(
       "div",
       { className: "ph-r-bi__prov" },
-      progress.total > 0 ? import_react29.default.createElement(
+      progress.total > 0 ? import_react30.default.createElement(
         "span",
         { className: cx("ph-r-bi__progresslabel", progress.failed > 0 && "ph-r-bi__progresslabel--warn") },
         t("reader.bilingual.progress", { done: progress.done, total: progress.total }),
-        progress.failed > 0 ? import_react29.default.createElement("span", null, " \xB7 " + t("reader.bilingual.progressFailed", { failed: progress.failed })) : null
+        progress.failed > 0 ? import_react30.default.createElement("span", null, " \xB7 " + t("reader.bilingual.progressFailed", { failed: progress.failed })) : null
       ) : null,
-      props.structurePending ? import_react29.default.createElement(Badge2, { tone: "warn", title: t("reader.bilingual.structureBackfillingHint") }, t("reader.bilingual.structureBackfilling")) : null,
-      props.providerLabel ? import_react29.default.createElement(
+      props.structurePending ? import_react30.default.createElement(Badge2, { tone: "warn", title: t("reader.bilingual.structureBackfillingHint") }, t("reader.bilingual.structureBackfilling")) : null,
+      props.providerLabel ? import_react30.default.createElement(
         "span",
         { className: "ph-r-bi__enginepref", title: t("reader.bilingual.enginePreferenceHint") },
         t("reader.bilingual.enginePreference", { engine: props.providerLabel })
       ) : null,
-      provenance && provenance.label ? import_react29.default.createElement(
+      provenance && provenance.label ? import_react30.default.createElement(
         "span",
         { className: "ph-r-bi__engineused", title: provenance.model || "" },
         t("reader.bilingual.engineUsed", { engines: provenance.label })
-      ) : provenance && provenance.model ? import_react29.default.createElement("span", null, t("reader.bilingual.provenance", { model: provenance.model })) : null,
-      translation && translation.provider === "llm" ? import_react29.default.createElement(Badge2, { tone: "business" }, t("reader.bilingual.aiTranslated")) : null,
-      cachedAll ? import_react29.default.createElement(Badge2, { tone: "success" }, t("reader.bilingual.cached")) : null,
-      props.mode === "translation" ? import_react29.default.createElement(Badge2, { tone: "business" }, t("reader.bilingual.onlyTranslation")) : null
+      ) : provenance && provenance.model ? import_react30.default.createElement("span", null, t("reader.bilingual.provenance", { model: provenance.model })) : null,
+      translation && translation.provider === "llm" ? import_react30.default.createElement(Badge2, { tone: "business" }, t("reader.bilingual.aiTranslated")) : null,
+      cachedAll ? import_react30.default.createElement(Badge2, { tone: "success" }, t("reader.bilingual.cached")) : null,
+      props.mode === "translation" ? import_react30.default.createElement(Badge2, { tone: "business" }, t("reader.bilingual.onlyTranslation")) : null
     ),
-    progress.total > 0 ? import_react29.default.createElement(
+    progress.total > 0 ? import_react30.default.createElement(
       "div",
       {
         className: "ph-r-bi__bar",
@@ -16172,15 +19006,15 @@ function BilingualPanel(props) {
         "aria-valuenow": progress.done,
         "aria-label": t("reader.bilingual.progress", { done: progress.done, total: progress.total })
       },
-      import_react29.default.createElement("span", {
+      import_react30.default.createElement("span", {
         className: cx("ph-r-bi__barfill", progress.failed > 0 && "ph-r-bi__barfill--warn"),
         style: { width: Math.round(progress.done / Math.max(1, progress.total) * 100) + "%" }
       })
     ) : null,
-    allBlocks.length > 0 ? import_react29.default.createElement(
+    allBlocks.length > 0 ? import_react30.default.createElement(
       "div",
       { className: "ph-r-bi__filter" },
-      import_react29.default.createElement(
+      import_react30.default.createElement(
         "button",
         {
           type: "button",
@@ -16189,16 +19023,16 @@ function BilingualPanel(props) {
           "aria-pressed": showMarginal ? "true" : "false",
           title: t("reader.bilingual.showMarginalHint")
         },
-        import_react29.default.createElement("span", { className: "ph-r-ai__check" }, showMarginal ? import_react29.default.createElement(Icon2, { name: "check", size: 8 }) : null),
-        import_react29.default.createElement("span", null, showMarginal ? t("reader.bilingual.hideMarginal") : t("reader.bilingual.showMarginal"))
+        import_react30.default.createElement("span", { className: "ph-r-ai__check" }, showMarginal ? import_react30.default.createElement(Icon2, { name: "check", size: 8 }) : null),
+        import_react30.default.createElement("span", null, showMarginal ? t("reader.bilingual.hideMarginal") : t("reader.bilingual.showMarginal"))
       ),
-      hiddenCount > 0 && !showMarginal ? import_react29.default.createElement("span", { className: "ph-r-bi__hidden" }, t("reader.bilingual.hiddenCount", { count: hiddenCount })) : null
+      hiddenCount > 0 && !showMarginal ? import_react30.default.createElement("span", { className: "ph-r-bi__hidden" }, t("reader.bilingual.hiddenCount", { count: hiddenCount })) : null
     ) : null,
-    translationStatus === "unavailable" && unavailableReason ? import_react29.default.createElement(
+    translationStatus === "unavailable" && unavailableReason ? import_react30.default.createElement(
       "div",
       { className: "ph-r-bi__unavailable" },
       t("reader.bilingual.unavailable", { reason: unavailableReason }),
-      import_react29.default.createElement(
+      import_react30.default.createElement(
         Btn,
         { size: "sm", variant: "ghost", icon: "refresh", onClick: () => props.onTranslatePage(false), style: { marginTop: 6 }, disabled: pageBusy },
         t("reader.bilingual.retry")
@@ -16207,26 +19041,26 @@ function BilingualPanel(props) {
   );
   let body = null;
   if (status === "loading" || status === "idle") {
-    body = import_react29.default.createElement(
+    body = import_react30.default.createElement(
       "div",
       { className: "ph-r-bi__skeleton", "aria-busy": "true" },
       [96, 72, 88, 64].map(
-        (percent, index) => import_react29.default.createElement(
+        (percent, index) => import_react30.default.createElement(
           "div",
           { key: index, className: "ph-r-bi__card" },
-          import_react29.default.createElement("span", { className: "ph-r-skeleton", style: { width: "24%", height: 10, marginBottom: 8 } }),
-          import_react29.default.createElement("span", { className: "ph-r-skeleton", style: { width: percent + "%", height: 11, marginBottom: 5 } }),
-          import_react29.default.createElement("span", { className: "ph-r-skeleton", style: { width: Math.max(40, percent - 22) + "%", height: 11 } })
+          import_react30.default.createElement("span", { className: "ph-r-skeleton", style: { width: "24%", height: 10, marginBottom: 8 } }),
+          import_react30.default.createElement("span", { className: "ph-r-skeleton", style: { width: percent + "%", height: 11, marginBottom: 5 } }),
+          import_react30.default.createElement("span", { className: "ph-r-skeleton", style: { width: Math.max(40, percent - 22) + "%", height: 11 } })
         )
       )
     );
   } else if (status === "error") {
-    body = import_react29.default.createElement(Empty, {
+    body = import_react30.default.createElement(Empty, {
       icon: "warning",
       tone: "error",
       title: t("reader.bilingual.structureUnavailable", { reason: structureError || "error" }),
       desc: t("reader.bilingual.structurePending"),
-      action: props.onRetryBlocks ? import_react29.default.createElement(
+      action: props.onRetryBlocks ? import_react30.default.createElement(
         Btn,
         {
           size: "sm",
@@ -16241,11 +19075,11 @@ function BilingualPanel(props) {
       ) : null
     });
   } else if (allBlocks.length === 0) {
-    body = import_react29.default.createElement(Empty, {
+    body = import_react30.default.createElement(Empty, {
       icon: "translate",
       title: t("reader.bilingual.empty"),
       desc: t("reader.page.structurePending"),
-      action: props.onRetryBlocks ? import_react29.default.createElement(
+      action: props.onRetryBlocks ? import_react30.default.createElement(
         Btn,
         {
           size: "sm",
@@ -16260,22 +19094,22 @@ function BilingualPanel(props) {
       ) : null
     });
   } else if (visibleBlocks.length === 0) {
-    body = import_react29.default.createElement(Empty, {
+    body = import_react30.default.createElement(Empty, {
       icon: "note",
       title: t("reader.bilingual.onlyMarginal"),
       desc: t("reader.bilingual.onlyMarginalDesc"),
-      action: import_react29.default.createElement(
+      action: import_react30.default.createElement(
         Btn,
         { size: "sm", variant: "soft", onClick: () => setShowMarginal(true) },
         t("reader.bilingual.showMarginal")
       )
     });
   } else {
-    body = import_react29.default.createElement(
+    body = import_react30.default.createElement(
       "div",
       { className: "ph-r-bi__list", "data-ph-bilingual": "blocks" },
       visibleBlocks.map(
-        (block, index) => import_react29.default.createElement(BlockCard, {
+        (block, index) => import_react30.default.createElement(BlockCard, {
           key: block.id != null ? "b-" + block.id : "b-" + index,
           t,
           block,
@@ -16289,16 +19123,16 @@ function BilingualPanel(props) {
       )
     );
   }
-  return import_react29.default.createElement(
+  return import_react30.default.createElement(
     "div",
     { className: "ph-r-bi" },
     header,
-    import_react29.default.createElement("div", { className: "ph-r-bi__body ph-r-scroll" }, body)
+    import_react30.default.createElement("div", { className: "ph-r-bi__body ph-r-scroll" }, body)
   );
 }
 
 // src/surfaces/reader/floating-tools.jsx
-var import_react30 = __toESM(require("react"), 1);
+var import_react31 = __toESM(require("react"), 1);
 var PENS = ["yellow", "green", "blue", "red", "purple"];
 function FloatingAnnotationTools(props) {
   const t = props.t;
@@ -16308,38 +19142,38 @@ function FloatingAnnotationTools(props) {
     right: props.sidePanelOpen ? "calc(var(--ph-r-side) + 18px)" : "18px",
     bottom: props.translationOpen ? "calc(46% + 14px)" : "18px"
   };
-  return import_react30.default.createElement(
+  return import_react31.default.createElement(
     "div",
     { className: "ph-r-floattools", style, "data-ph-floating-tools": "true" },
-    props.showTip ? import_react30.default.createElement(
+    props.showTip ? import_react31.default.createElement(
       "div",
       { className: "ph-r-tools-tip", role: "status" },
-      import_react30.default.createElement(
+      import_react31.default.createElement(
         "div",
         { className: "ph-r-tools-tip__head" },
-        import_react30.default.createElement(Icon2, { name: "sparkles", size: 14 }),
-        import_react30.default.createElement("strong", null, t("reader.tools.tip.title"))
+        import_react31.default.createElement(Icon2, { name: "sparkles", size: 14 }),
+        import_react31.default.createElement("strong", null, t("reader.tools.tip.title"))
       ),
-      import_react30.default.createElement("p", { className: "ph-r-tools-tip__text" }, t("reader.tools.tip.desc")),
-      import_react30.default.createElement(
+      import_react31.default.createElement("p", { className: "ph-r-tools-tip__text" }, t("reader.tools.tip.desc")),
+      import_react31.default.createElement(
         "div",
         { className: "ph-r-tools-tip__actions" },
-        import_react30.default.createElement(
+        import_react31.default.createElement(
           "button",
           { type: "button", className: "ph-r-btn ph-r-btn--ghost ph-r-btn--sm", onClick: props.onShowTip, title: t("reader.tools.help") },
           t("reader.tools.help")
         ),
-        import_react30.default.createElement(
+        import_react31.default.createElement(
           "button",
           { type: "button", className: "ph-r-btn ph-r-btn--solid ph-r-btn--sm", onClick: props.onDismissTip },
           t("reader.tools.tip.ok")
         )
       )
     ) : null,
-    import_react30.default.createElement(
+    import_react31.default.createElement(
       "div",
       { className: "ph-r-floattools__bar", role: "toolbar", "aria-label": t("reader.tools.label") },
-      import_react30.default.createElement(
+      import_react31.default.createElement(
         "button",
         {
           type: "button",
@@ -16349,11 +19183,11 @@ function FloatingAnnotationTools(props) {
           title: selection ? t("reader.tools.highlightReady") : t("reader.tools.highlightHint"),
           "aria-label": t("reader.tools.highlight")
         },
-        import_react30.default.createElement(Icon2, { name: "highlighter", size: 15 }),
-        import_react30.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.highlight")),
-        import_react30.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+H")
+        import_react31.default.createElement(Icon2, { name: "highlighter", size: 15 }),
+        import_react31.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.highlight")),
+        import_react31.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+H")
       ),
-      import_react30.default.createElement(
+      import_react31.default.createElement(
         "button",
         {
           type: "button",
@@ -16363,11 +19197,11 @@ function FloatingAnnotationTools(props) {
           "aria-pressed": tool === "area" ? "true" : "false",
           "aria-label": t("reader.tools.area")
         },
-        import_react30.default.createElement(Icon2, { name: "area", size: 15 }),
-        import_react30.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.area")),
-        import_react30.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+A")
+        import_react31.default.createElement(Icon2, { name: "area", size: 15 }),
+        import_react31.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.area")),
+        import_react31.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+A")
       ),
-      import_react30.default.createElement(
+      import_react31.default.createElement(
         "button",
         {
           type: "button",
@@ -16377,16 +19211,16 @@ function FloatingAnnotationTools(props) {
           "aria-pressed": tool === "note" ? "true" : "false",
           "aria-label": t("reader.tools.note")
         },
-        import_react30.default.createElement(Icon2, { name: "sticky", size: 15 }),
-        import_react30.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.note")),
-        import_react30.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+N")
+        import_react31.default.createElement(Icon2, { name: "sticky", size: 15 }),
+        import_react31.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.note")),
+        import_react31.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+N")
       ),
-      import_react30.default.createElement("span", { className: "ph-r-floattools__sep", "aria-hidden": "true" }),
-      import_react30.default.createElement(
+      import_react31.default.createElement("span", { className: "ph-r-floattools__sep", "aria-hidden": "true" }),
+      import_react31.default.createElement(
         "span",
         { className: "ph-r-floattools__pens", role: "group", "aria-label": t("reader.tools.pen") },
         PENS.map(
-          (color) => import_react30.default.createElement("button", {
+          (color) => import_react31.default.createElement("button", {
             key: color,
             type: "button",
             className: cx("ph-r-floattools__pen", props.penColor === color && "ph-r-floattools__pen--active", "ph-r-floattools__pen--" + color),
@@ -16397,7 +19231,7 @@ function FloatingAnnotationTools(props) {
           })
         )
       ),
-      import_react30.default.createElement(
+      import_react31.default.createElement(
         "button",
         { type: "button", className: "ph-r-floattools__help", onClick: props.onShowTip, title: t("reader.tools.help"), "aria-label": t("reader.tools.help") },
         "?"
@@ -16407,24 +19241,24 @@ function FloatingAnnotationTools(props) {
 }
 
 // src/surfaces/reader/notes-panel.jsx
-var import_react31 = __toESM(require("react"), 1);
+var import_react32 = __toESM(require("react"), 1);
 function useServiceState(service) {
-  const subscribe2 = import_react31.default.useCallback((listener) => service.subscribe(listener), [service]);
-  const getSnapshot2 = import_react31.default.useCallback(() => service.getSnapshot(), [service]);
-  return import_react31.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
+  const subscribe2 = import_react32.default.useCallback((listener) => service.subscribe(listener), [service]);
+  const getSnapshot2 = import_react32.default.useCallback(() => service.getSnapshot(), [service]);
+  return import_react32.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
 }
 function ReaderNotesPanel(props) {
   const t = props.t;
   const paperId = String(props.paperId || "");
-  const releaseStyles = import_react31.default.useMemo(() => ensureNotesStyles(), []);
-  const service = import_react31.default.useMemo(() => createNotesService(props.api), [props.api]);
+  const releaseStyles = import_react32.default.useMemo(() => ensureNotesStyles(), []);
+  const service = import_react32.default.useMemo(() => createNotesService(props.api), [props.api]);
   const serviceState = useServiceState(service);
-  const [list, setList] = import_react31.default.useState({ status: "idle", items: [], error: null });
-  const [activeId, setActiveId] = import_react31.default.useState("");
-  const [active, setActive] = import_react31.default.useState({ status: "idle", note: null, error: null });
-  const [creating, setCreating] = import_react31.default.useState(false);
-  import_react31.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  import_react31.default.useEffect(() => {
+  const [list, setList] = import_react32.default.useState({ status: "idle", items: [], error: null });
+  const [activeId, setActiveId] = import_react32.default.useState("");
+  const [active, setActive] = import_react32.default.useState({ status: "idle", note: null, error: null });
+  const [creating, setCreating] = import_react32.default.useState(false);
+  import_react32.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  import_react32.default.useEffect(() => {
     let alive = true;
     service.probe().then((state) => {
       if (!alive) return;
@@ -16435,7 +19269,7 @@ function ReaderNotesPanel(props) {
       alive = false;
     };
   }, [service, paperId]);
-  const load = import_react31.default.useCallback(
+  const load = import_react32.default.useCallback(
     (alive) => {
       setList((previous) => Object.assign({}, previous, { status: "loading", error: null }));
       Promise.resolve(service.list({ paperId, limit: 100 })).then((result) => {
@@ -16453,13 +19287,13 @@ function ReaderNotesPanel(props) {
     },
     [paperId, service]
   );
-  const reload = import_react31.default.useCallback(() => {
+  const reload = import_react32.default.useCallback(() => {
     service.probe().then((state) => {
       if (state.status === "unavailable" || state.status === "offline") return;
       load(true);
     });
   }, [load, service]);
-  import_react31.default.useEffect(() => {
+  import_react32.default.useEffect(() => {
     if (!activeId) {
       setActive({ status: "idle", note: null, error: null });
       return void 0;
@@ -16475,7 +19309,7 @@ function ReaderNotesPanel(props) {
       alive = false;
     };
   }, [activeId, service]);
-  const createNote = import_react31.default.useCallback(() => {
+  const createNote = import_react32.default.useCallback(() => {
     if (creating) return;
     setCreating(true);
     Promise.resolve(service.create({ title: "", content: "", paperIds: paperId ? [paperId] : [], status: "draft" })).then((note) => {
@@ -16485,7 +19319,7 @@ function ReaderNotesPanel(props) {
       setActiveId(note.id);
     }).catch((error) => props.notify("error", t("notes.createFailed", { message: String(error && error.message || error) }))).then(() => setCreating(false));
   }, [creating, paperId, props, service, t]);
-  const onSaved = import_react31.default.useCallback((saved) => {
+  const onSaved = import_react32.default.useCallback((saved) => {
     if (!saved) return;
     setList((previous) => {
       const items2 = previous.items.map(
@@ -16502,7 +19336,7 @@ function ReaderNotesPanel(props) {
     });
     setActive((previous) => previous.note && previous.note.id === saved.id ? { status: "ready", note: saved, error: null } : previous);
   }, []);
-  const onDeleted = import_react31.default.useCallback((deleted) => {
+  const onDeleted = import_react32.default.useCallback((deleted) => {
     setList((previous) => {
       const items2 = previous.items.filter((item) => item.id !== deleted.id);
       setActiveId(items2.length > 0 ? items2[0].id : "");
@@ -16511,15 +19345,15 @@ function ReaderNotesPanel(props) {
     });
   }, []);
   if (serviceState.status === "unavailable" || serviceState.status === "offline") {
-    return import_react31.default.createElement(
+    return import_react32.default.createElement(
       "div",
       { className: "ph-r-side__scroll" },
-      import_react31.default.createElement(Empty, {
+      import_react32.default.createElement(Empty, {
         icon: "warning",
         tone: "warning",
         title: serviceState.status === "offline" ? t("notes.service.offlineTitle") : t("notes.service.unavailableTitle"),
         desc: serviceState.status === "offline" ? t("notes.service.offlineDesc") : t("notes.service.unavailableDesc"),
-        action: import_react31.default.createElement(
+        action: import_react32.default.createElement(
           "button",
           {
             type: "button",
@@ -16530,32 +19364,32 @@ function ReaderNotesPanel(props) {
               });
             }
           },
-          import_react31.default.createElement(Icon2, { name: "refresh", size: 13 }),
-          import_react31.default.createElement("span", { className: "ph-r-btn__label" }, t("notes.service.retry"))
+          import_react32.default.createElement(Icon2, { name: "refresh", size: 13 }),
+          import_react32.default.createElement("span", { className: "ph-r-btn__label" }, t("notes.service.retry"))
         )
       })
     );
   }
   const showList = list.items.length > 0;
-  return import_react31.default.createElement(
+  return import_react32.default.createElement(
     "div",
     { className: "ph-n-readernotes" },
-    import_react31.default.createElement(
+    import_react32.default.createElement(
       "div",
       { className: "ph-n-readernotes__head" },
-      import_react31.default.createElement(Icon2, { name: "note", size: 13 }),
-      import_react31.default.createElement("span", { className: "ph-n-readernotes__title" }, t("reader.notes.title")),
-      list.status === "ready" ? import_react31.default.createElement("span", { className: "ph-n-caption" }, String(list.items.length)) : null,
-      import_react31.default.createElement("span", { className: "ph-n-spacer" }),
-      import_react31.default.createElement(IconBtn, { icon: "plus", title: t("reader.notes.new"), onClick: createNote, disabled: creating }),
-      props.onOpenNoteLibrary ? import_react31.default.createElement(IconBtn, { icon: "external", title: t("notes.library.open"), onClick: () => props.onOpenNoteLibrary(activeId || "") }) : null,
-      import_react31.default.createElement(IconBtn, { icon: "refresh", title: t("notes.refresh"), onClick: reload })
+      import_react32.default.createElement(Icon2, { name: "note", size: 13 }),
+      import_react32.default.createElement("span", { className: "ph-n-readernotes__title" }, t("reader.notes.title")),
+      list.status === "ready" ? import_react32.default.createElement("span", { className: "ph-n-caption" }, String(list.items.length)) : null,
+      import_react32.default.createElement("span", { className: "ph-n-spacer" }),
+      import_react32.default.createElement(IconBtn, { icon: "plus", title: t("reader.notes.new"), onClick: createNote, disabled: creating }),
+      props.onOpenNoteLibrary ? import_react32.default.createElement(IconBtn, { icon: "external", title: t("notes.library.open"), onClick: () => props.onOpenNoteLibrary(activeId || "") }) : null,
+      import_react32.default.createElement(IconBtn, { icon: "refresh", title: t("notes.refresh"), onClick: reload })
     ),
-    showList ? import_react31.default.createElement(
+    showList ? import_react32.default.createElement(
       "div",
       { className: "ph-n-readernotes__list ph-n-scroll" },
       list.items.map(
-        (item) => import_react31.default.createElement(
+        (item) => import_react32.default.createElement(
           "button",
           {
             key: item.id,
@@ -16564,8 +19398,8 @@ function ReaderNotesPanel(props) {
             onClick: () => setActiveId(item.id),
             title: item.title || t("notes.untitled")
           },
-          import_react31.default.createElement("span", { className: "ph-n-readernotes__rowtitle" }, item.title || t("notes.untitled")),
-          import_react31.default.createElement(
+          import_react32.default.createElement("span", { className: "ph-n-readernotes__rowtitle" }, item.title || t("notes.untitled")),
+          import_react32.default.createElement(
             "span",
             { className: "ph-n-readernotes__rowmeta" },
             (item.preview || "").replace(/\s+/g, " ").slice(0, 48) || t("notes.empty.preview")
@@ -16573,49 +19407,49 @@ function ReaderNotesPanel(props) {
         )
       )
     ) : null,
-    list.status === "loading" && list.items.length === 0 ? import_react31.default.createElement("div", { className: "ph-n-editor__loading" }, import_react31.default.createElement(Spinner2, { size: 13 }), import_react31.default.createElement("span", null, t("notes.loading"))) : null,
-    list.status === "error" ? import_react31.default.createElement(
+    list.status === "loading" && list.items.length === 0 ? import_react32.default.createElement("div", { className: "ph-n-editor__loading" }, import_react32.default.createElement(Spinner2, { size: 13 }), import_react32.default.createElement("span", null, t("notes.loading"))) : null,
+    list.status === "error" ? import_react32.default.createElement(
       "div",
       { className: "ph-r-side__scroll" },
-      import_react31.default.createElement(Empty, {
+      import_react32.default.createElement(Empty, {
         icon: "warning",
         tone: "error",
         title: t("common.failed"),
         desc: t("notes.loadFailed", { message: String(list.error && list.error.message || "") }),
-        action: import_react31.default.createElement(
+        action: import_react32.default.createElement(
           "button",
           { type: "button", className: "ph-r-btn ph-r-btn--soft ph-r-btn--sm", onClick: reload },
-          import_react31.default.createElement(Icon2, { name: "refresh", size: 13 }),
-          import_react31.default.createElement("span", { className: "ph-r-btn__label" }, t("common.retry"))
+          import_react32.default.createElement(Icon2, { name: "refresh", size: 13 }),
+          import_react32.default.createElement("span", { className: "ph-r-btn__label" }, t("common.retry"))
         )
       })
     ) : null,
-    list.status === "ready" && list.items.length === 0 ? import_react31.default.createElement(
+    list.status === "ready" && list.items.length === 0 ? import_react32.default.createElement(
       "div",
       { className: "ph-r-side__scroll" },
-      import_react31.default.createElement(Empty, {
+      import_react32.default.createElement(Empty, {
         icon: "note",
         title: t("reader.notes.empty"),
         desc: t("reader.notes.emptyDesc"),
-        action: import_react31.default.createElement(
+        action: import_react32.default.createElement(
           "button",
           { type: "button", className: "ph-r-btn ph-r-btn--solid ph-r-btn--sm", onClick: createNote, disabled: creating },
-          import_react31.default.createElement(Icon2, { name: "plus", size: 13 }),
-          import_react31.default.createElement("span", { className: "ph-r-btn__label" }, t("reader.notes.new"))
+          import_react32.default.createElement(Icon2, { name: "plus", size: 13 }),
+          import_react32.default.createElement("span", { className: "ph-r-btn__label" }, t("reader.notes.new"))
         )
       })
     ) : null,
-    active.status === "loading" ? import_react31.default.createElement("div", { className: "ph-n-editor__loading" }, import_react31.default.createElement(Spinner2, { size: 13 }), import_react31.default.createElement("span", null, t("notes.loadingNote"))) : null,
-    active.status === "error" ? import_react31.default.createElement(
+    active.status === "loading" ? import_react32.default.createElement("div", { className: "ph-n-editor__loading" }, import_react32.default.createElement(Spinner2, { size: 13 }), import_react32.default.createElement("span", null, t("notes.loadingNote"))) : null,
+    active.status === "error" ? import_react32.default.createElement(
       "div",
       { className: "ph-r-side__scroll" },
-      import_react31.default.createElement(Empty, {
+      import_react32.default.createElement(Empty, {
         icon: "warning",
         tone: "error",
         title: t("notes.loadFailed", { message: String(active.error && active.error.message || "") })
       })
     ) : null,
-    active.status === "ready" && active.note ? import_react31.default.createElement(NoteEditor, {
+    active.status === "ready" && active.note ? import_react32.default.createElement(NoteEditor, {
       t,
       api: props.api,
       service,
@@ -16630,13 +19464,13 @@ function ReaderNotesPanel(props) {
       onOpenNoteLibrary: props.onOpenNoteLibrary,
       onOpenPaper: props.onOpenPaper
     }) : null,
-    list.status === "ready" && list.items.length > 0 && active.status === "idle" ? import_react31.default.createElement("div", { className: "ph-n-editor__empty" }, import_react31.default.createElement("p", { className: "ph-n-caption" }, t("reader.notes.pick"))) : null,
-    import_react31.default.createElement("p", { className: "ph-n-caption", style: { padding: "6px 12px 10px", margin: 0 } }, t("reader.notes.boundHint"))
+    list.status === "ready" && list.items.length > 0 && active.status === "idle" ? import_react32.default.createElement("div", { className: "ph-n-editor__empty" }, import_react32.default.createElement("p", { className: "ph-n-caption" }, t("reader.notes.pick"))) : null,
+    import_react32.default.createElement("p", { className: "ph-n-caption", style: { padding: "6px 12px 10px", margin: 0 } }, t("reader.notes.boundHint"))
   );
 }
 
 // src/surfaces/reader/outline.jsx
-var import_react32 = __toESM(require("react"), 1);
+var import_react33 = __toESM(require("react"), 1);
 function Outline(props) {
   const t = props.t;
   const items2 = Array.isArray(props.items) ? props.items.filter((item) => item && (item.title || item.page)).map((item) => ({
@@ -16647,34 +19481,34 @@ function Outline(props) {
     level: Math.max(1, Math.min(4, Math.round(num2(item.level, 1))))
   })) : [];
   if (props.loading && items2.length === 0) {
-    return import_react32.default.createElement(
+    return import_react33.default.createElement(
       "div",
       { className: "ph-r-outline", "aria-busy": "true" },
       [1, 2, 3, 4, 5].map(
-        (index) => import_react32.default.createElement(
+        (index) => import_react33.default.createElement(
           "div",
           { key: index, style: { padding: "7px 8px" } },
-          import_react32.default.createElement("span", { className: "ph-r-skeleton", style: { width: 40 + index * 37 % 50 + "%", height: 11 } })
+          import_react33.default.createElement("span", { className: "ph-r-skeleton", style: { width: 40 + index * 37 % 50 + "%", height: 11 } })
         )
       )
     );
   }
   if (props.error && items2.length === 0) {
-    return import_react32.default.createElement(Empty, {
+    return import_react33.default.createElement(Empty, {
       icon: "warning",
       tone: "error",
       title: t("reader.outline.empty"),
       desc: String(props.error),
-      action: props.onRetry ? import_react32.default.createElement(
+      action: props.onRetry ? import_react33.default.createElement(
         "button",
         { type: "button", className: "ph-r-btn ph-r-btn--soft ph-r-btn--sm", onClick: props.onRetry },
-        import_react32.default.createElement(Icon2, { name: "refresh", size: 13 }),
-        import_react32.default.createElement("span", null, t("reader.retry"))
+        import_react33.default.createElement(Icon2, { name: "refresh", size: 13 }),
+        import_react33.default.createElement("span", null, t("reader.retry"))
       ) : null
     });
   }
   if (items2.length === 0) {
-    return import_react32.default.createElement(Empty, {
+    return import_react33.default.createElement(Empty, {
       icon: "list",
       title: t("reader.outline.empty"),
       desc: t("reader.outline.emptyDesc")
@@ -16686,18 +19520,18 @@ function Outline(props) {
     if (itemPage != null && itemPage <= props.page) activeIndex = index;
   }
   if (activeIndex < 0 && items2.length > 0) activeIndex = 0;
-  return import_react32.default.createElement(
+  return import_react33.default.createElement(
     "div",
     { className: "ph-r-outline" },
-    import_react32.default.createElement(
+    import_react33.default.createElement(
       "div",
       { style: { display: "flex", alignItems: "center", gap: 6, padding: "4px 8px 6px" } },
-      import_react32.default.createElement(Icon2, { name: "list", size: 13 }),
-      import_react32.default.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: "var(--dsw-alias-label-secondary)" } }, t("reader.outline.title")),
-      import_react32.default.createElement(Badge2, null, String(items2.length))
+      import_react33.default.createElement(Icon2, { name: "list", size: 13 }),
+      import_react33.default.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: "var(--dsw-alias-label-secondary)" } }, t("reader.outline.title")),
+      import_react33.default.createElement(Badge2, null, String(items2.length))
     ),
     items2.map(
-      (item, index) => import_react32.default.createElement(
+      (item, index) => import_react33.default.createElement(
         "button",
         {
           key: index + ":" + item.page + ":" + item.title,
@@ -16711,19 +19545,19 @@ function Outline(props) {
           disabled: item.page == null,
           "aria-current": index === activeIndex ? "location" : void 0
         },
-        import_react32.default.createElement("span", { className: "ph-r-outline__level" }, String(item.level)),
-        import_react32.default.createElement("span", { className: "ph-r-outline__label" }, item.title),
-        import_react32.default.createElement("span", { className: "ph-r-outline__page" }, item.page == null ? "\u2014" : String(item.page))
+        import_react33.default.createElement("span", { className: "ph-r-outline__level" }, String(item.level)),
+        import_react33.default.createElement("span", { className: "ph-r-outline__label" }, item.title),
+        import_react33.default.createElement("span", { className: "ph-r-outline__page" }, item.page == null ? "\u2014" : String(item.page))
       )
     )
   );
 }
 
 // src/surfaces/reader/page-canvas.jsx
-var import_react34 = __toESM(require("react"), 1);
+var import_react35 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/text-layer.jsx
-var import_react33 = __toESM(require("react"), 1);
+var import_react34 = __toESM(require("react"), 1);
 var MIN_WORD_SIZE = 6e-4;
 function selectableWords(layer) {
   const words = arrayOf3(layer && layer.words);
@@ -16792,7 +19626,7 @@ function PageTextLayerImpl(props) {
     const style = wordStyle(word, width, height);
     if (!style) continue;
     spans.push(
-      import_react33.default.createElement(
+      import_react34.default.createElement(
         "span",
         {
           key: index,
@@ -16805,7 +19639,7 @@ function PageTextLayerImpl(props) {
     );
   }
   if (spans.length === 0) return null;
-  return import_react33.default.createElement(
+  return import_react34.default.createElement(
     "div",
     {
       className: cx("ph-r-textlayer", !interactive && "ph-r-textlayer--static"),
@@ -16815,7 +19649,7 @@ function PageTextLayerImpl(props) {
     spans
   );
 }
-var PageTextLayer = import_react33.default.memo(PageTextLayerImpl, (previous, next) => {
+var PageTextLayer = import_react34.default.memo(PageTextLayerImpl, (previous, next) => {
   return previous.words === next.words && previous.width === next.width && previous.height === next.height && previous.active === next.active && previous.interactive === next.interactive && previous.page === next.page;
 });
 
@@ -16843,7 +19677,7 @@ function scrollElementTo(element2, top, smooth) {
   element2.scrollTop = value;
 }
 function usePageDescriptors(pages, total) {
-  return import_react34.default.useMemo(() => {
+  return import_react35.default.useMemo(() => {
     const list = arrayOf3(pages);
     if (list.length > 0) {
       return list.map((item, index) => {
@@ -16862,7 +19696,7 @@ function usePageDescriptors(pages, total) {
   }, [pages, total]);
 }
 function useAnnotationsByPage(annotations) {
-  return import_react34.default.useMemo(() => {
+  return import_react35.default.useMemo(() => {
     const map = /* @__PURE__ */ new Map();
     for (const annotation of arrayOf3(annotations)) {
       if (!annotation) continue;
@@ -16909,24 +19743,24 @@ function PageViewImpl(props) {
     reducedMotion
   } = props;
   const page = pageInfo.page;
-  const pageRef = import_react34.default.useRef(null);
-  const [imageState, setImageState] = import_react34.default.useState("loading");
-  const [imageVersion, setImageVersion] = import_react34.default.useState(0);
-  const [areaDrag, setAreaDrag] = import_react34.default.useState(null);
-  const areaRectRef = import_react34.default.useRef(null);
-  const [hover, setHover] = import_react34.default.useState(null);
-  const hoverFrame = import_react34.default.useRef(0);
-  const hoverPoint = import_react34.default.useRef(null);
-  const dragRef = import_react34.default.useRef(null);
-  const [selecting, setSelecting] = import_react34.default.useState(false);
-  const [dragSelect, setDragSelect] = import_react34.default.useState(null);
-  const selectRef = import_react34.default.useRef(null);
-  const selectFrame = import_react34.default.useRef(0);
-  const [noteGhost, setNoteGhost] = import_react34.default.useState(null);
+  const pageRef = import_react35.default.useRef(null);
+  const [imageState, setImageState] = import_react35.default.useState("loading");
+  const [imageVersion, setImageVersion] = import_react35.default.useState(0);
+  const [areaDrag, setAreaDrag] = import_react35.default.useState(null);
+  const areaRectRef = import_react35.default.useRef(null);
+  const [hover, setHover] = import_react35.default.useState(null);
+  const hoverFrame = import_react35.default.useRef(0);
+  const hoverPoint = import_react35.default.useRef(null);
+  const dragRef = import_react35.default.useRef(null);
+  const [selecting, setSelecting] = import_react35.default.useState(false);
+  const [dragSelect, setDragSelect] = import_react35.default.useState(null);
+  const selectRef = import_react35.default.useRef(null);
+  const selectFrame = import_react35.default.useRef(0);
+  const [noteGhost, setNoteGhost] = import_react35.default.useState(null);
   const interactive = mode === "select";
   const rawLayer = layerEntry && layerEntry.status === "ready" ? layerEntry.data : null;
   const pageData = pageDataEntry && pageDataEntry.status === "ready" ? pageDataEntry.data : null;
-  const layer = import_react34.default.useMemo(() => {
+  const layer = import_react35.default.useMemo(() => {
     if (!rawLayer) return null;
     const width2 = num2(rawLayer.width, pageInfo.width);
     const height2 = num2(rawLayer.height, pageInfo.height);
@@ -16936,8 +19770,8 @@ function PageViewImpl(props) {
     if (rawLayer.width === width2 && rawLayer.height === height2) return rawLayer;
     return Object.assign({}, rawLayer, { width: width2, height: height2 });
   }, [pageInfo.height, pageInfo.width, rawLayer]);
-  const selectable = import_react34.default.useMemo(() => selectableWords(layer), [layer]);
-  import_react34.default.useEffect(() => {
+  const selectable = import_react35.default.useMemo(() => selectableWords(layer), [layer]);
+  import_react35.default.useEffect(() => {
     setImageState("loading");
     setImageVersion(0);
     setHover(null);
@@ -16947,7 +19781,7 @@ function PageViewImpl(props) {
     setSelecting(false);
     setNoteGhost(null);
   }, [paperId, page]);
-  const pointOf = import_react34.default.useCallback((event) => {
+  const pointOf = import_react35.default.useCallback((event) => {
     const element2 = pageRef.current;
     if (!element2) return null;
     const box = element2.getBoundingClientRect();
@@ -16957,7 +19791,7 @@ function PageViewImpl(props) {
       y: clamp((event.clientY - box.top) / box.height, 0, 1)
     };
   }, []);
-  const selectionForPoints = import_react34.default.useCallback(
+  const selectionForPoints = import_react35.default.useCallback(
     (start, current) => {
       const rectNorm = pointRect(start, current);
       if (!rectNorm || !selectable || selectable.words.length === 0) return null;
@@ -17043,7 +19877,7 @@ function PageViewImpl(props) {
     },
     [selectable]
   );
-  const anchorPx = import_react34.default.useCallback(
+  const anchorPx = import_react35.default.useCallback(
     (anchor, placement) => {
       if (!anchor) return null;
       const half = placement && placement.halfWidth ? placement.halfWidth : 150;
@@ -17059,7 +19893,7 @@ function PageViewImpl(props) {
     },
     [height, width]
   );
-  const openAnnotationAt = import_react34.default.useCallback(
+  const openAnnotationAt = import_react35.default.useCallback(
     (point) => {
       const annotation = annotationAt(annotations, point);
       if (!annotation) return false;
@@ -17071,7 +19905,7 @@ function PageViewImpl(props) {
     },
     [annotations, props]
   );
-  const handleMouseDown = import_react34.default.useCallback(
+  const handleMouseDown = import_react35.default.useCallback(
     (event) => {
       if (event.button !== 0) return;
       const target = event.target;
@@ -17154,7 +19988,7 @@ function PageViewImpl(props) {
     },
     [mode, openAnnotationAt, page, pointOf, props, selectionForPoints]
   );
-  import_react34.default.useEffect(() => {
+  import_react35.default.useEffect(() => {
     if (!areaDrag) return void 0;
     const onMove = (event) => {
       const start = dragRef.current;
@@ -17184,7 +20018,7 @@ function PageViewImpl(props) {
       window.removeEventListener("mouseup", onUp);
     };
   }, [areaDrag !== null, pointOf, props]);
-  const handleClick = import_react34.default.useCallback(
+  const handleClick = import_react35.default.useCallback(
     (event) => {
       if (mode !== "note") return;
       const target = event.target;
@@ -17194,7 +20028,7 @@ function PageViewImpl(props) {
     },
     [mode, pointOf, props]
   );
-  const handleMouseMove = import_react34.default.useCallback(
+  const handleMouseMove = import_react35.default.useCallback(
     (event) => {
       if (selecting || event.buttons) {
         if (hover) setHover(null);
@@ -17229,7 +20063,7 @@ function PageViewImpl(props) {
     },
     [hover, interactive, mode, pointOf, props.annotations, selecting]
   );
-  const clearHover = import_react34.default.useCallback(() => {
+  const clearHover = import_react35.default.useCallback(() => {
     setHover(null);
     setNoteGhost(null);
   }, []);
@@ -17237,7 +20071,7 @@ function PageViewImpl(props) {
   const pageSelection = selection && selection.page === page ? selection : null;
   const pagePopover = popover && popover.annotation && popover.annotation.page === page ? popover : null;
   const pageNoteDraft = noteDraft && noteDraft.page === page ? noteDraft : null;
-  const pageSearchHits = import_react34.default.useMemo(() => {
+  const pageSearchHits = import_react35.default.useMemo(() => {
     if (!search || !search.query || !search.hits) return null;
     return search.hits.map((hit, index) => ({ hit, index })).filter((entry) => entry.hit.page === page).map((entry) => Object.assign({}, entry.hit, { order: entry.index }));
   }, [page, search]);
@@ -17289,7 +20123,7 @@ function PageViewImpl(props) {
   const imageSrc = pageUrlOf(paperId, Object.assign({ page }, pageInfo, { imageUrl: pageInfo.imageUrl }));
   const showImageSkeleton = imageState === "loading";
   const layerStatus = layerEntry ? layerEntry.status : "idle";
-  return import_react34.default.createElement(
+  return import_react35.default.createElement(
     "div",
     {
       ref: pageRef,
@@ -17307,7 +20141,7 @@ function PageViewImpl(props) {
       onMouseMove: handleMouseMove,
       onMouseLeave: clearHover
     },
-    import_react34.default.createElement(
+    import_react35.default.createElement(
       "img",
       {
         key: "img-" + imageVersion,
@@ -17321,13 +20155,13 @@ function PageViewImpl(props) {
         onError: () => setImageState("error")
       }
     ),
-    showImageSkeleton ? import_react34.default.createElement("div", { className: "ph-r-page__skeleton" }) : null,
-    imageState === "error" ? import_react34.default.createElement(
+    showImageSkeleton ? import_react35.default.createElement("div", { className: "ph-r-page__skeleton" }) : null,
+    imageState === "error" ? import_react35.default.createElement(
       "div",
       { className: "ph-r-page__error" },
-      import_react34.default.createElement(Icon2, { name: "warning", size: 18 }),
-      import_react34.default.createElement("span", null, t("reader.page.imageFailed")),
-      import_react34.default.createElement(
+      import_react35.default.createElement(Icon2, { name: "warning", size: 18 }),
+      import_react35.default.createElement("span", null, t("reader.page.imageFailed")),
+      import_react35.default.createElement(
         Btn,
         {
           size: "sm",
@@ -17341,7 +20175,7 @@ function PageViewImpl(props) {
         t("reader.page.imageRetry")
       )
     ) : null,
-    import_react34.default.createElement(PageTextLayer, {
+    import_react35.default.createElement(PageTextLayer, {
       key: "text-" + page,
       page,
       words: selectable.words,
@@ -17355,13 +20189,13 @@ function PageViewImpl(props) {
     (() => {
       const overlayRects = dragSelect && dragSelect.rects ? dragSelect.rects : pageSelection ? pageSelection.rects : null;
       if (!overlayRects || overlayRects.length === 0) return null;
-      return import_react34.default.createElement(
+      return import_react35.default.createElement(
         "div",
         { className: "ph-r-selrect", "data-ph-text-selection": String(dragSelect ? dragSelect.wordCount : pageSelection ? pageSelection.wordCount || 0 : 0) },
-        overlayRects.map((rect, index) => import_react34.default.createElement("span", { key: index, className: "ph-r-selrect__box", style: rectStyle(rect) }))
+        overlayRects.map((rect, index) => import_react35.default.createElement("span", { key: index, className: "ph-r-selrect__box", style: rectStyle(rect) }))
       );
     })(),
-    dragSelect && dragSelect.wordCount > 0 ? import_react34.default.createElement(
+    dragSelect && dragSelect.wordCount > 0 ? import_react35.default.createElement(
       "span",
       {
         className: "ph-r-selcount",
@@ -17372,23 +20206,23 @@ function PageViewImpl(props) {
       },
       t("reader.selection.selectedWords", { count: dragSelect.wordCount })
     ) : null,
-    noteGhost && mode === "note" && !noteDraft ? import_react34.default.createElement("span", {
+    noteGhost && mode === "note" && !noteDraft ? import_react35.default.createElement("span", {
       className: "ph-r-note-ghost",
       style: { left: (noteGhost.x * 100).toFixed(2) + "%", top: (noteGhost.y * 100).toFixed(2) + "%" },
       "aria-hidden": "true"
-    }, import_react34.default.createElement(Icon2, { name: "sticky", size: 12 })) : null,
-    import_react34.default.createElement(AnnotationMarks, {
+    }, import_react35.default.createElement(Icon2, { name: "sticky", size: 12 })) : null,
+    import_react35.default.createElement(AnnotationMarks, {
       page,
       annotations: pageAnnotations,
       activeId: activeAnnotationId
     }),
-    figureHighlight ? import_react34.default.createElement(FigureHighlightOverlay, { t, figureFocus: figureHighlight, page }) : null,
-    pageSearchHits && pageSearchHits.length > 0 ? import_react34.default.createElement(
+    figureHighlight ? import_react35.default.createElement(FigureHighlightOverlay, { t, figureFocus: figureHighlight, page }) : null,
+    pageSearchHits && pageSearchHits.length > 0 ? import_react35.default.createElement(
       "div",
       { className: "ph-r-hits" },
       pageSearchHits.map(
         (hit) => hit.rects.map(
-          (rect, index) => import_react34.default.createElement("span", {
+          (rect, index) => import_react35.default.createElement("span", {
             key: hit.order + ":" + index,
             className: cx("ph-r-hit", hit.order === activeHitOrder && "ph-r-hit--active"),
             style: rectStyle(rect)
@@ -17396,20 +20230,20 @@ function PageViewImpl(props) {
         )
       )
     ) : null,
-    areaDrag ? import_react34.default.createElement("span", { className: "ph-r-area-drag", style: rectStyle(areaDrag) }) : null,
-    active || pageSearchHits ? import_react34.default.createElement(
+    areaDrag ? import_react35.default.createElement("span", { className: "ph-r-area-drag", style: rectStyle(areaDrag) }) : null,
+    active || pageSearchHits ? import_react35.default.createElement(
       "span",
       { className: "ph-r-page__chip" },
-      import_react34.default.createElement(Icon2, { name: "pages", size: 11 }),
+      import_react35.default.createElement(Icon2, { name: "pages", size: 11 }),
       String(page)
     ) : null,
-    active && !layer ? import_react34.default.createElement(
+    active && !layer ? import_react35.default.createElement(
       "span",
       { className: "ph-r-page__structure" },
       layerStatus === "loading" || layerStatus === "idle" ? t("reader.page.textLayer.loading") : t("reader.page.textLayer.unavailable")
     ) : null,
-    showTooltip ? import_react34.default.createElement(AnnotationTooltip, { annotation: showTooltip.annotation, style: tooltipStyle }) : null,
-    selectionToolbar ? import_react34.default.createElement(
+    showTooltip ? import_react35.default.createElement(AnnotationTooltip, { annotation: showTooltip.annotation, style: tooltipStyle }) : null,
+    selectionToolbar ? import_react35.default.createElement(
       "div",
       {
         className: cx("ph-r-float", "ph-r-card", "ph-r-selbar"),
@@ -17417,9 +20251,9 @@ function PageViewImpl(props) {
         "data-ph-overlay": "selection",
         onMouseDown: (event) => event.preventDefault()
       },
-      import_react34.default.createElement("span", { className: "ph-r-selbar__count" }, t("reader.selection.selectedWords", { count: pageSelection ? pageSelection.wordCount || 0 : 0 })),
-      import_react34.default.createElement("span", { className: "ph-r-selbar__sep" }),
-      import_react34.default.createElement(
+      import_react35.default.createElement("span", { className: "ph-r-selbar__count" }, t("reader.selection.selectedWords", { count: pageSelection ? pageSelection.wordCount || 0 : 0 })),
+      import_react35.default.createElement("span", { className: "ph-r-selbar__sep" }),
+      import_react35.default.createElement(
         "button",
         {
           type: "button",
@@ -17427,43 +20261,43 @@ function PageViewImpl(props) {
           onClick: () => props.onSelectionAction("quickTranslate"),
           title: t("reader.selection.quickTranslateHint")
         },
-        import_react34.default.createElement(Icon2, { name: "sparkles", size: 14 }),
-        import_react34.default.createElement("span", null, t("reader.selection.quickTranslate"))
+        import_react35.default.createElement(Icon2, { name: "sparkles", size: 14 }),
+        import_react35.default.createElement("span", null, t("reader.selection.quickTranslate"))
       ),
-      import_react34.default.createElement(ColorPenRow, {
+      import_react35.default.createElement(ColorPenRow, {
         t,
         onPick: (color) => props.onSelectionAction("highlight", { color })
       }),
-      import_react34.default.createElement("span", { className: "ph-r-selbar__sep" }),
-      import_react34.default.createElement(
+      import_react35.default.createElement("span", { className: "ph-r-selbar__sep" }),
+      import_react35.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("copy"), title: t("reader.selection.copy") },
-        import_react34.default.createElement(Icon2, { name: "copy", size: 14 }),
-        import_react34.default.createElement("span", null, t("reader.selection.copy"))
+        import_react35.default.createElement(Icon2, { name: "copy", size: 14 }),
+        import_react35.default.createElement("span", null, t("reader.selection.copy"))
       ),
-      import_react34.default.createElement(
+      import_react35.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("explain"), title: t("reader.selection.explain") },
-        import_react34.default.createElement(Icon2, { name: "book", size: 14 }),
-        import_react34.default.createElement("span", null, t("reader.selection.explain"))
+        import_react35.default.createElement(Icon2, { name: "book", size: 14 }),
+        import_react35.default.createElement("span", null, t("reader.selection.explain"))
       ),
-      import_react34.default.createElement(
+      import_react35.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("ask"), title: t("reader.selection.ask") },
-        import_react34.default.createElement(Icon2, { name: "note", size: 14 }),
-        import_react34.default.createElement("span", null, t("reader.selection.ask"))
+        import_react35.default.createElement(Icon2, { name: "note", size: 14 }),
+        import_react35.default.createElement("span", null, t("reader.selection.ask"))
       ),
-      import_react34.default.createElement(
+      import_react35.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("cite"), title: t("reader.selection.cite") },
-        import_react34.default.createElement(Icon2, { name: "quote", size: 14 }),
-        import_react34.default.createElement("span", null, t("reader.selection.cite"))
+        import_react35.default.createElement(Icon2, { name: "quote", size: 14 }),
+        import_react35.default.createElement("span", null, t("reader.selection.cite"))
       )
     ) : null,
-    pageSelection && selectionResult && selectionResult.page === page ? import_react34.default.createElement(
-      import_react34.default.Fragment,
+    pageSelection && selectionResult && selectionResult.page === page ? import_react35.default.createElement(
+      import_react35.default.Fragment,
       null,
-      selectionResult.replace ? import_react34.default.createElement(
+      selectionResult.replace ? import_react35.default.createElement(
         "div",
         {
           className: "ph-r-card ph-r-replacecard",
@@ -17475,16 +20309,16 @@ function PageViewImpl(props) {
           "data-ph-overlay": "selection-replace",
           onMouseDown: (event) => event.stopPropagation()
         },
-        import_react34.default.createElement(
+        import_react35.default.createElement(
           "div",
           { className: "ph-r-resultcard__head" },
-          import_react34.default.createElement(Icon2, { name: "translate", size: 13 }),
-          import_react34.default.createElement("strong", null, t("reader.selection.translated")),
-          import_react34.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
-          import_react34.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.closeReplace"), onClick: () => props.onSelectionAction("closeReplace") })
+          import_react35.default.createElement(Icon2, { name: "translate", size: 13 }),
+          import_react35.default.createElement("strong", null, t("reader.selection.translated")),
+          import_react35.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
+          import_react35.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.closeReplace"), onClick: () => props.onSelectionAction("closeReplace") })
         ),
-        import_react34.default.createElement("div", { className: "ph-r-replacecard__text" }, firstText3(selectionResult.translation))
-      ) : import_react34.default.createElement(SelectionResultCard, {
+        import_react35.default.createElement("div", { className: "ph-r-replacecard__text" }, firstText3(selectionResult.translation))
+      ) : import_react35.default.createElement(SelectionResultCard, {
         t,
         result: selectionResult,
         width,
@@ -17498,7 +20332,7 @@ function PageViewImpl(props) {
         onRefine: () => props.onSelectionAction("refineQuickTranslation")
       })
     ) : null,
-    pagePopover ? import_react34.default.createElement(AnnotationPopover, {
+    pagePopover ? import_react35.default.createElement(AnnotationPopover, {
       t,
       annotation: pagePopover.annotation,
       busy: Boolean(pagePopover.busy),
@@ -17515,7 +20349,7 @@ function PageViewImpl(props) {
       onAiTranslate: props.onAiTranslateAnnotation ? () => props.onAiTranslateAnnotation(pagePopover.annotation) : void 0,
       onUndoDelete: () => props.onDeleteAnnotation(pagePopover.annotation)
     }) : null,
-    pageNoteDraft && notePosition ? import_react34.default.createElement(NoteComposer, {
+    pageNoteDraft && notePosition ? import_react35.default.createElement(NoteComposer, {
       t,
       color: noteDraft.color,
       style: notePosition,
@@ -17524,15 +20358,15 @@ function PageViewImpl(props) {
     }) : null
   );
 }
-var PageView = import_react34.default.memo(PageViewImpl, (previous, next) => {
+var PageView = import_react35.default.memo(PageViewImpl, (previous, next) => {
   return previous.paperId === next.paperId && previous.pageInfo === next.pageInfo && previous.width === next.width && previous.height === next.height && previous.active === next.active && previous.mode === next.mode && previous.reducedMotion === next.reducedMotion && previous.pageDataEntry === next.pageDataEntry && previous.layerEntry === next.layerEntry && previous.activeAnnotationId === next.activeAnnotationId && previous.selection === next.selection && previous.selectionResult === next.selectionResult && previous.popover === next.popover && previous.noteDraft === next.noteDraft && previous.search === next.search && previous.t === next.t && sameAnnotations(previous.annotations, next.annotations);
 });
 function ColorPenRow(props) {
-  return import_react34.default.createElement(
+  return import_react35.default.createElement(
     "div",
     { className: "ph-r-pens", role: "group", "aria-label": props.t("reader.selection.colors") },
     ["yellow", "green", "blue", "red", "purple"].map(
-      (color) => import_react34.default.createElement("button", {
+      (color) => import_react35.default.createElement("button", {
         key: color,
         type: "button",
         className: "ph-r-pen ph-r-pen--" + color,
@@ -17545,8 +20379,8 @@ function ColorPenRow(props) {
 }
 function SelectionResultCard(props) {
   const { t, result, anchor, width, height } = props;
-  const [now, setNow] = import_react34.default.useState(() => Date.now());
-  import_react34.default.useEffect(() => {
+  const [now, setNow] = import_react35.default.useState(() => Date.now());
+  import_react35.default.useEffect(() => {
     if (!result.loading) return void 0;
     const timer2 = setInterval(() => setNow(Date.now()), 200);
     return () => clearInterval(timer2);
@@ -17562,7 +20396,7 @@ function SelectionResultCard(props) {
   const translated = result.status === "translated" || Boolean(value);
   const engineText = translated && (result.engine || result.provider) ? engineBadge(result.engine, result.model, result.latencyMs, result.cached) : "";
   const loadingText = result.aiRefine ? t("reader.selection.refining") : t("reader.selection.quickTranslating");
-  return import_react34.default.createElement(
+  return import_react35.default.createElement(
     "div",
     {
       className: cx("ph-r-float", "ph-r-card", "ph-r-resultcard"),
@@ -17570,51 +20404,51 @@ function SelectionResultCard(props) {
       "data-ph-overlay": "selection-result",
       onMouseDown: (event) => event.stopPropagation()
     },
-    import_react34.default.createElement(
+    import_react35.default.createElement(
       "div",
       { className: "ph-r-resultcard__head" },
-      import_react34.default.createElement(Icon2, { name: "sparkles", size: 13 }),
-      import_react34.default.createElement("strong", null, result.aiRefine ? t("reader.selection.aiRefine") : t("reader.selection.quickTranslate")),
-      engineText ? import_react34.default.createElement("span", { className: "ph-r-resultcard__engine", title: engineDetails(result.engine, result.model) }, engineText) : null,
-      result.freeOnly || result.mode === "free" || result.engine && result.engine.free ? import_react34.default.createElement(
+      import_react35.default.createElement(Icon2, { name: "sparkles", size: 13 }),
+      import_react35.default.createElement("strong", null, result.aiRefine ? t("reader.selection.aiRefine") : t("reader.selection.quickTranslate")),
+      engineText ? import_react35.default.createElement("span", { className: "ph-r-resultcard__engine", title: engineDetails(result.engine, result.model) }, engineText) : null,
+      result.freeOnly || result.mode === "free" || result.engine && result.engine.free ? import_react35.default.createElement(
         "span",
         { className: "ph-r-resultcard__free", title: t("reader.selection.freeFastHint") },
         t("reader.selection.freeFast") + (!translated && elapsedLabel ? " \xB7 " + elapsedLabel : "")
       ) : null,
-      result.provider === "llm" && result.fast ? import_react34.default.createElement("span", { className: "ph-r-ai__fast" }, t("reader.selection.fastMode")) : null,
-      import_react34.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
-      import_react34.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.close"), onClick: props.onClose })
+      result.provider === "llm" && result.fast ? import_react35.default.createElement("span", { className: "ph-r-ai__fast" }, t("reader.selection.fastMode")) : null,
+      import_react35.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
+      import_react35.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.close"), onClick: props.onClose })
     ),
-    result.loading ? import_react34.default.createElement(
+    result.loading ? import_react35.default.createElement(
       "div",
       { className: "ph-r-resultcard__loading" },
-      import_react34.default.createElement(Spinner2, { size: 12 }),
-      import_react34.default.createElement("span", null, loadingText),
-      elapsedLabel ? import_react34.default.createElement(
+      import_react35.default.createElement(Spinner2, { size: 12 }),
+      import_react35.default.createElement("span", null, loadingText),
+      elapsedLabel ? import_react35.default.createElement(
         "span",
         { className: "ph-r-resultcard__meta" },
         (result.provider ? providerLabel2(result.provider) + " \xB7 " : "") + elapsedLabel
       ) : null
     ) : null,
-    !result.loading && !value ? import_react34.default.createElement(
+    !result.loading && !value ? import_react35.default.createElement(
       "div",
       { className: "ph-r-resultcard__warn" },
       t("reader.selection.quickUnavailable", { reason: firstText3(result.reason, t("reader.ai.reasonFallback")) }),
-      import_react34.default.createElement(
+      import_react35.default.createElement(
         "div",
         { className: "ph-r-resultcard__actions", style: { marginTop: 6, borderTop: "none", paddingTop: 0 } },
-        import_react34.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "refresh", onClick: props.onRetry }, t("reader.retry")),
-        props.onRefine ? import_react34.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine }, t("reader.selection.aiRefineCta")) : null
+        import_react35.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "refresh", onClick: props.onRetry }, t("reader.retry")),
+        props.onRefine ? import_react35.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine }, t("reader.selection.aiRefineCta")) : null
       )
     ) : null,
-    !result.loading && value ? import_react34.default.createElement("div", { className: "ph-r-resultcard__body" }, value) : null,
-    !result.loading && value ? import_react34.default.createElement(
+    !result.loading && value ? import_react35.default.createElement("div", { className: "ph-r-resultcard__body" }, value) : null,
+    !result.loading && value ? import_react35.default.createElement(
       "div",
       { className: "ph-r-resultcard__actions" },
-      import_react34.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: props.onCopy }, t("reader.selection.copyTranslation")),
-      import_react34.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "translate", onClick: props.onReplace }, t("reader.selection.replace")),
-      import_react34.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: props.onSend }, t("reader.selection.sendToChat")),
-      props.onRefine && !result.aiRefine ? import_react34.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine, title: t("reader.selection.aiRefineHint") }, t("reader.selection.aiRefine")) : null
+      import_react35.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: props.onCopy }, t("reader.selection.copyTranslation")),
+      import_react35.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "translate", onClick: props.onReplace }, t("reader.selection.replace")),
+      import_react35.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: props.onSend }, t("reader.selection.sendToChat")),
+      props.onRefine && !result.aiRefine ? import_react35.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine, title: t("reader.selection.aiRefineHint") }, t("reader.selection.aiRefine")) : null
     ) : null
   );
 }
@@ -17622,8 +20456,8 @@ function FigureHighlightOverlay(props) {
   const t = props.t;
   const focus = props.figureFocus;
   const focusKey = focus && focus.figureId ? String(focus.figureId) + ":" + String(focus.seq || "") + ":" + String(props.page == null ? "" : props.page) : "";
-  const [expired, setExpired] = import_react34.default.useState(false);
-  import_react34.default.useEffect(() => {
+  const [expired, setExpired] = import_react35.default.useState(false);
+  import_react35.default.useEffect(() => {
     setExpired(false);
     if (focusKey === "") return void 0;
     const timer2 = setTimeout(() => setExpired(true), 4600);
@@ -17653,32 +20487,32 @@ function FigureHighlightOverlay(props) {
     height: (Math.max(1e-3, Math.min(1, h3)) * 100).toFixed(3) + "%"
   };
   const label = focus.figureLabel ? t("reader.figure.highlightLabel", { label: focus.figureLabel }) : t("reader.figure.highlight");
-  return import_react34.default.createElement(
+  return import_react35.default.createElement(
     "div",
     { className: "ph-r-fighl", style, "data-ph-figure-focus": String(focus.figureId || ""), "aria-hidden": "true" },
-    import_react34.default.createElement("span", { className: "ph-r-fighl__label" }, label)
+    import_react35.default.createElement("span", { className: "ph-r-fighl__label" }, label)
   );
 }
 function PageCanvas(props) {
-  const scrollRef = import_react34.default.useRef(null);
-  const layoutRef = import_react34.default.useRef([]);
-  const previousLayoutRef = import_react34.default.useRef(null);
-  const rafRef = import_react34.default.useRef(0);
-  const scrolledRef = import_react34.default.useRef(false);
-  const [scrollTop, setScrollTop] = import_react34.default.useState(0);
-  const [viewport, setViewport] = import_react34.default.useState({ width: 0, height: 0 });
+  const scrollRef = import_react35.default.useRef(null);
+  const layoutRef = import_react35.default.useRef([]);
+  const previousLayoutRef = import_react35.default.useRef(null);
+  const rafRef = import_react35.default.useRef(0);
+  const scrolledRef = import_react35.default.useRef(false);
+  const [scrollTop, setScrollTop] = import_react35.default.useState(0);
+  const [viewport, setViewport] = import_react35.default.useState({ width: 0, height: 0 });
   const size = useElementSizeCompat(scrollRef);
-  import_react34.default.useEffect(() => {
+  import_react35.default.useEffect(() => {
     setViewport({ width: size.width, height: size.height });
   }, [size.width, size.height]);
   const descriptors = usePageDescriptors(props.pages, props.total);
-  const baseWidth = import_react34.default.useMemo(() => {
+  const baseWidth = import_react35.default.useMemo(() => {
     if (viewport.width > 0) {
       return clamp(viewport.width - CANVAS_SIDE_PADDING * 2, MIN_BASE_WIDTH, MAX_BASE_WIDTH);
     }
     return 640;
   }, [viewport.width]);
-  const layout = import_react34.default.useMemo(() => {
+  const layout = import_react35.default.useMemo(() => {
     const list = [];
     let top = PAGE_TOP_PADDING;
     for (const descriptor of descriptors) {
@@ -17691,7 +20525,7 @@ function PageCanvas(props) {
   }, [baseWidth, descriptors, props.zoom]);
   layoutRef.current = layout;
   const contentHeight = layout.length > 0 ? layout[layout.length - 1].top + layout[layout.length - 1].height + PAGE_BOTTOM_PADDING : 0;
-  import_react34.default.useLayoutEffect(() => {
+  import_react35.default.useLayoutEffect(() => {
     const element2 = scrollRef.current;
     const previous = previousLayoutRef.current;
     if (!element2 || !previous || previous.length === 0 || layout.length === 0) {
@@ -17717,7 +20551,7 @@ function PageCanvas(props) {
     }
     previousLayoutRef.current = layout;
   }, [layout, scrollTop]);
-  import_react34.default.useEffect(() => {
+  import_react35.default.useEffect(() => {
     const jump = props.jump;
     if (!jump || !jump.page) return;
     const element2 = scrollRef.current;
@@ -17727,7 +20561,7 @@ function PageCanvas(props) {
     setScrollTop(layout[index].top);
     props.onPageChange(jump.page);
   }, [props.jump && props.jump.seq]);
-  import_react34.default.useEffect(() => {
+  import_react35.default.useEffect(() => {
     const focus = props.focus;
     if (!focus || !focus.page || !focus.rect) return;
     const element2 = scrollRef.current;
@@ -17736,7 +20570,7 @@ function PageCanvas(props) {
     const item = layout[index];
     scrollElementTo(element2, item.top + focus.rect.y * item.height - 140, !props.reducedMotion);
   }, [props.focus && props.focus.seq]);
-  const handleScroll = import_react34.default.useCallback(() => {
+  const handleScroll = import_react35.default.useCallback(() => {
     const element2 = scrollRef.current;
     if (!element2) return;
     if (rafRef.current) return;
@@ -17762,7 +20596,7 @@ function PageCanvas(props) {
     if (typeof requestAnimationFrame === "function") rafRef.current = requestAnimationFrame(run);
     else run();
   }, [props]);
-  const visibleRange = import_react34.default.useMemo(() => {
+  const visibleRange = import_react35.default.useMemo(() => {
     if (layout.length === 0) return { start: 0, end: -1 };
     const height = viewport.height > 0 ? viewport.height : 900;
     const top = scrollTop - height * VIRTUAL_BUFFER;
@@ -17790,7 +20624,7 @@ function PageCanvas(props) {
     }
     return { start, end };
   }, [layout, props.page, scrollTop, viewport.height]);
-  import_react34.default.useEffect(() => {
+  import_react35.default.useEffect(() => {
     const list = layoutRef.current;
     for (let index = visibleRange.start; index <= visibleRange.end; index += 1) {
       const item = list[index];
@@ -17807,7 +20641,7 @@ function PageCanvas(props) {
     const visible = index >= visibleRange.start && index <= visibleRange.end;
     if (!visible) {
       children.push(
-        import_react34.default.createElement(
+        import_react35.default.createElement(
           "div",
           {
             key: "ph-" + descriptor.page,
@@ -17821,7 +20655,7 @@ function PageCanvas(props) {
       continue;
     }
     children.push(
-      import_react34.default.createElement(PageView, {
+      import_react35.default.createElement(PageView, {
         key: "ph-" + descriptor.page,
         t: props.t,
         paperId: props.paperId,
@@ -17860,7 +20694,7 @@ function PageCanvas(props) {
       })
     );
   }
-  return import_react34.default.createElement(
+  return import_react35.default.createElement(
     "div",
     {
       ref: scrollRef,
@@ -17868,7 +20702,7 @@ function PageCanvas(props) {
       onScroll: handleScroll,
       "data-ph-scroll": "canvas"
     },
-    import_react34.default.createElement(
+    import_react35.default.createElement(
       "div",
       { className: "ph-r-pages", style: { minHeight: contentHeight } },
       children
@@ -17876,8 +20710,8 @@ function PageCanvas(props) {
   );
 }
 function useElementSizeCompat(ref) {
-  const [size, setSize] = import_react34.default.useState({ width: 0, height: 0 });
-  import_react34.default.useEffect(() => {
+  const [size, setSize] = import_react35.default.useState({ width: 0, height: 0 });
+  import_react35.default.useEffect(() => {
     const element2 = ref.current;
     if (!element2) return void 0;
     let frame2 = 0;
@@ -17912,7 +20746,7 @@ function useElementSizeCompat(ref) {
 }
 
 // src/surfaces/reader/toolbar.jsx
-var import_react35 = __toESM(require("react"), 1);
+var import_react36 = __toESM(require("react"), 1);
 function authorLine2(authors) {
   const list = arrayOf3(authors);
   const names = [];
@@ -17944,8 +20778,9 @@ function ReaderToolbar(props) {
   const total = Math.max(1, Math.round(num2(props.total, 1)));
   const page = Math.max(1, Math.min(total, Math.round(num2(props.page, 1))));
   const search = props.search || { open: false, query: "", hits: [], index: 0 };
-  const searchInputRef = import_react35.default.useRef(null);
-  import_react35.default.useEffect(() => {
+  const searchInputRef = import_react36.default.useRef(null);
+  const modeSlider = useSlidingThumb();
+  import_react36.default.useEffect(() => {
     if (!search.open) return;
     const timer2 = setTimeout(() => {
       const element2 = searchInputRef.current;
@@ -17972,14 +20807,14 @@ function ReaderToolbar(props) {
     { id: "compare", label: rt("reader.mode.compare") },
     { id: "translation", label: rt("reader.mode.translation") }
   ];
-  return import_react35.default.createElement(
+  return import_react36.default.createElement(
     "div",
     { className: "ph-r-toolbar", role: "toolbar", "aria-label": rt("reader.mode.label") },
     /* ---------------- identity row ---------------- */
-    import_react35.default.createElement(
+    import_react36.default.createElement(
       "div",
       { className: "ph-r-toolbar__row ph-r-toolbar__row--main" },
-      import_react35.default.createElement(
+      import_react36.default.createElement(
         Btn,
         {
           className: "ph-r-toolbar__back",
@@ -17991,28 +20826,28 @@ function ReaderToolbar(props) {
         },
         rt("reader.back")
       ),
-      import_react35.default.createElement(
+      import_react36.default.createElement(
         "div",
         { className: "ph-r-toolbar__titles" },
-        import_react35.default.createElement(
+        import_react36.default.createElement(
           "div",
           { className: "ph-r-toolbar__titleline" },
-          import_react35.default.createElement("h1", { className: "ph-r-toolbar__title", title: String(title) }, title),
-          import_react35.default.createElement("span", { className: "ph-r-toolbar__badge" }, rt("reader.pageOf", { page, total }))
+          import_react36.default.createElement("h1", { className: "ph-r-toolbar__title", title: String(title) }, title),
+          import_react36.default.createElement("span", { className: "ph-r-toolbar__badge" }, rt("reader.pageOf", { page, total }))
         ),
-        import_react35.default.createElement(
+        import_react36.default.createElement(
           "div",
           { className: "ph-r-toolbar__meta", title: original ? original + (metaParts.length ? " \xB7 " + metaParts.join(" \xB7 ") : "") : metaParts.join(" \xB7 ") },
-          original ? import_react35.default.createElement("span", { style: { opacity: 0.85, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, original) : null,
-          original && metaParts.length ? import_react35.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, "\xB7") : null,
-          metaParts.length ? import_react35.default.createElement("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, metaParts.join(" \xB7 ")) : null
+          original ? import_react36.default.createElement("span", { style: { opacity: 0.85, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, original) : null,
+          original && metaParts.length ? import_react36.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, "\xB7") : null,
+          metaParts.length ? import_react36.default.createElement("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, metaParts.join(" \xB7 ")) : null
         )
       ),
-      import_react35.default.createElement(
+      import_react36.default.createElement(
         "div",
         { className: "ph-r-toolbar__actions" },
-        import_react35.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite") }, rt("reader.cite")),
-        import_react35.default.createElement(
+        import_react36.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite") }, rt("reader.cite")),
+        import_react36.default.createElement(
           "a",
           {
             className: "ph-r-btn ph-r-btn--ghost ph-r-btn--sm",
@@ -18021,10 +20856,10 @@ function ReaderToolbar(props) {
             rel: "noopener noreferrer",
             title: rt("reader.openPdf")
           },
-          import_react35.default.createElement(Icon2, { name: "external", size: 14 }),
-          import_react35.default.createElement("span", { className: "ph-r-btn__label" }, rt("reader.openPdf"))
+          import_react36.default.createElement(Icon2, { name: "external", size: 14 }),
+          import_react36.default.createElement("span", { className: "ph-r-btn__label" }, rt("reader.openPdf"))
         ),
-        import_react35.default.createElement(
+        import_react36.default.createElement(
           Btn,
           {
             size: "sm",
@@ -18036,7 +20871,7 @@ function ReaderToolbar(props) {
           },
           rt("reader.notes.tab")
         ),
-        import_react35.default.createElement(
+        import_react36.default.createElement(
           Btn,
           {
             size: "sm",
@@ -18048,7 +20883,7 @@ function ReaderToolbar(props) {
           },
           "AI"
         ),
-        props.onOpenSettings ? import_react35.default.createElement(IconBtn, {
+        props.onOpenSettings ? import_react36.default.createElement(IconBtn, {
           icon: "settings",
           title: "\u8BBE\u7F6E",
           "aria-label": "\u8BBE\u7F6E",
@@ -18057,19 +20892,19 @@ function ReaderToolbar(props) {
       )
     ),
     /* ---------------- tool row ---------------- */
-    import_react35.default.createElement(
+    import_react36.default.createElement(
       "div",
       { className: "ph-r-toolbar__row ph-r-toolbar__row--tools" },
-      import_react35.default.createElement(
+      import_react36.default.createElement(
         "div",
         { className: "ph-r-pager", role: "group", "aria-label": rt("reader.pageOf", { page, total }) },
-        import_react35.default.createElement(IconBtn, {
+        import_react36.default.createElement(IconBtn, {
           icon: "chevronLeft",
           title: rt("reader.prevPage"),
           disabled: page <= 1 || props.loading,
           onClick: () => props.onPage(Math.max(1, page - 1))
         }),
-        import_react35.default.createElement("input", {
+        import_react36.default.createElement("input", {
           key: "page-input-" + page,
           className: "ph-r-pager__input",
           type: "text",
@@ -18087,20 +20922,20 @@ function ReaderToolbar(props) {
           },
           onBlur: (event) => commitPage(event.currentTarget.value)
         }),
-        import_react35.default.createElement("span", { className: "ph-r-pager__total" }, "/ " + total),
-        import_react35.default.createElement(IconBtn, {
+        import_react36.default.createElement("span", { className: "ph-r-pager__total" }, "/ " + total),
+        import_react36.default.createElement(IconBtn, {
           icon: "chevronRight",
           title: rt("reader.nextPage"),
           disabled: page >= total || props.loading,
           onClick: () => props.onPage(Math.min(total, page + 1))
         })
       ),
-      import_react35.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
-      import_react35.default.createElement(
+      import_react36.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
+      import_react36.default.createElement(
         "div",
         { className: "ph-r-zoom", role: "group", "aria-label": rt("reader.zoomValue", { percent: Math.round(props.zoom * 100) }) },
-        import_react35.default.createElement(IconBtn, { icon: "zoomOut", title: rt("reader.zoomOut"), onClick: () => props.onZoomStep(-1) }),
-        import_react35.default.createElement(
+        import_react36.default.createElement(IconBtn, { icon: "zoomOut", title: rt("reader.zoomOut"), onClick: () => props.onZoomStep(-1) }),
+        import_react36.default.createElement(
           "button",
           {
             type: "button",
@@ -18110,19 +20945,26 @@ function ReaderToolbar(props) {
           },
           Math.round(num2(props.zoom, 1) * 100) + "%"
         ),
-        import_react35.default.createElement(IconBtn, { icon: "zoomIn", title: rt("reader.zoomIn"), onClick: () => props.onZoomStep(1) }),
-        import_react35.default.createElement(IconBtn, { icon: "fit", title: rt("reader.zoomFit"), onClick: props.onZoomFit })
+        import_react36.default.createElement(IconBtn, { icon: "zoomIn", title: rt("reader.zoomIn"), onClick: () => props.onZoomStep(1) }),
+        import_react36.default.createElement(IconBtn, { icon: "fit", title: rt("reader.zoomFit"), onClick: props.onZoomFit })
       ),
-      import_react35.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
-      import_react35.default.createElement(
+      import_react36.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
+      import_react36.default.createElement(
         "div",
-        { className: "ph-r-segment", role: "group", "aria-label": rt("reader.mode.label") },
+        {
+          className: cx("ph-r-segment", modeSlider.rect && "ph-r-segment--sliding"),
+          ref: modeSlider.ref,
+          role: "group",
+          "aria-label": rt("reader.mode.label")
+        },
+        import_react36.default.createElement(SlidingThumb, { rect: modeSlider.rect, inset: 2, popKey: props.mode }),
         modeItems.map(
-          (item) => import_react35.default.createElement(
+          (item) => import_react36.default.createElement(
             "button",
             {
               key: item.id,
               type: "button",
+              "data-ph-active": props.mode === item.id ? "true" : void 0,
               className: cx("ph-r-segment__item", props.mode === item.id && "ph-r-segment__item--active"),
               onClick: () => props.onMode(item.id),
               "aria-pressed": props.mode === item.id ? "true" : "false"
@@ -18131,12 +20973,12 @@ function ReaderToolbar(props) {
           )
         )
       ),
-      import_react35.default.createElement("span", { className: "ph-r-toolbar__spacer" }),
-      search.open ? import_react35.default.createElement(
+      import_react36.default.createElement("span", { className: "ph-r-toolbar__spacer" }),
+      search.open ? import_react36.default.createElement(
         "div",
         { className: "ph-r-find" },
-        import_react35.default.createElement(Icon2, { name: "search", size: 13, className: "ph-r-find__icon" }),
-        import_react35.default.createElement("input", {
+        import_react36.default.createElement(Icon2, { name: "search", size: 13, className: "ph-r-find__icon" }),
+        import_react36.default.createElement("input", {
           ref: searchInputRef,
           className: "ph-r-find__input",
           type: "text",
@@ -18155,16 +20997,16 @@ function ReaderToolbar(props) {
             }
           }
         }),
-        import_react35.default.createElement(
+        import_react36.default.createElement(
           "span",
           { className: cx("ph-r-find__count", search.query && search.hits.length === 0 && "ph-r-find__count--empty") },
           !search.query ? "" : search.hits.length === 0 ? rt("reader.search.none") : rt("reader.search.count", { index: Math.min(search.index + 1, search.hits.length), total: search.hits.length })
         ),
-        import_react35.default.createElement(IconBtn, { icon: "chevronUp", title: rt("reader.search.prev"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(-1) }),
-        import_react35.default.createElement(IconBtn, { icon: "chevronDown", title: rt("reader.search.next"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(1) }),
-        import_react35.default.createElement(IconBtn, { icon: "close", title: rt("reader.search.close"), onClick: () => props.onSearchToggle(false) })
-      ) : import_react35.default.createElement(IconBtn, { icon: "search", title: rt("reader.search"), onClick: () => props.onSearchToggle(true) }),
-      import_react35.default.createElement(IconBtn, {
+        import_react36.default.createElement(IconBtn, { icon: "chevronUp", title: rt("reader.search.prev"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(-1) }),
+        import_react36.default.createElement(IconBtn, { icon: "chevronDown", title: rt("reader.search.next"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(1) }),
+        import_react36.default.createElement(IconBtn, { icon: "close", title: rt("reader.search.close"), onClick: () => props.onSearchToggle(false) })
+      ) : import_react36.default.createElement(IconBtn, { icon: "search", title: rt("reader.search"), onClick: () => props.onSearchToggle(true) }),
+      import_react36.default.createElement(IconBtn, {
         icon: "sidePanel",
         title: rt("reader.sidePanelToggle"),
         active: props.sideOpen,
@@ -18175,7 +21017,7 @@ function ReaderToolbar(props) {
 }
 
 // src/surfaces/reader/thumbnails.jsx
-var import_react36 = __toESM(require("react"), 1);
+var import_react37 = __toESM(require("react"), 1);
 var THUMB_INSET = 30;
 var OVERSCAN = 250;
 var FALLBACK_RAIL_WIDTH = 118;
@@ -18201,25 +21043,25 @@ function offsetsOf(pages, total, railWidth) {
 }
 function Thumbnails(props) {
   const t = props.t;
-  const scrollRef = import_react36.default.useRef(null);
-  const listRef = import_react36.default.useRef(null);
-  const [scrollTop, setScrollTop] = import_react36.default.useState(0);
+  const scrollRef = import_react37.default.useRef(null);
+  const listRef = import_react37.default.useRef(null);
+  const [scrollTop, setScrollTop] = import_react37.default.useState(0);
   const size = useElementSize(scrollRef);
   const railWidth = size.width > 0 ? size.width : FALLBACK_RAIL_WIDTH;
-  const layout = import_react36.default.useMemo(() => offsetsOf(props.pages, props.total, railWidth), [props.pages, props.total, railWidth]);
+  const layout = import_react37.default.useMemo(() => offsetsOf(props.pages, props.total, railWidth), [props.pages, props.total, railWidth]);
   const activeIndex = layout.items.findIndex((item) => item.page === props.page);
-  const visible = import_react36.default.useMemo(() => {
+  const visible = import_react37.default.useMemo(() => {
     const height = size.height > 0 ? size.height : 900;
     const top = scrollTop - OVERSCAN;
     const bottom = scrollTop + height + OVERSCAN;
     return layout.items.filter((item) => item.offset + item.itemHeight >= top && item.offset <= bottom);
   }, [layout.items, scrollTop, size.height]);
-  const handleScroll = import_react36.default.useCallback(() => {
+  const handleScroll = import_react37.default.useCallback(() => {
     const element2 = scrollRef.current;
     if (!element2) return;
     setScrollTop(element2.scrollTop || 0);
   }, []);
-  import_react36.default.useEffect(() => {
+  import_react37.default.useEffect(() => {
     const element2 = scrollRef.current;
     const item = layout.items[activeIndex];
     if (!element2 || !item) return;
@@ -18229,7 +21071,7 @@ function Thumbnails(props) {
     if (item.offset < top + 8) element2.scrollTop = Math.max(0, item.offset - 8);
     else if (item.offset + item.itemHeight > top + height - 8) element2.scrollTop = item.offset + item.itemHeight - height + 8;
   }, [activeIndex, layout.items, props.page]);
-  return import_react36.default.createElement(
+  return import_react37.default.createElement(
     "div",
     {
       ref: scrollRef,
@@ -18239,10 +21081,10 @@ function Thumbnails(props) {
       "aria-label": t("reader.thumbnails"),
       "data-ph-scroll": "rail"
     },
-    import_react36.default.createElement(
+    import_react37.default.createElement(
       "div",
       { ref: listRef, className: "ph-r-rail__inner", style: { height: layout.totalHeight } },
-      activeIndex >= 0 ? import_react36.default.createElement("span", {
+      activeIndex >= 0 ? import_react37.default.createElement("span", {
         className: "ph-r-rail__indicator",
         style: {
           height: 30,
@@ -18252,7 +21094,7 @@ function Thumbnails(props) {
       }) : null,
       visible.map((item) => {
         const active = item.page === props.page;
-        return import_react36.default.createElement(
+        return import_react37.default.createElement(
           "button",
           {
             key: item.page,
@@ -18264,10 +21106,10 @@ function Thumbnails(props) {
             "aria-current": active ? "page" : void 0,
             "data-ph-thumb": String(item.page)
           },
-          import_react36.default.createElement(
+          import_react37.default.createElement(
             "span",
             { className: "ph-r-rail__thumb", style: { height: item.imageHeight } },
-            import_react36.default.createElement(
+            import_react37.default.createElement(
               "span",
               {
                 style: {
@@ -18279,7 +21121,7 @@ function Thumbnails(props) {
                 "aria-hidden": "true"
               }
             ),
-            import_react36.default.createElement("img", {
+            import_react37.default.createElement("img", {
               src: item.imageUrl || pageImageUrl(props.paperId, item.page, 220),
               alt: "",
               loading: "lazy",
@@ -18296,14 +21138,14 @@ function Thumbnails(props) {
               }
             })
           ),
-          import_react36.default.createElement(
+          import_react37.default.createElement(
             "span",
             { className: "ph-r-rail__num" },
             String(item.page)
           )
         );
       }),
-      layout.items.length === 0 ? import_react36.default.createElement(Icon2, { name: "pages", size: 20 }) : null
+      layout.items.length === 0 ? import_react37.default.createElement(Icon2, { name: "pages", size: 20 }) : null
     )
   );
 }
@@ -18314,17 +21156,17 @@ var TOOLS_TIP_FLAG = "reader.tools.tip.v1";
 var NO_ANNOTATIONS = [];
 var DEFAULT_COLOR = "yellow";
 function useReaderNotices(onToast) {
-  const [toasts, setToasts] = import_react37.default.useState([]);
-  const timers = import_react37.default.useRef(/* @__PURE__ */ new Map());
+  const [toasts, setToasts] = import_react38.default.useState([]);
+  const timers = import_react38.default.useRef(/* @__PURE__ */ new Map());
   const external = typeof onToast === "function";
-  import_react37.default.useEffect(() => {
+  import_react38.default.useEffect(() => {
     const pending = timers.current;
     return () => {
       pending.forEach((timer2) => clearTimeout(timer2));
       pending.clear();
     };
   }, []);
-  const notify2 = import_react37.default.useCallback(
+  const notify2 = import_react38.default.useCallback(
     (kind, text2, action) => {
       const message = String(text2 || "");
       if (!message) return;
@@ -18353,53 +21195,53 @@ function useReaderNotices(onToast) {
     },
     [external, onToast]
   );
-  const dismiss2 = import_react37.default.useCallback((id) => {
+  const dismiss2 = import_react38.default.useCallback((id) => {
     setToasts((previous) => previous.filter((toast) => toast.id !== id));
   }, []);
   return { notify: notify2, toasts, dismiss: dismiss2, external };
 }
 function StateScreen(props) {
-  return import_react37.default.createElement(
+  return import_react38.default.createElement(
     "div",
     { className: "ph-r-reader" },
-    import_react37.default.createElement(
+    import_react38.default.createElement(
       "div",
       { className: "ph-r-toolbar" },
-      import_react37.default.createElement(
+      import_react38.default.createElement(
         "div",
         { className: "ph-r-toolbar__row ph-r-toolbar__row--main" },
-        import_react37.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack }, props.t("reader.back"))
+        import_react38.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack }, props.t("reader.back"))
       )
     ),
-    import_react37.default.createElement(
+    import_react38.default.createElement(
       "div",
       { style: { flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 } },
-      props.loading ? import_react37.default.createElement(
+      props.loading ? import_react38.default.createElement(
         "div",
         { style: { display: "flex", alignItems: "center", gap: 10, color: "var(--dsw-alias-label-secondary)" }, role: "status" },
-        import_react37.default.createElement(Spinner2, { size: 16 }),
-        import_react37.default.createElement("span", null, props.t("reader.loading"))
-      ) : import_react37.default.createElement(Empty, {
+        import_react38.default.createElement(Spinner2, { size: 16 }),
+        import_react38.default.createElement("span", null, props.t("reader.loading"))
+      ) : import_react38.default.createElement(Empty, {
         icon: props.icon || "warning",
         tone: props.tone,
         title: props.title,
         desc: props.desc,
-        action: props.retry ? import_react37.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: props.retry }, props.t("reader.retry")) : null
+        action: props.retry ? import_react38.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: props.retry }, props.t("reader.retry")) : null
       })
     )
   );
 }
 function useNavigationSnapshot(navigation2) {
-  const subscribe2 = import_react37.default.useCallback(
+  const subscribe2 = import_react38.default.useCallback(
     (listener) => navigation2 && typeof navigation2.subscribe === "function" ? navigation2.subscribe(listener) : () => {
     },
     [navigation2]
   );
-  const getSnapshot2 = import_react37.default.useCallback(
+  const getSnapshot2 = import_react38.default.useCallback(
     () => navigation2 && typeof navigation2.getSnapshot === "function" ? navigation2.getSnapshot() : null,
     [navigation2]
   );
-  return import_react37.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
+  return import_react38.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
 }
 function annotationRequest(base, draft) {
   const rects = arrayOf3(draft.rects).map(normalizeRect).filter(Boolean);
@@ -18420,7 +21262,7 @@ function annotationRequest(base, draft) {
   if (params.kind === "note" && rects.length === 0) return params;
   return params;
 }
-var ReaderBoundary = class extends import_react37.default.Component {
+var ReaderBoundary = class extends import_react38.default.Component {
   constructor(props) {
     super(props);
     this.state = { error: null, epoch: 0 };
@@ -18438,7 +21280,7 @@ var ReaderBoundary = class extends import_react37.default.Component {
   render() {
     if (this.state.error) {
       const rt = this.props.t;
-      return import_react37.default.createElement(StateScreen, {
+      return import_react38.default.createElement(StateScreen, {
         t: rt,
         icon: "warning",
         tone: "error",
@@ -18452,25 +21294,26 @@ var ReaderBoundary = class extends import_react37.default.Component {
   }
 };
 function ReaderShell(props) {
-  const rt = import_react37.default.useMemo(() => buildReaderT(props.t), [props.t]);
-  return import_react37.default.createElement(ReaderBoundary, {
+  const rt = import_react38.default.useMemo(() => buildReaderT(props.t), [props.t]);
+  return import_react38.default.createElement(ReaderBoundary, {
     t: rt,
     onBack: props.onBack,
-    render: (key) => import_react37.default.createElement(ReaderShellInner, Object.assign({}, props, { key }))
+    render: (key) => import_react38.default.createElement(ReaderShellInner, Object.assign({}, props, { key }))
   });
 }
 function ReaderShellInner(props) {
-  const rt = import_react37.default.useMemo(() => buildReaderT(props.t), [props.t]);
-  const releaseStyles = import_react37.default.useMemo(() => ensureReaderStyles(), []);
-  import_react37.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  const apiCall = import_react37.default.useMemo(() => createApiCaller(props.api), [props.api]);
+  const rt = import_react38.default.useMemo(() => buildReaderT(props.t), [props.t]);
+  const trSlider = useSlidingThumb();
+  const releaseStyles = import_react38.default.useMemo(() => ensureReaderStyles(), []);
+  import_react38.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  const apiCall = import_react38.default.useMemo(() => createApiCaller(props.api), [props.api]);
   const reducedMotion = usePrefersReducedMotion();
   const notices = useReaderNotices(props.onToast);
   const notify2 = notices.notify;
   const undoApi = useReaderUndo(props.undo);
   const translationPreference = useTranslationPreference(props.translation, apiCall);
   const preferredProvider = translationPreference.provider;
-  const notifyUndo = import_react37.default.useCallback(
+  const notifyUndo = import_react38.default.useCallback(
     (kind, text2) => {
       notify2(kind, text2, {
         label: rt("reader.undo.undo"),
@@ -18492,45 +21335,45 @@ function ReaderShellInner(props) {
   const detail = openState.data || null;
   const paper = detail && detail.paper || props.paper || null;
   const versionId = firstText3(detail && detail.version && detail.version.id);
-  const pages = import_react37.default.useMemo(() => arrayOf3(detail && detail.pages), [detail]);
-  const total = import_react37.default.useMemo(() => {
+  const pages = import_react38.default.useMemo(() => arrayOf3(detail && detail.pages), [detail]);
+  const total = import_react38.default.useMemo(() => {
     const count = Math.round(num2(pages.length > 0 ? pages.length : paper && paper.pageCount, 1));
     return Math.max(1, count);
   }, [pages, paper]);
-  const [figureFocus, setFigureFocus] = import_react37.default.useState(null);
-  const figureFocusTimer = import_react37.default.useRef(null);
-  const [page, setPage] = import_react37.default.useState(() => {
+  const [figureFocus, setFigureFocus] = import_react38.default.useState(null);
+  const figureFocusTimer = import_react38.default.useRef(null);
+  const [page, setPage] = import_react38.default.useState(() => {
     const explicit = Math.round(num2(props.initialPage, 0));
     if (explicit > 0) return explicit;
     const restored = props.paperId ? readReadingPosition(props.paperId) : 0;
     return restored > 0 ? restored : 1;
   });
-  const jumpSeq = import_react37.default.useRef(0);
-  const [jump, setJump] = import_react37.default.useState(null);
-  const pageRef = import_react37.default.useRef(page);
+  const jumpSeq = import_react38.default.useRef(0);
+  const [jump, setJump] = import_react38.default.useState(null);
+  const pageRef = import_react38.default.useRef(page);
   pageRef.current = page;
-  const totalRef = import_react37.default.useRef(total);
+  const totalRef = import_react38.default.useRef(total);
   totalRef.current = total;
-  const goToPage = import_react37.default.useCallback((target, options) => {
+  const goToPage = import_react38.default.useCallback((target, options) => {
     const next = clamp(Math.round(num2(target, 1)), 1, totalRef.current);
     setPage(next);
     jumpSeq.current += 1;
     setJump({ page: next, seq: jumpSeq.current, smooth: !(options && options.instant) });
   }, []);
-  const [zoom, setZoom] = import_react37.default.useState(1);
-  const zoomStep = import_react37.default.useCallback((direction) => {
+  const [zoom, setZoom] = import_react38.default.useState(1);
+  const zoomStep = import_react38.default.useCallback((direction) => {
     setZoom((previous) => {
       const next = Math.round((previous + direction * ZOOM_STEP) * 100) / 100;
       return clamp(next, ZOOM_MIN, ZOOM_MAX);
     });
   }, []);
-  const zoomFit = import_react37.default.useCallback(() => setZoom(1), []);
-  const [mode, setMode] = import_react37.default.useState("source");
-  const changeMode = import_react37.default.useCallback((next) => {
+  const zoomFit = import_react38.default.useCallback(() => setZoom(1), []);
+  const [mode, setMode] = import_react38.default.useState("source");
+  const changeMode = import_react38.default.useCallback((next) => {
     setMode(next);
   }, []);
-  const [tool, setTool] = import_react37.default.useState("select");
-  const changeTool = import_react37.default.useCallback(
+  const [tool, setTool] = import_react38.default.useState("select");
+  const changeTool = import_react38.default.useCallback(
     (next) => {
       setTool(next);
       if (next === "area") notify2("info", rt("reader.areaModeActive"));
@@ -18539,50 +21382,50 @@ function ReaderShellInner(props) {
     },
     [notify2, rt]
   );
-  const [sideOpen, setSideOpen] = import_react37.default.useState(true);
-  const [sideTab, setSideTab] = import_react37.default.useState(() => {
+  const [sideOpen, setSideOpen] = import_react38.default.useState(true);
+  const [sideTab, setSideTab] = import_react38.default.useState(() => {
     const requested = firstText3(props.initialTab);
     return SIDE_TABS.indexOf(requested) >= 0 ? requested : "outline";
   });
-  const [penColor, setPenColorState] = import_react37.default.useState(DEFAULT_COLOR);
-  const setPenColor = import_react37.default.useCallback((color) => {
+  const [penColor, setPenColorState] = import_react38.default.useState(DEFAULT_COLOR);
+  const setPenColor = import_react38.default.useCallback((color) => {
     const value = firstText3(color, DEFAULT_COLOR);
     lastColor.current = value;
     setPenColorState(value);
   }, []);
-  const [toolsTip, setToolsTip] = import_react37.default.useState(() => !readFlag(TOOLS_TIP_FLAG));
-  const dismissToolsTip = import_react37.default.useCallback(() => {
+  const [toolsTip, setToolsTip] = import_react38.default.useState(() => !readFlag(TOOLS_TIP_FLAG));
+  const dismissToolsTip = import_react38.default.useCallback(() => {
     writeFlag(TOOLS_TIP_FLAG, true);
     setToolsTip(false);
   }, []);
-  const showToolsTip = import_react37.default.useCallback(() => setToolsTip(true), []);
-  const openSide = import_react37.default.useCallback((tab) => {
+  const showToolsTip = import_react38.default.useCallback(() => setToolsTip(true), []);
+  const openSide = import_react38.default.useCallback((tab) => {
     setSideOpen(true);
     if (tab) setSideTab(tab);
   }, []);
-  const toggleSide = import_react37.default.useCallback(() => setSideOpen((value) => !value), []);
-  const [scrolled, setScrolled] = import_react37.default.useState(false);
-  const handleScrolledChange = import_react37.default.useCallback((value) => setScrolled(Boolean(value)), []);
-  const pageCache = import_react37.default.useRef(/* @__PURE__ */ new Map());
-  const layerCache = import_react37.default.useRef(/* @__PURE__ */ new Map());
-  const [dataVersion, setDataVersion] = import_react37.default.useState(0);
-  const bumpData = import_react37.default.useCallback(() => setDataVersion((value) => value + 1), []);
-  const getPageData = import_react37.default.useCallback(
+  const toggleSide = import_react38.default.useCallback(() => setSideOpen((value) => !value), []);
+  const [scrolled, setScrolled] = import_react38.default.useState(false);
+  const handleScrolledChange = import_react38.default.useCallback((value) => setScrolled(Boolean(value)), []);
+  const pageCache = import_react38.default.useRef(/* @__PURE__ */ new Map());
+  const layerCache = import_react38.default.useRef(/* @__PURE__ */ new Map());
+  const [dataVersion, setDataVersion] = import_react38.default.useState(0);
+  const bumpData = import_react38.default.useCallback(() => setDataVersion((value) => value + 1), []);
+  const getPageData = import_react38.default.useCallback(
     (pageNo) => {
       const entry = pageCache.current.get(pageNo);
       return entry && entry.paperId === paperId ? entry : null;
     },
     [paperId]
   );
-  const getLayer = import_react37.default.useCallback(
+  const getLayer = import_react38.default.useCallback(
     (pageNo) => {
       const entry = layerCache.current.get(pageNo);
       return entry && entry.paperId === paperId ? entry : null;
     },
     [paperId]
   );
-  const structureRefreshes = import_react37.default.useRef(/* @__PURE__ */ new Map());
-  const ensurePage = import_react37.default.useCallback(
+  const structureRefreshes = import_react38.default.useRef(/* @__PURE__ */ new Map());
+  const ensurePage = import_react38.default.useCallback(
     (pageNo) => {
       if (!paperId || !pageNo) return;
       const existing = pageCache.current.get(pageNo);
@@ -18611,9 +21454,9 @@ function ReaderShellInner(props) {
     },
     [apiCall, bumpData, paperId]
   );
-  const ensurePageRef = import_react37.default.useRef(ensurePage);
+  const ensurePageRef = import_react38.default.useRef(ensurePage);
   ensurePageRef.current = ensurePage;
-  const ensureLayer = import_react37.default.useCallback(
+  const ensureLayer = import_react38.default.useCallback(
     (pageNo) => {
       if (!paperId || !pageNo) return;
       const existing = layerCache.current.get(pageNo);
@@ -18630,14 +21473,14 @@ function ReaderShellInner(props) {
     },
     [apiCall, bumpData, paperId]
   );
-  const retryPage = import_react37.default.useCallback(
+  const retryPage = import_react38.default.useCallback(
     (pageNo) => {
       pageCache.current.delete(pageNo);
       ensurePage(pageNo);
     },
     [ensurePage]
   );
-  const retryLayer = import_react37.default.useCallback(
+  const retryLayer = import_react38.default.useCallback(
     (pageNo) => {
       layerCache.current.delete(pageNo);
       ensureLayer(pageNo);
@@ -18649,26 +21492,26 @@ function ReaderShellInner(props) {
     [paperId],
     { enabled: Boolean(paperId) }
   );
-  const outlineItems = import_react37.default.useMemo(() => arrayOf3(outlineState.data && outlineState.data.items), [outlineState.data]);
-  const [annotationReload, setAnnotationReload] = import_react37.default.useState(0);
+  const outlineItems = import_react38.default.useMemo(() => arrayOf3(outlineState.data && outlineState.data.items), [outlineState.data]);
+  const [annotationReload, setAnnotationReload] = import_react38.default.useState(0);
   const annotationsState = useAsync(
     (signal) => paperId ? apiCall("annotations.list", versionId ? { paperId, versionId } : { paperId }, { signal }) : Promise.resolve([]),
     [paperId, versionId, annotationReload],
     { enabled: Boolean(paperId) }
   );
-  const [annotations, setAnnotations] = import_react37.default.useState(NO_ANNOTATIONS);
-  import_react37.default.useEffect(() => {
+  const [annotations, setAnnotations] = import_react38.default.useState(NO_ANNOTATIONS);
+  import_react38.default.useEffect(() => {
     if (annotationsState.status === "ready") setAnnotations(normalizeAnnotations(annotationsState.data));
   }, [annotationsState.status, annotationsState.data]);
-  const lastColor = import_react37.default.useRef(DEFAULT_COLOR);
-  const intentSeq = import_react37.default.useRef(0);
-  const [annotationIntent, setAnnotationIntent] = import_react37.default.useState(() => {
+  const lastColor = import_react38.default.useRef(DEFAULT_COLOR);
+  const intentSeq = import_react38.default.useRef(0);
+  const [annotationIntent, setAnnotationIntent] = import_react38.default.useState(() => {
     const initial = firstText3(props.annotationId);
     if (!initial) return null;
     intentSeq.current += 1;
     return { id: initial, seq: intentSeq.current };
   });
-  const createAnnotation = import_react37.default.useCallback(
+  const createAnnotation = import_react38.default.useCallback(
     (draft) => {
       const params = annotationRequest({ paperId, versionId, page: pageRef.current }, draft);
       const optimistic = normalizeAnnotation(
@@ -18725,7 +21568,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, paperId, versionId]
   );
-  const updateAnnotation = import_react37.default.useCallback(
+  const updateAnnotation = import_react38.default.useCallback(
     (annotation, patch) => {
       const previous = annotation;
       setAnnotations(
@@ -18771,7 +21614,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, rt]
   );
-  const deleteAnnotation = import_react37.default.useCallback(
+  const deleteAnnotation = import_react38.default.useCallback(
     (annotation) => {
       let index = -1;
       setAnnotations((list) => {
@@ -18829,18 +21672,18 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, rt]
   );
-  const [popover, setPopover] = import_react37.default.useState(null);
-  const popoverAnnotation = import_react37.default.useMemo(() => {
+  const [popover, setPopover] = import_react38.default.useState(null);
+  const popoverAnnotation = import_react38.default.useMemo(() => {
     if (!popover) return null;
     const found = annotations.find((annotation) => annotation.id === popover.id);
     return found || null;
   }, [annotations, popover]);
-  const popoverProp = import_react37.default.useMemo(() => {
+  const popoverProp = import_react38.default.useMemo(() => {
     if (!popoverAnnotation || !popover) return null;
     return { annotation: popoverAnnotation, anchor: popover.anchor, autoFocus: Boolean(popover.autoFocus) };
   }, [popoverAnnotation, popover]);
   const activeAnnotationId = popoverAnnotation ? popoverAnnotation.id : null;
-  import_react37.default.useEffect(() => {
+  import_react38.default.useEffect(() => {
     if (!annotationIntent) return;
     if (annotationsState.status === "error") {
       setAnnotationIntent(null);
@@ -18858,8 +21701,8 @@ function ReaderShellInner(props) {
   }, [annotations, annotationIntent, annotationsState.status, goToPage]);
   const navigation2 = props.navigation;
   const navSnapshot = useNavigationSnapshot(navigation2);
-  const navConsumed = import_react37.default.useRef(0);
-  import_react37.default.useEffect(() => {
+  const navConsumed = import_react38.default.useRef(0);
+  import_react38.default.useEffect(() => {
     if (!navigation2 || !navSnapshot || !navSnapshot.seq) return;
     if (navConsumed.current === navSnapshot.seq) return;
     const route = navSnapshot.route || {};
@@ -18893,37 +21736,37 @@ function ReaderShellInner(props) {
       figureFocusTimer.current = setTimeout(() => setFigureFocus(null), 4600);
     }
   }, [goToPage, navSnapshot, navigation2, notify2, paperId, rt]);
-  import_react37.default.useEffect(() => () => {
+  import_react38.default.useEffect(() => () => {
     if (figureFocusTimer.current) clearTimeout(figureFocusTimer.current);
   }, []);
-  import_react37.default.useEffect(() => {
+  import_react38.default.useEffect(() => {
     if (!figureFocus) return;
     if (Math.round(num2(page, 1)) !== figureFocus.page) setFigureFocus(null);
   }, [page, figureFocus]);
-  const openAnnotation = import_react37.default.useCallback((annotation, anchor) => {
+  const openAnnotation = import_react38.default.useCallback((annotation, anchor) => {
     setPopover({ id: annotation.id, anchor, autoFocus: false });
   }, []);
-  const closePopover = import_react37.default.useCallback(() => setPopover(null), []);
-  const [selection, setSelection] = import_react37.default.useState(null);
-  const [selectionResult, setSelectionResult] = import_react37.default.useState(null);
-  const handleSelection = import_react37.default.useCallback((next) => {
+  const closePopover = import_react38.default.useCallback(() => setPopover(null), []);
+  const [selection, setSelection] = import_react38.default.useState(null);
+  const [selectionResult, setSelectionResult] = import_react38.default.useState(null);
+  const handleSelection = import_react38.default.useCallback((next) => {
     setSelection(next);
     if (!next) setSelectionResult(null);
   }, []);
-  const clearSelection = import_react37.default.useCallback(() => {
+  const clearSelection = import_react38.default.useCallback(() => {
     setSelection(null);
     setSelectionResult(null);
     clearNativeSelection();
   }, []);
-  const [aiRequest, setAiRequest] = import_react37.default.useState(null);
-  const aiSeq = import_react37.default.useRef(0);
-  const askAi = import_react37.default.useCallback((request2) => {
+  const [aiRequest, setAiRequest] = import_react38.default.useState(null);
+  const aiSeq = import_react38.default.useRef(0);
+  const askAi = import_react38.default.useCallback((request2) => {
     aiSeq.current += 1;
     setAiRequest(Object.assign({}, request2, { seq: aiSeq.current }));
     setSideOpen(true);
     setSideTab("ai");
   }, []);
-  const commitMaterials = import_react37.default.useCallback(
+  const commitMaterials = import_react38.default.useCallback(
     async (materials) => {
       const list = arrayOf3(materials).filter((material) => material && material.id).map((material) => {
         const item = { kind: material.kind || "paper", id: String(material.id) };
@@ -18959,13 +21802,13 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, props.pending, props.sessionId, rt]
   );
-  const citePaperPage = import_react37.default.useCallback(() => {
+  const citePaperPage = import_react38.default.useCallback(() => {
     const title = firstText3(paper && paper.titleZh, paper && paper.title);
     commitMaterials([{ kind: "paper", id: paperId, page, title }]).catch((error) => {
       notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) }));
     });
   }, [commitMaterials, notify2, page, paper, paperId, rt]);
-  const citeAnnotation = import_react37.default.useCallback(
+  const citeAnnotation = import_react38.default.useCallback(
     (annotation) => {
       commitMaterials([
         {
@@ -18978,7 +21821,7 @@ function ReaderShellInner(props) {
     },
     [commitMaterials, notify2, rt]
   );
-  const citeAiAnswer = import_react37.default.useCallback(
+  const citeAiAnswer = import_react38.default.useCallback(
     (message) => {
       const materials = [{ kind: "paper", id: paperId, page, title: firstText3(paper && paper.titleZh, paper && paper.title) }];
       for (const source of arrayOf3(message && message.sources)) {
@@ -18991,9 +21834,9 @@ function ReaderShellInner(props) {
     [commitMaterials, notify2, page, paper, paperId, rt]
   );
   const TRANSLATABLE_ROLES2 = ["body", "heading", "caption"];
-  const [translations, setTranslations] = import_react37.default.useState({});
-  const translationSequence = import_react37.default.useRef(0);
-  const translatableBlocksFor = import_react37.default.useCallback(
+  const [translations, setTranslations] = import_react38.default.useState({});
+  const translationSequence = import_react38.default.useRef(0);
+  const translatableBlocksFor = import_react38.default.useCallback(
     (pageNo) => {
       const entry = getPageData(pageNo);
       if (!entry || entry.status !== "ready" || !entry.data) return [];
@@ -19003,7 +21846,7 @@ function ReaderShellInner(props) {
     },
     [getPageData]
   );
-  const updateTranslationPage = import_react37.default.useCallback((pageNo, updater) => {
+  const updateTranslationPage = import_react38.default.useCallback((pageNo, updater) => {
     setTranslations((previous) => {
       const current = previous[pageNo] || {
         status: "idle",
@@ -19019,7 +21862,7 @@ function ReaderShellInner(props) {
       return Object.assign({}, previous, { [pageNo]: next });
     });
   }, []);
-  const normalizeBlockEntry = import_react37.default.useCallback(
+  const normalizeBlockEntry = import_react38.default.useCallback(
     (block, item, fallbackEngine, fallbackReason, fallbackModel) => {
       const translation2 = firstText3(item && item.translation);
       const engine = readEngine(item, fallbackEngine && fallbackEngine.provider || "auto");
@@ -19038,7 +21881,7 @@ function ReaderShellInner(props) {
     },
     [rt]
   );
-  const summarizeEngines = import_react37.default.useCallback((blocks, entries2) => {
+  const summarizeEngines = import_react38.default.useCallback((blocks, entries2) => {
     const labels = [];
     const models = [];
     for (const block of blocks) {
@@ -19051,7 +21894,7 @@ function ReaderShellInner(props) {
     const firstEntry = blocks.map((block) => entries2[String(block.id)]).find((entry) => entry && entry.status === "translated");
     return { label: labels.join(" + "), model: models.join(", "), engine: firstEntry ? firstEntry.engine || null : null };
   }, []);
-  const runPageTranslation = import_react37.default.useCallback(
+  const runPageTranslation = import_react38.default.useCallback(
     async (pageNo, options) => {
       if (!paperId) return null;
       const opts = options || {};
@@ -19169,7 +22012,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, preferredProvider, props.sessionId, rt, summarizeEngines, translatableBlocksFor, updateTranslationPage]
   );
-  const legacyPerBlockTranslate = import_react37.default.useCallback(
+  const legacyPerBlockTranslate = import_react38.default.useCallback(
     async (blocks, pageNo, provider, token) => {
       const entries2 = {};
       const queue = blocks.slice().sort((left, right) => String(right.text || "").length - String(left.text || "").length);
@@ -19233,7 +22076,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, normalizeBlockEntry, paperId, props.sessionId, rt, summarizeEngines, updateTranslationPage]
   );
-  const translateBlockInternal = import_react37.default.useCallback(
+  const translateBlockInternal = import_react38.default.useCallback(
     async (block, pageNo, providerOverride) => {
       if (!paperId || !block || block.id == null) return null;
       const target = pageNo || pageRef.current;
@@ -19283,7 +22126,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, normalizeBlockEntry, preferredProvider, props.sessionId, rt, summarizeEngines, translatableBlocksFor, updateTranslationPage]
   );
-  const translatePage = import_react37.default.useCallback(
+  const translatePage = import_react38.default.useCallback(
     (force, options) => {
       if (!paperId) return;
       const opts = options || {};
@@ -19310,15 +22153,15 @@ function ReaderShellInner(props) {
     },
     [notify2, paperId, preferredProvider, rt, runPageTranslation, translateBlockInternal, translatableBlocksFor, translations]
   );
-  const translateAiPage = import_react37.default.useCallback(() => {
+  const translateAiPage = import_react38.default.useCallback(() => {
     return translatePage(true, { provider: "llm" });
   }, [translatePage]);
-  const translateBlock = import_react37.default.useCallback(
+  const translateBlock = import_react38.default.useCallback(
     (block) => translateBlockInternal(block, pageRef.current, preferredProvider || "auto"),
     [preferredProvider, translateBlockInternal]
   );
-  const detectedCache = import_react37.default.useRef(/* @__PURE__ */ new Map());
-  const detectLanguage2 = import_react37.default.useCallback(
+  const detectedCache = import_react38.default.useRef(/* @__PURE__ */ new Map());
+  const detectLanguage2 = import_react38.default.useCallback(
     async (text2) => {
       const value = String(text2 || "").trim();
       if (!value) return "empty";
@@ -19346,7 +22189,7 @@ function ReaderShellInner(props) {
     },
     [apiCall]
   );
-  const quickTranslateText = import_react37.default.useCallback(
+  const quickTranslateText = import_react38.default.useCallback(
     async (text2, pageNo, options) => {
       const opts = options || {};
       const quote = String(text2 || "").trim();
@@ -19507,7 +22350,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, detectLanguage2, paperId, props.paper, props.sessionId, rt]
   );
-  const quickTranslateSelection = import_react37.default.useCallback(
+  const quickTranslateSelection = import_react38.default.useCallback(
     (options) => {
       const opts = options || {};
       if (!selection) return;
@@ -19545,7 +22388,7 @@ function ReaderShellInner(props) {
     },
     [notify2, preferredProvider, quickTranslateText, rt, selection]
   );
-  const refineQuickTranslation = import_react37.default.useCallback(() => {
+  const refineQuickTranslation = import_react38.default.useCallback(() => {
     const quote = selection ? selection.quote : selectionResult && selectionResult.quote;
     const targetPage = selection ? selection.page : selectionResult && selectionResult.page;
     if (!quote) return;
@@ -19558,21 +22401,21 @@ function ReaderShellInner(props) {
       );
     });
   }, [quickTranslateText, selection, selectionResult]);
-  const quickTranslateAnnotation = import_react37.default.useCallback(
+  const quickTranslateAnnotation = import_react38.default.useCallback(
     (annotation) => {
       const text2 = firstText3(annotation && annotation.quote, annotation && annotation.comment);
       return quickTranslateText(text2, annotation && annotation.page, { detect: false, rects: annotation && annotation.rects });
     },
     [quickTranslateText]
   );
-  const aiTranslateAnnotation = import_react37.default.useCallback(
+  const aiTranslateAnnotation = import_react38.default.useCallback(
     (annotation) => {
       const text2 = firstText3(annotation && annotation.quote, annotation && annotation.comment);
       return quickTranslateText(text2, annotation && annotation.page, { detect: false, provider: "llm", fast: true, refine: true, rects: annotation && annotation.rects });
     },
     [quickTranslateText]
   );
-  const highlightSelection = import_react37.default.useCallback(
+  const highlightSelection = import_react38.default.useCallback(
     (color) => {
       if (!selection) return;
       const chosen = color || lastColor.current || DEFAULT_COLOR;
@@ -19597,7 +22440,7 @@ function ReaderShellInner(props) {
     },
     [createAnnotation, notifyUndo, notify2, rt, selection]
   );
-  const citeSelection = import_react37.default.useCallback(() => {
+  const citeSelection = import_react38.default.useCallback(() => {
     if (!selection) return;
     const chosen = lastColor.current || DEFAULT_COLOR;
     const target = {
@@ -19621,7 +22464,7 @@ function ReaderShellInner(props) {
       return commitMaterials([{ kind: "annotation", id: saved.id, page: saved.page, title: target.quote }]);
     }).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
   }, [commitMaterials, createAnnotation, notifyUndo, notify2, rt, selection]);
-  const sendQuickTranslation = import_react37.default.useCallback(() => {
+  const sendQuickTranslation = import_react38.default.useCallback(() => {
     if (!selection || !selectionResult) return;
     const target = { page: selection.page || pageRef.current, quote: selection.quote, rects: selection.rects };
     const translationText = firstText3(selectionResult.translation);
@@ -19640,7 +22483,7 @@ function ReaderShellInner(props) {
       });
     }).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
   }, [commitMaterials, createAnnotation, notifyUndo, notify2, rt, selection, selectionResult]);
-  const handleSelectionAction = import_react37.default.useCallback(
+  const handleSelectionAction = import_react38.default.useCallback(
     (action, payload) => {
       if (action === "closeResult") {
         setSelectionResult(null);
@@ -19697,7 +22540,7 @@ function ReaderShellInner(props) {
     },
     [askAi, citeSelection, highlightSelection, notify2, notifyUndo, quickTranslateSelection, refineQuickTranslation, rt, selection, selectionResult, sendQuickTranslation]
   );
-  const createArea = import_react37.default.useCallback(
+  const createArea = import_react38.default.useCallback(
     (rect) => {
       const normalized = normalizeRect(rect);
       if (!normalized || normalized.w < 0.01 || normalized.h < 8e-3) {
@@ -19719,12 +22562,12 @@ function ReaderShellInner(props) {
     },
     [createAnnotation, notifyUndo, notify2, rt]
   );
-  const [noteDraft, setNoteDraft] = import_react37.default.useState(null);
-  const createNote = import_react37.default.useCallback((point) => {
+  const [noteDraft, setNoteDraft] = import_react38.default.useState(null);
+  const createNote = import_react38.default.useCallback((point) => {
     setNoteDraft({ page: pageRef.current, point, color: lastColor.current || DEFAULT_COLOR });
   }, []);
-  const cancelNote = import_react37.default.useCallback(() => setNoteDraft(null), []);
-  const saveNote = import_react37.default.useCallback(
+  const cancelNote = import_react38.default.useCallback(() => setNoteDraft(null), []);
+  const saveNote = import_react38.default.useCallback(
     (payload) => {
       const point = payload.point || { x: 0.5, y: 0.5 };
       const rect = normalizeRect({
@@ -19754,26 +22597,26 @@ function ReaderShellInner(props) {
     },
     [createAnnotation, notifyUndo, notify2, rt]
   );
-  const askAnnotation = import_react37.default.useCallback(
+  const askAnnotation = import_react38.default.useCallback(
     (annotation) => {
       askAi({ type: "ask", quote: firstText3(annotation.quote, annotation.comment), prompt: "", auto: false });
     },
     [askAi]
   );
-  const explainAnnotation = import_react37.default.useCallback(
+  const explainAnnotation = import_react38.default.useCallback(
     (annotation) => {
       askAi({ type: "explain", quote: firstText3(annotation.quote, annotation.comment), auto: true });
     },
     [askAi]
   );
-  const copyAnnotation = import_react37.default.useCallback(
+  const copyAnnotation = import_react38.default.useCallback(
     (annotation) => {
       const text2 = firstText3(annotation.quote, annotation.comment);
       copyText2(text2).then((ok) => notify2(ok ? "success" : "error", ok ? rt("reader.annot.copyDone") : rt("reader.toast.copyFailed")));
     },
     [notify2, rt]
   );
-  const onAnnotationSelect = import_react37.default.useCallback(
+  const onAnnotationSelect = import_react38.default.useCallback(
     (annotation) => {
       if (annotation.page !== pageRef.current) goToPage(annotation.page);
       const anchor = annotation.rects && annotation.rects.length > 0 ? annotation.rects[0] : { x: 0.5, y: 0.25, w: 0, h: 0 };
@@ -19781,7 +22624,7 @@ function ReaderShellInner(props) {
     },
     [goToPage]
   );
-  const deleteFromPopover = import_react37.default.useCallback(
+  const deleteFromPopover = import_react38.default.useCallback(
     (annotation) => {
       setPopover(null);
       deleteAnnotation(annotation).catch(() => {
@@ -19789,10 +22632,10 @@ function ReaderShellInner(props) {
     },
     [deleteAnnotation]
   );
-  const emptySearch = import_react37.default.useCallback(() => ({ open: false, query: "", hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }), []);
-  const [search, setSearch] = import_react37.default.useState(emptySearch);
-  const focusSeq = import_react37.default.useRef(0);
-  import_react37.default.useEffect(() => {
+  const emptySearch = import_react38.default.useCallback(() => ({ open: false, query: "", hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }), []);
+  const [search, setSearch] = import_react38.default.useState(emptySearch);
+  const focusSeq = import_react38.default.useRef(0);
+  import_react38.default.useEffect(() => {
     if (!search.open) return;
     const query = search.query;
     if (!query.trim()) {
@@ -19827,7 +22670,7 @@ function ReaderShellInner(props) {
       });
     });
   }, [paperId, page, search.open, search.query, dataVersion]);
-  const toggleSearch = import_react37.default.useCallback(
+  const toggleSearch = import_react38.default.useCallback(
     (open) => {
       setSearch((previous) => {
         if (open) return Object.assign({}, previous, { open: true, focus: previous.focus });
@@ -19836,10 +22679,10 @@ function ReaderShellInner(props) {
     },
     [emptySearch]
   );
-  const setSearchQuery = import_react37.default.useCallback((query) => {
+  const setSearchQuery = import_react38.default.useCallback((query) => {
     setSearch((previous) => Object.assign({}, previous, { query, hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }));
   }, []);
-  const searchNext = import_react37.default.useCallback(
+  const searchNext = import_react38.default.useCallback(
     (delta) => {
       setSearch((previous) => {
         if (!previous.open || previous.hits.length === 0) {
@@ -19858,7 +22701,7 @@ function ReaderShellInner(props) {
     },
     [notify2, rt]
   );
-  import_react37.default.useEffect(() => {
+  import_react38.default.useEffect(() => {
     if (typeof window === "undefined") return void 0;
     const onKeyDown = (event) => {
       const target = event.target;
@@ -19949,8 +22792,8 @@ function ReaderShellInner(props) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [changeTool, clearSelection, goToPage, highlightSelection, noteDraft, notify2, penColor, popover, rt, search.open, selection, tool, toggleSearch, undoApi, zoomStep]);
-  const resetKeyRef = import_react37.default.useRef(paperId);
-  import_react37.default.useEffect(() => {
+  const resetKeyRef = import_react38.default.useRef(paperId);
+  import_react38.default.useEffect(() => {
     if (!paperId) return;
     if (resetKeyRef.current === paperId) return;
     resetKeyRef.current = paperId;
@@ -19980,24 +22823,24 @@ function ReaderShellInner(props) {
       setAnnotationIntent(null);
     }
   }, [paperId]);
-  const jumpedRef = import_react37.default.useRef("");
-  import_react37.default.useEffect(() => {
+  const jumpedRef = import_react38.default.useRef("");
+  import_react38.default.useEffect(() => {
     if (openState.status !== "ready" || !paperId) return;
     if (jumpedRef.current === paperId) return;
     jumpedRef.current = paperId;
     const target = clamp(pageRef.current, 1, total);
     goToPage(target, { instant: true });
   }, [openState.status, paperId, total]);
-  import_react37.default.useEffect(() => {
+  import_react38.default.useEffect(() => {
     if (page > total) setPage(total);
   }, [page, total]);
-  import_react37.default.useEffect(() => {
+  import_react38.default.useEffect(() => {
     if (!paperId) return void 0;
     const timer2 = setTimeout(() => saveReadingPosition(paperId, page), 500);
     return () => clearTimeout(timer2);
   }, [paperId, page]);
-  const markedRef = import_react37.default.useRef("");
-  import_react37.default.useEffect(() => {
+  const markedRef = import_react38.default.useRef("");
+  import_react38.default.useEffect(() => {
     if (openState.status !== "ready" || !paperId || markedRef.current === paperId) return;
     markedRef.current = paperId;
     try {
@@ -20035,7 +22878,7 @@ function ReaderShellInner(props) {
     onNoteCancel: cancelNote
   };
   if (!paperId) {
-    return import_react37.default.createElement(StateScreen, {
+    return import_react38.default.createElement(StateScreen, {
       t: rt,
       icon: "warning",
       tone: "error",
@@ -20046,7 +22889,7 @@ function ReaderShellInner(props) {
   }
   if (openState.status === "error" && !detail) {
     const offline = isOfflineError(openState.error);
-    return import_react37.default.createElement(StateScreen, {
+    return import_react38.default.createElement(StateScreen, {
       t: rt,
       icon: "warning",
       tone: "error",
@@ -20057,14 +22900,14 @@ function ReaderShellInner(props) {
     });
   }
   if (!detail && openState.status === "loading") {
-    return import_react37.default.createElement(StateScreen, { t: rt, loading: true, onBack: props.onBack });
+    return import_react38.default.createElement(StateScreen, { t: rt, loading: true, onBack: props.onBack });
   }
   let sideBody = null;
   if (sideTab === "outline") {
-    sideBody = import_react37.default.createElement(
+    sideBody = import_react38.default.createElement(
       "div",
       { className: "ph-r-side__scroll ph-r-scroll" },
-      import_react37.default.createElement(Outline, {
+      import_react38.default.createElement(Outline, {
         t: rt,
         items: outlineItems,
         page,
@@ -20075,11 +22918,11 @@ function ReaderShellInner(props) {
       })
     );
   } else if (sideTab === "annotations") {
-    sideBody = import_react37.default.createElement(
+    sideBody = import_react38.default.createElement(
       "div",
       { className: "ph-r-side__scroll ph-r-scroll" },
-      import_react37.default.createElement("div", { className: "ph-r-side__hint" }, rt("reader.annot.hint")),
-      import_react37.default.createElement(AnnotationListPanel, {
+      import_react38.default.createElement("div", { className: "ph-r-side__hint" }, rt("reader.annot.hint")),
+      import_react38.default.createElement(AnnotationListPanel, {
         t: rt,
         annotations,
         page,
@@ -20091,7 +22934,7 @@ function ReaderShellInner(props) {
       })
     );
   } else if (sideTab === "notes") {
-    sideBody = import_react37.default.createElement(ReaderNotesPanel, {
+    sideBody = import_react38.default.createElement(ReaderNotesPanel, {
       t: rawT,
       api: apiCall,
       paperId,
@@ -20104,7 +22947,7 @@ function ReaderShellInner(props) {
       }
     });
   } else {
-    sideBody = import_react37.default.createElement(AiPanel, {
+    sideBody = import_react38.default.createElement(AiPanel, {
       t: rt,
       api: apiCall,
       paperId,
@@ -20119,7 +22962,7 @@ function ReaderShellInner(props) {
       sessionId: props.sessionId
     });
   }
-  const translationSheet = mode === "source" ? null : import_react37.default.createElement(
+  const translationSheet = mode === "source" ? null : import_react38.default.createElement(
     "div",
     {
       className: "ph-r-tr",
@@ -20129,32 +22972,48 @@ function ReaderShellInner(props) {
       },
       "data-ph-translation-sheet": "true"
     },
-    import_react37.default.createElement(
+    import_react38.default.createElement(
       "div",
       { className: "ph-r-tr__head" },
-      import_react37.default.createElement(Icon2, { name: "translate", size: 14 }),
-      import_react37.default.createElement("span", { className: "ph-r-tr__title" }, rt("reader.translation.sheet")),
-      import_react37.default.createElement(
+      import_react38.default.createElement(Icon2, { name: "translate", size: 14 }),
+      import_react38.default.createElement("span", { className: "ph-r-tr__title" }, rt("reader.translation.sheet")),
+      import_react38.default.createElement(
         "div",
-        { className: "ph-r-tr__modes", role: "group", "aria-label": rt("reader.translation.sheet") },
-        import_react37.default.createElement(
+        {
+          className: cx("ph-r-tr__modes", trSlider.rect && "ph-r-tr__modes--sliding"),
+          ref: trSlider.ref,
+          role: "group",
+          "aria-label": rt("reader.translation.sheet")
+        },
+        import_react38.default.createElement(SlidingThumb, { rect: trSlider.rect, popKey: mode }),
+        import_react38.default.createElement(
           "button",
-          { type: "button", className: cx("ph-r-tr__mode", mode === "compare" && "ph-r-tr__mode--active"), onClick: () => changeMode("compare") },
+          {
+            type: "button",
+            "data-ph-active": mode === "compare" ? "true" : void 0,
+            className: cx("ph-r-tr__mode", mode === "compare" && "ph-r-tr__mode--active"),
+            onClick: () => changeMode("compare")
+          },
           rt("reader.translation.mode.compare")
         ),
-        import_react37.default.createElement(
+        import_react38.default.createElement(
           "button",
-          { type: "button", className: cx("ph-r-tr__mode", mode === "translation" && "ph-r-tr__mode--active"), onClick: () => changeMode("translation") },
+          {
+            type: "button",
+            "data-ph-active": mode === "translation" ? "true" : void 0,
+            className: cx("ph-r-tr__mode", mode === "translation" && "ph-r-tr__mode--active"),
+            onClick: () => changeMode("translation")
+          },
           rt("reader.translation.mode.translation")
         )
       ),
-      import_react37.default.createElement("span", { className: "ph-r-tr__spacer" }),
-      import_react37.default.createElement(IconBtn, { icon: "close", title: rt("reader.translation.close"), onClick: () => changeMode("source") })
+      import_react38.default.createElement("span", { className: "ph-r-tr__spacer" }),
+      import_react38.default.createElement(IconBtn, { icon: "close", title: rt("reader.translation.close"), onClick: () => changeMode("source") })
     ),
-    import_react37.default.createElement(
+    import_react38.default.createElement(
       "div",
       { className: "ph-r-tr__body ph-r-scroll" },
-      import_react37.default.createElement(BilingualPanel, {
+      import_react38.default.createElement(BilingualPanel, {
         t: rt,
         page,
         total,
@@ -20172,7 +23031,7 @@ function ReaderShellInner(props) {
       })
     )
   );
-  return import_react37.default.createElement(
+  return import_react38.default.createElement(
     "div",
     {
       className: cx(
@@ -20183,7 +23042,7 @@ function ReaderShellInner(props) {
       ),
       "data-ph-reader": paperId
     },
-    import_react37.default.createElement(ReaderToolbar, {
+    import_react38.default.createElement(ReaderToolbar, {
       t: rt,
       paper,
       total,
@@ -20210,21 +23069,21 @@ function ReaderShellInner(props) {
       onToggleSide: toggleSide,
       onOpenSettings: props.onOpenSettings
     }),
-    tool !== "select" ? import_react37.default.createElement(
+    tool !== "select" ? import_react38.default.createElement(
       "div",
       { className: "ph-r-modehint" },
-      import_react37.default.createElement(Icon2, { name: tool === "area" ? "area" : "sticky", size: 14 }),
-      import_react37.default.createElement("span", null, tool === "area" ? rt("reader.areaModeActive") : rt("reader.noteModeActive")),
-      import_react37.default.createElement(
+      import_react38.default.createElement(Icon2, { name: tool === "area" ? "area" : "sticky", size: 14 }),
+      import_react38.default.createElement("span", null, tool === "area" ? rt("reader.areaModeActive") : rt("reader.noteModeActive")),
+      import_react38.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => changeTool("select") },
         rt("reader.exitMode")
       )
     ) : null,
-    import_react37.default.createElement(
+    import_react38.default.createElement(
       "div",
       { className: "ph-r-body" },
-      import_react37.default.createElement(Thumbnails, {
+      import_react38.default.createElement(Thumbnails, {
         t: rt,
         paperId,
         pages: pagesForRail,
@@ -20232,7 +23091,7 @@ function ReaderShellInner(props) {
         page,
         onSelect: (target) => goToPage(target)
       }),
-      import_react37.default.createElement(PageCanvas, {
+      import_react38.default.createElement(PageCanvas, {
         t: rt,
         paperId,
         pages,
@@ -20260,13 +23119,13 @@ function ReaderShellInner(props) {
         onScrolledChange: handleScrolledChange,
         actions: canvasActions
       }),
-      import_react37.default.createElement(
+      import_react38.default.createElement(
         "aside",
         { className: cx("ph-r-side", !sideOpen && "ph-r-side--closed"), "aria-label": rt("reader.sidePanel") },
-        import_react37.default.createElement(
+        import_react38.default.createElement(
           "div",
           { className: "ph-r-side__head" },
-          import_react37.default.createElement(Tabs, {
+          import_react38.default.createElement(Tabs, {
             items: sideTabs,
             value: sideTab,
             onChange: (id) => {
@@ -20276,12 +23135,12 @@ function ReaderShellInner(props) {
             "aria-label": rt("reader.sidePanel"),
             className: "ph-r-side__tabs"
           }),
-          import_react37.default.createElement(IconBtn, { icon: "close", title: rt("reader.sidePanelToggle"), onClick: toggleSide })
+          import_react38.default.createElement(IconBtn, { icon: "close", title: rt("reader.sidePanelToggle"), onClick: toggleSide })
         ),
-        import_react37.default.createElement("div", { className: "ph-r-side__body" }, sideBody)
+        import_react38.default.createElement("div", { className: "ph-r-side__body" }, sideBody)
       ),
       translationSheet,
-      import_react37.default.createElement(FloatingAnnotationTools, {
+      import_react38.default.createElement(FloatingAnnotationTools, {
         t: rt,
         tool,
         selectionActive: Boolean(selection && selection.quote),
@@ -20296,19 +23155,19 @@ function ReaderShellInner(props) {
         translationOpen: mode !== "source"
       })
     ),
-    notices.toasts.length > 0 ? import_react37.default.createElement(
+    notices.toasts.length > 0 ? import_react38.default.createElement(
       "div",
       { className: "ph-r-toasts", "aria-live": "polite" },
       notices.toasts.map(
-        (toast) => import_react37.default.createElement(
+        (toast) => import_react38.default.createElement(
           "div",
           { key: toast.id, className: cx("ph-r-toast", "ph-r-toast--" + toast.kind) },
-          import_react37.default.createElement(Icon2, {
+          import_react38.default.createElement(Icon2, {
             name: toast.kind === "success" ? "check" : toast.kind === "error" || toast.kind === "warning" ? "warning" : "note",
             size: 13
           }),
-          import_react37.default.createElement("span", null, toast.text),
-          toast.action ? import_react37.default.createElement(
+          import_react38.default.createElement("span", null, toast.text),
+          toast.action ? import_react38.default.createElement(
             "button",
             {
               type: "button",
@@ -20331,10 +23190,10 @@ function ReaderShellInner(props) {
 }
 
 // src/surfaces/notes/workspace.jsx
-var import_react39 = __toESM(require("react"), 1);
+var import_react40 = __toESM(require("react"), 1);
 
 // src/surfaces/notes/paper-panel.jsx
-var import_react38 = __toESM(require("react"), 1);
+var import_react39 = __toESM(require("react"), 1);
 function pageImageUrl2(paperId, page, width) {
   return "/pappers-hall/page/" + encodeURIComponent(String(paperId)) + "/" + String(page) + ".png?width=" + String(width || 900);
 }
@@ -20358,15 +23217,15 @@ var ANNOTATION_COLORS2 = {
 function PaperPanel(props) {
   const t = props.t;
   const api = props.api;
-  const [query, setQuery] = import_react38.default.useState("");
-  const [results, setResults] = import_react38.default.useState({ status: "idle", items: [], error: "" });
-  const [open, setOpen] = import_react38.default.useState(null);
-  const [page, setPage] = import_react38.default.useState(1);
-  const [pageState, setPageState] = import_react38.default.useState({ status: "idle", text: "", source: "", error: "" });
-  const [translation, setTranslation] = import_react38.default.useState({ status: "idle", blocks: [], reason: "" });
-  const [annotations, setAnnotations] = import_react38.default.useState({ status: "idle", items: [], error: "" });
-  const [busy2, setBusy] = import_react38.default.useState("");
-  import_react38.default.useEffect(() => {
+  const [query, setQuery] = import_react39.default.useState("");
+  const [results, setResults] = import_react39.default.useState({ status: "idle", items: [], error: "" });
+  const [open, setOpen] = import_react39.default.useState(null);
+  const [page, setPage] = import_react39.default.useState(1);
+  const [pageState, setPageState] = import_react39.default.useState({ status: "idle", text: "", source: "", error: "" });
+  const [translation, setTranslation] = import_react39.default.useState({ status: "idle", blocks: [], reason: "" });
+  const [annotations, setAnnotations] = import_react39.default.useState({ status: "idle", items: [], error: "" });
+  const [busy2, setBusy] = import_react39.default.useState("");
+  import_react39.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       setResults((previous) => Object.assign({}, previous, { status: "loading", error: "" }));
       Promise.resolve(api("library.list", { query: query.trim(), limit: 20 })).then((result) => {
@@ -20382,7 +23241,7 @@ function PaperPanel(props) {
     setPage(1);
     setTranslation({ status: "idle", blocks: [], reason: "" });
   };
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     if (!open) return void 0;
     let alive = true;
     setPageState({ status: "loading", text: "", source: "", error: "" });
@@ -20420,20 +23279,20 @@ function PaperPanel(props) {
     const target = Math.max(1, Math.min(open.total || 1, next));
     if (target !== page) setPage(target);
   };
-  return import_react38.default.createElement(
+  return import_react39.default.createElement(
     "div",
     { className: "ph-n-paperpane" },
-    import_react38.default.createElement(
+    import_react39.default.createElement(
       "div",
       { className: "ph-n-paperpane__head" },
-      import_react38.default.createElement(Icon, { name: "book", size: 14 }),
-      import_react38.default.createElement("span", { className: "ph-n-paperpane__title" }, t("notes.papers.panel")),
-      props.onClose ? import_react38.default.createElement(IconButton, { icon: "panelRight", title: t("notes.papers.panelClose"), onClick: props.onClose }) : null
+      import_react39.default.createElement(Icon, { name: "book", size: 14 }),
+      import_react39.default.createElement("span", { className: "ph-n-paperpane__title" }, t("notes.papers.panel")),
+      props.onClose ? import_react39.default.createElement(IconButton, { icon: "panelRight", title: t("notes.papers.panelClose"), onClick: props.onClose }) : null
     ),
-    import_react38.default.createElement(
+    import_react39.default.createElement(
       "div",
       { className: "ph-n-paperpane__search" },
-      import_react38.default.createElement(SearchInput, {
+      import_react39.default.createElement(SearchInput, {
         value: query,
         onChange: setQuery,
         placeholder: t("notes.papers.panelSearch"),
@@ -20441,20 +23300,20 @@ function PaperPanel(props) {
         loading: results.status === "loading"
       })
     ),
-    import_react38.default.createElement(
+    import_react39.default.createElement(
       "div",
       { className: "ph-n-paperpane__body" },
-      import_react38.default.createElement(
+      import_react39.default.createElement(
         "div",
         { className: "ph-n-paperpane__scroll ph-n-scroll" },
-        !open ? import_react38.default.createElement(
+        !open ? import_react39.default.createElement(
           "div",
           { className: "ph-n-paperlist" },
-          results.status === "loading" && results.items.length === 0 ? import_react38.default.createElement("div", { className: "ph-n-progress" }, import_react38.default.createElement(Spinner), import_react38.default.createElement("span", null, t("common.loading"))) : null,
-          results.status === "error" ? import_react38.default.createElement("div", { className: "ph-n-error" }, import_react38.default.createElement(Icon, { name: "warning", size: 14 }), import_react38.default.createElement("span", null, results.error)) : null,
-          results.status === "ready" && results.items.length === 0 ? import_react38.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch"), desc: t("notes.papers.panelHint") }) : null,
+          results.status === "loading" && results.items.length === 0 ? import_react39.default.createElement("div", { className: "ph-n-progress" }, import_react39.default.createElement(Spinner), import_react39.default.createElement("span", null, t("common.loading"))) : null,
+          results.status === "error" ? import_react39.default.createElement("div", { className: "ph-n-error" }, import_react39.default.createElement(Icon, { name: "warning", size: 14 }), import_react39.default.createElement("span", null, results.error)) : null,
+          results.status === "ready" && results.items.length === 0 ? import_react39.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch"), desc: t("notes.papers.panelHint") }) : null,
           results.items.map(
-            (paper) => import_react38.default.createElement(
+            (paper) => import_react39.default.createElement(
               "button",
               {
                 key: paper.id,
@@ -20463,90 +23322,90 @@ function PaperPanel(props) {
                 onClick: () => openPaper(paper),
                 title: paperTitle3(t, paper)
               },
-              import_react38.default.createElement(
+              import_react39.default.createElement(
                 "span",
                 { className: "ph-n-paperrow__thumb" },
-                paper.thumbnailUrl ? import_react38.default.createElement("img", { src: paper.thumbnailUrl, alt: "", loading: "lazy" }) : null
+                paper.thumbnailUrl ? import_react39.default.createElement("img", { src: paper.thumbnailUrl, alt: "", loading: "lazy" }) : null
               ),
-              import_react38.default.createElement(
+              import_react39.default.createElement(
                 "span",
                 { className: "ph-n-paperrow__text" },
-                import_react38.default.createElement("span", { className: "ph-n-paperrow__title" }, paperTitle3(t, paper)),
-                import_react38.default.createElement("span", { className: "ph-n-paperrow__meta" }, [paper.year, paper.venue].filter(Boolean).join(" \xB7 ") || t("common.noVenue"))
+                import_react39.default.createElement("span", { className: "ph-n-paperrow__title" }, paperTitle3(t, paper)),
+                import_react39.default.createElement("span", { className: "ph-n-paperrow__meta" }, [paper.year, paper.venue].filter(Boolean).join(" \xB7 ") || t("common.noVenue"))
               )
             )
           )
-        ) : import_react38.default.createElement(
+        ) : import_react39.default.createElement(
           "div",
           { className: "ph-n-paperview" },
-          import_react38.default.createElement(
+          import_react39.default.createElement(
             "div",
             { className: "ph-n-paperview__head" },
-            import_react38.default.createElement(
+            import_react39.default.createElement(
               "div",
               { className: "ph-n-paperview__titles" },
-              import_react38.default.createElement("div", { className: "ph-n-paperview__title" }, paperTitle3(t, open.paper)),
-              import_react38.default.createElement(
+              import_react39.default.createElement("div", { className: "ph-n-paperview__title" }, paperTitle3(t, open.paper)),
+              import_react39.default.createElement(
                 "div",
                 { className: "ph-n-paperview__meta" },
                 [text(open.paper && open.paper.title), open.paper && open.paper.year, open.paper && open.paper.venue].filter(Boolean).join(" \xB7 ")
               )
             ),
-            import_react38.default.createElement(IconButton, { icon: "close", title: t("notes.papers.closeView"), onClick: () => setOpen(null) })
+            import_react39.default.createElement(IconButton, { icon: "close", title: t("notes.papers.closeView"), onClick: () => setOpen(null) })
           ),
-          import_react38.default.createElement(
+          import_react39.default.createElement(
             "div",
             { className: "ph-n-paperview__pager" },
-            import_react38.default.createElement(IconButton, { icon: "chevronLeft", title: t("reader.prevPage"), disabled: page <= 1, onClick: () => goPage(page - 1) }),
-            import_react38.default.createElement("span", null, t("notes.papers.pageOf", { page, total: open.total || 1 })),
-            import_react38.default.createElement(IconButton, { icon: "chevronRight", title: t("reader.nextPage"), disabled: page >= (open.total || 1), onClick: () => goPage(page + 1) }),
-            import_react38.default.createElement("span", { className: "ph-n-spacer" }),
-            import_react38.default.createElement(Button, { size: "sm", variant: "ghost", icon: "external", onClick: () => props.onOpenPaper && props.onOpenPaper(open.id, page) }, t("notes.papers.open"))
+            import_react39.default.createElement(IconButton, { icon: "chevronLeft", title: t("reader.prevPage"), disabled: page <= 1, onClick: () => goPage(page - 1) }),
+            import_react39.default.createElement("span", null, t("notes.papers.pageOf", { page, total: open.total || 1 })),
+            import_react39.default.createElement(IconButton, { icon: "chevronRight", title: t("reader.nextPage"), disabled: page >= (open.total || 1), onClick: () => goPage(page + 1) }),
+            import_react39.default.createElement("span", { className: "ph-n-spacer" }),
+            import_react39.default.createElement(Button, { size: "sm", variant: "ghost", icon: "external", onClick: () => props.onOpenPaper && props.onOpenPaper(open.id, page) }, t("notes.papers.open"))
           ),
-          import_react38.default.createElement(
+          import_react39.default.createElement(
             "div",
             { className: "ph-n-paperview__imagewrap" },
-            import_react38.default.createElement("img", { src: pageImageUrl2(open.id, page, 900), alt: t("reader.thumbPage", { page }), loading: "lazy" })
+            import_react39.default.createElement("img", { src: pageImageUrl2(open.id, page, 900), alt: t("reader.thumbPage", { page }), loading: "lazy" })
           ),
-          import_react38.default.createElement(
+          import_react39.default.createElement(
             "div",
             { className: "ph-n-paperview__section" },
-            import_react38.default.createElement(
+            import_react39.default.createElement(
               "div",
               { className: "ph-n-paperview__section-title" },
-              import_react38.default.createElement(Icon, { name: "translate", size: 12 }),
+              import_react39.default.createElement(Icon, { name: "translate", size: 12 }),
               t("notes.papers.translation"),
-              import_react38.default.createElement(Button, { size: "sm", variant: "soft", icon: "translate", loading: busy2 === "translate", onClick: translatePage }, t("notes.papers.translatePage")),
-              import_react38.default.createElement("span", { className: "ph-n-spacer" }),
-              translation.blocks.length > 0 ? import_react38.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.translatedCount", { count: translation.blocks.filter((block) => block && block.translation).length })) : null
+              import_react39.default.createElement(Button, { size: "sm", variant: "soft", icon: "translate", loading: busy2 === "translate", onClick: translatePage }, t("notes.papers.translatePage")),
+              import_react39.default.createElement("span", { className: "ph-n-spacer" }),
+              translation.blocks.length > 0 ? import_react39.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.translatedCount", { count: translation.blocks.filter((block) => block && block.translation).length })) : null
             ),
-            translation.status === "translating" ? import_react38.default.createElement("div", { className: "ph-n-progress" }, import_react38.default.createElement(Spinner), import_react38.default.createElement("span", null, t("notes.papers.translating"))) : null,
-            translation.status === "error" || translation.reason && translation.blocks.length === 0 ? import_react38.default.createElement("div", { className: "ph-n-error" }, import_react38.default.createElement(Icon, { name: "warning", size: 14 }), import_react38.default.createElement("span", null, translation.reason || t("common.unavailable"))) : null,
-            translation.blocks.length > 0 ? import_react38.default.createElement(
+            translation.status === "translating" ? import_react39.default.createElement("div", { className: "ph-n-progress" }, import_react39.default.createElement(Spinner), import_react39.default.createElement("span", null, t("notes.papers.translating"))) : null,
+            translation.status === "error" || translation.reason && translation.blocks.length === 0 ? import_react39.default.createElement("div", { className: "ph-n-error" }, import_react39.default.createElement(Icon, { name: "warning", size: 14 }), import_react39.default.createElement("span", null, translation.reason || t("common.unavailable"))) : null,
+            translation.blocks.length > 0 ? import_react39.default.createElement(
               "div",
               { className: "ph-n-paperview__trans" },
               translation.blocks.slice(0, 14).map(
-                (block, index) => import_react38.default.createElement(
+                (block, index) => import_react39.default.createElement(
                   "div",
                   { key: block && block.id || index },
-                  block && block.translation ? import_react38.default.createElement("p", null, block.translation) : import_react38.default.createElement("p", { className: "muted" }, (block && block.text ? String(block.text).slice(0, 180) : "") + " \xB7 " + t("notes.papers.untranslated"))
+                  block && block.translation ? import_react39.default.createElement("p", null, block.translation) : import_react39.default.createElement("p", { className: "muted" }, (block && block.text ? String(block.text).slice(0, 180) : "") + " \xB7 " + t("notes.papers.untranslated"))
                 )
               )
-            ) : translation.status === "idle" ? import_react38.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.translateHint")) : null
+            ) : translation.status === "idle" ? import_react39.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.translateHint")) : null
           ),
-          import_react38.default.createElement(
+          import_react39.default.createElement(
             "div",
             { className: "ph-n-paperview__section" },
-            import_react38.default.createElement(
+            import_react39.default.createElement(
               "div",
               { className: "ph-n-paperview__section-title" },
-              import_react38.default.createElement(Icon, { name: "highlighter", size: 12 }),
+              import_react39.default.createElement(Icon, { name: "highlighter", size: 12 }),
               t("notes.papers.annotations"),
-              import_react38.default.createElement("span", { className: "ph-n-caption" }, String(annotations.items.length))
+              import_react39.default.createElement("span", { className: "ph-n-caption" }, String(annotations.items.length))
             ),
-            annotations.status === "ready" && annotations.items.length === 0 ? import_react38.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.noAnnotations")) : null,
+            annotations.status === "ready" && annotations.items.length === 0 ? import_react39.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.noAnnotations")) : null,
             annotations.items.slice(0, 8).map(
-              (annotation) => import_react38.default.createElement(
+              (annotation) => import_react39.default.createElement(
                 "button",
                 {
                   key: annotation.id,
@@ -20556,37 +23415,37 @@ function PaperPanel(props) {
                   title: t("reader.annot.openInReader"),
                   style: { textAlign: "left", cursor: "pointer" }
                 },
-                import_react38.default.createElement("span", { className: "ph-n-paperview__annot-dot", style: { background: ANNOTATION_COLORS2[annotation.color] || ANNOTATION_COLORS2.yellow } }),
-                import_react38.default.createElement("span", { className: "ph-n-paperview__annot-text" }, text(annotation.quote, annotation.comment) || annotation.kind)
+                import_react39.default.createElement("span", { className: "ph-n-paperview__annot-dot", style: { background: ANNOTATION_COLORS2[annotation.color] || ANNOTATION_COLORS2.yellow } }),
+                import_react39.default.createElement("span", { className: "ph-n-paperview__annot-text" }, text(annotation.quote, annotation.comment) || annotation.kind)
               )
             )
           ),
-          import_react38.default.createElement(
+          import_react39.default.createElement(
             "div",
             { className: "ph-n-paperview__section" },
-            import_react38.default.createElement(
+            import_react39.default.createElement(
               "div",
               { className: "ph-n-paperview__section-title" },
-              import_react38.default.createElement(Icon, { name: "note", size: 12 }),
+              import_react39.default.createElement(Icon, { name: "note", size: 12 }),
               t("notes.papers.useInNotes")
             ),
-            pageState.status === "loading" ? import_react38.default.createElement("div", { className: "ph-n-progress" }, import_react38.default.createElement(Spinner), import_react38.default.createElement("span", null, t("common.loading"))) : pageState.status === "error" ? import_react38.default.createElement("div", { className: "ph-n-error" }, import_react38.default.createElement(Icon, { name: "warning", size: 14 }), import_react38.default.createElement("span", null, pageState.error)) : import_react38.default.createElement(
+            pageState.status === "loading" ? import_react39.default.createElement("div", { className: "ph-n-progress" }, import_react39.default.createElement(Spinner), import_react39.default.createElement("span", null, t("common.loading"))) : pageState.status === "error" ? import_react39.default.createElement("div", { className: "ph-n-error" }, import_react39.default.createElement(Icon, { name: "warning", size: 14 }), import_react39.default.createElement("span", null, pageState.error)) : import_react39.default.createElement(
               "p",
               { className: "ph-n-caption", style: { maxHeight: 120, overflow: "hidden" } },
               (pageState.text || "").replace(/\s+/g, " ").slice(0, 360) || t("reader.noText")
             ),
-            import_react38.default.createElement(
+            import_react39.default.createElement(
               "div",
               { className: "ph-n-paperview__actions", style: { display: "flex", gap: 6, flexWrap: "wrap" } },
-              props.noteId ? import_react38.default.createElement(Button, {
+              props.noteId ? import_react39.default.createElement(Button, {
                 size: "sm",
                 variant: "soft",
                 icon: "link",
                 onClick: () => props.onLinkPaper && props.onLinkPaper(open.paper),
                 disabled: Array.isArray(props.linkedPaperIds) && props.linkedPaperIds.indexOf(open.id) >= 0
               }, t("notes.papers.linkCurrent")) : null,
-              import_react38.default.createElement(Button, { size: "sm", variant: "ghost", icon: "filter", onClick: () => props.onFilterByPaper && props.onFilterByPaper(open.paper) }, t("notes.fromPaper")),
-              import_react38.default.createElement(Button, { size: "sm", variant: "ghost", icon: "note", onClick: () => props.onCreateNote && props.onCreateNote(open.paper) }, t("notes.papers.newNote"))
+              import_react39.default.createElement(Button, { size: "sm", variant: "ghost", icon: "filter", onClick: () => props.onFilterByPaper && props.onFilterByPaper(open.paper) }, t("notes.fromPaper")),
+              import_react39.default.createElement(Button, { size: "sm", variant: "ghost", icon: "note", onClick: () => props.onCreateNote && props.onCreateNote(open.paper) }, t("notes.papers.newNote"))
             )
           )
         )
@@ -20597,20 +23456,20 @@ function PaperPanel(props) {
 
 // src/surfaces/notes/workspace.jsx
 function useServiceState2(service) {
-  const subscribe2 = import_react39.default.useCallback((listener) => service.subscribe(listener), [service]);
-  const getSnapshot2 = import_react39.default.useCallback(() => service.getSnapshot(), [service]);
-  return import_react39.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
+  const subscribe2 = import_react40.default.useCallback((listener) => service.subscribe(listener), [service]);
+  const getSnapshot2 = import_react40.default.useCallback(() => service.getSnapshot(), [service]);
+  return import_react40.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
 }
 function FolderTree2(props) {
   const t = props.t;
   const tree = props.tree;
-  const [editing, setEditing] = import_react39.default.useState(null);
-  const [armedDelete, setArmedDelete] = import_react39.default.useState("");
-  const inputRef = import_react39.default.useRef(null);
-  import_react39.default.useEffect(() => {
+  const [editing, setEditing] = import_react40.default.useState(null);
+  const [armedDelete, setArmedDelete] = import_react40.default.useState("");
+  const inputRef = import_react40.default.useRef(null);
+  import_react40.default.useEffect(() => {
     if (editing && inputRef.current) inputRef.current.focus();
   }, [editing]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     if (!armedDelete) return void 0;
     const timer2 = setTimeout(() => setArmedDelete(""), 4500);
     return () => clearTimeout(timer2);
@@ -20631,11 +23490,11 @@ function FolderTree2(props) {
     for (const node of nodes) {
       const isEditing = editing && editing.mode === "rename" && editing.id === node.id;
       rows.push(
-        import_react39.default.createElement(
+        import_react40.default.createElement(
           "div",
           { key: "f-" + node.id, className: "ph-n-tree__row" + (props.folderId === node.id ? " ph-n-tree__row--active" : ""), style: { paddingLeft: 6 + depth * 14 } },
-          import_react39.default.createElement("span", { className: "ph-n-tree__icon" }, import_react39.default.createElement(Icon, { name: depth === 0 ? "folder" : "folderOpen", size: 13 })),
-          isEditing ? import_react39.default.createElement("input", {
+          import_react40.default.createElement("span", { className: "ph-n-tree__icon" }, import_react40.default.createElement(Icon, { name: depth === 0 ? "folder" : "folderOpen", size: 13 })),
+          isEditing ? import_react40.default.createElement("input", {
             ref: inputRef,
             className: "ph-n-tree__input",
             value: editing.value,
@@ -20645,7 +23504,7 @@ function FolderTree2(props) {
               if (event.key === "Escape") setEditing(null);
             },
             onBlur: submit
-          }) : import_react39.default.createElement(
+          }) : import_react40.default.createElement(
             "button",
             {
               type: "button",
@@ -20656,23 +23515,23 @@ function FolderTree2(props) {
             },
             node.name
           ),
-          import_react39.default.createElement("span", { className: "ph-n-tree__count" }, String(node.count || 0)),
-          import_react39.default.createElement(
+          import_react40.default.createElement("span", { className: "ph-n-tree__count" }, String(node.count || 0)),
+          import_react40.default.createElement(
             "span",
             { className: "ph-n-tree__tools" },
-            import_react39.default.createElement(IconButton, {
+            import_react40.default.createElement(IconButton, {
               icon: "plus",
               size: 12,
               title: t("notes.folders.newChild"),
               onClick: () => setEditing({ mode: "create", parentId: node.id, value: "" })
             }),
-            import_react39.default.createElement(IconButton, {
+            import_react40.default.createElement(IconButton, {
               icon: "edit",
               size: 12,
               title: t("notes.folders.rename"),
               onClick: () => setEditing({ mode: "rename", id: node.id, value: node.name })
             }),
-            import_react39.default.createElement(IconButton, {
+            import_react40.default.createElement(IconButton, {
               icon: "trash",
               size: 12,
               title: armedDelete === node.id ? t("notes.folders.deleteConfirm") : t("notes.folders.delete"),
@@ -20691,22 +23550,22 @@ function FolderTree2(props) {
     }
   };
   walk(tree, 0);
-  return import_react39.default.createElement(
+  return import_react40.default.createElement(
     "div",
     { className: "ph-n-tree" },
-    import_react39.default.createElement(
+    import_react40.default.createElement(
       "button",
       { type: "button", className: "ph-n-tree__row" + (props.folderId === "" ? " ph-n-tree__row--active" : ""), onClick: () => props.onSelect("") },
-      import_react39.default.createElement("span", { className: "ph-n-tree__icon" }, import_react39.default.createElement(Icon, { name: "layers", size: 13 })),
-      import_react39.default.createElement("span", { className: "ph-n-tree__label" }, t("notes.folders.all")),
-      import_react39.default.createElement("span", { className: "ph-n-tree__count" }, String(props.total || 0))
+      import_react40.default.createElement("span", { className: "ph-n-tree__icon" }, import_react40.default.createElement(Icon, { name: "layers", size: 13 })),
+      import_react40.default.createElement("span", { className: "ph-n-tree__label" }, t("notes.folders.all")),
+      import_react40.default.createElement("span", { className: "ph-n-tree__count" }, String(props.total || 0))
     ),
     rows,
-    editing && editing.mode === "create" && !editing.parentId ? import_react39.default.createElement(
+    editing && editing.mode === "create" && !editing.parentId ? import_react40.default.createElement(
       "div",
       { className: "ph-n-tree__row" },
-      import_react39.default.createElement("span", { className: "ph-n-tree__icon" }, import_react39.default.createElement(Icon, { name: "folder", size: 13 })),
-      import_react39.default.createElement("input", {
+      import_react40.default.createElement("span", { className: "ph-n-tree__icon" }, import_react40.default.createElement(Icon, { name: "folder", size: 13 })),
+      import_react40.default.createElement("input", {
         ref: inputRef,
         className: "ph-n-tree__input",
         value: editing.value,
@@ -20718,7 +23577,7 @@ function FolderTree2(props) {
         },
         onBlur: submit
       })
-    ) : import_react39.default.createElement(
+    ) : import_react40.default.createElement(
       "button",
       {
         type: "button",
@@ -20726,39 +23585,39 @@ function FolderTree2(props) {
         onClick: () => setEditing({ mode: "create", parentId: null, value: "" }),
         title: t("notes.folders.new")
       },
-      import_react39.default.createElement("span", { className: "ph-n-tree__icon" }, import_react39.default.createElement(Icon, { name: "folderPlus", size: 13 })),
-      import_react39.default.createElement("span", { className: "ph-n-tree__label ph-n-muted" }, t("notes.folders.new"))
+      import_react40.default.createElement("span", { className: "ph-n-tree__icon" }, import_react40.default.createElement(Icon, { name: "folderPlus", size: 13 })),
+      import_react40.default.createElement("span", { className: "ph-n-tree__label ph-n-muted" }, t("notes.folders.new"))
     ),
-    tree.length === 0 ? import_react39.default.createElement("p", { className: "ph-n-folders__empty" }, t("notes.folders.empty")) : null
+    tree.length === 0 ? import_react40.default.createElement("p", { className: "ph-n-folders__empty" }, t("notes.folders.empty")) : null
   );
 }
 function NotesWorkspace(props) {
   const t = props.t;
   const api = props.api;
-  const releaseStyles = import_react39.default.useMemo(() => ensureNotesStyles(), []);
-  const service = import_react39.default.useMemo(() => createNotesService(api), [api]);
+  const releaseStyles = import_react40.default.useMemo(() => ensureNotesStyles(), []);
+  const service = import_react40.default.useMemo(() => createNotesService(api), [api]);
   const serviceState = useServiceState2(service);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [folders, setFolders] = import_react39.default.useState({ status: "idle", tree: [] });
-  const [list, setList] = import_react39.default.useState({ status: "idle", items: [], total: 0, error: null });
-  const [query, setQuery] = import_react39.default.useState("");
-  const [debounced, setDebounced] = import_react39.default.useState("");
-  const [folderId, setFolderId] = import_react39.default.useState("");
-  const [paperFilter, setPaperFilter] = import_react39.default.useState(null);
-  const [activeId, setActiveId] = import_react39.default.useState(() => String(props.initialNoteId || ""));
-  const [active, setActive] = import_react39.default.useState({ status: "idle", note: null, error: null });
-  const [foldersOpen, setFoldersOpen] = import_react39.default.useState(true);
-  const [paperOpen, setPaperOpen] = import_react39.default.useState(true);
-  const [refreshToken, setRefreshToken] = import_react39.default.useState(0);
-  const activeIdRef = import_react39.default.useRef(activeId);
+  const [folders, setFolders] = import_react40.default.useState({ status: "idle", tree: [] });
+  const [list, setList] = import_react40.default.useState({ status: "idle", items: [], total: 0, error: null });
+  const [query, setQuery] = import_react40.default.useState("");
+  const [debounced, setDebounced] = import_react40.default.useState("");
+  const [folderId, setFolderId] = import_react40.default.useState("");
+  const [paperFilter, setPaperFilter] = import_react40.default.useState(null);
+  const [activeId, setActiveId] = import_react40.default.useState(() => String(props.initialNoteId || ""));
+  const [active, setActive] = import_react40.default.useState({ status: "idle", note: null, error: null });
+  const [foldersOpen, setFoldersOpen] = import_react40.default.useState(true);
+  const [paperOpen, setPaperOpen] = import_react40.default.useState(true);
+  const [refreshToken, setRefreshToken] = import_react40.default.useState(0);
+  const activeIdRef = import_react40.default.useRef(activeId);
   activeIdRef.current = activeId;
-  import_react39.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  import_react40.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(query), 260);
     return () => clearTimeout(timer2);
   }, [query]);
-  const refresh = import_react39.default.useCallback(() => setRefreshToken((value) => value + 1), []);
-  import_react39.default.useEffect(() => {
+  const refresh = import_react40.default.useCallback(() => setRefreshToken((value) => value + 1), []);
+  import_react40.default.useEffect(() => {
     let alive = true;
     service.probe().then((state) => {
       if (!alive || state.status === "unavailable" || state.status === "offline") return;
@@ -20773,7 +23632,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [service, refreshToken]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     if (serviceState.status !== "ready") return void 0;
     let alive = true;
     setList((previous) => Object.assign({}, previous, { status: "loading", error: null }));
@@ -20805,7 +23664,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [debounced, folderId, paperFilter, refreshToken, service, serviceState.status]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     if (!activeId) {
       setActive({ status: "idle", note: null, error: null });
       return void 0;
@@ -20821,7 +23680,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [activeId, refreshToken, service]);
-  const updateRow = import_react39.default.useCallback((saved) => {
+  const updateRow = import_react40.default.useCallback((saved) => {
     if (!saved) return;
     setList((previous) => {
       const items2 = previous.items.map(
@@ -20841,7 +23700,7 @@ function NotesWorkspace(props) {
     });
     setActive((previous) => previous.note && previous.note.id === saved.id ? { status: "ready", note: saved, error: null } : previous);
   }, []);
-  const createNote = import_react39.default.useCallback(
+  const createNote = import_react40.default.useCallback(
     (options) => {
       const opts = options || {};
       const paperIds = opts.paperIds || (paperFilter ? [paperFilter.id] : []);
@@ -20859,7 +23718,7 @@ function NotesWorkspace(props) {
     },
     [folderId, paperFilter, push, refresh, service, t]
   );
-  const createFolder = import_react39.default.useCallback(
+  const createFolder = import_react40.default.useCallback(
     (name, parentId) => Promise.resolve(service.createFolder({ name, parentId: parentId || void 0 })).then((folder) => {
       push("success", t("notes.folders.created"));
       refresh();
@@ -20870,14 +23729,14 @@ function NotesWorkspace(props) {
     }),
     [push, refresh, service, t]
   );
-  const renameFolder = import_react39.default.useCallback(
+  const renameFolder = import_react40.default.useCallback(
     (id, name) => Promise.resolve(service.renameFolder({ id, name })).then(() => refresh()).catch((error) => {
       push("error", t("notes.folders.renameFailed", { message: String(error && error.message || error) }));
       throw error;
     }),
     [push, refresh, service, t]
   );
-  const deleteFolder = import_react39.default.useCallback(
+  const deleteFolder = import_react40.default.useCallback(
     (id) => Promise.resolve(service.deleteFolder(id)).then(() => {
       push("success", t("notes.folders.deleted"));
       if (folderId === id) setFolderId("");
@@ -20885,7 +23744,7 @@ function NotesWorkspace(props) {
     }).catch((error) => push("error", t("notes.folders.deleteFailed", { message: String(error && error.message || error) }))),
     [folderId, push, refresh, service, t]
   );
-  const moveNote = import_react39.default.useCallback(
+  const moveNote = import_react40.default.useCallback(
     (targetFolderId) => {
       const note = active.note;
       if (!note) return Promise.resolve(null);
@@ -20909,15 +23768,15 @@ function NotesWorkspace(props) {
     },
     [active.note, folders.tree, push, service, t]
   );
-  const linkPapers = import_react39.default.useCallback(
+  const linkPapers = import_react40.default.useCallback(
     (ids) => Promise.resolve(service.link(activeIdRef.current, ids)),
     [service]
   );
-  const unlinkPapers = import_react39.default.useCallback(
+  const unlinkPapers = import_react40.default.useCallback(
     (ids) => Promise.resolve(service.unlink(activeIdRef.current, ids)),
     [service]
   );
-  const onDeleted = import_react39.default.useCallback(
+  const onDeleted = import_react40.default.useCallback(
     (deleted) => {
       setList((previous) => {
         const items2 = previous.items.filter((item) => item.id !== deleted.id);
@@ -20930,35 +23789,35 @@ function NotesWorkspace(props) {
     },
     [refresh]
   );
-  const openPaper = import_react39.default.useCallback(
+  const openPaper = import_react40.default.useCallback(
     (paperId, page, annotationId) => {
       if (props.onOpenPaper) props.onOpenPaper(paperId, page || 1, annotationId || null);
     },
     [props]
   );
-  const flatFolders = import_react39.default.useMemo(() => flattenFolders(folders.tree || []), [folders.tree]);
-  const folderName = import_react39.default.useMemo(() => {
+  const flatFolders = import_react40.default.useMemo(() => flattenFolders(folders.tree || []), [folders.tree]);
+  const folderName = import_react40.default.useMemo(() => {
     if (!folderId) return "";
     const found = flatFolders.find((folder) => folder.id === folderId);
     return found ? found.name : "";
   }, [flatFolders, folderId]);
   const listTitle = paperFilter ? t("notes.fromPaperTitle", { title: paperFilter.title }) : folderName || t("notes.folders.all");
   const unavailable = serviceState.status === "unavailable" || serviceState.status === "offline";
-  return import_react39.default.createElement(
+  return import_react40.default.createElement(
     "div",
     { className: "ph-n-app" },
-    import_react39.default.createElement(
+    import_react40.default.createElement(
       "div",
       { className: "ph-n-topbar" },
-      import_react39.default.createElement(Button, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack, title: t("notes.library.back") }, t("notes.library.back")),
-      import_react39.default.createElement(
+      import_react40.default.createElement(Button, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack, title: t("notes.library.back") }, t("notes.library.back")),
+      import_react40.default.createElement(
         "div",
         { className: "ph-n-brand" },
-        import_react39.default.createElement(Icon, { name: "note", size: 18, className: "ph-n-brand__mark" }),
-        import_react39.default.createElement("h1", { className: "ph-n-brand__title" }, t("notes.library.title")),
-        import_react39.default.createElement("span", { className: "ph-n-brand__sub" }, t("notes.library.subtitle"))
+        import_react40.default.createElement(Icon, { name: "note", size: 18, className: "ph-n-brand__mark" }),
+        import_react40.default.createElement("h1", { className: "ph-n-brand__title" }, t("notes.library.title")),
+        import_react40.default.createElement("span", { className: "ph-n-brand__sub" }, t("notes.library.subtitle"))
       ),
-      import_react39.default.createElement(SearchInput, {
+      import_react40.default.createElement(SearchInput, {
         className: "ph-n-topbar__search",
         value: query,
         onChange: setQuery,
@@ -20967,54 +23826,54 @@ function NotesWorkspace(props) {
         loading: list.status === "loading",
         "aria-label": t("notes.search.placeholder")
       }),
-      import_react39.default.createElement("span", { className: "ph-n-topbar__spacer" }),
-      import_react39.default.createElement(
+      import_react40.default.createElement("span", { className: "ph-n-topbar__spacer" }),
+      import_react40.default.createElement(
         "div",
         { className: "ph-n-topbar__actions" },
-        import_react39.default.createElement(Button, { variant: "primary", size: "sm", icon: "plus", onClick: () => createNote().catch(() => {
+        import_react40.default.createElement(Button, { variant: "primary", size: "sm", icon: "plus", onClick: () => createNote().catch(() => {
         }), title: t("notes.new") }, t("notes.new")),
-        import_react39.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), active: foldersOpen, onClick: () => setFoldersOpen((value) => !value) }),
-        import_react39.default.createElement(IconButton, { icon: "panelRight", title: paperOpen ? t("notes.papers.panelClose") : t("notes.papers.panelOpen"), active: paperOpen, onClick: () => setPaperOpen((value) => !value) }),
-        import_react39.default.createElement(IconButton, { icon: "refresh", title: t("notes.refresh"), onClick: refresh }),
-        props.onOpenSettings ? import_react39.default.createElement(IconButton, { icon: "settings", title: t("settings.open"), onClick: props.onOpenSettings }) : null
+        import_react40.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), active: foldersOpen, onClick: () => setFoldersOpen((value) => !value) }),
+        import_react40.default.createElement(IconButton, { icon: "panelRight", title: paperOpen ? t("notes.papers.panelClose") : t("notes.papers.panelOpen"), active: paperOpen, onClick: () => setPaperOpen((value) => !value) }),
+        import_react40.default.createElement(IconButton, { icon: "refresh", title: t("notes.refresh"), onClick: refresh }),
+        props.onOpenSettings ? import_react40.default.createElement(IconButton, { icon: "settings", title: t("settings.open"), onClick: props.onOpenSettings }) : null
       )
     ),
-    unavailable ? import_react39.default.createElement(
+    unavailable ? import_react40.default.createElement(
       "div",
       { className: "ph-n-main__empty" },
-      import_react39.default.createElement(EmptyState, {
+      import_react40.default.createElement(EmptyState, {
         icon: "warning",
         tone: "warning",
         title: serviceState.status === "offline" ? t("notes.service.offlineTitle") : t("notes.service.unavailableTitle"),
         desc: serviceState.status === "offline" ? t("notes.service.offlineDesc") : t("notes.service.unavailableDesc"),
-        action: import_react39.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: () => service.probe().then((state) => {
+        action: import_react40.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: () => service.probe().then((state) => {
           if (state.status === "ready") refresh();
         }) }, t("notes.service.retry"))
       })
-    ) : import_react39.default.createElement(
+    ) : import_react40.default.createElement(
       "div",
       { className: "ph-n-body" },
-      import_react39.default.createElement(
+      import_react40.default.createElement(
         "div",
         { className: "ph-n-folders" + (foldersOpen ? "" : " ph-n-folders--closed") },
-        import_react39.default.createElement(
+        import_react40.default.createElement(
           "div",
           { className: "ph-n-folders__head" },
-          import_react39.default.createElement(Icon, { name: "folder", size: 13 }),
-          import_react39.default.createElement("span", null, t("notes.folders.title")),
-          import_react39.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), onClick: () => setFoldersOpen(false) })
+          import_react40.default.createElement(Icon, { name: "folder", size: 13 }),
+          import_react40.default.createElement("span", null, t("notes.folders.title")),
+          import_react40.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), onClick: () => setFoldersOpen(false) })
         ),
-        import_react39.default.createElement(
+        import_react40.default.createElement(
           "div",
           { className: "ph-n-folders__scroll ph-n-scroll" },
-          folders.status === "loading" && folders.tree.length === 0 ? import_react39.default.createElement("div", { className: "ph-n-folders__empty" }, t("common.loading")) : null,
-          folders.status === "error" ? import_react39.default.createElement(
+          folders.status === "loading" && folders.tree.length === 0 ? import_react40.default.createElement("div", { className: "ph-n-folders__empty" }, t("common.loading")) : null,
+          folders.status === "error" ? import_react40.default.createElement(
             "div",
             { className: "ph-n-folders__empty" },
             t("notes.folders.loadFailed"),
-            import_react39.default.createElement(Button, { size: "sm", variant: "ghost", icon: "refresh", onClick: refresh }, t("common.retry"))
+            import_react40.default.createElement(Button, { size: "sm", variant: "ghost", icon: "refresh", onClick: refresh }, t("common.retry"))
           ) : null,
-          import_react39.default.createElement(FolderTree2, {
+          import_react40.default.createElement(FolderTree2, {
             t,
             tree: folders.tree || [],
             folderId,
@@ -21029,43 +23888,43 @@ function NotesWorkspace(props) {
           })
         )
       ),
-      import_react39.default.createElement(
+      import_react40.default.createElement(
         "div",
         { className: "ph-n-listpane" },
-        import_react39.default.createElement(
+        import_react40.default.createElement(
           "div",
           { className: "ph-n-listpane__head" },
-          import_react39.default.createElement("span", { className: "ph-n-listpane__title", title: listTitle }, listTitle),
-          import_react39.default.createElement("span", { className: "ph-n-listpane__count" }, list.status === "ready" ? String(list.items.length) : "\u2026")
+          import_react40.default.createElement("span", { className: "ph-n-listpane__title", title: listTitle }, listTitle),
+          import_react40.default.createElement("span", { className: "ph-n-listpane__count" }, list.status === "ready" ? String(list.items.length) : "\u2026")
         ),
-        paperFilter ? import_react39.default.createElement(
+        paperFilter ? import_react40.default.createElement(
           "div",
           { className: "ph-n-listpane__filter" },
-          import_react39.default.createElement(Icon, { name: "filter", size: 12 }),
-          import_react39.default.createElement("span", { className: "ph-n-chip ph-n-chip--folder" }, import_react39.default.createElement("span", { className: "ph-n-chip__label", title: paperFilter.title }, paperFilter.title)),
-          import_react39.default.createElement(IconButton, { icon: "close", size: 12, title: t("notes.fromPaper.clear"), onClick: () => setPaperFilter(null) })
-        ) : debounced.trim() ? import_react39.default.createElement("div", { className: "ph-n-listpane__filter" }, import_react39.default.createElement(Icon, { name: "search", size: 12 }), import_react39.default.createElement("span", null, t("notes.search.results", { count: list.items.length }))) : null,
-        list.status === "error" ? import_react39.default.createElement(
+          import_react40.default.createElement(Icon, { name: "filter", size: 12 }),
+          import_react40.default.createElement("span", { className: "ph-n-chip ph-n-chip--folder" }, import_react40.default.createElement("span", { className: "ph-n-chip__label", title: paperFilter.title }, paperFilter.title)),
+          import_react40.default.createElement(IconButton, { icon: "close", size: 12, title: t("notes.fromPaper.clear"), onClick: () => setPaperFilter(null) })
+        ) : debounced.trim() ? import_react40.default.createElement("div", { className: "ph-n-listpane__filter" }, import_react40.default.createElement(Icon, { name: "search", size: 12 }), import_react40.default.createElement("span", null, t("notes.search.results", { count: list.items.length }))) : null,
+        list.status === "error" ? import_react40.default.createElement(
           "div",
           { className: "ph-n-listpane__filter" },
-          import_react39.default.createElement(Icon, { name: "warning", size: 12 }),
-          import_react39.default.createElement("span", null, t("notes.loadFailed", { message: String(list.error && list.error.message || "") })),
-          import_react39.default.createElement(IconButton, { icon: "refresh", size: 12, title: t("common.retry"), onClick: refresh })
+          import_react40.default.createElement(Icon, { name: "warning", size: 12 }),
+          import_react40.default.createElement("span", null, t("notes.loadFailed", { message: String(list.error && list.error.message || "") })),
+          import_react40.default.createElement(IconButton, { icon: "refresh", size: 12, title: t("common.retry"), onClick: refresh })
         ) : null,
-        import_react39.default.createElement(
+        import_react40.default.createElement(
           "div",
           { className: "ph-n-list ph-n-scroll" },
-          list.status === "loading" && list.items.length === 0 ? [0, 1, 2, 3].map((index) => import_react39.default.createElement("div", { key: index, className: "ph-n-skeletonrow" })) : null,
-          list.status === "ready" && list.items.length === 0 ? import_react39.default.createElement(EmptyState, {
+          list.status === "loading" && list.items.length === 0 ? [0, 1, 2, 3].map((index) => import_react40.default.createElement("div", { key: index, className: "ph-n-skeletonrow" })) : null,
+          list.status === "ready" && list.items.length === 0 ? import_react40.default.createElement(EmptyState, {
             compact: true,
             icon: "note",
             title: debounced.trim() ? t("notes.search.empty") : t("notes.empty.title"),
             desc: debounced.trim() ? t("notes.search.emptyDesc") : t("notes.empty.desc"),
-            action: import_react39.default.createElement(Button, { size: "sm", variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
+            action: import_react40.default.createElement(Button, { size: "sm", variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
             }) }, t("notes.new"))
           }) : null,
           list.items.map(
-            (item) => import_react39.default.createElement(
+            (item) => import_react40.default.createElement(
               "button",
               {
                 key: item.id,
@@ -21074,40 +23933,40 @@ function NotesWorkspace(props) {
                 onClick: () => setActiveId(item.id),
                 title: item.title || t("notes.untitled")
               },
-              import_react39.default.createElement(
+              import_react40.default.createElement(
                 "span",
                 { className: "ph-n-listrow__top" },
-                import_react39.default.createElement("span", { className: "ph-n-listrow__title" }, item.title || t("notes.untitled")),
-                import_react39.default.createElement("span", { className: "ph-n-listrow__time" }, formatNoteTime(item.updatedAt))
+                import_react40.default.createElement("span", { className: "ph-n-listrow__title" }, item.title || t("notes.untitled")),
+                import_react40.default.createElement("span", { className: "ph-n-listrow__time" }, formatNoteTime(item.updatedAt))
               ),
-              import_react39.default.createElement("span", { className: "ph-n-listrow__preview" }, String(item.preview || "").replace(/\s+/g, " ").slice(0, 160) || t("notes.empty.preview")),
-              import_react39.default.createElement(
+              import_react40.default.createElement("span", { className: "ph-n-listrow__preview" }, String(item.preview || "").replace(/\s+/g, " ").slice(0, 160) || t("notes.empty.preview")),
+              import_react40.default.createElement(
                 "span",
                 { className: "ph-n-listrow__meta" },
-                item.folder ? import_react39.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react39.default.createElement(Icon, { name: "folder", size: 10 }), import_react39.default.createElement("span", null, item.folder.name)) : null,
-                item.paperIds && item.paperIds.length > 0 ? import_react39.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react39.default.createElement(Icon, { name: "book", size: 10 }), import_react39.default.createElement("span", null, t("notes.list.paperCount", { count: item.paperIds.length }))) : null,
-                item.searchHit ? import_react39.default.createElement(Badge, { tone: "soft" }, t("notes.search.hit")) : null,
-                item.hasContentJson ? import_react39.default.createElement("span", { title: t("notes.cards.beautifiedHint") }, import_react39.default.createElement(Icon, { name: "sparkle", size: 10 })) : null
+                item.folder ? import_react40.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react40.default.createElement(Icon, { name: "folder", size: 10 }), import_react40.default.createElement("span", null, item.folder.name)) : null,
+                item.paperIds && item.paperIds.length > 0 ? import_react40.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react40.default.createElement(Icon, { name: "book", size: 10 }), import_react40.default.createElement("span", null, t("notes.list.paperCount", { count: item.paperIds.length }))) : null,
+                item.searchHit ? import_react40.default.createElement(Badge, { tone: "soft" }, t("notes.search.hit")) : null,
+                item.hasContentJson ? import_react40.default.createElement("span", { title: t("notes.cards.beautifiedHint") }, import_react40.default.createElement(Icon, { name: "sparkle", size: 10 })) : null
               )
             )
           )
         )
       ),
-      import_react39.default.createElement(
+      import_react40.default.createElement(
         "div",
         { className: "ph-n-main" },
-        active.status === "loading" ? import_react39.default.createElement("div", { className: "ph-n-editor__loading" }, import_react39.default.createElement(Icon, { name: "note", size: 14 }), import_react39.default.createElement("span", null, t("notes.loadingNote"))) : null,
-        active.status === "error" ? import_react39.default.createElement(
+        active.status === "loading" ? import_react40.default.createElement("div", { className: "ph-n-editor__loading" }, import_react40.default.createElement(Icon, { name: "note", size: 14 }), import_react40.default.createElement("span", null, t("notes.loadingNote"))) : null,
+        active.status === "error" ? import_react40.default.createElement(
           "div",
           { className: "ph-n-main__empty" },
-          import_react39.default.createElement(EmptyState, {
+          import_react40.default.createElement(EmptyState, {
             icon: "warning",
             tone: "error",
             title: t("notes.loadFailed", { message: String(active.error && active.error.message || "") }),
-            action: import_react39.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: refresh }, t("common.retry"))
+            action: import_react40.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: refresh }, t("common.retry"))
           })
         ) : null,
-        active.status === "ready" && active.note ? import_react39.default.createElement(NoteEditor, {
+        active.status === "ready" && active.note ? import_react40.default.createElement(NoteEditor, {
           t,
           api,
           service,
@@ -21123,19 +23982,19 @@ function NotesWorkspace(props) {
           onOpenPaper: openPaper,
           onLinkPapers: linkPapers,
           onUnlinkPapers: unlinkPapers
-        }) : active.status !== "loading" ? import_react39.default.createElement(
+        }) : active.status !== "loading" ? import_react40.default.createElement(
           "div",
           { className: "ph-n-main__empty" },
-          import_react39.default.createElement(EmptyState, {
+          import_react40.default.createElement(EmptyState, {
             icon: "note",
             title: t("notes.select.title"),
             desc: t("notes.select.desc"),
-            action: import_react39.default.createElement(Button, { variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
+            action: import_react40.default.createElement(Button, { variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
             }) }, t("notes.new"))
           })
         ) : null
       ),
-      paperOpen ? import_react39.default.createElement(PaperPanel, {
+      paperOpen ? import_react40.default.createElement(PaperPanel, {
         t,
         api,
         noteId: active.note ? active.note.id : null,
@@ -21162,27 +24021,27 @@ function NotesWorkspace(props) {
         onClose: () => setPaperOpen(false)
       }) : null
     ),
-    import_react39.default.createElement(
+    import_react40.default.createElement(
       "div",
       { className: "ph-n-statusbar" },
-      import_react39.default.createElement(Icon, { name: "note", size: 12 }),
-      import_react39.default.createElement("span", null, t("notes.status.counts", { count: list.total || 0, folders: flatFolders.length })),
-      import_react39.default.createElement("span", { className: "ph-n-statusbar__spacer" }),
-      import_react39.default.createElement(
+      import_react40.default.createElement(Icon, { name: "note", size: 12 }),
+      import_react40.default.createElement("span", null, t("notes.status.counts", { count: list.total || 0, folders: flatFolders.length })),
+      import_react40.default.createElement("span", { className: "ph-n-statusbar__spacer" }),
+      import_react40.default.createElement(
         "span",
         { className: serviceState.status === "ready" ? "" : "ph-n-statusbar__warn", title: serviceState.reason || "" },
         serviceState.status === "ready" ? t("notes.service.ready") : serviceState.status === "unknown" ? t("notes.service.checking") : t("notes.service.notReady")
       ),
-      import_react39.default.createElement("span", null, "\xB7"),
-      import_react39.default.createElement("span", null, t("notes.status.autosaveHint"))
+      import_react40.default.createElement("span", null, "\xB7"),
+      import_react40.default.createElement("span", null, t("notes.status.autosaveHint"))
     ),
-    import_react39.default.createElement(ToastStack, { toasts, onDismiss: dismiss2 })
+    import_react40.default.createElement(ToastStack, { toasts, onDismiss: dismiss2 })
   );
 }
 
 // src/surfaces/center.jsx
 function useNavigation() {
-  return import_react40.default.useSyncExternalStore(navigation.subscribe, navigation.getSnapshot, navigation.getSnapshot);
+  return import_react41.default.useSyncExternalStore(navigation.subscribe, navigation.getSnapshot, navigation.getSnapshot);
 }
 function useSessionId(props) {
   const useSessions = typeof props.useSessions === "function" ? props.useSessions : (selector) => selector({});
@@ -21203,15 +24062,15 @@ function PaperCenter(props) {
   const sessionId = useSessionId(props);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
   const route = nav.route || { view: "library" };
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
     if (route.view !== "library") return;
     navigation.consumeIntent();
   }, [route.view, nav.seq]);
-  const openPaper = import_react40.default.useCallback((paperId, page, annotationId) => {
+  const openPaper = import_react41.default.useCallback((paperId, page, annotationId) => {
     if (!paperId) return;
     navigation.openPaper({ paperId, page: page || 1, annotationId: annotationId || null, source: "library" });
   }, []);
-  const openFigure = import_react40.default.useCallback((paperId, figure) => {
+  const openFigure = import_react41.default.useCallback((paperId, figure) => {
     if (!paperId || !figure) return;
     navigation.openPaper({
       paperId,
@@ -21277,7 +24136,7 @@ function PaperCenter(props) {
   }
   if (route.view === "figures") {
     return h(
-      import_react40.default.Fragment,
+      import_react41.default.Fragment,
       null,
       h(LibraryShell, {
         t,
@@ -21300,7 +24159,7 @@ function PaperCenter(props) {
     );
   }
   return h(
-    import_react40.default.Fragment,
+    import_react41.default.Fragment,
     null,
     h(LibraryShell, {
       t,
@@ -21318,7 +24177,7 @@ function PaperCenter(props) {
 }
 
 // src/surfaces/drawer.jsx
-var import_react41 = __toESM(require("react"), 1);
+var import_react42 = __toESM(require("react"), 1);
 function opId3() {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
   return "drawer-" + random;
@@ -21346,8 +24205,8 @@ function Thumb(props) {
   const paperId = props.paperId;
   const primary = props.src || (paperId ? "/pappers-hall/thumb/" + paperId + ".png" : "");
   const fallback = paperId ? "/pappers-hall/page/" + paperId + "/1.png?width=120" : "";
-  const [step, setStep] = import_react41.default.useState(primary ? 0 : fallback ? 1 : 2);
-  import_react41.default.useEffect(() => {
+  const [step, setStep] = import_react42.default.useState(primary ? 0 : fallback ? 1 : 2);
+  import_react42.default.useEffect(() => {
     setStep(primary ? 0 : fallback ? 1 : 2);
   }, [primary, fallback]);
   const src = step === 0 ? primary : step === 1 ? fallback : "";
@@ -21439,27 +24298,27 @@ function DrawerBody(props) {
   const sessionId = props.sessionId;
   const openLibrary = props.openLibrary;
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const translation = import_react41.default.useSyncExternalStore(translationStore.subscribe, translationStore.getSnapshot, translationStore.getSnapshot);
-  const [tab, setTab] = import_react41.default.useState("papers");
-  const [query, setQuery] = import_react41.default.useState("");
-  const [debounced, setDebounced] = import_react41.default.useState("");
-  const [feed, setFeed] = import_react41.default.useState({ status: "loading", data: null, error: null });
-  const [annotations, setAnnotations] = import_react41.default.useState({ status: "loading", items: [], error: null, hasMore: false });
-  const [figures, setFigures] = import_react41.default.useState({ status: "loading", items: [], error: null });
-  const [notes, setNotes] = import_react41.default.useState({ status: "idle", items: [], error: null });
-  const [filters, setFilters] = import_react41.default.useState({ quick: "all", collectionId: "", tag: "", color: "", kind: "", paperId: "" });
-  const [selected, setSelected] = import_react41.default.useState([]);
-  const [collapsed, setCollapsed] = import_react41.default.useState({});
-  const [revision, setRevision] = import_react41.default.useState(0);
-  const scrollPositions = import_react41.default.useRef({});
-  const scrollRef = import_react41.default.useRef(null);
-  const searchRef = import_react41.default.useRef(null);
+  const translation = import_react42.default.useSyncExternalStore(translationStore.subscribe, translationStore.getSnapshot, translationStore.getSnapshot);
+  const [tab, setTab] = import_react42.default.useState("papers");
+  const [query, setQuery] = import_react42.default.useState("");
+  const [debounced, setDebounced] = import_react42.default.useState("");
+  const [feed, setFeed] = import_react42.default.useState({ status: "loading", data: null, error: null });
+  const [annotations, setAnnotations] = import_react42.default.useState({ status: "loading", items: [], error: null, hasMore: false });
+  const [figures, setFigures] = import_react42.default.useState({ status: "loading", items: [], error: null });
+  const [notes, setNotes] = import_react42.default.useState({ status: "idle", items: [], error: null });
+  const [filters, setFilters] = import_react42.default.useState({ quick: "all", collectionId: "", tag: "", color: "", kind: "", paperId: "" });
+  const [selected, setSelected] = import_react42.default.useState([]);
+  const [collapsed, setCollapsed] = import_react42.default.useState({});
+  const [revision, setRevision] = import_react42.default.useState(0);
+  const scrollPositions = import_react42.default.useRef({});
+  const scrollRef = import_react42.default.useRef(null);
+  const searchRef = import_react42.default.useRef(null);
   const selectedKeys = new Set(selected.map((item) => item.kind + ":" + item.id));
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(query.trim()), 260);
     return () => clearTimeout(timer2);
   }, [query]);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     const onKey = (event) => {
       if ((event.metaKey || event.ctrlKey) && String(event.key).toLowerCase() === "f") {
         event.preventDefault();
@@ -21473,15 +24332,15 @@ function DrawerBody(props) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     translationStore.refresh().catch(() => {
     });
   }, []);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     const timer2 = setInterval(() => setRevision((value) => value + 1), 3e4);
     return () => clearInterval(timer2);
   }, []);
-  const changeTab = import_react41.default.useCallback((next) => {
+  const changeTab = import_react42.default.useCallback((next) => {
     const node = scrollRef.current;
     if (node) scrollPositions.current[tab] = node.scrollTop;
     setTab(next);
@@ -21491,7 +24350,7 @@ function DrawerBody(props) {
       });
     }
   }, [tab]);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     let alive = true;
     setFeed((previous) => ({ status: previous.data ? "refreshing" : "loading", data: previous.data, error: null }));
     const previousFeedData = feed.data;
@@ -21557,7 +24416,7 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [debounced, filters.quick, filters.collectionId, filters.tag, filters.folderId, filters.favorite, filters.tags, revision]);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     if (tab !== "annotations") return void 0;
     let alive = true;
     setAnnotations((previous) => ({ status: "loading", items: previous.items, error: null, hasMore: previous.hasMore }));
@@ -21586,7 +24445,7 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [tab, debounced, filters.color, filters.kind, filters.paperId, filters.folderId, filters.tags, revision]);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     if (tab !== "figures") return void 0;
     let alive = true;
     setFigures((previous) => ({ status: previous.items.length > 0 ? "refreshing" : "loading", items: previous.items, error: null }));
@@ -21660,7 +24519,7 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [tab, debounced, filters.paperId, filters.folderId, filters.tags, revision, feed.data]);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     if (tab !== "notes") return void 0;
     let alive = true;
     setNotes({ status: "loading", items: [], error: null });
@@ -21696,13 +24555,13 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [tab, debounced, filters.folderId, filters.tags, revision]);
-  const openItem = import_react41.default.useCallback((target, page, annotationId) => {
+  const openItem = import_react42.default.useCallback((target, page, annotationId) => {
     const paperId = target && (target.paperId || target.id);
     if (!paperId) return;
     navigation.openPaper({ paperId, page: page || target.page || 1, annotationId: annotationId || (target.kind === "annotation" ? target.id : null), source: "sidebar" });
     if (openLibrary) openLibrary();
   }, [openLibrary]);
-  const cite = import_react41.default.useCallback((materials) => {
+  const cite = import_react42.default.useCallback((materials) => {
     const list = (Array.isArray(materials) ? materials : [materials]).filter(Boolean);
     if (list.length === 0) return;
     defaultApi("references.commit", { ...sessionId ? { sessionId } : {}, items: list.map((m) => ({ kind: m.kind, id: m.id, ...m.page ? { page: m.page } : {} })), operationId: opId3() }).then((result) => {
@@ -21874,14 +24733,14 @@ function DrawerBody(props) {
       "div",
       { className: "ph-sidebar__foot" },
       selected.length > 0 ? h(
-        import_react41.default.Fragment,
+        import_react42.default.Fragment,
         null,
         h("span", { className: "ph-caption" }, t("drawer.selected", { count: selected.length })),
         h(Button, { size: "sm", variant: "primary", icon: "quote", onClick: citeSelection }, t("drawer.cite")),
         h(Button, { size: "sm", icon: "external", onClick: () => openLibraryView("all") }, t("drawer.openLibrary")),
         h(IconButton, { icon: "close", title: t("common.clear"), onClick: () => setSelected([]) })
       ) : h(
-        import_react41.default.Fragment,
+        import_react42.default.Fragment,
         null,
         h("span", { className: "ph-caption" }, t("drawer.stats", { papers: counts.papers, annotations: counts.annotations, figures: counts.figures })),
         h("span", { className: "ph-spacer" }),
@@ -21894,7 +24753,7 @@ function DrawerBody(props) {
 }
 
 // src/surfaces/dock.jsx
-var import_react44 = __toESM(require("react"), 1);
+var import_react45 = __toESM(require("react"), 1);
 
 // src/core/cite-token.js
 var TOKEN_PATTERN = /bundle=bn-/;
@@ -22001,10 +24860,10 @@ function installCitationTokens() {
 }
 
 // src/surfaces/settings/host.jsx
-var import_react43 = __toESM(require("react"), 1);
+var import_react44 = __toESM(require("react"), 1);
 
 // src/surfaces/settings/panel.jsx
-var import_react42 = __toESM(require("react"), 1);
+var import_react43 = __toESM(require("react"), 1);
 var JOB_POLL_MS = 1500;
 function opId4(prefix) {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
@@ -22097,27 +24956,27 @@ function Card(props) {
 }
 function SettingsPanel(props) {
   const t = props.t;
-  const [state, setState] = import_react42.default.useState({ status: "loading", data: null, error: null });
-  const [jobs, setJobs] = import_react42.default.useState([]);
-  const [busy2, setBusy] = import_react42.default.useState("");
-  const [test, setTest] = import_react42.default.useState(null);
-  const [error, setError] = import_react42.default.useState("");
-  const pollRef = import_react42.default.useRef(null);
-  const load = import_react42.default.useCallback(() => {
+  const [state, setState] = import_react43.default.useState({ status: "loading", data: null, error: null });
+  const [jobs, setJobs] = import_react43.default.useState([]);
+  const [busy2, setBusy] = import_react43.default.useState("");
+  const [test, setTest] = import_react43.default.useState(null);
+  const [error, setError] = import_react43.default.useState("");
+  const pollRef = import_react43.default.useRef(null);
+  const load = import_react43.default.useCallback(() => {
     setState((previous) => ({ status: previous.data ? "refreshing" : "loading", data: previous.data, error: null }));
     defaultApi("settings.get", {}).then((value) => {
       if (value && value.ok === false) throw Object.assign(new Error(value.error && value.error.message ? value.error.message : "settings.get failed"), { code: value.error && value.error.code });
       setState({ status: "ready", data: value, error: null });
     }).catch((err) => setState({ status: "error", data: null, error: err }));
   }, []);
-  const loadJobs = import_react42.default.useCallback(() => {
+  const loadJobs = import_react43.default.useCallback(() => {
     defaultApi("jobs.list", {}).then((value) => {
       const items2 = Array.isArray(value && value.items) ? value.items : Array.isArray(value && value.jobs) ? value.jobs : [];
       setJobs(items2);
     }).catch(() => {
     });
   }, []);
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => {
     if (!props.open) return void 0;
     load();
     loadJobs();
@@ -22134,8 +24993,8 @@ function SettingsPanel(props) {
     };
   }, [props.open]);
   const runningJob = jobs.find((job) => job && (job.state === "running" || job.state === "queued"));
-  const wasRunning = import_react42.default.useRef(null);
-  import_react42.default.useEffect(() => {
+  const wasRunning = import_react43.default.useRef(null);
+  import_react43.default.useEffect(() => {
     const id = runningJob ? runningJob.id : null;
     if (wasRunning.current && !id) load();
     wasRunning.current = id;
@@ -22264,7 +25123,7 @@ function SettingsPanel(props) {
         "div",
         { className: "ph-settings__body ph-scroll" },
         state.status === "loading" && !state.data ? h("div", { className: "ph-settings__skeleton" }, [0, 1, 2, 3].map((i) => h(Skeleton, { key: i, width: "100%", height: 72, radius: 10 }))) : state.status === "error" && !state.data ? h("div", { className: "ph-settings__error" }, h(Icon, { name: "warning", size: 18 }), h("div", null, h("div", { className: "ph-settings__errorTitle" }, t("settings.loadFailed")), h("div", { className: "ph-caption" }, describeError(t, state.error)), h(Button, { size: "sm", variant: "secondary", icon: "refresh", onClick: load }, t("common.retry")))) : h(
-          import_react42.default.Fragment,
+          import_react43.default.Fragment,
           null,
           h(
             Section,
@@ -22397,9 +25256,9 @@ function closeSettings() {
 }
 function SettingsHost(props) {
   const t = props && props.t;
-  const [id] = import_react43.default.useState(() => hostState.nextId++);
-  const snapshot4 = import_react43.default.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-  import_react43.default.useEffect(() => {
+  const [id] = import_react44.default.useState(() => hostState.nextId++);
+  const snapshot4 = import_react44.default.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  import_react44.default.useEffect(() => {
     if (hostState.hostId === null) {
       hostState = Object.assign({}, hostState, { hostId: id });
       emit4();
@@ -22411,7 +25270,7 @@ function SettingsHost(props) {
       }
     };
   }, [id]);
-  import_react43.default.useEffect(() => bus.on("open-settings", () => openSettings()), []);
+  import_react44.default.useEffect(() => bus.on("open-settings", () => openSettings()), []);
   if (snapshot4.hostId !== id || !snapshot4.open) return null;
   return h(
     "div",
@@ -22442,27 +25301,27 @@ function bundleSummaryLabel(t, bundle) {
   return parts.join(" \xB7 ");
 }
 function usePendingSnapshot() {
-  return import_react44.default.useSyncExternalStore(pendingStore.subscribe, pendingStore.getSnapshot, pendingStore.getSnapshot);
+  return import_react45.default.useSyncExternalStore(pendingStore.subscribe, pendingStore.getSnapshot, pendingStore.getSnapshot);
 }
 function DockBody(props) {
   const t = props.t;
   const inputActions = props.inputActions;
   const snapshot4 = usePendingSnapshot();
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [expanded, setExpanded] = import_react44.default.useState({});
-  const [busyId, setBusyId] = import_react44.default.useState(null);
-  const [errors, setErrors] = import_react44.default.useState({});
-  const [pdfPrompt, setPdfPrompt] = import_react44.default.useState(false);
-  const [pdfDismissed, setPdfDismissed] = import_react44.default.useState("");
-  const [pdfName, setPdfName] = import_react44.default.useState("");
-  const insertingRef = import_react44.default.useRef({});
+  const [expanded, setExpanded] = import_react45.default.useState({});
+  const [busyId, setBusyId] = import_react45.default.useState(null);
+  const [errors, setErrors] = import_react45.default.useState({});
+  const [pdfPrompt, setPdfPrompt] = import_react45.default.useState(false);
+  const [pdfDismissed, setPdfDismissed] = import_react45.default.useState("");
+  const [pdfName, setPdfName] = import_react45.default.useState("");
+  const insertingRef = import_react45.default.useRef({});
   const bundles = snapshot4.bundles.filter((bundle) => !bundle.sessionId || bundle.sessionId === props.sessionId);
-  const toggleExpanded = import_react44.default.useCallback((bundleId) => {
+  const toggleExpanded = import_react45.default.useCallback((bundleId) => {
     setExpanded((previous) => Object.assign({}, previous, { [bundleId]: !previous[bundleId] }));
   }, []);
-  import_react44.default.useEffect(() => registerComposerBridge(inputActions), [inputActions]);
-  import_react44.default.useEffect(() => installCitationTokens(), []);
-  import_react44.default.useEffect(() => {
+  import_react45.default.useEffect(() => registerComposerBridge(inputActions), [inputActions]);
+  import_react45.default.useEffect(() => installCitationTokens(), []);
+  import_react45.default.useEffect(() => {
     if (typeof document === "undefined") return void 0;
     const scan2 = () => {
       const composer2 = document.querySelector('[data-conversation-region="composer"]');
@@ -22483,7 +25342,7 @@ function DockBody(props) {
     scan2();
     return () => observer2.disconnect();
   }, [pdfDismissed]);
-  import_react44.default.useEffect(() => {
+  import_react45.default.useEffect(() => {
     bundles.forEach((bundle) => {
       if (!bundle.autoInsert || bundle.added || insertingRef.current[bundle.bundleId]) return;
       if (!bundle.token) return;
@@ -22502,7 +25361,7 @@ function DockBody(props) {
       setTimeout(() => attempt(12), 150);
     });
   }, [bundles.map((bundle) => bundle.bundleId + ":" + bundle.added + ":" + Boolean(bundle.autoInsert)).join(","), t]);
-  const attemptInsert = import_react44.default.useCallback(
+  const attemptInsert = import_react45.default.useCallback(
     (bundle) => {
       if (!inputActions || typeof inputActions.captureInsertion !== "function" || typeof inputActions.insertText !== "function") return false;
       if (!bundle || !bundle.token) return false;
@@ -22517,7 +25376,7 @@ function DockBody(props) {
     },
     [inputActions]
   );
-  const insertBundle = import_react44.default.useCallback(
+  const insertBundle = import_react45.default.useCallback(
     (bundle) => {
       if (!bundle || bundle.added || busyId) return;
       if (insertingRef.current[bundle.bundleId]) return;
@@ -22696,11 +25555,11 @@ function DockBody(props) {
 }
 
 // src/surfaces/header-button.jsx
-var import_react45 = __toESM(require("react"), 1);
+var import_react46 = __toESM(require("react"), 1);
 function HeaderDrawerButton(props) {
   const t = props.t;
   const sessionId = props.sessionId;
-  const [failed, setFailed] = import_react45.default.useState(false);
+  const [failed, setFailed] = import_react46.default.useState(false);
   if (!sessionId) return null;
   return h(
     "span",
@@ -22725,7 +25584,7 @@ function HeaderDrawerButton(props) {
 }
 
 // src/surfaces/integration/turn-tail.jsx
-var import_react46 = __toESM(require("react"), 1);
+var import_react47 = __toESM(require("react"), 1);
 
 // src/surfaces/integration/input-triggers.js
 var MENTION_SOURCE = "pappers-hall-papers";
@@ -23054,14 +25913,14 @@ function ToolSourceCard(props) {
   const phase = props.phase;
   const block = props.block;
   const api = props.api;
-  const [citing, setCiting] = import_react46.default.useState("");
-  const [citeError, setCiteError] = import_react46.default.useState("");
+  const [citing, setCiting] = import_react47.default.useState("");
+  const [citeError, setCiteError] = import_react47.default.useState("");
   const result = phase === "result" ? parseResult(block) : null;
   const isError = phase === "result" && Boolean(block && block.isError);
   const isUnavailable = Boolean(result && result.status === "unavailable");
   const preparing = phase === "preparing";
   const running = phase === "start";
-  const args = import_react46.default.useMemo(() => {
+  const args = import_react47.default.useMemo(() => {
     if (!block) return null;
     const raw = phase === "result" ? block.call && block.call.argsRaw : block.argsRaw;
     if (typeof raw !== "string" || raw === "") return null;
@@ -25909,7 +28768,7 @@ function apply(ctx) {
       () => ctx.slots.register(
         { name: "sidebar.panellist", id: PANEL_ID, order: 20, label: () => t("panel.title"), locale: NS },
         withBoundary(function PanelEntry(props) {
-          return (0, import_react48.createElement)(import_react47.default.Fragment, null, (0, import_react48.createElement)(PanelIcon, props), (0, import_react48.createElement)(SettingsHost, { t }));
+          return (0, import_react49.createElement)(import_react48.default.Fragment, null, (0, import_react49.createElement)(PanelIcon, props), (0, import_react49.createElement)(SettingsHost, { t }));
         }, "sidebar settings host")
       )
     ),
@@ -25921,7 +28780,7 @@ function apply(ctx) {
       () => ctx.slots.register(
         { name: "main", key: PANEL_ID, locale: NS },
         withBoundary(function PaperCenterSurface(props) {
-          return (0, import_react48.createElement)(PaperCenter, { ...props, t, api, pending, library });
+          return (0, import_react49.createElement)(PaperCenter, { ...props, t, api, pending, library });
         }, "paper center")
       )
     ),

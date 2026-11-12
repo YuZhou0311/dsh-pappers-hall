@@ -1,6 +1,6 @@
 {
   "name": "dsh-pappers-hall",
-  "version": "0.18.3",
+  "version": "0.19.3",
   "private": true,
   "description": "Pappers-Hall: a native DSH paper center with library, reader, annotations, figure search and conversation references.",
   "type": "module",

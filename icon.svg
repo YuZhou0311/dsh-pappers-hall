@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <!-- A paper page with a highlighted passage, searched by a magnifier. -->
+  <path d="M6.2 3.4h7.1l4.3 4.3v6.6a2 2 0 0 1-2 2H6.2a2 2 0 0 1-2-2V5.4a2 2 0 0 1 2-2Z"/>
+  <path d="M13.2 3.5v4.4h4.4"/>
+  <path d="M7.6 9.1h3.9"/>
+  <path d="M7.6 12h2.6"/>
+  <rect x="6.6" y="9.9" width="4.9" height="2.9" rx="1.1" fill="currentColor" fill-opacity="0.22" stroke="none"/>
+  <circle cx="15.4" cy="15.4" r="3.2"/>
+  <path d="m17.8 17.8 2.5 2.5"/>
+</svg>

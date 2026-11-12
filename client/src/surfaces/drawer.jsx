@@ -1,0 +1,615 @@
+/**
+ * Pappers-Hall discovery sidebar (right pane).
+ *
+ * Not a search + flat list: a tabbed feed with grouped papers (continue
+ * reading / unread / annotated / collections), annotation streams grouped by
+ * paper, a two-column figure wall, filters, selection and an engine footer.
+ * Data comes from `discover.feed` / `annotations.feed`; when the Host lags the
+ * client falls back to `library.list` / `search.query` aggregation (TODO: drop
+ * the fallbacks once v0.4 Host is guaranteed).
+ */
+import React from 'react'
+import { h } from '../core/dom.js'
+import { Icon } from '../core/icons.jsx'
+import { Badge, Button, Check, EmptyState, IconButton, SearchInput, TabStrip, ToastStack, useToasts } from '../core/primitives.jsx'
+import { describeError, isOffline } from '../core/api.js'
+import { defaultApi } from '../core/api.js'
+import { pendingStore } from '../core/pending.js'
+import { navigation } from '../core/navigation.js'
+import { dragProps } from '../core/dnd.js'
+import { notify } from '../core/feedback.js'
+import { bus } from '../core/bus.js'
+import { tagColor } from '../core/tag-colors.js'
+import { paperTitle, metaLine, firstText } from '../core/texts.js'
+import { copyText } from '../core/files.js'
+import { translationStore, providerLabel } from '../core/translation.js'
+import { FolderPicker } from './library/folders.jsx'
+
+function opId() {
+  const random = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).slice(2)
+  return 'drawer-' + random
+}
+function relative(t, value) {
+  if (!value) return ''
+  const time = Date.parse(String(value))
+  if (!Number.isFinite(time)) return ''
+  const delta = Date.now() - time
+  if (delta < 60000) return t('translation.justNow')
+  if (delta < 3600000) return t('drawer.time.minutes', { count: Math.round(delta / 60000) })
+  if (delta < 86400000) return t('drawer.time.hours', { count: Math.round(delta / 3600000) })
+  return t('drawer.time.days', { count: Math.round(delta / 86400000) })
+}
+function thumbOf(paper) {
+  return (paper && paper.thumbnailUrl) || (paper && paper.id ? '/pappers-hall/thumb/' + paper.id + '.png' : '')
+}
+function authorLine(authors) {
+  const list = Array.isArray(authors) ? authors : []
+  const names = list.map((a) => (a && (a.literal || [a.given, a.family].filter(Boolean).join(' '))) || '').filter(Boolean)
+  if (names.length === 0) return ''
+  return names.length > 2 ? names.slice(0, 2).join(', ') + ' et al.' : names.join(', ')
+}
+
+function Thumb(props) {
+  const paperId = props.paperId
+  const primary = props.src || (paperId ? '/pappers-hall/thumb/' + paperId + '.png' : '')
+  const fallback = paperId ? '/pappers-hall/page/' + paperId + '/1.png?width=120' : ''
+  const [step, setStep] = React.useState(primary ? 0 : fallback ? 1 : 2)
+  React.useEffect(() => {
+    setStep(primary ? 0 : fallback ? 1 : 2)
+  }, [primary, fallback])
+  const src = step === 0 ? primary : step === 1 ? fallback : ''
+  if (!src || step >= 2) return h('span', { className: 'ph-side-thumb ph-side-thumb--empty' }, h(Icon, { name: props.icon || 'book', size: 16 }))
+  return h(
+    'span',
+    { className: 'ph-side-thumb' },
+    h('img', {
+      src: src,
+      alt: '',
+      width: 48,
+      height: 64,
+      loading: props.eager ? 'eager' : 'lazy',
+      decoding: 'async',
+      draggable: false,
+      style: { width: '48px', height: '64px', objectFit: 'cover', objectPosition: 'top center', background: 'var(--dsw-alias-bg-layer-3)' },
+      onError: () => setStep((value) => (value === 0 && fallback ? 1 : 2)),
+    }),
+  )
+}
+
+function PaperRow(props) {
+  const t = props.t
+  const paper = props.paper
+  const selected = props.selected
+  const pause = props.pause
+  const drag = dragProps(t, [{ kind: 'paper', id: paper.id, title: paperTitle(t, paper) }], { source: 'sidebar' })
+  return h(
+    'div',
+    { className: 'ph-side-row ph-side-row--paper' + (selected ? ' ph-side-row--selected' : '') },
+    h('span', { className: 'ph-side-row__check' }, h(Check, { checked: selected, onChange: () => props.onSelect(paper), 'aria-label': paperTitle(t, paper) })),
+    h(Thumb, { src: thumbOf(paper), paperId: paper.id, eager: props.index != null && props.index < 8 }),
+    h(
+      'div',
+      Object.assign({ className: 'ph-side-row__main', onClick: () => props.onOpen(paper, 1), role: 'button', tabIndex: 0, onKeyDown: (event) => { if (event.key === 'Enter') props.onOpen(paper, 1) } }, drag),
+      h('div', { className: 'ph-side-row__title' }, paperTitle(t, paper)),
+      paper.title && paper.title !== paperTitle(t, paper) ? h('div', { className: 'ph-side-row__original' }, paper.title) : null,
+      h('div', { className: 'ph-side-row__meta' }, [authorLine(paper.authors), paper.year ? String(paper.year) : '', firstText(paper.venue, paper.containerTitle)].filter(Boolean).join(' · ')),
+      h(
+        'div',
+        { className: 'ph-side-row__badges' },
+        h('span', { className: 'ph-statusdot' + (paper.read ? ' ph-statusdot--read' : paper.readingProgress ? ' ph-statusdot--reading' : '') }),
+        h('span', { className: 'ph-caption' }, paper.read ? t('page.read') : paper.readingProgress ? t('library.smart.reading') : t('library.smart.toRead')),
+        Number(paper.annotationCount) > 0 ? h('span', { className: 'ph-caption' }, h(Icon, { name: 'highlighter', size: 10 }), ' ' + paper.annotationCount) : null,
+        Number(paper.citationCount) > 0 ? h('span', { className: 'ph-caption' }, h(Icon, { name: 'quote', size: 10 }), ' ' + Number(paper.citationCount).toLocaleString('zh-CN')) : null,
+        (paper.tags || []).slice(0, 2).map((tag) => h(Badge, { key: tag, tone: 'muted', 'data-tag-color': tagColor(tag) }, tag)),
+      ),
+    ),
+    h(
+      'div',
+      { className: 'ph-side-row__actions' },
+      h(IconButton, { icon: 'book', title: t('drawer.action.open'), onClick: () => props.onOpen(paper, 1) }),
+      h(IconButton, { icon: 'quote', title: t('drawer.action.cite'), onClick: () => props.onCite([{ kind: 'paper', id: paper.id, title: paperTitle(t, paper) }]) }),
+      h(IconButton, { icon: 'panelRight', title: t('drawer.action.details'), onClick: () => props.onDetails(paper) }),
+    ),
+  )
+}
+
+function AnnotationRow(props) {
+  const t = props.t
+  const item = props.item
+  return h(
+    'div',
+    { className: 'ph-side-annot ph-side-annot--' + (item.color || 'yellow') },
+    h(
+      'div',
+      { className: 'ph-side-annot__body' },
+      h('div', { className: 'ph-side-annot__quote', title: item.quote }, item.quote || item.comment || ''),
+      h(
+        'div',
+        { className: 'ph-side-annot__meta' },
+        h('button', { type: 'button', className: 'ph-chipbtn', onClick: () => props.onOpen(item) }, t('drawer.page', { page: Number(item.page) || 1 })),
+        item.kind ? h('span', { className: 'ph-caption' }, t('drawer.kind.' + item.kind)) : null,
+        h('span', { className: 'ph-caption' }, relative(t, item.createdAt)),
+      ),
+      item.comment && item.comment !== item.quote ? h('div', { className: 'ph-side-annot__comment' }, item.comment) : null,
+    ),
+    h(
+      'div',
+      { className: 'ph-side-row__actions ph-side-row__actions--always' },
+      h(IconButton, { icon: 'external', title: t('drawer.action.open'), onClick: () => props.onOpen(item) }),
+      h(IconButton, { icon: 'quote', title: t('drawer.action.cite'), onClick: () => props.onCite([{ kind: 'annotation', id: item.id, page: item.page, title: item.paperTitle || item.quote }]) }),
+      h(IconButton, { icon: 'copy', title: t('drawer.action.copy'), onClick: () => props.onCopy(item) }),
+    ),
+  )
+}
+
+export function DrawerBody(props) {
+  const t = props.t
+  const sessionId = props.sessionId
+  const openLibrary = props.openLibrary
+  const { toasts, push, dismiss } = useToasts()
+  const translation = React.useSyncExternalStore(translationStore.subscribe, translationStore.getSnapshot, translationStore.getSnapshot)
+  const [tab, setTab] = React.useState('papers')
+  const [query, setQuery] = React.useState('')
+  const [debounced, setDebounced] = React.useState('')
+  const [feed, setFeed] = React.useState({ status: 'loading', data: null, error: null })
+  const [annotations, setAnnotations] = React.useState({ status: 'loading', items: [], error: null, hasMore: false })
+  const [figures, setFigures] = React.useState({ status: 'loading', items: [], error: null })
+  const [notes, setNotes] = React.useState({ status: 'idle', items: [], error: null })
+  const [filters, setFilters] = React.useState({ quick: 'all', collectionId: '', tag: '', color: '', kind: '', paperId: '' })
+  const [selected, setSelected] = React.useState([])
+  const [collapsed, setCollapsed] = React.useState({})
+  const [revision, setRevision] = React.useState(0)
+  const scrollPositions = React.useRef({})
+  const scrollRef = React.useRef(null)
+  const searchRef = React.useRef(null)
+  const selectedKeys = new Set(selected.map((item) => item.kind + ':' + item.id))
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebounced(query.trim()), 260)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  React.useEffect(() => {
+    const onKey = (event) => {
+      if ((event.metaKey || event.ctrlKey) && String(event.key).toLowerCase() === 'f') {
+        event.preventDefault()
+        const input = (searchRef.current && searchRef.current.querySelector && searchRef.current.querySelector('input')) || document.querySelector('.ph-sidebar__search input')
+        if (input) input.focus()
+      }
+      if (event.key === 'Escape' && document.activeElement === (searchRef.current && searchRef.current.querySelector('input'))) {
+        setQuery('')
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
+  React.useEffect(() => {
+    translationStore.refresh().catch(() => {})
+  }, [])
+
+  // Keep the discovery feed fresh while the sidebar stays open (new imports,
+  // verifier fixtures, annotations) without blocking interaction.
+  React.useEffect(() => {
+    const timer = setInterval(() => setRevision((value) => value + 1), 30000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Per-tab scroll position survives tab switches.
+  const changeTab = React.useCallback((next) => {
+    const node = scrollRef.current
+    if (node) scrollPositions.current[tab] = node.scrollTop
+    setTab(next)
+    if (node) {
+      requestAnimationFrame(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollPositions.current[next] || 0
+      })
+    }
+  }, [tab])
+
+  /* ---------------------------------------------------------------- feeds */
+  React.useEffect(() => {
+    let alive = true
+    setFeed((previous) => ({ status: previous.data ? 'refreshing' : 'loading', data: previous.data, error: null }))
+    const previousFeedData = feed.data
+    const load = async () => {
+      const hasFilters = Boolean(debounced || filters.quick !== 'all' || filters.collectionId || filters.tag || filters.folderId || filters.favorite || (Array.isArray(filters.tags) && filters.tags.length > 0))
+      // Always refresh the global discovery feed: it owns tab counts, folder/tag
+      // option lists and recent figures. A filtered request only replaces the
+      // paper sections, so the folder picker never collapses to "all folders"
+      // after one selection.
+      let globalFeed = null
+      try {
+        globalFeed = await defaultApi('discover.feed', { limit: 5 })
+      } catch (error) {
+        globalFeed = null
+      }
+      if (!alive) return
+      if (!hasFilters) {
+        if (globalFeed) { setFeed({ status: 'ready', data: globalFeed, error: null }); return }
+      }
+      const params = { state: 'active', sort: 'recent', limit: 30 }
+      if (debounced) params.query = debounced
+      if (filters.quick === 'unread') params.read = false
+      if (filters.quick === 'reading') params.reading = 'reading'
+      if (filters.quick === 'annotated') params.annotated = true
+      if (filters.favorite) params.favorite = true
+      if (filters.folderId) params.folderId = filters.folderId
+      const tagList = Array.isArray(filters.tags) && filters.tags.length > 0 ? filters.tags : (filters.tag ? [filters.tag] : [])
+      if (tagList.length > 0) { params.tags = tagList; params.tag = tagList[0] }
+      if (Array.isArray(filters.tags) && filters.tags.length > 0) params.tags = filters.tags.slice()
+      if (filters.collectionId) params.collectionId = filters.collectionId
+      if (filters.tag) params.tag = filters.tag
+      try {
+        const value = await defaultApi('library.list', params)
+        const items = Array.isArray(value && value.items) ? value.items : []
+        const global = globalFeed || (previousFeedData && previousFeedData) || {}
+        const stats = Object.assign({}, (global && global.stats) || {}, {
+          filtered: Number(value && value.total) || items.length,
+        })
+        const data = {
+          ...global,
+          stats,
+          continueReading: items.filter((p) => !p.read).slice(0, 5),
+          unread: items.filter((p) => !p.read).slice(0, 5),
+          annotated: items.filter((p) => Number(p.annotationCount) > 0).slice(0, 5),
+          folders: (global && global.folders) || [],
+          folderTree: (global && (global.folderTree || global.folders)) || [],
+          collections: (global && global.collections) || [],
+          tags: (global && global.tags) || [],
+          recentAnnotations: (global && global.recentAnnotations) || [],
+          recentFigures: (global && global.recentFigures) || [],
+          favorite: (global && global.favorite) || [],
+          degraded: false,
+        }
+        if (alive) setFeed({ status: 'ready', data: data, error: null })
+      } catch (error) {
+        if (alive) setFeed({ status: 'error', data: null, error: error })
+      }
+    }
+    load()
+    return () => { alive = false }
+  }, [debounced, filters.quick, filters.collectionId, filters.tag, filters.folderId, filters.favorite, filters.tags, revision])
+
+  React.useEffect(() => {
+    if (tab !== 'annotations') return undefined
+    let alive = true
+    setAnnotations((previous) => ({ status: 'loading', items: previous.items, error: null, hasMore: previous.hasMore }))
+    const params = { limit: 40 }
+    if (debounced) params.query = debounced
+    if (filters.folderId) params.folderId = filters.folderId
+    const feedTags = Array.isArray(filters.tags) && filters.tags.length > 0 ? filters.tags : (filters.tag ? [filters.tag] : [])
+    if (feedTags.length > 0) params.tags = feedTags
+    if (filters.color) params.colors = [filters.color]
+    if (filters.kind) params.kinds = [filters.kind]
+    if (filters.paperId) params.paperId = filters.paperId
+    if (filters.folderId) params.folderId = filters.folderId
+    if (Array.isArray(filters.tags) && filters.tags.length > 0) params.tags = filters.tags.slice()
+    defaultApi('annotations.feed', params)
+      .then((value) => {
+        if (!alive) return
+        const items = Array.isArray(value && value.items) ? value.items : []
+        setAnnotations({ status: 'ready', items: items, error: null, hasMore: Boolean(value && value.hasMore) })
+      })
+      .catch((error) => {
+        // TODO(v0.4): drop the search.query fallback once annotations.feed always exists.
+        defaultApi('search.query', { q: debounced || ' ', scope: 'annotations', limit: 40 })
+          .then((value) => { if (alive) setAnnotations({ status: 'ready', items: Array.isArray(value && value.items) ? value.items : [], error: null, hasMore: false, degraded: true }) })
+          .catch(() => { if (alive) setAnnotations({ status: 'error', items: [], error: error, hasMore: false }) })
+      })
+    return () => { alive = false }
+  }, [tab, debounced, filters.color, filters.kind, filters.paperId, filters.folderId, filters.tags, revision])
+
+  React.useEffect(() => {
+    if (tab !== 'figures') return undefined
+    let alive = true
+    setFigures((previous) => ({ status: previous.items.length > 0 ? 'refreshing' : 'loading', items: previous.items, error: null }))
+    const scopedFolderId = filters.folderId || ''
+    const scopedTags = Array.isArray(filters.tags) ? filters.tags.slice() : []
+    const hasFolderScope = Boolean(scopedFolderId || scopedTags.length > 0)
+    const loadAllowed = async () => {
+      if (!hasFolderScope) return null
+      const value = await defaultApi('library.list', {
+        state: 'active',
+        limit: 500,
+        ...(scopedFolderId ? { folderId: scopedFolderId } : {}),
+        ...(scopedTags.length > 0 ? { tags: scopedTags } : {}),
+      })
+      return new Set((Array.isArray(value && value.items) ? value.items : []).map((paper) => paper && paper.id).filter(Boolean))
+    }
+    const keep = (allowed) => (entry) => {
+      if (filters.paperId && entry.paperId !== filters.paperId) return false
+      if (allowed !== null && allowed !== undefined && !allowed.has(entry.paperId)) return false
+      return true
+    }
+    const normalize = (entry) => ({
+      figure: { id: entry.id, paperId: entry.paperId, page: entry.page, label: entry.label, caption: entry.caption, imageUrl: entry.imageUrl },
+      paper: { id: entry.paperId, titleZh: entry.paperTitle, title: entry.paperTitle },
+      page: entry.page,
+    })
+    const load = async () => {
+      let allowed = null
+      try { allowed = await loadAllowed() } catch (error) { allowed = new Set() }
+      if (!alive) return
+      if (!debounced) {
+        const recent = ((feed.data && feed.data.recentFigures) || []).filter(keep(allowed))
+        if (recent.length > 0) { setFigures({ status: 'ready', items: recent.map(normalize), error: null }); return }
+        try {
+          const value = await defaultApi('discover.feed', { limit: 8 })
+          if (!alive) return
+          const items = ((value && value.recentFigures) || []).filter(keep(allowed)).map(normalize)
+          setFigures({ status: 'ready', items: items, error: null, filtered: hasFolderScope })
+          return
+        } catch (error) {
+          try {
+            const value = await defaultApi('search.query', { q: ' ', scope: 'figures', limit: 24 })
+            if (!alive) return
+            const items = (Array.isArray(value && value.items) ? value.items : []).filter((hit) => (allowed === null ? true : allowed.has(hit.paperId)))
+            setFigures({ status: 'ready', items: items, error: null, filtered: hasFolderScope })
+            return
+          } catch (fallbackError) {
+            if (alive) setFigures({ status: 'error', items: [], error: fallbackError })
+            return
+          }
+        }
+      }
+      try {
+        const value = await defaultApi('search.query', { q: debounced, scope: 'figures', limit: 24 })
+        if (!alive) return
+        const items = (Array.isArray(value && value.items) ? value.items : []).filter((hit) => (allowed === null ? true : allowed.has(hit.paperId)))
+        setFigures({ status: 'ready', items: items, error: null, filtered: hasFolderScope })
+      } catch (error) {
+        if (alive) setFigures({ status: 'error', items: [], error: error })
+      }
+    }
+    load()
+    return () => { alive = false }
+  }, [tab, debounced, filters.paperId, filters.folderId, filters.tags, revision, feed.data])
+
+  React.useEffect(() => {
+    if (tab !== 'notes') return undefined
+    let alive = true
+    setNotes({ status: 'loading', items: [], error: null })
+    const scopedFolderId = filters.folderId || ''
+    const scopedTags = Array.isArray(filters.tags) ? filters.tags.slice() : []
+    const hasFolderScope = Boolean(scopedFolderId || scopedTags.length > 0)
+    const load = async () => {
+      let allowed = null
+      if (hasFolderScope) {
+        try {
+          const value = await defaultApi('library.list', {
+            state: 'active',
+            limit: 500,
+            ...(scopedFolderId ? { folderId: scopedFolderId } : {}),
+            ...(scopedTags.length > 0 ? { tags: scopedTags } : {}),
+          })
+          allowed = new Set((Array.isArray(value && value.items) ? value.items : []).map((paper) => paper && paper.id).filter(Boolean))
+        } catch (error) {
+          allowed = new Set()
+        }
+      }
+      try {
+        const value = await defaultApi('search.query', { q: debounced || ' ', scope: 'notes', limit: 30 })
+        if (!alive) return
+        const items = (Array.isArray(value && value.items) ? value.items : []).filter((hit) => (allowed === null ? true : !hit.paperId || allowed.has(hit.paperId)))
+        setNotes({ status: 'ready', items: items, error: null, filtered: hasFolderScope })
+      } catch (error) {
+        if (alive) setNotes({ status: 'error', items: [], error: error })
+      }
+    }
+    load()
+    return () => { alive = false }
+  }, [tab, debounced, filters.folderId, filters.tags, revision])
+
+  /* -------------------------------------------------------------- actions */
+  const openItem = React.useCallback((target, page, annotationId) => {
+    const paperId = target && (target.paperId || target.id)
+    if (!paperId) return
+    navigation.openPaper({ paperId: paperId, page: page || target.page || 1, annotationId: annotationId || (target.kind === 'annotation' ? target.id : null), source: 'sidebar' })
+    if (openLibrary) openLibrary()
+  }, [openLibrary])
+
+  const cite = React.useCallback((materials) => {
+    const list = (Array.isArray(materials) ? materials : [materials]).filter(Boolean)
+    if (list.length === 0) return
+    defaultApi('references.commit', { ...(sessionId ? { sessionId: sessionId } : {}), items: list.map((m) => ({ kind: m.kind, id: m.id, ...(m.page ? { page: m.page } : {}) })), operationId: opId() })
+      .then((result) => {
+        pendingStore.add(result, list)
+        // One short confirmation only: the dock card shows its own 已加入草稿
+        // badge, so a second toast (and a long instruction) is just noise.
+        notify('success', t('toast.cited'), { label: t('common.undo'), onClick: () => pendingStore.remove(result.bundleId) }, 2600)
+      })
+      .catch((error) => push('error', t('drawer.submitFailed', { message: describeError(t, error) })))
+  }, [push, sessionId, t])
+
+  const citeSelection = () => {
+    if (selected.length === 0) return
+    cite(selected)
+    setSelected([])
+  }
+
+  const openLibraryView = (view) => {
+    if (openLibrary) openLibrary()
+    bus.emit('open-library-view', { view: view })
+  }
+  const openLibraryPaper = (paper) => {
+    if (openLibrary) openLibrary()
+    bus.emit('open-library-paper', { paperId: paper.id })
+  }
+  // v0.17: one-click entry into the standalone notes library.
+  const openNotesLibrary = (noteId) => {
+    if (openLibrary) openLibrary()
+    navigation.openNotes({ noteId: noteId || null })
+  }
+
+  const toggleSelect = (item) => {
+    const key = item.kind + ':' + item.id
+    setSelected((previous) => (previous.some((entry) => entry.kind + ':' + entry.id === key) ? previous.filter((entry) => entry.kind + ':' + entry.id !== key) : previous.concat([item])))
+  }
+
+  /* ------------------------------------------------------------ rendering */
+  const stats = (feed.data && feed.data.stats) || {}
+  const recentFigures = (feed.data && feed.data.recentFigures) || []
+  const recentAnnotations = (feed.data && feed.data.recentAnnotations) || []
+  const counts = {
+    papers: stats.papers != null ? stats.papers : (feed.data && feed.data.unread ? feed.data.unread.length : 0),
+    annotations: stats.annotations != null ? stats.annotations : annotations.items.length || recentAnnotations.length,
+    figures: stats.figures != null ? stats.figures : figures.items.length || recentFigures.length,
+    notes: stats.notes != null ? stats.notes : notes.items.length || recentAnnotations.filter((item) => item && item.kind === 'note').length,
+  }
+  const tabs = [
+    { id: 'papers', label: t('drawer.tab.papers'), count: counts.papers },
+    { id: 'annotations', label: t('drawer.tab.annotations'), count: counts.annotations },
+    { id: 'figures', label: t('drawer.tab.figures'), count: counts.figures },
+    { id: 'notes', label: t('drawer.tab.notes'), count: counts.notes },
+  ]
+  const groups = feed.data
+    ? [
+        { id: 'continueReading', label: t('drawer.group.continueReading'), items: feed.data.continueReading || [], view: 'recentRead' },
+        { id: 'unread', label: t('drawer.group.unread'), items: feed.data.unread || [], view: 'toRead' },
+        { id: 'annotated', label: t('drawer.group.annotated'), items: feed.data.annotated || [], view: 'annotated' },
+        { id: 'favorite', label: t('drawer.group.collections'), items: feed.data.favorite || [], view: 'favorite' },
+      ]
+    : []
+  const collections = (feed.data && feed.data.collections) || []
+  const tags = (feed.data && feed.data.tags) || []
+  const selectedPapers = selected.filter((item) => item.kind === 'paper')
+
+  const chip = (id, label, extra) => h('button', { key: id, type: 'button', className: 'ph-fchip' + (filters.quick === id ? ' ph-fchip--active' : ''), onClick: () => setFilters(Object.assign({}, filters, { quick: id })) }, label, extra != null ? h('span', { className: 'ph-fchip__count' }, String(extra)) : null)
+  const filterBar = h(
+    'div',
+    { className: 'ph-side-filters' },
+    chip('all', t('drawer.filter.all')),
+    chip('unread', t('library.smart.toRead'), stats.unread),
+    chip('reading', t('library.smart.reading')),
+    h('button', { key: 'fav', type: 'button', className: 'ph-fchip' + (filters.favorite ? ' ph-fchip--active' : ''), onClick: () => setFilters(Object.assign({}, filters, { favorite: !filters.favorite })) }, h(Icon, { name: 'star', size: 10 }), t('folders.favorite')),
+    h(FolderPicker, { t: t, folders: { items: (feed.data && (feed.data.folders || feed.data.folderTree)) || [] }, value: filters.folderId || '', allowAll: true, className: 'ph-select--inline', label: t('folders.filterLabel'), onChange: (id) => setFilters(Object.assign({}, filters, { folderId: id || '' })) }),
+    chip('annotated', t('library.smart.annotated'), stats.annotations),
+    h(
+      'select',
+      { className: 'ph-select ph-select--inline', value: filters.tag, 'aria-label': t('drawer.filter.tag'), onChange: (event) => setFilters(Object.assign({}, filters, { tag: event.target.value, tags: event.target.value ? [event.target.value] : [] })) },
+      h('option', { value: '' }, t('drawer.filter.tag')),
+      tags.map((tag) => h('option', { key: tag.name, value: tag.name }, tag.name + ' (' + tag.count + ')')),
+    ),
+    filters.quick !== 'all' || filters.collectionId || filters.tag || filters.folderId || filters.favorite ? h(IconButton, { icon: 'close', title: t('drawer.filter.clear'), onClick: () => setFilters({ quick: 'all', collectionId: '', tag: '', tags: [], color: '', kind: '', paperId: '', folderId: '', favorite: false }) }) : null,
+  )
+
+  let body = null
+  if (tab === 'papers') {
+    if (feed.status === 'loading' && !feed.data) body = h('div', { className: 'ph-side-skeleton' }, [0, 1, 2, 3].map((i) => h('div', { key: i, className: 'ph-side-skeleton__row' }, h('span', { className: 'ph-skeleton', style: { width: 40, height: 54 } }), h('div', { className: 'ph-side-skeleton__main' }, h('span', { className: 'ph-skeleton', style: { width: '72%' } }), h('span', { className: 'ph-skeleton', style: { width: '46%', height: 9 } })))))
+    else if (feed.status === 'error') body = h(EmptyState, { compact: true, tone: isOffline(feed.error) ? 'warning' : 'error', icon: 'warning', title: isOffline(feed.error) ? t('drawer.offline') : t('drawer.loadFailed', { message: describeError(t, feed.error) }), action: h(Button, { size: 'sm', variant: 'secondary', icon: 'refresh', onClick: () => setRevision((v) => v + 1) }, t('common.retry')) })
+    else {
+      const nonEmpty = groups.filter((group) => group.items.length > 0)
+      if (nonEmpty.length === 0 && collections.length === 0) body = h(EmptyState, { compact: true, icon: 'search', title: t('drawer.empty.title'), desc: t('drawer.empty.desc'), action: h(Button, { size: 'sm', variant: 'primary', icon: 'book', onClick: () => openLibraryView('all') }, t('drawer.empty.openLibrary')) })
+      else body = h(
+        'div',
+        { className: 'ph-side-groups' },
+        nonEmpty.map((group) => h(
+          'section',
+          { key: group.id, className: 'ph-side-group' },
+          h('div', { className: 'ph-side-group__head' },
+            h('span', { className: 'ph-side-group__title' }, group.label, h('span', { className: 'ph-caption' }, String(group.items.length))),
+            h('button', { type: 'button', className: 'ph-linkbtn', onClick: () => openLibraryView(group.view) }, t('drawer.group.viewAll') + ' →'),
+          ),
+          group.items.slice(0, 6).map((paper, index) => h(PaperRow, { key: group.id + ':' + paper.id, t: t, paper: paper, index: index, selected: selectedKeys.has('paper:' + paper.id), onSelect: () => toggleSelect({ kind: 'paper', id: paper.id }), onOpen: (p, page) => openItem(p, page), onCite: cite, onDetails: openLibraryPaper })),
+        )),
+        collections.length > 0 ? h('section', { className: 'ph-side-group' },
+          h('div', { className: 'ph-side-group__head' }, h('span', { className: 'ph-side-group__title' }, t('drawer.group.collections')), h('button', { type: 'button', className: 'ph-linkbtn', onClick: () => openLibraryView('all') }, t('drawer.group.viewAll') + ' →')),
+          h('div', { className: 'ph-side-collections' }, collections.map((collection) => h('button', { key: collection.id, type: 'button', className: 'ph-side-collection', onClick: () => { setFilters(Object.assign({}, filters, { collectionId: collection.id })); openLibraryView('all') } }, h('span', { className: 'ph-collection__dot', 'data-color': collection.color || 'blue' }), h('span', { className: 'ph-side-collection__name' }, collection.name), h('span', { className: 'ph-caption' }, String(collection.count))))),
+        ) : null,
+      )
+    }
+  } else if (tab === 'annotations') {
+    const items = annotations.items
+    const byPaper = new Map()
+    items.forEach((item) => {
+      const key = item.paperId || 'unknown'
+      if (!byPaper.has(key)) byPaper.set(key, { paperTitle: item.paperTitle || '', items: [] })
+      byPaper.get(key).items.push(item)
+    })
+    body = annotations.status === 'loading' && items.length === 0
+      ? h('div', { className: 'ph-side-skeleton' }, [0, 1, 2].map((i) => h('div', { key: i, className: 'ph-side-skeleton__row' }, h('span', { className: 'ph-skeleton', style: { width: 3, height: 46 } }), h('div', { className: 'ph-side-skeleton__main' }, h('span', { className: 'ph-skeleton', style: { width: '80%' } }), h('span', { className: 'ph-skeleton', style: { width: '40%', height: 9 } })))))
+      : annotations.status === 'error'
+        ? h(EmptyState, { compact: true, tone: 'error', icon: 'warning', title: t('drawer.loadFailed', { message: describeError(t, annotations.error) }), action: h(Button, { size: 'sm', variant: 'secondary', icon: 'refresh', onClick: () => setRevision((v) => v + 1) }, t('common.retry')) })
+        : items.length === 0
+          ? h(EmptyState, { compact: true, icon: 'highlighter', title: t('drawer.hint.annotations') })
+          : h('div', { className: 'ph-side-annotgroups' },
+              h('div', { className: 'ph-side-annotfilters' },
+                h('select', { className: 'ph-select ph-select--inline', value: filters.color, onChange: (e) => setFilters(Object.assign({}, filters, { color: e.target.value })) }, h('option', { value: '' }, t('drawer.filter.color')), ['yellow', 'green', 'blue', 'red', 'purple'].map((c) => h('option', { key: c, value: c }, t('reader.annot.color.' + c)))),
+                h('select', { className: 'ph-select ph-select--inline', value: filters.kind, onChange: (e) => setFilters(Object.assign({}, filters, { kind: e.target.value })) }, h('option', { value: '' }, t('drawer.filter.kind')), ['highlight', 'area', 'note'].map((k) => h('option', { key: k, value: k }, t('drawer.kind.' + k)))),
+              ),
+              Array.from(byPaper.entries()).map(([paperId, group]) => h(
+                'section',
+                { key: paperId, className: 'ph-annotgroup' },
+                h('button', { type: 'button', className: 'ph-annotgroup__head', onClick: () => setCollapsed(Object.assign({}, collapsed, { [paperId]: !collapsed[paperId] })), 'aria-expanded': collapsed[paperId] ? 'false' : 'true' },
+                  h(Icon, { name: collapsed[paperId] ? 'chevronRight' : 'chevronDown', size: 12 }),
+                  h('span', { className: 'ph-annotgroup__title' }, group.paperTitle || paperId),
+                  h('span', { className: 'ph-caption' }, String(group.items.length)),
+                ),
+                collapsed[paperId] ? null : group.items.map((item) => h(AnnotationRow, { key: item.id, t: t, item: item, onOpen: (entry) => openItem({ paperId: entry.paperId, page: entry.page }, entry.page, entry.id), onCite: cite, onCopy: (entry) => copyText(entry.quote || entry.comment || '').then((ok) => push(ok ? 'success' : 'warning', ok ? t('common.copied') : t('common.unavailable'))) })),
+              )),
+            )
+    body = h('div', null, filterBar, body)
+  } else if (tab === 'figures') {
+    body = figures.status === 'loading' && figures.items.length === 0
+      ? h('div', { className: 'ph-side-figskeleton' }, [0, 1, 2, 3].map((i) => h('div', { key: i, className: 'ph-skeleton', style: { aspectRatio: '4/3', borderRadius: 8 } })))
+      : figures.status === 'error'
+        ? h(EmptyState, { compact: true, tone: 'error', icon: 'warning', title: t('drawer.loadFailed', { message: describeError(t, figures.error) }) })
+        : figures.items.length === 0
+          ? h(EmptyState, { compact: true, icon: 'image', title: t('drawer.hint.figures') })
+          : h('div', { className: 'ph-side-figgrid' }, figures.items.map((entry) => {
+              const figure = entry.figure || entry
+              const paper = entry.paper || {}
+              const imageUrl = figure.imageUrl || (figure.id ? '/pappers-hall/figure/' + figure.id + '.png?width=480' : '')
+              return h('button', { key: figure.id || Math.random(), type: 'button', className: 'ph-side-fig', onClick: () => openItem({ paperId: figure.paperId || paper.id, page: figure.page || entry.page }, figure.page || entry.page) },
+                h('span', { className: 'ph-side-fig__img' }, imageUrl ? h('img', { src: imageUrl, alt: '', loading: 'lazy', onError: (e) => { e.currentTarget.style.display = 'none' } }) : h(Icon, { name: 'figure', size: 20 })),
+                h('span', { className: 'ph-side-fig__caption' }, firstText(figure.caption, paper.titleZh, paper.title, t('drawer.tab.figures'))),
+                h('span', { className: 'ph-caption' }, t('figure.search.pageFigure', { page: Number(figure.page || entry.page) || 1, label: figure.label || '?' })),
+              )
+            }))
+    body = h('div', null, filterBar, body)
+  } else {
+    body = notes.status === 'loading'
+      ? h('div', { className: 'ph-side-skeleton' }, [0, 1, 2].map((i) => h('div', { key: i, className: 'ph-side-skeleton__row' }, h('span', { className: 'ph-skeleton', style: { width: 3, height: 40 } }), h('div', { className: 'ph-side-skeleton__main' }, h('span', { className: 'ph-skeleton', style: { width: '80%' } })))))
+      : notes.status === 'error'
+        ? h(EmptyState, { compact: true, tone: 'error', icon: 'warning', title: t('drawer.loadFailed', { message: describeError(t, notes.error) }) })
+        : notes.items.length === 0
+          ? h(EmptyState, { compact: true, icon: 'note', title: t('drawer.hint.notes'), action: h(Button, { size: 'sm', variant: 'secondary', icon: 'note', onClick: () => openNotesLibrary() }, t('notes.library.open')) })
+          : h('div', { className: 'ph-side-notes' }, notes.items.map((hit, index) => h(AnnotationRow, { key: hit.id || index, t: t, item: { id: hit.id, paperId: hit.paperId, page: hit.page, kind: 'note', quote: hit.snippet, comment: hit.title || '', color: 'blue', createdAt: hit.createdAt }, onOpen: (entry) => openItem({ paperId: entry.paperId, page: entry.page }), onCite: cite, onCopy: (entry) => copyText(entry.quote || '').then((ok) => push(ok ? 'success' : 'warning', ok ? t('common.copied') : t('common.unavailable'))) })))
+  }
+
+  return h(
+    'div',
+    { className: 'ph-sidebar' },
+    h(
+      'div',
+      { className: 'ph-sidebar__head' },
+      h('span', { className: 'ph-sidebar__title' }, h(Icon, { name: 'book', size: 15 }), 'Pappers-Hall'),
+      h(IconButton, { icon: 'settings', title: t('settings.open'), 'aria-label': t('settings.open'), onClick: () => bus.emit('open-settings') }),
+      h(IconButton, { icon: 'refresh', title: t('page.refresh'), onClick: () => setRevision((value) => value + 1) }),
+      h('span', { className: 'ph-caption ph-sidebar__engine' }, providerLabel(t, translation.settings.provider)),
+    ),
+    h('div', { className: 'ph-sidebar__search' }, h(SearchInput, { ref: searchRef, value: query, onChange: setQuery, placeholder: t('drawer.search.placeholder'), 'aria-label': t('drawer.search.placeholder'), clearLabel: t('common.clear') })),
+    h('div', { className: 'ph-sidebar__tabs' }, h(TabStrip, { items: tabs, value: tab, onChange: changeTab, variant: 'pill', 'aria-label': t('drawer.title') })),
+    filterBar,
+    h('div', { className: 'ph-sidebar__body ph-scroll', ref: scrollRef }, body),
+    h(
+      'div',
+      { className: 'ph-sidebar__foot' },
+      selected.length > 0
+        ? h(React.Fragment, null,
+            h('span', { className: 'ph-caption' }, t('drawer.selected', { count: selected.length })),
+            h(Button, { size: 'sm', variant: 'primary', icon: 'quote', onClick: citeSelection }, t('drawer.cite')),
+            h(Button, { size: 'sm', icon: 'external', onClick: () => openLibraryView('all') }, t('drawer.openLibrary')),
+            h(IconButton, { icon: 'close', title: t('common.clear'), onClick: () => setSelected([]) }),
+          )
+        : h(React.Fragment, null,
+            h('span', { className: 'ph-caption' }, t('drawer.stats', { papers: counts.papers, annotations: counts.annotations, figures: counts.figures })),
+            h('span', { className: 'ph-spacer' }),
+            h(Button, { size: 'sm', variant: 'ghost', icon: 'note', onClick: () => openNotesLibrary() }, t('notes.library.open')),
+            h(Button, { size: 'sm', variant: 'ghost', icon: 'book', onClick: () => openLibraryView('all') }, t('drawer.openLibrary')),
+          ),
+    ),
+    h(ToastStack, { toasts: toasts, onDismiss: dismiss }),
+  )
+}

@@ -2,7 +2,7 @@
 
 纯 Node（无第三方依赖）的可重复验收脚本。所有请求走本机 DSH Web GUI 上插件注册的同源 HTTP 路由：
 
-- JSON：`POST http://127.0.0.1:54731/pappers-hall/api`，body `{method, params}`，返回 `{ok:true,data}` / `{ok:false,error}`；
+- JSON：`POST http://127.0.0.1:3080/pappers-hall/api`，body `{method, params}`，返回 `{ok:true,data}` / `{ok:false,error}`；
 - 资源：`GET /pappers-hall/page|figure|thumb|pdf/...`。
 
 插件路由是普通 `webServer` 命名路由，不经过 `/api` 的 Cookie admission，因此脚本直接用 `fetch` 调用；不需要、也不得复制用户 Cookie。

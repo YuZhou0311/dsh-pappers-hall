@@ -79,6 +79,7 @@ export const READER_ZH = {
   'reader.page.structureUnavailable': '版面结构不可用：{reason}',
   'reader.page.imageFailed': '页面图片加载失败',
   'reader.page.imageRetry': '重新加载',
+  'reader.page.slow': '页面渲染较慢，可重试',
   'reader.page.crossFade': '切换到第 {page} 页',
 
   // ---- annotations ---------------------------------------------------------
@@ -415,6 +416,7 @@ export const READER_EN = {
   'reader.page.structureUnavailable': 'Page structure unavailable: {reason}',
   'reader.page.imageFailed': 'Page image failed to load',
   'reader.page.imageRetry': 'Reload',
+  'reader.page.slow': 'Page render is taking longer — retry',
   'reader.page.crossFade': 'Switching to page {page}',
 
   'reader.annot.color.yellow': 'Yellow',

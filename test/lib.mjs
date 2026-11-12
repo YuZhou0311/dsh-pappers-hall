@@ -67,7 +67,7 @@ export const EXPECTED_COUNTS = Object.freeze({
 })
 
 /** Default HTTP API base; the running DSH Web GUI prints this in `DSH_WEB_URL`. */
-export const DEFAULT_API_BASE = (process.env.PAPPERS_API_BASE ?? process.env.DSH_WEB_URL ?? 'http://127.0.0.1:54731').replace(/\/+$/, '')
+export const DEFAULT_API_BASE = (process.env.PAPPERS_API_BASE ?? process.env.DSH_WEB_URL ?? 'http://127.0.0.1:3080').replace(/\/+$/, '')
 /** Default DSH profile name for the environment record. */
 export const DEFAULT_PROFILE = process.env.DSH_PROFILE ?? 'desktop'
 /** Default request timeout for one JSON API call. */
@@ -507,7 +507,7 @@ function parseJsonBody(text) {
 export class PappersClient {
   /**
    * @param {object} [options] client options.
-   * @param {string} [options.baseUrl] DSH Web GUI root, e.g. http://127.0.0.1:54731.
+   * @param {string} [options.baseUrl] DSH Web GUI root, e.g. http://127.0.0.1:3080.
    * @param {number} [options.timeoutMs] one JSON call timeout.
    * @param {number} [options.retries] connection-failure retries.
    */

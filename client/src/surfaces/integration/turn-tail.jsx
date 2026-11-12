@@ -52,10 +52,29 @@ function reasonLabel(t, reason) {
   return String(reason)
 }
 
-function toolTitle(t, name) {
+function toolTitle(t, name, args) {
   switch (name) {
     case 'papers_search':
       return t('tool.title.search')
+    case 'papers_get':
+    case 'papers_list':
+      return t('tool.title.detail')
+    case 'papers_manage':
+      return t('tool.title.manage')
+    case 'papers_pdf': {
+      const action = args && typeof args.action === 'string' ? args.action : 'inspect'
+      if (action === 'view') return t('tool.title.pdfView')
+      if (action === 'read') return t('tool.title.pdfRead')
+      if (action === 'ocr') return t('tool.title.pdfOcr')
+      if (action === 'import') return t('tool.title.pdfImport')
+      return t('tool.title.pdfInspect')
+    }
+    case 'papers_changes':
+      return t('tool.title.changes')
+    case 'notes_search':
+    case 'notes_get':
+    case 'notes_edit':
+      return t('tool.title.notes')
     case 'papers_get_passage':
       return t('tool.title.passage')
     case 'papers_get_figure':
@@ -79,22 +98,23 @@ function toolTitle(t, name) {
   }
 }
 
-function toolIcon(name) {
+function toolIcon(name, args) {
   switch (name) {
     case 'papers_get_figure':
-    case 'papers_annotate':
       return 'figure'
+    case 'papers_pdf':
+      return args && args.action === 'view' ? 'figure' : 'pages'
     case 'papers_get_passage':
     case 'papers_translate':
       return 'pages'
-    case 'papers_index_status':
+    case 'papers_overview':
       return 'search'
     case 'papers_cite':
       return 'quote'
-    case 'papers_propose_changes':
-    case 'papers_apply_changes':
+    case 'papers_changes':
+    case 'papers_manage':
       return 'edit'
-    case 'papers_get_annotations':
+    case 'papers_annotations':
       return 'highlighter'
     default:
       return 'book'
@@ -140,6 +160,7 @@ function ToolSourceCard(props) {
   const block = props.block
   const api = props.api
   const [citing, setCiting] = React.useState('')
+  const [open, setOpen] = React.useState(false)
   const [citeError, setCiteError] = React.useState('')
   const result = phase === 'result' ? parseResult(block) : null
   const isError = phase === 'result' && Boolean(block && block.isError)
@@ -200,19 +221,30 @@ function ToolSourceCard(props) {
 
   return h(
     'div',
-    { className: 'ph-toolcard' },
+    { className: 'ph-toolcard' + (open ? ' ph-toolcard--open' : '') },
     h(
       'div',
-      { className: 'ph-toolcard__head' },
-      h('span', { className: 'ph-toolcard__icon' }, h(Icon, { name: toolIcon(toolName), size: 15 })),
-      h('span', { className: 'ph-toolcard__title' }, toolTitle(t, toolName)),
+      {
+        className: 'ph-toolcard__head',
+        role: 'button',
+        tabIndex: 0,
+        'aria-expanded': open ? 'true' : 'false',
+        onClick: () => setOpen((value) => !value),
+        onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setOpen((value) => !value) } },
+      },
+      h('span', { className: 'ph-toolcard__icon' }, h(Icon, { name: toolIcon(toolName, args), size: 15 })),
+      h('span', { className: 'ph-toolcard__title' }, toolTitle(t, toolName, args)),
       h('span', { className: 'ph-toolcard__sub' }, phase === 'result' ? toolSummary(t, toolName, result) : ''),
       h('span', { className: 'ph-spacer' }),
+      phase === 'result' && result && result.image && result.image.status === 'ready'
+        ? h(Badge, { tone: 'muted', icon: 'figure' }, t('tool.image'))
+        : null,
       citing === 'done' ? h(Badge, { tone: 'success', icon: 'checkCircle' }, t('tool.cited')) : null,
       citeError ? h('span', { className: 'ph-toolcard__note' }, citeError) : null,
-      props.inspect ? h(IconButton, { icon: 'external', title: 'inspect', onClick: () => props.inspect() }) : null,
+      props.inspect ? h(IconButton, { icon: 'external', title: 'inspect', onClick: (event) => { event.stopPropagation(); props.inspect() } }) : null,
+      h(Icon, { name: 'chevronRight', size: 14, className: 'ph-toolcard__chev' }),
     ),
-    h('div', { className: 'ph-toolcard__body' }, body),
+    open ? h('div', { className: 'ph-toolcard__body' }, body) : null,
   )
 }
 
@@ -277,13 +309,13 @@ function PassageBody(props) {
     h(
       'div',
       { className: 'ph-toolcard__main' },
-      h('div', { className: 'ph-toolcard__name' }, firstText(paper.titleZh, paper.title, t('common.untitled'))),
+      h('div', { className: 'ph-toolcard__name' }, title),
       h('div', { className: 'ph-toolcard__meta' }, [data.page ? t('tool.page', { page: data.page }) : '', data.depth === 'fulltext' ? t('tool.depth.fulltext') : data.depth === 'abstract' ? t('tool.depth.abstract') : t('tool.depth.metadata_only')].filter(Boolean).join(' · ')),
       h('p', { className: 'ph-toolcard__text' }, firstText(data.text, '')),
       h(
         'div',
         { className: 'ph-toolcard__actions' },
-        paperId ? h(Button, { size: 'sm', icon: 'external', onClick: () => openSource(props.props, { paperId: paperId, page: data.page }) }, t('tool.openPage', { page: data.page || 1 })) : null,
+        paperId ? h(Button, { size: 'sm', icon: 'external', onClick: () => openSource(props.props, { paperId: paperId, page }) }, t('tool.openPage', { page: page || 1 })) : null,
         paperId ? h(Button, { size: 'sm', icon: 'quote', onClick: () => props.cite([materialOf('paper', paperId, data.page, firstText(paper.titleZh, paper.title))]) }, t('tool.cite')) : null,
       ),
     ),
@@ -293,27 +325,43 @@ function PassageBody(props) {
 function FigureBody(props) {
   const t = props.t
   const data = props.data
+  // Old tool results were stored before the unified figure payload existed;
+  // fall back to the flat view fields so historical cards do not break.
   const figure = data.figure || {}
   const paper = data.paper || {}
   const paperId = firstText(figure.paperId, paper.id)
   const image = data.image || {}
+  const localTitle = data.path ? String(data.path).split(/[\\/]/).pop() : ''
+  const title = firstText(paper.titleZh, paper.title, localTitle, t('common.untitled'))
+  const label = firstText(figure.label, data.label)
+  const page = figure.page ?? data.page
+  const caption = firstText(figure.caption, data.caption)
+  const imageUrl = firstText(figure.imageUrl)
+  const [imageFailed, setImageFailed] = React.useState(false)
+  React.useEffect(() => { setImageFailed(false) }, [imageUrl])
   return h(
     'div',
     { className: 'ph-toolcard__row' },
-    h('div', { className: 'ph-toolcard__thumb' }, h('img', { src: firstText(figure.imageUrl, '/pappers-hall/figure/' + figure.id + '.png'), alt: '', loading: 'lazy', decoding: 'async', draggable: false })),
+    h(
+      'div',
+      { className: 'ph-toolcard__thumb' },
+      imageUrl && !imageFailed
+        ? h('img', { src: imageUrl, alt: '', loading: 'lazy', decoding: 'async', draggable: false, onError: () => setImageFailed(true) })
+        : h('span', { className: 'ph-toolcard__thumbicon' }, h(Icon, { name: 'figure', size: 20 })),
+    ),
     h(
       'div',
       { className: 'ph-toolcard__main' },
-      h('div', { className: 'ph-toolcard__name' }, firstText(paper.titleZh, paper.title, t('common.untitled'))),
-      h('div', { className: 'ph-toolcard__meta' }, [figure.label ? t('tool.figureLabel', { label: figure.label }) : '', data.page ? t('tool.page', { page: data.page }) : ''].filter(Boolean).join(' · ')),
-      h('p', { className: 'ph-toolcard__text' }, firstText(figure.caption, t('reader.figure.noCaption'))),
+      h('div', { className: 'ph-toolcard__name' }, title),
+      h('div', { className: 'ph-toolcard__meta' }, [data.local ? t('tool.localPdf') : '', label ? t('tool.figureLabel', { label }) : '', page ? t('tool.page', { page }) : ''].filter(Boolean).join(' · ')),
+      h('p', { className: 'ph-toolcard__text' }, caption || t('reader.figure.noCaption')),
       image && image.status && image.status !== 'ready' ? h('p', { className: 'ph-toolcard__note' }, t('tool.unavailable', { reason: firstText(image.reason, image.status) })) : null,
       h(
         'div',
         { className: 'ph-toolcard__actions' },
-        paperId ? h(Button, { size: 'sm', icon: 'external', onClick: () => openSource(props.props, { paperId: paperId, page: data.page }) }, t('tool.openPage', { page: data.page || 1 })) : null,
-        firstText(figure.id) ? h(Button, { size: 'sm', icon: 'search', onClick: () => openSource(props.props, { paperId: paperId, page: data.page, figureId: figure.id }) }, t('tool.similar')) : null,
-        firstText(figure.id) ? h(Button, { size: 'sm', icon: 'quote', onClick: () => props.cite([materialOf('figure', figure.id, data.page, firstText(figure.caption, figure.label))]) }, t('tool.cite')) : null,
+        paperId ? h(Button, { size: 'sm', icon: 'external', onClick: () => openSource(props.props, { paperId: paperId, page }) }, t('tool.openPage', { page: page || 1 })) : null,
+        firstText(figure.id) ? h(Button, { size: 'sm', icon: 'search', onClick: () => openSource(props.props, { paperId: paperId, page, figureId: figure.id }) }, t('tool.similar')) : null,
+        firstText(figure.id) ? h(Button, { size: 'sm', icon: 'quote', onClick: () => props.cite([materialOf('figure', figure.id, page, firstText(caption, label))]) }, t('tool.cite')) : null,
       ),
     ),
   )
@@ -413,16 +461,17 @@ function ToolBody(props) {
       return h(PassageBody, { t: props.t, data: props.data, props: props.props, cite: props.cite })
     case 'papers_get_figure':
       return h(FigureBody, { t: props.t, data: props.data, props: props.props, cite: props.cite })
+    case 'papers_pdf':
+      if (props.args && props.args.action === 'view') return h(FigureBody, { t: props.t, data: props.data, props: props.props, cite: props.cite })
+      return h(GenericBody, { t: props.t, data: props.data })
     case 'papers_translate':
       return h(TranslateBody, { t: props.t, data: props.data, props: props.props })
     case 'papers_cite':
       return h(CiteBody, { t: props.t, data: props.data })
-    case 'papers_index_status':
+    case 'papers_overview':
       return h(StatusBody, { t: props.t, data: props.data })
-    case 'papers_propose_changes':
-    case 'papers_apply_changes':
-    case 'papers_get_annotations':
-    case 'papers_annotate':
+    case 'papers_changes':
+    case 'papers_annotations':
       return h(GenericBody, { t: props.t, data: props.data })
     default:
       return h(GenericBody, { t: props.t, data: props.data })

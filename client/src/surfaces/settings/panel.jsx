@@ -183,6 +183,23 @@ export function SettingsPanel(props) {
     patchSettings({ optimistic: { models: Object.assign({}, models, { [kind]: Object.assign({}, model, { enabled: value }) }) }, body: { features: kind === 'ocr' ? { ocr: value } : { vectorSearch: value } } }, kind)
   }
 
+  const clearPdfCache = () => {
+    setBusy('clear-pdf-cache')
+    setError('')
+    defaultApi('cache.clearPdfPreviews', {})
+      .then((value) => {
+        const count = Number(value && value.cleared) || 0
+        const freed = Number(value && value.freedBytes) || 0
+        notify('success', count > 0 ? t('settings.clearPdfCacheDone', { count: count, size: bytes(freed) }) : t('settings.clearPdfCacheEmpty'), null, 3000)
+      })
+      .catch((err) => {
+        const message = describeError(t, err)
+        setError(message)
+        notify('error', t('settings.clearPdfCacheFailed', { message }), null, 4000)
+      })
+      .then(() => setBusy(''))
+  }
+
   const install = (kind) => {
     setBusy('install-' + kind)
     setError('')
@@ -262,9 +279,25 @@ export function SettingsPanel(props) {
   const status = index.embedding || index
   const counts = Object.assign({}, diagnostics.counts || {}, (status && status.counts) || {})
 
+  const dialogRef = React.useRef(null)
+  React.useEffect(() => {
+    const dialog = dialogRef.current
+    if (dialog === null) return undefined
+    try { if (!dialog.open) dialog.showModal() } catch (error) { /* fallback: rendered inline */ }
+    return () => { try { if (dialog.open) dialog.close() } catch (error) { /* ignore */ } }
+  }, [])
+
   return h(
-    'div',
-    { className: 'ph-settingsbackdrop', onMouseDown: (event) => { if (event.target === event.currentTarget) props.onClose() } },
+    'dialog',
+    {
+      ref: dialogRef,
+      className: 'ph-settingsdialog',
+      'aria-label': t('settings.title'),
+      onCancel: (event) => { event.preventDefault(); props.onClose() },
+    },
+    h(
+      'div',
+      { className: 'ph-settingsbackdrop', onMouseDown: (event) => { if (event.target === event.currentTarget) props.onClose() } },
     h(
       'div',
       { className: 'ph-settings', role: 'dialog', 'aria-modal': 'true', 'aria-label': t('settings.title') },
@@ -338,6 +371,10 @@ export function SettingsPanel(props) {
                     h(Badge, { tone: features.autoIndex === false ? 'muted' : ((status && status.sync && (status.sync.running || status.sync.state === 'running')) ? 'business' : 'success') }, features.autoIndex === false ? t('settings.sync.autoOff') : ((status && status.sync && (status.sync.running || status.sync.state === 'running')) ? t('settings.sync.syncing') : t('settings.sync.completed'))),
                   ),
                   h('div', { className: 'ph-settings__testrow' }, h(Button, { size: 'sm', icon: 'refresh', loading: busy === 'rebuild', onClick: rebuild }, t('settings.rebuildIndex'))),
+                  h('div', { className: 'ph-settings__testrow' },
+                    h(Button, { size: 'sm', icon: 'trash', loading: busy === 'clear-pdf-cache', onClick: clearPdfCache }, t('settings.clearPdfCache')),
+                    h('span', { className: 'ph-caption' }, t('settings.clearPdfCacheHint')),
+                  ),
                 ),
                 h(Section, { icon: 'info', title: t('settings.section.about') },
                   h('div', { className: 'ph-aboutgrid' },
@@ -353,6 +390,7 @@ export function SettingsPanel(props) {
         h('span', { className: 'ph-spacer' }),
         h(Button, { size: 'sm', variant: 'secondary', onClick: props.onClose }, t('settings.done')),
       ),
+    ),
     ),
   )
 }

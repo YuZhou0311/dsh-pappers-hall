@@ -149,6 +149,7 @@ function InfoTab(props) {
     h(
       'div',
       { className: 'ph-editabletitle' },
+      h('div', { className: 'ph-detailblock__head' }, h(Icon, { name: 'edit', size: 13 }), h('span', null, t('library.details.titleZh'))),
       editing
         ? h(
             'div',
@@ -163,14 +164,10 @@ function InfoTab(props) {
             h('span', { className: 'ph-editabletitle__text' }, firstText(detail.titleZh, summary.titleZh, detail.displayTitle, detail.title, t('common.untitled'))),
             h(IconButton, { icon: 'edit', title: t('library.details.editTitleZh'), onClick: () => setEditing(true) }),
           ),
-      detail.title ? h('span', { className: 'ph-editabletitle__original' }, detail.title) : null,
     ),
     h(
       'dl',
       { className: 'ph-fieldgrid' },
-      h(Field, { label: t('library.details.authors'), value: metaLine(t, detail).split(' · ')[0] }),
-      h(Field, { label: t('library.details.year'), value: detail.year ? String(detail.year) : '' }),
-      h(Field, { label: t('library.details.venue'), value: firstText(detail.venue, detail.containerTitle) }),
       h(Field, { label: t('library.details.doi'), value: detail.doi, mono: true }),
       h(Field, { label: t('library.details.arxiv'), value: detail.arxivId, mono: true }),
       h(Field, { label: t('library.details.issn'), value: detail.issn || (detail.metrics && detail.metrics.issn), mono: true }),
@@ -475,15 +472,33 @@ export function DetailsPane(props) {
     { id: 'annotations', label: t('library.details.tab.annotations'), count: Array.isArray(details.annotations) ? details.annotations.length : 0 },
   ]
 
+  const hero = paperId && detail
+    ? h(
+        'div',
+        { className: 'ph-details__hero' },
+        h(
+          'div',
+          { className: 'ph-details__herorow' },
+          h('span', { className: 'ph-details__kicker' }, t('library.details.tab.info')),
+          detail.read ? h(Badge, { tone: 'success' }, t('library.smart.read')) : null,
+          detail.favorite ? h(Badge, { tone: 'business' }, t('folders.favorite')) : null,
+        ),
+        h('h2', { className: 'ph-details__title', title: paperTitle(t, detail) }, paperTitle(t, detail)),
+        detail.title && detail.title !== paperTitle(t, detail) ? h('p', { className: 'ph-details__original', title: detail.title }, detail.title) : null,
+        h('p', { className: 'ph-details__meta' }, metaLine(t, detail)),
+        h(
+          'div',
+          { className: 'ph-details__heroActions' },
+          h(Button, { size: 'sm', variant: 'primary', icon: 'book', onClick: () => props.onOpenPaper(detail.id, 1) }, t('library.row.open')),
+          h(Button, { size: 'sm', variant: 'secondary', icon: 'quote', onClick: () => props.onCite(detail) }, t('library.context.cite')),
+        ),
+      )
+    : null
+
   const head = h(
     'div',
     { className: 'ph-details__head' },
-    h(
-      'div',
-      { className: 'ph-details__heading' },
-      h('span', { className: 'ph-details__title', title: paperId ? paperTitle(t, detail || {}) : '' }, paperId ? paperTitle(t, detail || {}) : t('library.details.tab.info')),
-      paperId && detail && detail.title && detail.title !== paperTitle(t, detail) ? h('span', { className: 'ph-details__original', title: detail.title }, detail.title) : null,
-    ),
+    h('span', { className: 'ph-details__headlabel' }, t('library.details.tab.info')),
     h(
       'div',
       { className: 'ph-details__actions' },
@@ -554,7 +569,8 @@ export function DetailsPane(props) {
     'div',
     { className: 'ph-details' },
     head,
+    hero,
     !detail ? null : h('div', { className: 'ph-details__tabs' }, h(TabStrip, { items: tabs, value: tab, onChange: (value) => controller.setDetailTab(value), 'aria-label': t('library.details.tab.info'), variant: 'pill' })),
-    body,
+    h('div', { className: 'ph-details__body', key: tab }, body),
   )
 }

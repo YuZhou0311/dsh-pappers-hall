@@ -30,7 +30,7 @@
  * Usage:
  *   node test/v05.mjs --dry-run   # print the case plan + read-only environment probe
  *   node test/v05.mjs             # real run (requires the v0.5 host loaded)
- *   node test/v05.mjs --base http://127.0.0.1:54731 --out ../reports/v05-api-results.json
+ *   node test/v05.mjs --base http://127.0.0.1:3080 --out ../reports/v05-api-results.json
  */
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -47,7 +47,7 @@ const arg = (name, fallback) => {
 }
 
 const DRY_RUN = flag('--dry-run')
-const BASE = arg('--base', process.env.PAPPERS_BASE ?? 'http://127.0.0.1:54731')
+const BASE = arg('--base', process.env.PAPPERS_BASE ?? 'http://127.0.0.1:3080')
 const API = `${BASE}/pappers-hall/api`
 const OUT = resolve(HERE, arg('--out', '../../reports/v05-api-results.json'))
 const HOME = process.env.DSH_HOME ?? join(homedir(), '.dsh')

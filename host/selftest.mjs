@@ -326,41 +326,58 @@ async function main() {
     // ---- registrations ------------------------------------------------
     const toolNames = [...fake.state.tools.keys()].sort()
     const expectedTools = [
-      'papers_annotate',
-      'notes_create',
+      'notes_edit',
       'notes_get',
-      'notes_link_papers',
-      'notes_list',
       'notes_search',
-      'notes_update',
-      'papers_abstracts',
-      'papers_apply_changes',
-      'papers_cite',
-      'papers_folder_hints',
-      'papers_folders',
+      'papers_annotations',
+      'papers_changes',
       'papers_get',
-      'papers_get_annotations',
       'papers_get_figure',
       'papers_get_passage',
-      'papers_import_file',
-      'papers_index_status',
+      'papers_pdf',
       'papers_list',
+      'papers_manage',
       'papers_overview',
-      'papers_propose_changes',
-      'papers_related',
       'papers_search',
       'papers_translate',
-      'papers_update',
     ].sort()
-    check('25 papers_* + notes_* tools registered (basic primitives + notes + reference hint)', JSON.stringify(toolNames) === JSON.stringify(expectedTools), toolNames)
+    check('14 consolidated papers_* + notes_* tools registered', JSON.stringify(toolNames) === JSON.stringify(expectedTools), toolNames)
     const agentDiagnostics = await service.api.call('diagnostics')
     check(
       'diagnostics.agent lists tools and promptSection',
-      agentDiagnostics.agent?.tools?.length === 25 &&
-        ['papers_list', 'papers_abstracts', 'papers_get', 'papers_update', 'papers_folders', 'papers_folder_hints', 'papers_import_file', 'notes_list', 'notes_create'].every((name) => agentDiagnostics.agent.tools.includes(name)) &&
+      agentDiagnostics.agent?.tools?.length === 14 &&
+        ['papers_search', 'papers_get', 'papers_get_passage', 'papers_list', 'papers_manage', 'papers_pdf', 'notes_search', 'notes_edit'].every((name) => agentDiagnostics.agent.tools.includes(name)) &&
         agentDiagnostics.agent.promptSection === true,
       agentDiagnostics.agent,
     )
+    // Test-only compatibility aliases for the pre-consolidation direct tool
+    // calls below. The public Agent surface is the 13 merged tools above; these
+    // aliases keep the old behavioral assertions exercising the same facades.
+    const callMerged = (name, args, exec) => fake.state.tools.get(name).execute(args, exec)
+    const legacyAliases = {
+      papers_import_file: (args, exec) => callMerged('papers_pdf', Object.assign({ action: args.confirm === true ? 'import' : 'inspect' }, args), exec),
+      papers_get_annotations: (args, exec) => callMerged('papers_annotations', Object.assign({ action: 'list' }, args), exec),
+      papers_annotate: (args, exec) => callMerged('papers_annotations', Object.assign({ action: 'create' }, args), exec),
+      papers_abstracts: (args, exec) => callMerged('papers_search', Object.assign({ mode: 'abstracts' }, args), exec),
+      papers_related: (args, exec) => callMerged('papers_search', Object.assign({ mode: 'related' }, args), exec),
+      papers_folders: (args, exec) => callMerged('papers_manage', args, exec),
+      papers_update: (args, exec) => callMerged('papers_manage', Object.assign({ action: 'update' }, args), exec),
+      papers_folder_hints: (args, exec) => callMerged('papers_manage', Object.assign({ action: 'hints' }, args), exec),
+      papers_cite: (args, exec) => callMerged('papers_get', Object.assign({ view: 'cite' }, args), exec),
+      papers_get_outline: (args, exec) => callMerged('papers_get', Object.assign({ view: 'outline', paperId: args.paper_id }, args), exec),
+      papers_propose_changes: (args, exec) => callMerged('papers_changes', Object.assign({ action: 'propose' }, args), exec),
+      papers_apply_changes: (args, exec) => callMerged('papers_changes', Object.assign({ action: 'apply' }, args), exec),
+      papers_index_status: async (args, exec) => (await callMerged('papers_overview', { include_status: true }, exec)).indexStatus,
+      notes_list: (args, exec) => callMerged('notes_search', args, exec),
+      notes_search: (args, exec) => callMerged('notes_search', args, exec),
+      notes_create: (args, exec) => callMerged('notes_edit', Object.assign({ action: 'create' }, args), exec),
+      notes_update: (args, exec) => callMerged('notes_edit', Object.assign({ action: 'update' }, args), exec),
+      notes_link_papers: (args, exec) => callMerged('notes_edit', Object.assign({ action: args.action || 'link' }, args), exec),
+    }
+    for (const [name, execute] of Object.entries(legacyAliases)) {
+      if (!fake.state.tools.has(name)) fake.state.tools.set(name, { name, execute })
+    }
+
     check('web route registered under /pappers-hall/', fake.state.routes.has('/pappers-hall'))
     // The composed web server matches a prefix as `pathname === prefix` or
     // `pathname.startsWith(prefix + '/')`; reproduce that rule here so a
@@ -1770,13 +1787,14 @@ async function main() {
       const beforePreview = (await service.api.call('library.list', {})).total
       const preview = await tools.get('papers_import_file').execute({ path: FIXTURE_PDF, confirm: false })
       check(
-        'papers_import_file preview returns needs_confirmation without writing',
-        preview.status === 'needs_confirmation' &&
-          preview.kind === 'paper' &&
+        'papers_import_file preview returns readable evidence without writing',
+        preview.status === 'preview' &&
+          preview.looksLikePaper === true &&
           typeof preview.title === 'string' &&
-          /要加入论文中心吗/.test(preview.question) &&
+          typeof preview.contentSample === 'string' &&
+          preview.contentSample.length > 0 &&
           (await service.api.call('library.list', {})).total === beforePreview,
-        { status: preview.status, title: preview.title, question: preview.question },
+        { status: preview.status, title: preview.title, looksLikePaper: preview.looksLikePaper, signals: preview.signals, sampleLength: preview.contentSample?.length },
       )
       const invalidPreview = await tools.get('papers_import_file').execute({ path: '/nonexistent/selftest.pdf' })
       check('papers_import_file reports invalid paths explicitly', invalidPreview.status === 'invalid' && /does not exist/.test(invalidPreview.reason), invalidPreview)
@@ -1790,7 +1808,7 @@ async function main() {
       const variantPreview = await tools.get('papers_import_file').execute({ path: variantPdf, confirm: false })
       check(
         'papers_import_file preview reads a new PDF without writing',
-        variantPreview.status === 'needs_confirmation' && variantPreview.kind === 'paper' && (await service.api.call('library.list', {})).total === 2,
+        variantPreview.status === 'preview' && variantPreview.looksLikePaper === true && (await service.api.call('library.list', {})).total === 2,
         { status: variantPreview.status, title: variantPreview.title },
       )
       const importToolResult = await tools.get('papers_import_file').execute({ path: variantPdf, confirm: true })
@@ -1971,6 +1989,7 @@ async function main() {
     )
 
     // ---- teardown ------------------------------------------------------
+    for (const name of Object.keys(legacyAliases)) fake.state.tools.delete(name)
     await service.dispose()
     check('dispose clears the timer', fake.state.intervals.size === 0, fake.state.intervals.size)
     check('dispose clears tool registrations', fake.state.tools.size === 0, fake.state.tools.size)

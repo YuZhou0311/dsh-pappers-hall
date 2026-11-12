@@ -22,7 +22,7 @@
  * Usage:
  *   node test/v03.mjs --dry-run     # print the case plan + environment probe, no writes
  *   node test/v03.mjs               # real run (requires the v0.3 host loaded)
- *   node test/v03.mjs --base http://127.0.0.1:54731 --paper ph-... --out ../reports/v03-api-results.json
+ *   node test/v03.mjs --base http://127.0.0.1:3080 --paper ph-... --out ../reports/v03-api-results.json
  */
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -39,7 +39,7 @@ const arg = (name, fallback) => {
 }
 
 const DRY_RUN = flag('--dry-run')
-const BASE = arg('--base', process.env.PAPPERS_BASE ?? 'http://127.0.0.1:54731')
+const BASE = arg('--base', process.env.PAPPERS_BASE ?? 'http://127.0.0.1:3080')
 const API = `${BASE}/pappers-hall/api`
 const OUT = resolve(HERE, arg('--out', '../../reports/v03-api-results.json'))
 /** C01 "Global irrigation contribution to wheat and maize yield": has a DOI, read=false. */

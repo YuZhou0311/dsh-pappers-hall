@@ -35,13 +35,17 @@ export const COLLECTION_COLORS = ['blue', 'green', 'amber', 'red', 'violet', 'sl
 /** Known Pappers-Hall wire tool names whose results get a source card. */
 export const TOOL_NAMES = [
   'papers_search',
+  'papers_get',
+  'papers_list',
   'papers_get_passage',
   'papers_get_figure',
+  'papers_manage',
+  'papers_annotations',
+  'papers_overview',
+  'papers_changes',
+  'papers_pdf',
   'papers_translate',
-  'papers_cite',
-  'papers_index_status',
-  'papers_propose_changes',
-  'papers_apply_changes',
-  'papers_get_annotations',
-  'papers_annotate',
+  'notes_search',
+  'notes_get',
+  'notes_edit',
 ]

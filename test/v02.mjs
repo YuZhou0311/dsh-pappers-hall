@@ -7,7 +7,7 @@
  * rich metadata, AI translation/answer/search channels, plus a small regression
  * sample. It records real values and never rewrites expectations.
  *
- * Usage: node test/v02.mjs [--base http://127.0.0.1:54731] [--out ../reports/v02-api-results.json]
+ * Usage: node test/v02.mjs [--base http://127.0.0.1:3080] [--out ../reports/v02-api-results.json]
  */
 import { writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -19,7 +19,7 @@ const arg = (name, fallback) => {
   const i = args.indexOf(name)
   return i >= 0 ? args[i + 1] : fallback
 }
-const BASE = arg('--base', process.env.PAPPERS_BASE ?? 'http://127.0.0.1:54731')
+const BASE = arg('--base', process.env.PAPPERS_BASE ?? 'http://127.0.0.1:3080')
 const OUT = resolve(HERE, arg('--out', '../../reports/v02-api-results.json'))
 const API = `${BASE}/pappers-hall/api`
 const A01 = arg('--paper', 'ph-53132d8d95a6')

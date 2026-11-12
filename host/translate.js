@@ -742,7 +742,7 @@ export function createTranslate({ store, ai, config = {}, logger, ctx, settings:
     // A selection taken from a broken font encoding is not translatable text.
     // Refuse honestly instead of returning a confident translation of glyph codes.
     let textRepair = null
-    if (looksLikeCipherText(sourceText)) {
+    if (looksLikeCipherText(sourceText) && params.skipCipherGuard !== true) {
       // Region-level repair: if the client sent selection rects, OCR the page and
       // read the text that actually sits inside the selection (figure labels,
       // scanned pages) before giving up on translation.
@@ -756,7 +756,7 @@ export function createTranslate({ store, ai, config = {}, logger, ctx, settings:
         } catch (error) { /* optional OCR capability */ }
       }
     }
-    if (looksLikeCipherText(sourceText)) {
+    if (looksLikeCipherText(sourceText) && params.skipCipherGuard !== true) {
       return {
         status: 'unavailable',
         translation: null,

@@ -2384,6 +2384,59 @@ export function createStore({ db, layout, fts5, config = {}, logger, manifest = 
     },
 
     /**
+     * `ocrRegionText` — OCR text inside normalized page rects (region translate).
+     *
+     * Unlike {@link repairQuoteFromOcr} this is not limited to cipher quotes: the
+     * side-by-side paper panel can box-select any patch of a page and translate
+     * the OCR text that actually sits inside the selection.
+     * @param {string} paperId paper id.
+     * @param {number} page 1-based page.
+     * @param {Array<{x:number,y:number,w:number,h:number}>} rects normalized page rects.
+     * @returns {Promise<string>} region text, or '' when OCR/selection yields nothing.
+     */
+    async ocrRegionText(paperId, page, rects) {
+      const ocr = attached.ocr
+      if (ocr === undefined || ocr === null || typeof ocr.ensurePageBlocks !== 'function') return ''
+      const safeRects = Array.isArray(rects)
+        ? rects
+            .map((rect) => ({ x: Number(rect?.x), y: Number(rect?.y), w: Number(rect?.w), h: Number(rect?.h) }))
+            .filter((rect) => [rect.x, rect.y, rect.w, rect.h].every((value) => Number.isFinite(value) && value >= 0))
+        : []
+      if (safeRects.length === 0) return ''
+      let entry
+      try { entry = await ocr.ensurePageBlocks(String(paperId), Number(page)) } catch (error) { return '' }
+      if (entry === null || entry === undefined || !Array.isArray(entry.blocks) || entry.blocks.length === 0) return ''
+      const width = Number(entry.width) > 0 ? Number(entry.width) : 1
+      const height = Number(entry.height) > 0 ? Number(entry.height) : 1
+      const boxes = []
+      for (const block of entry.blocks) {
+        if (block === null || typeof block !== 'object' || typeof block.text !== 'string' || block.text.trim() === '') continue
+        const points = Array.isArray(block.box) ? block.box : []
+        const xs = points.map((point) => Number(point?.[0])).filter(Number.isFinite)
+        const ys = points.map((point) => Number(point?.[1])).filter(Number.isFinite)
+        if (xs.length === 0 || ys.length === 0) continue
+        const nx = Math.min(...xs) / width
+        const ny = Math.min(...ys) / height
+        const nw = (Math.max(...xs) - Math.min(...xs)) / width
+        const nh = (Math.max(...ys) - Math.min(...ys)) / height
+        const centerX = nx + nw / 2
+        const centerY = ny + nh / 2
+        const hit = safeRects.some((rect) => {
+          const inside = centerX >= rect.x && centerX <= rect.x + rect.w && centerY >= rect.y && centerY <= rect.y + rect.h
+          const left = Math.max(nx, rect.x)
+          const top = Math.max(ny, rect.y)
+          const right = Math.min(nx + nw, rect.x + rect.w)
+          const bottom = Math.min(ny + nh, rect.y + rect.h)
+          return inside || (right > left && bottom > top && (right - left) * (bottom - top) / Math.max(1e-6, nw * nh) >= 0.3)
+        })
+        if (hit) boxes.push({ x: nx, y: ny, text: block.text.trim() })
+      }
+      if (boxes.length === 0) return ''
+      boxes.sort((left, right) => (Math.abs(left.y - right.y) > 0.01 ? left.y - right.y : left.x - right.x))
+      return boxes.map((box) => box.text).join(' ').replace(/\s+/g, ' ').trim()
+    },
+
+    /**
      * `pageTextForAi` — quality-gated page text for LLM/AI consumers (v0.17).
      *
      * Publisher PDFs with broken font encodings can yield glyph-code text
@@ -5040,6 +5093,29 @@ function resolveBundleItem(db, kind, id, page, options = {}) {
       material: { kind: 'annotation', id, title: paper.title, paperId: row.paper_id, page: Number(row.page), text: row.text, quote: row.quote ?? null },
     }
   }
+  // v0.22 notes workbench lives in `note_docs`; the old `notes` table is only a
+  // legacy fallback. Resolving only the legacy table made every new note fail to
+  // enter a conversation bundle with a misleading HTTP 404.
+  const doc = db.prepare('SELECT * FROM note_docs WHERE id = ?').get(id)
+  if (doc !== undefined) {
+    if (doc.state !== 'active') throw notFound(`note ${id} is not available`, { kind, id })
+    const links = db.prepare('SELECT paper_id FROM note_paper_links WHERE note_id = ? ORDER BY created_at, paper_id').all(id)
+    const paperIds = links.map((link) => link.paper_id).filter(Boolean)
+    return {
+      kind,
+      id,
+      page: page ?? null,
+      snapshot: { kind, id, title: doc.title ?? '', paperIds },
+      material: {
+        kind: 'note',
+        id,
+        title: doc.title || '未命名笔记',
+        text: doc.content_md || doc.index_text || '',
+        paperId: paperIds[0] ?? null,
+        paperIds,
+      },
+    }
+  }
   const row = db.prepare('SELECT * FROM notes WHERE id = ?').get(id)
   if (row === undefined || row.state !== 'active') throw notFound(`note ${id} is not available`, { kind, id })
   return {
@@ -5080,9 +5156,27 @@ export function buildBundleToken(bundleId, materials) {
   if (counts.paper > 0) parts.push(`${counts.paper} 篇论文`)
   if (counts.figure > 0) parts.push(`${counts.figure} 张图`)
   if (counts.annotation > 0) parts.push(`${counts.annotation} 条批注`)
-  if (counts.note > 0) parts.push(`${counts.note} 条笔记`)
+  if (counts.note > 0) {
+    // A note token without its title made the model guess which note was attached;
+    // include a short title so the first model step can identify it.
+    const titleItem = materials.find((item) => {
+      if (!item || item.kind !== 'note') return false
+      const value = item.material && typeof item.material.title === 'string' ? item.material.title : item.title
+      return typeof value === 'string' && value.trim() !== ''
+    })
+    const rawTitle = titleItem ? (titleItem.material && titleItem.material.title) || titleItem.title || '' : ''
+    const cleanTitle = rawTitle.replace(/\s+/g, ' ').trim()
+    const shortTitle = cleanTitle.length > 20 ? cleanTitle.slice(0, 20) + '…' : cleanTitle
+    parts.push(`${counts.note} 条笔记${shortTitle ? `《${shortTitle}》` : ''}`)
+  }
   const summary = parts.length === 0 ? `${materials.length} 项材料` : parts.join(' + ')
-  return `⟦Pappers-Hall ${summary} · bundle=${bundleId}⟧`.slice(0, 120)
+  // Always keep the bundle suffix intact: truncating the whole string could cut
+  // `bundle=bn-…`, which is the only handle the model has to the materials.
+  const prefix = '⟦Pappers-Hall '
+  const suffix = ` · bundle=${bundleId}⟧`
+  const room = Math.max(1, 120 - prefix.length - suffix.length)
+  const clipped = summary.length > room ? summary.slice(0, Math.max(1, room - 1)) + '…' : summary
+  return `${prefix}${clipped}${suffix}`
 }
 
 /**

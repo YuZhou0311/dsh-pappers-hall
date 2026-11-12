@@ -14,9 +14,48 @@
  *
  * @module pappers-hall/host/tools
  */
-import { open, readFile, stat } from 'node:fs/promises'
+import { mkdir, mkdtemp, open, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { normalizeTitleKey, parseBundleId } from './store.js'
+
+/**
+ * Bound the local-PDF preview cache so viewing many unimported pages cannot
+ * grow without limit. Keeps the newest files, drops old/large ones.
+ * @param {string} directory preview directory.
+ * @param {{maxFiles?:number,maxBytes?:number,maxAgeMs?:number}} [limits]
+ */
+export async function prunePdfPreviewCache(directory, limits = {}) {
+  const maxFiles = Number.isInteger(limits.maxFiles) ? limits.maxFiles : 500
+  const maxBytes = Number.isInteger(limits.maxBytes) ? limits.maxBytes : 256 * 1024 * 1024
+  const maxAgeMs = Number.isInteger(limits.maxAgeMs) ? limits.maxAgeMs : 7 * 24 * 60 * 60 * 1000
+  let entries
+  try { entries = await readdir(directory) } catch { return }
+  const rows = []
+  for (const name of entries) {
+    if (!/\.png$/i.test(name)) continue
+    try {
+      const info = await stat(path.join(directory, name))
+      if (info.isFile()) rows.push({ name, mtime: info.mtimeMs, size: info.size })
+    } catch {}
+  }
+  rows.sort((left, right) => right.mtime - left.mtime)
+  let kept = 0
+  let bytes = 0
+  const now = Date.now()
+  for (const row of rows) {
+    const expired = now - row.mtime > maxAgeMs
+    const overCount = kept >= maxFiles
+    const overBytes = bytes + row.size > maxBytes
+    if (expired || overCount || overBytes) {
+      try { await rm(path.join(directory, row.name), { force: true }) } catch {}
+      continue
+    }
+    kept += 1
+    bytes += row.size
+  }
+}
 
 /** Plain JSON-object output schema shared by every tool. */
 const JSON_OUTPUT_SCHEMA = { type: 'object', additionalProperties: true }
@@ -58,7 +97,7 @@ function unavailable(reason, meta = {}) {
  * @param {object} [options.config] plugin config.
  * @returns {object[]} tool definitions ready for `ctx.tools.register`.
  */
-export function buildToolDefinitions({ store, search, ctx, layout, logger, config = {}, classify, ingest, pdf, embedding, notes }) {
+export function buildToolDefinitions({ store, search, ctx, layout, logger, config = {}, classify, ingest, pdf, embedding, notes, ocr }) {
   const attachments = () => (typeof ctx?.get === 'function' ? ctx.get('attachments') : undefined)
   /** Tool outputs must be lossless JSON (no undefined/NaN/Promises). */
   const jsonSafe = (value) => {
@@ -110,19 +149,41 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
     return match === null ? null : match[0].replace(/[.,;)]+$/, '')
   }
 
+  /** Extract figure/table captions (label, page, first caption line) from page text. */
+  function visualCaptions(pages) {
+    const seen = new Map()
+    const lines = []
+    for (let index = 0; index < (Array.isArray(pages) ? pages.length : 0); index += 1) {
+      for (const rawLine of String(pages[index] ?? '').split('\n')) {
+        const line = rawLine.replace(/\s+/g, ' ').trim()
+        const match = /^(Figure|Fig\.?|Table)\s+([A-Z]?\d+)\s*[.:|]?\s*(.*)$/i.exec(line)
+        if (match === null) continue
+        const kind = /^tab/i.test(match[1]) ? 'Table' : 'Figure'
+        const label = `${kind} ${match[2].toUpperCase()}`
+        if (seen.has(label)) continue
+        const caption = String(match[3] ?? '').replace(/\s+/g, ' ').trim().slice(0, 320)
+        if (caption.length < 3) continue
+        seen.set(label, true)
+        lines.push({ label, page: index + 1, caption })
+      }
+    }
+    return lines.slice(0, 80)
+  }
+
   /** PDF-file preview used by papers_import_file confirm:false (read-only). */
   async function previewPdfFile(filePath) {
     let info = null
-    let firstPage = ''
+    let pages = []
     try {
       if (pdf !== undefined && pdf !== null && typeof pdf.info === 'function') info = await pdf.info(filePath)
     } catch {}
     try {
       if (pdf !== undefined && pdf !== null && typeof pdf.textPages === 'function') {
         const text = await pdf.textPages(filePath)
-        firstPage = String(text.pages?.[0] ?? '')
+        pages = Array.isArray(text.pages) ? text.pages.map((page) => String(page ?? '')) : []
       }
     } catch {}
+    const firstPage = pages[0] ?? ''
     const doi = extractDoi(firstPage) ?? extractDoi(info?.subject)
     const rawInfoTitle = typeof info?.title === 'string' ? info.title.trim() : ''
     // v0.16: many publisher PDFs put a generic label ("Subject:", "Title:") in
@@ -135,13 +196,36 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
       .map((line) => line.trim())
       .find((line) => line.length >= 8 && line.length <= 240 && !/^(abstract|keywords|doi|arxiv|©|published as|proceedings of|under review|preprint|conference paper)/i.test(line))
     const title = infoTitle !== '' ? infoTitle : firstLine ?? ''
+    // Read enough text for the Agent to decide whether this is actually an
+    // academic paper before asking the user to import it. The preview stays
+    // read-only; it never writes to the library.
+    const contentSample = pages.slice(0, 2).join('\n').replace(/\s+/g, ' ').trim().slice(0, 1800)
+    const lower = contentSample.toLowerCase()
+    // Many publisher PDFs render headings with letter-spaced all-caps
+    // ("A B S T R A C T", "I N T R O D U C T I O N"); match those too.
+    const hasWord = (word) => new RegExp('\\b' + word.split('').join('\\s*') + '\\b', 'i').test(contentSample)
+    const signals = {
+      doi: doi !== null && doi !== undefined,
+      abstract: /\babstract\b|摘要/.test(lower) || hasWord('abstract'),
+      introduction: /\bintroduction\b|\brelated work\b|\bmethods?\b|\bresults?\b|\bconclusions?\b|引言|方法|结果|结论/.test(lower) || hasWord('introduction'),
+      references: /\breferences\b|\bbibliography\b|参考文献/.test(lower) || hasWord('references'),
+      authors: /(university|institute|department|laboratory|@|大学|学院|研究所)/i.test(contentSample),
+      pageCount: Number(info?.pageCount) >= 4,
+    }
+    const score = Object.values(signals).filter(Boolean).length
+    const looksLikePaper = Boolean(title) && (signals.doi || signals.abstract || score >= 3 || (signals.authors && signals.pageCount) || (signals.pageCount && (signals.introduction || signals.references)))
     return {
-      kind: title !== '' ? 'paper' : 'unknown',
+      kind: looksLikePaper ? 'paper' : 'unknown',
+      looksLikePaper,
       title: title !== '' ? title : null,
       doi,
       pageCount: info?.pageCount ?? null,
       bytes: null,
+      signals,
       firstPageSnippet: firstPage.replace(/\s+/g, ' ').trim().slice(0, 400),
+      contentSample,
+      textAvailable: contentSample.length > 0,
+      visuals: visualCaptions(pages),
     }
   }
 
@@ -346,7 +430,7 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
     }
   }
 
-  return [
+  const baseTools = [
     {
       name: 'papers_search',
       description:
@@ -390,6 +474,29 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
             const wanted = new Set(args.kinds.filter((kind) => bundleScope.kinds.has(kind)))
             items = items.filter((hit) => wanted.has(hit.kind))
           }
+          // Note materials are not guaranteed to be in the hybrid search index.
+          // A note explicitly placed in the conversation must still be readable
+          // on the first tool call, otherwise the model has to guess/query SQL.
+          const wantsNotes = !Array.isArray(args.kinds) || args.kinds.length === 0 || args.kinds.includes('note')
+          if (wantsNotes) {
+            const noteHits = []
+            for (const material of bundleScope.resolved.valid) {
+              if (material.kind !== 'note') continue
+              if (items.some((hit) => hit.kind === 'note' && hit.id === material.id)) continue
+              const content = String(material.text || '').replace(/\s+/g, ' ').trim()
+              noteHits.push({
+                kind: 'note',
+                id: material.id,
+                title: material.title || '未命名笔记',
+                paperId: material.paperId || null,
+                snippet: content.slice(0, 320),
+                text: content.slice(0, 1600),
+                score: 1,
+                reasons: ['bundle_material'],
+              })
+            }
+            if (noteHits.length > 0) items = noteHits.concat(items)
+          }
         } else if (Array.isArray(args.kinds) && args.kinds.length > 0) {
           items = items.filter((hit) => args.kinds.includes(hit.kind))
         }
@@ -414,13 +521,17 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
     {
       name: 'papers_get_passage',
       description:
-        'Read the exact text of a page (or the page containing a quote) from one paper in the Pappers-Hall library. ' +
-        'The result states whether the passage is full text, abstract only, or metadata only.',
+        'Read exact paper text: one page, a quote location, or a batch/range of pages (pages/page_start/page_end). ' +
+        'Use batches for full-text or deep reading instead of one request per page. The result reports text source and page coverage.',
       parameters: {
         type: 'object',
         properties: {
           paper_id: { type: 'string', description: 'Paper id (ph-...).' },
           page: { type: 'integer', description: '1-based physical PDF page.' },
+          pages: { type: 'array', items: { type: 'integer' }, description: 'Read several pages in one call (1-based, up to 60). Use for full-text/deep reading.' },
+          page_start: { type: 'integer', description: 'First page of a contiguous range (inclusive).' },
+          page_end: { type: 'integer', description: 'Last page of a contiguous range (inclusive).' },
+          max_chars: { type: 'integer', description: 'Optional total character budget for a batch read (default 120000, cap 300000).' },
           quote: { type: 'string', description: 'Text fragment to locate; used when page is omitted.' },
           bundle_id: { type: 'string', description: 'Reference bundle id when the source came from a conversation bundle.' },
         },
@@ -441,6 +552,66 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
         }
         const version = store.latestVersion(paperId)
         const pageTexts = store.pageTexts(paperId)
+        const requestedPages = (() => {
+          const values = []
+          if (Array.isArray(args.pages)) values.push(...args.pages)
+          if (Number.isInteger(args.page_start) && Number.isInteger(args.page_end)) {
+            const start = Math.max(1, Math.min(args.page_start, args.page_end))
+            const end = Math.max(1, Math.max(args.page_start, args.page_end))
+            for (let page = start; page <= Math.min(end, start + 120); page += 1) values.push(page)
+          }
+          return values.filter((page, index, all) => Number.isInteger(page) && page > 0 && all.indexOf(page) === index).slice(0, 60)
+        })()
+        if (requestedPages.length > 1 || (requestedPages.length === 1 && !Number.isInteger(args.page))) {
+          if (pageTexts.length === 0) {
+            const detail = store.libraryGet({ id: paperId })
+            const abstract = typeof detail.abstract === 'string' ? detail.abstract : ''
+            return { paper: { id: paper.id, title: paper.title, titleZh: paper.titleZh }, pages: [], page: null, text: abstract, depth: abstract === '' ? 'metadata_only' : 'abstract', coverage: { requested: requestedPages, read: [], complete: false }, location: { page: null } }
+          }
+          const pageCount = Number(paper.pageCount) || Math.max(...pageTexts.map((row) => Number(row.page) || 0), 0)
+          const maxChars = Math.max(4000, Math.min(300000, Number.isInteger(args.max_chars) ? args.max_chars : 120000))
+          const pages = []
+          let used = 0
+          for (const pageNumber of requestedPages) {
+            if (used >= maxChars) break
+            let text = ''
+            let source = 'pdf'
+            let lowQuality = false
+            try {
+              const readable = await store.pageTextForAi(paperId, pageNumber)
+              if (readable !== null) {
+                text = String(readable.text || '')
+                source = readable.source || 'pdf'
+                lowQuality = readable.lowQuality === true
+              }
+            } catch (error) { /* fall through to stored page text */ }
+            if (text.trim() === '') {
+              const row = pageTexts.find((candidate) => Number(candidate.page) === pageNumber)
+              text = typeof row?.text === 'string' ? row.text : ''
+            }
+            const remaining = maxChars - used
+            const clipped = text.length > remaining ? text.slice(0, Math.max(0, remaining)) : text
+            if (clipped.trim() !== '') {
+              pages.push({ page: pageNumber, text: clipped, textSource: source, lowQuality })
+              used += clipped.length
+            }
+          }
+          const readPages = pages.map((entry) => entry.page)
+          return {
+            paper: { id: paper.id, title: paper.title, titleZh: paper.titleZh, pageCount },
+            pages,
+            page: readPages[0] ?? null,
+            depth: 'fulltext',
+            coverage: {
+              requested: requestedPages,
+              read: readPages,
+              pageCount,
+              complete: readPages.length === requestedPages.length,
+              truncated: used >= maxChars,
+            },
+            source_sha256: version?.sha256 ?? paper.sha256 ?? null,
+          }
+        }
         let targetPage = Number.isInteger(args.page) ? args.page : undefined
         let passageText = ''
         if (pageTexts.length === 0) {
@@ -506,7 +677,8 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
       name: 'papers_get_figure',
       description:
         'Return one figure of a paper together with its real image, so the current model can look at the figure itself. ' +
-        'Identify the figure by figure_id, or by paper_id plus page. The JSON description includes label, caption and page.',
+        'Identify the figure by figure_id, or by paper_id plus page. The JSON description includes label, caption and page. ' +
+        'Use this proactively when reading/summarizing a paper; captions alone are not enough to describe a figure accurately.',
       parameters: {
         type: 'object',
         properties: {
@@ -1052,6 +1224,64 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
     },
 
     {
+      name: 'papers_get_outline',
+      description:
+        'Get a paper\'s page count, section outline (titles + starting pages) and figure map. ' +
+        'Call this before a full-text/deep read, then fetch pages in batches with papers_get_passage. ' +
+        'Do not claim a full read without consulting the outline and covering the relevant pages.',
+      parameters: {
+        type: 'object',
+        properties: {
+          paper_id: { type: 'string', description: 'Paper id (ph-...).' },
+          bundle_id: { type: 'string', description: 'Reference bundle id when the source came from a conversation bundle.' },
+        },
+        required: ['paper_id'],
+        additionalProperties: false,
+      },
+      output: { schema: JSON_OUTPUT_SCHEMA, render: (_args, value) => renderJson(value) },
+      execute(args, exec) {
+        const paperId = String(args.paper_id || '')
+        if (paperId === '') return unavailable('papers_get_outline requires paper_id')
+        const paper = store.paperSummary(paperId)
+        if (paper === undefined || paper.state !== 'active') return unavailable(`paper ${paperId} is not available`)
+        if (typeof args.bundle_id === 'string' && args.bundle_id !== '') {
+          const scope = resolveBundleScope(args.bundle_id, exec)
+          if (!scope.ok) return scope.payload
+          if (!scope.paperIds.has(paperId) && !scope.itemKeys.has(`paper:${paperId}`)) {
+            return unavailable('paper is not part of the reference bundle', { bundleId: args.bundle_id })
+          }
+        }
+        let outline = []
+        let outlineSource = 'none'
+        try {
+          const value = store.readerOutline({ id: paperId })
+          outline = Array.isArray(value.items) ? value.items : []
+          outlineSource = value.source || 'none'
+        } catch (error) { outline = [] }
+        let figures = []
+        try { figures = store.figuresList({ paperId }) } catch (error) { figures = [] }
+        const pageCount = Number(paper.pageCount) || 0
+        return {
+          paper: {
+            id: paper.id,
+            title: paper.title,
+            titleZh: paper.titleZh,
+            pageCount,
+            read: paper.read === true,
+            abstract: (() => {
+              const readable = store.readableAbstract(paperId)
+              return readable && typeof readable.text === 'string' ? readable.text.replace(/\s+/g, ' ').trim().slice(0, 1200) : null
+            })(),
+          },
+          outline: outline.slice(0, 120).map((item) => ({ title: item.title, page: Number(item.page) || 1, level: Number(item.level) || 1 })),
+          outlineSource,
+          figures: figures.slice(0, 50).map((figure) => ({ figureId: figure.id, label: figure.label, page: Number(figure.page) || 1, caption: figure.caption ?? null })),
+          readingHint: 'Use papers_get_passage with pages:[...] or page_start/page_end to read all relevant pages in batches.',
+        }
+      },
+    },
+
+    {
       name: 'notes_list',
       description:
         'List personal notes with title, folder, linked papers, updated time and a short preview. Use it to find notes, or notes.search for full-text search. Notes are the user\'s own content; treat them as read-only unless the user asks to edit.',
@@ -1313,11 +1543,11 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
     {
       name: 'papers_import_file',
       description:
-        'Preview or import one local PDF into the Pappers-Hall library. ALWAYS call with confirm=false first when the user mentions/uploads a PDF path: ' +
-        'it only reads title/DOI/page facts and returns status="needs_confirmation" with a question — it never writes. Only after the user says yes, call again with confirm=true; ' +
-        'the import then runs the normal ingest pipeline and auto-classifies the new paper into a folder (creating one if needed). ' +
-        'Relative paths resolve against the workspace cwd. Duplicate files return status="duplicate". ' +
-        'After a successful import, tell the user the paper is unclassified and offer to read it with papers_list/papers_get and organize it with papers_folders.',
+        'Inspect or import one local PDF. ALWAYS call confirm=false first: it returns a read-only preview with title/DOI/pageCount, ' +
+        'text signals and a contentSample. Read that evidence and decide whether it is actually an academic paper before asking the user ' +
+        'to import it; if it is not a paper (invoice, slides, form, random document), do not ask to import. Only after the user explicitly ' +
+        'agrees call confirm=true. Import does NOT auto-classify: the paper lands unclassified, so tell the user and offer to read/organize it. ' +
+        'Relative paths resolve against the workspace cwd; duplicates return status="duplicate".',
       parameters: {
         type: 'object',
         properties: {
@@ -1347,17 +1577,21 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
         if (head.toString('latin1') !== '%PDF-') return { status: 'invalid', reason: 'file is not a PDF (missing %PDF- header)', path: resolved }
         if (args.confirm !== true) {
           const preview = await previewPdfFile(resolved)
-          const titleText = preview.title ?? path.basename(resolved)
           return {
-            status: 'needs_confirmation',
+            status: 'preview',
             kind: preview.kind,
+            looksLikePaper: preview.looksLikePaper,
             title: preview.title,
             doi: preview.doi,
             pageCount: preview.pageCount,
             bytes: fileStat.size,
             path: resolved,
+            signals: preview.signals,
+            textAvailable: preview.textAvailable,
+            visuals: preview.visuals,
             firstPageSnippet: preview.firstPageSnippet,
-            question: `这篇 PDF 看起来是论文《${titleText}》，要加入论文中心吗？`,
+            contentSample: preview.contentSample,
+            nextStep: 'Read contentSample and the signals, decide whether this is genuinely an academic paper, then ask the user whether to add it to the paper center. Do not ask to import non-paper documents.',
           }
         }
         if (ingest === undefined || ingest === null || typeof ingest.importRequest !== 'function') {
@@ -1411,6 +1645,631 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
         const paperId = typeof args.paperId === 'string' ? args.paperId : undefined
         const query = typeof args.query === 'string' ? args.query : undefined
         return relatedPapers({ paperId, query, limit: args.limit })
+      },
+    },
+  ]
+
+  // ---------------------------------------------------------------------------
+  // v0.24 tool consolidation: expose a smaller, action-oriented surface while
+  // keeping the well-tested implementations above as internal primitives.
+  // ---------------------------------------------------------------------------
+  const toolByName = new Map(baseTools.map((tool) => [tool.name, tool]))
+  const invoke = (name, args, exec) => {
+    const tool = toolByName.get(name)
+    if (tool === undefined) return unavailable(`tool ${name} is not available`)
+    return tool.execute(args, exec)
+  }
+
+  return [
+    {
+      name: 'papers_search',
+      description:
+        'Search the Pappers-Hall paper library (titles, full text, figure captions, annotations and notes). ' +
+        'mode:"search" (default) searches the library or one reference bundle; ' +
+        'mode:"related" finds semantic neighbors of a paper/topic; ' +
+        'mode:"abstracts" reads abstracts only (single/batch or by folder/query). ' +
+        'For a conversation bundle use scope:"reference_bundle" and bundle_id, and kinds:["note"] for notes.',
+      parameters: {
+        type: 'object',
+        properties: {
+          mode: { type: 'string', enum: ['search', 'related', 'abstracts'], description: 'search (default) | related | abstracts.' },
+          query: { type: 'string', description: 'Search text or semantic query (Chinese/English).' },
+          scope: { type: 'string', enum: ['reference_bundle', 'library'], description: 'Search scope.' },
+          bundle_id: { type: 'string', description: 'Reference bundle id/token; required for scope=reference_bundle.' },
+          kinds: { type: 'array', items: { type: 'string', enum: ['paper', 'figure', 'annotation', 'note'] }, description: 'Optional kind filter.' },
+          limit: { type: 'integer', description: 'Maximum results.' },
+          ai: { type: 'boolean', description: 'Set false to disable AI query expansion/reranking.' },
+          paperId: { type: 'string', description: 'Related mode: source paper id.' },
+          paperIds: { type: 'array', items: { type: 'string' }, description: 'Abstracts mode: paper ids.' },
+          folderId: { type: 'string', description: 'Abstracts mode: folder filter.' },
+          offset: { type: 'integer', description: 'Abstracts mode: pagination offset.' },
+        },
+        additionalProperties: false,
+      },
+      output: { schema: JSON_OUTPUT_SCHEMA, render: (_args, value) => renderJson(value) },
+      execute(args, exec) {
+        const mode = args.mode === 'related' || args.mode === 'abstracts' ? args.mode : 'search'
+        if (mode === 'related') return invoke('papers_related', { paperId: args.paperId, query: args.query, limit: args.limit }, exec)
+        if (mode === 'abstracts') {
+          return invoke('papers_abstracts', {
+            paperId: args.paperId,
+            paperIds: args.paperIds,
+            folderId: args.folderId,
+            query: args.query,
+            limit: args.limit,
+            offset: args.offset,
+          }, exec)
+        }
+        return invoke('papers_search', {
+          query: String(args.query ?? ''),
+          scope: args.scope,
+          bundle_id: args.bundle_id,
+          kinds: args.kinds,
+          limit: args.limit,
+          ai: args.ai,
+        }, exec)
+      },
+    },
+
+    {
+      name: 'papers_get',
+      description:
+        'Read one paper: view:"detail" (default) returns metadata, abstract, folders, keywords, figures and counts; ' +
+        'view:"outline" returns pageCount, section outline and figure map before a deep read; ' +
+        'view:"cite" formats APA/BibTeX/GB/T 7714 citations. ' +
+        'Use papers_get_passage for actual page text; for figures use view:"outline" then papers_get_figure, and do not describe a figure from its caption alone.',
+      parameters: {
+        type: 'object',
+        properties: {
+          view: { type: 'string', enum: ['detail', 'outline', 'cite'], description: 'detail (default) | outline | cite.' },
+          paperId: { type: 'string', description: 'Paper id (ph-...).' },
+          paper_ids: { type: 'array', items: { type: 'string' }, description: 'Cite view: paper ids.' },
+          style: { type: 'string', enum: ['apa', 'bibtex', 'gbt7714'], description: 'Cite view: citation style.' },
+          bundle_id: { type: 'string', description: 'Outline view: reference bundle id/token.' },
+        },
+        additionalProperties: false,
+      },
+      output: { schema: JSON_OUTPUT_SCHEMA, render: (_args, value) => renderJson(value) },
+      execute(args, exec) {
+        if (args.view === 'outline') return invoke('papers_get_outline', { paper_id: args.paperId, bundle_id: args.bundle_id }, exec)
+        if (args.view === 'cite') return invoke('papers_cite', { paper_ids: args.paper_ids, style: args.style }, exec)
+        return invoke('papers_get', { paperId: args.paperId }, exec)
+      },
+    },
+
+    toolByName.get('papers_list'),
+    toolByName.get('papers_get_passage'),
+    toolByName.get('papers_get_figure'),
+
+    {
+      name: 'papers_manage',
+      description:
+        'Edit or organize papers (tags are human-only and cannot be written by the Agent): action:"update" edits metadata; action:"tree"/"create"/"rename"/"delete"/"assign"/"unassign" manages folders; ' +
+        'action:"hints" reads read-only folder-similarity hints (never a decision). Every folder mutation is undoable.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', enum: ['update', 'tree', 'create', 'rename', 'delete', 'assign', 'unassign', 'hints'], description: 'Operation.' },
+          paperId: { type: 'string', description: 'Update mode: paper id.' },
+          paperIds: { type: 'array', items: { type: 'string' }, description: 'Folder assign/unassign or hint paper ids.' },
+          patch: { type: 'object', description: 'Update mode: metadata patch (titleZh, authors, venue, year, doi, abstract, keywords, read, readingProgress). Tags are human-only and ignored.' },
+          id: { type: 'string', description: 'Folder rename/delete id.' },
+          folderId: { type: 'string', description: 'Target folder id for assign/unassign.' },
+          name: { type: 'string', description: 'Folder name for create/rename.' },
+          parentId: { type: 'string', description: 'Parent folder id for create.' },
+        },
+        required: ['action'],
+        additionalProperties: false,
+      },
+      output: { schema: JSON_OUTPUT_SCHEMA, render: (_args, value) => renderJson(value) },
+      execute(args, exec) {
+        if (args.action === 'hints') return invoke('papers_folder_hints', { paperIds: args.paperIds }, exec)
+        if (args.action === 'update') {
+          const patch = args.patch !== null && typeof args.patch === 'object' && !Array.isArray(args.patch) ? Object.assign({}, args.patch) : {}
+          const removed = []
+          for (const key of ['tags', 'addTags', 'removeTags', 'tag']) {
+            if (Object.hasOwn(patch, key)) { removed.push(key); delete patch[key] }
+          }
+          const result = invoke('papers_update', { paperId: args.paperId, patch }, exec)
+          if (removed.length === 0) return result
+          return Promise.resolve(result).then((value) => Object.assign({}, value, {
+            tagsPolicy: 'tags are human-only; the Agent cannot write tags',
+            ignoredPatchFields: removed,
+          }))
+        }
+        return invoke('papers_folders', args, exec)
+      },
+    },
+
+    {
+      name: 'papers_annotations',
+      description:
+        'Read or create annotations on one paper. action:"list" (default) lists highlights/area marks/notes with page, rects, quote and comment; ' +
+        'action:"create" stores an AI annotation (highlight/area/note) visible in the reader.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', enum: ['list', 'create'], description: 'list (default) | create.' },
+          paper_id: { type: 'string', description: 'Paper id (ph-...).' },
+          bundle_id: { type: 'string', description: 'List: reference bundle id/token.' },
+          state: { type: 'string', enum: ['active', 'trash', 'all'], description: 'List: state filter.' },
+          page: { type: 'integer', description: 'Create: 1-based page.' },
+          kind: { type: 'string', enum: ['highlight', 'area', 'note'], description: 'Create: annotation kind.' },
+          rects: { type: 'array', description: 'Create: page-relative 0-1 rects {x,y,w,h}.', items: { type: 'object', additionalProperties: true } },
+          quote: { type: 'string', description: 'Create: exact quoted text for a highlight.' },
+          comment: { type: 'string', description: 'Create: annotation text.' },
+          color: { type: 'string', enum: ['yellow', 'green', 'blue', 'red', 'purple'], description: 'Create: color.' },
+        },
+        required: ['paper_id'],
+        additionalProperties: false,
+      },
+      output: { schema: JSON_OUTPUT_SCHEMA, render: (_args, value) => renderJson(value) },
+      execute(args, exec) {
+        if (args.action === 'create') {
+          return invoke('papers_annotate', {
+            paper_id: args.paper_id,
+            page: args.page,
+            kind: args.kind,
+            rects: args.rects,
+            quote: args.quote,
+            comment: args.comment,
+            color: args.color,
+          }, exec)
+        }
+        return invoke('papers_get_annotations', { paper_id: args.paper_id, bundle_id: args.bundle_id, state: args.state }, exec)
+      },
+    },
+
+    {
+      name: 'papers_overview',
+      description:
+        'Get a compact library overview (counts, folders, tags, recent papers/annotations, semantic index). ' +
+        'Set include_status:true for search-index channels, background jobs and degraded capabilities.',
+      parameters: {
+        type: 'object',
+        properties: { include_status: { type: 'boolean', description: 'Also return index/job/degraded status.' } },
+        additionalProperties: false,
+      },
+      output: { schema: JSON_OUTPUT_SCHEMA, render: (_args, value) => renderJson(value) },
+      async execute(args, exec) {
+        const overview = await invoke('papers_overview', {}, exec)
+        if (args.include_status === true) {
+          const status = await invoke('papers_index_status', {}, exec)
+          return Object.assign({}, overview, { indexStatus: status })
+        }
+        return overview
+      },
+    },
+
+    {
+      name: 'papers_changes',
+      description:
+        'Batch library changes: action:"propose" registers operations for review and returns a proposal_id; ' +
+        'action:"apply" applies a reviewed proposal idempotently and returns per-operation results plus undo token.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', enum: ['propose', 'apply'], description: 'propose | apply.' },
+          operations: { type: 'array', description: 'Propose: operations; each has an "op" plus fields.', items: { type: 'object', additionalProperties: true } },
+          proposal_id: { type: 'string', description: 'Apply: proposal id.' },
+          operation_id: { type: 'string', description: 'Apply: idempotency key.' },
+        },
+        required: ['action'],
+        additionalProperties: false,
+      },
+      output: { schema: JSON_OUTPUT_SCHEMA, render: (_args, value) => renderJson(value) },
+      execute(args, exec) {
+        if (args.action === 'propose') {
+          const operations = Array.isArray(args.operations) ? args.operations : []
+          const tagOps = operations.filter((operation) => operation && ['add_tag', 'remove_tag', 'set_tags'].includes(String(operation.op ?? '')))
+          if (tagOps.length > 0) return unavailable('tags are human-only; the Agent cannot propose tag changes', { tagOperations: tagOps.length })
+          return invoke('papers_propose_changes', { operations }, exec)
+        }
+        if (args.action === 'apply') return invoke('papers_apply_changes', { proposal_id: args.proposal_id, operation_id: args.operation_id }, exec)
+        return invoke('papers_propose_changes', { operations: args.operations }, exec)
+      },
+    },
+
+    {
+      name: 'papers_pdf',
+      description:
+        'Read/visualize a local PDF without importing it. Works for any PDF, not only papers. action:"inspect" (default) returns ' +
+        'metadata, pageCount, paper signals and a contentSample; action:"read" returns lossless page text (pages/page_start/page_end, ' +
+        'max_chars); action:"view" renders a page or the page containing label:"Figure 2"/"Table 1" as a real image; action:"ocr" reads ' +
+        'image-only PDFs through the paper-centre OCR service when installed/enabled; action:"import" imports only after explicit consent. ' +
+        'For image-only PDFs read returns a no_text_layer fallback with ocr availability and next-step suggestions. ' +
+        'read/inspect also return a visuals list (label/page/caption); proactively view the main figures/tables with action:"view" instead of relying on captions. ' +
+        'This is faster and cheaper than bash/pdftotext/pdfimages.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Absolute PDF path or path relative to the workspace cwd.' },
+          action: { type: 'string', enum: ['inspect', 'read', 'view', 'ocr', 'import'], description: 'inspect (default) | read | view | ocr | import.' },
+          pages: { type: 'array', items: { type: 'integer' }, description: 'read: pages to fetch in one call (up to 60).' },
+          page_start: { type: 'integer', description: 'read: first page of a contiguous range.' },
+          page_end: { type: 'integer', description: 'read: last page of a contiguous range.' },
+          max_chars: { type: 'integer', description: 'read: total character budget (default 120000, cap 300000).' },
+          page: { type: 'integer', description: 'view: 1-based page to render.' },
+          label: { type: 'string', description: 'view: figure/table label such as "Figure 2" or "Table 1"; the containing page is rendered.' },
+          width: { type: 'integer', description: 'view: rendered image width in pixels (default 1400, max 2400).' },
+          crop: { type: 'boolean', description: 'view with label: crop around the caption (default true); set false for the full page.' },
+          confirm: { type: 'boolean', description: 'import: must be true; only after the user explicitly agrees.' },
+        },
+        required: ['path'],
+        additionalProperties: false,
+      },
+      output: {
+        schema: JSON_OUTPUT_SCHEMA,
+        render: (_args, value) => {
+          const { imageAttachmentRef, ...meta } = value
+          const blocks = [{ type: 'text', text: JSON.stringify(meta) }]
+          if (imageAttachmentRef !== undefined && imageAttachmentRef !== null) blocks.push({ type: 'image', attachment: imageAttachmentRef })
+          return blocks
+        },
+      },
+      async execute(args, exec) {
+        const resolved = resolveToolPath(args.path, exec)
+        if (resolved === undefined) return { status: 'invalid', reason: 'path is required' }
+        let fileStat
+        try { fileStat = await stat(resolved) } catch { return { status: 'invalid', reason: `file does not exist: ${resolved}`, path: resolved } }
+        if (!fileStat.isFile()) return { status: 'invalid', reason: 'path is not a regular file', path: resolved }
+        try {
+          const head = await headBytes(resolved, 5)
+          if (head.toString('latin1') !== '%PDF-') return { status: 'invalid', reason: 'file is not a PDF (missing %PDF- header)', path: resolved }
+        } catch (error) {
+          return { status: 'invalid', reason: `file is not readable: ${String(error?.message ?? error)}`, path: resolved }
+        }
+        const action = args.action === 'read' || args.action === 'view' || args.action === 'ocr' || args.action === 'import' ? args.action : 'inspect'
+        if (action === 'inspect') {
+          const preview = invoke('papers_import_file', { path: resolved, confirm: false }, exec)
+          return Promise.resolve(preview).then((value) => {
+            if (!value || value.textAvailable !== false) return value
+            const ocrFacts = ocr && typeof ocr.status === 'function' ? ocr.status() : null
+            return Object.assign({}, value, {
+              fallback: {
+                reason: 'no_text_layer',
+                textAvailable: false,
+                ocr: ocrFacts === null ? null : { available: ocrFacts.available === true, installed: ocrFacts.installed === true, enabled: ocrFacts.enabled === true, engine: ocrFacts.engine ?? null, reason: ocrFacts.reason ?? null },
+                canView: true,
+                suggestions: [
+                  'action:"view" to inspect page images directly',
+                  ...(ocrFacts && ocrFacts.available === true && ocrFacts.enabled === true ? ['action:"ocr" to OCR pages through the paper-centre OCR service'] : ['Install/enable OCR in paper-centre settings, then action:"ocr"']),
+                ],
+              },
+            })
+          })
+        }
+        if (action === 'import') {
+          if (args.confirm !== true) return invoke('papers_import_file', { path: resolved, confirm: false }, exec)
+          return invoke('papers_import_file', { path: resolved, confirm: true }, exec)
+        }
+        if (pdf === undefined || pdf === null || typeof pdf.textPages !== 'function') {
+          return unavailable('PDF text extraction is unavailable in this Host')
+        }
+        const text = await pdf.textPages(resolved)
+        let pageTexts = Array.isArray(text.pages) ? text.pages.map((value) => String(value ?? '')) : []
+        if (pageTexts.length === 0 && typeof pdf.info === 'function') {
+          try {
+            const info = await pdf.info(resolved)
+            const count = Number(info && info.pageCount)
+            if (Number.isInteger(count) && count > 0) pageTexts = new Array(count).fill('')
+          } catch (error) { /* keep zero-page fallback */ }
+        }
+        const ocrFacts = ocr && typeof ocr.status === 'function' ? ocr.status() : null
+        const ocrReady = Boolean(ocrFacts && ocrFacts.available === true && ocrFacts.installed === true && ocrFacts.enabled === true && ocr && typeof ocr.ocrImage === 'function')
+        if (action === 'read') {
+          const requested = []
+          if (Array.isArray(args.pages)) requested.push(...args.pages)
+          if (Number.isInteger(args.page_start) && Number.isInteger(args.page_end)) {
+            const start = Math.max(1, Math.min(args.page_start, args.page_end))
+            const end = Math.max(1, Math.max(args.page_start, args.page_end))
+            for (let page = start; page <= Math.min(end, start + 120); page += 1) requested.push(page)
+          }
+          const pageNumbers = requested.length > 0
+            ? requested.filter((value, index, all) => Number.isInteger(value) && value > 0 && all.indexOf(value) === index).slice(0, 60)
+            : pageTexts.map((_, index) => index + 1)
+          const maxChars = Math.max(4000, Math.min(300000, Number.isInteger(args.max_chars) ? args.max_chars : 120000))
+          const pages = []
+          let used = 0
+          for (const pageNumber of pageNumbers) {
+            if (used >= maxChars) break
+            const raw = pageTexts[pageNumber - 1] ?? ''
+            const remaining = maxChars - used
+            const clipped = raw.length > remaining ? raw.slice(0, Math.max(0, remaining)) : raw
+            if (clipped.trim() !== '') {
+              pages.push({ page: pageNumber, text: clipped, chars: clipped.length })
+              used += clipped.length
+            }
+          }
+          const readPages = pages.map((entry) => entry.page)
+          const missingPages = pageNumbers.filter((pageNumber) => !readPages.includes(pageNumber))
+          const textAvailable = pages.length > 0
+          return {
+            status: 'ok',
+            action: 'read',
+            path: resolved,
+            title: null,
+            pageCount: pageTexts.length,
+            pages,
+            coverage: { requested: pageNumbers, read: readPages, pageCount: pageTexts.length, complete: missingPages.length === 0, truncated: used >= maxChars },
+            textAvailable,
+            visuals: visualCaptions(pageTexts),
+            ...(textAvailable ? {} : {
+              fallback: {
+                reason: 'no_text_layer',
+                pages: pageNumbers,
+                textAvailable: false,
+                ocr: ocrFacts === null ? null : { available: ocrFacts.available === true, installed: ocrFacts.installed === true, enabled: ocrFacts.enabled === true, engine: ocrFacts.engine ?? null, reason: ocrFacts.reason ?? null },
+                canView: true,
+                suggestions: [
+                  'action:"view" to inspect the page image directly',
+                  ...(ocrReady ? ['action:"ocr" to read this image-only PDF via OCR'] : ['Install/enable OCR in paper-centre settings, then action:"ocr"']),
+                ],
+              },
+            }),
+            ...(missingPages.length > 0 && textAvailable ? { partialPages: missingPages } : {}),
+          }
+        }
+        if (action === 'ocr') {
+          if (!ocrReady) {
+            return {
+              status: 'unavailable',
+              action: 'ocr',
+              path: resolved,
+              reason: ocrFacts === null ? 'OCR service is not available' : (ocrFacts.reason || 'OCR is not installed/enabled'),
+              ocr: ocrFacts === null ? null : { available: ocrFacts.available === true, installed: ocrFacts.installed === true, enabled: ocrFacts.enabled === true, engine: ocrFacts.engine ?? null },
+              fallback: { reason: 'ocr_unavailable', canView: true, suggestions: ['action:"view" to inspect page images', 'Install/enable OCR in paper-centre settings, then retry action:"ocr"'] },
+            }
+          }
+          const requested = []
+          if (Array.isArray(args.pages)) requested.push(...args.pages)
+          if (Number.isInteger(args.page_start) && Number.isInteger(args.page_end)) {
+            const start = Math.max(1, Math.min(args.page_start, args.page_end))
+            const end = Math.max(1, Math.max(args.page_start, args.page_end))
+            for (let page = start; page <= Math.min(end, start + 60); page += 1) requested.push(page)
+          }
+          const emptyPages = pageTexts.map((value, index) => value.trim() === '' ? index + 1 : null).filter(Boolean)
+          const pageNumbers = (requested.length > 0
+            ? requested.filter((value, index, all) => Number.isInteger(value) && value > 0 && all.indexOf(value) === index)
+            : (emptyPages.length > 0 ? emptyPages : pageTexts.map((_, index) => index + 1))).slice(0, Math.max(1, Math.min(30, requested.length > 0 ? requested.length : 20)))
+          const maxChars = Math.max(4000, Math.min(300000, Number.isInteger(args.max_chars) ? args.max_chars : 120000))
+          const width = Math.max(800, Math.min(2400, Number.isInteger(args.width) ? args.width : 1600))
+          const pages = []
+          const failures = []
+          let used = 0
+          let directory
+          try {
+            directory = await mkdtemp(path.join(tmpdir(), 'pappers-hall-pdf-ocr-'))
+            for (const pageNumber of pageNumbers) {
+              if (used >= maxChars) break
+              const outputPath = path.join(directory, `page-${pageNumber}.png`)
+              try {
+                await pdf.renderPage({ filePath: resolved, page: pageNumber, width, outputPath })
+                const result = await ocr.ocrImage(outputPath)
+                const text = String(result && result.text ? result.text : '').replace(/\s+\n/g, '\n').trim()
+                if (text !== '') {
+                  const clipped = text.slice(0, Math.max(0, maxChars - used))
+                  pages.push({ page: pageNumber, text: clipped, chars: clipped.length, source: 'ocr', latencyMs: result.latencyMs ?? null })
+                  used += clipped.length
+                } else {
+                  failures.push({ page: pageNumber, reason: 'OCR returned empty text' })
+                }
+              } catch (error) {
+                failures.push({ page: pageNumber, reason: String(error?.message ?? error) })
+              }
+            }
+          } finally {
+            if (directory !== undefined) await rm(directory, { recursive: true, force: true }).catch(() => {})
+          }
+          return {
+            status: pages.length > 0 ? 'ok' : 'unavailable',
+            action: 'ocr',
+            path: resolved,
+            pageCount: pageTexts.length,
+            pages,
+            coverage: { requested: pageNumbers, read: pages.map((entry) => entry.page), pageCount: pageTexts.length, complete: pages.length === pageNumbers.length, truncated: used >= maxChars },
+            ocr: { available: true, engine: ocrFacts.engine ?? null, pages: pages.length, failures },
+            ...(pages.length === 0 ? { reason: failures[0]?.reason || 'OCR produced no text', fallback: { reason: 'ocr_failed', canView: true, suggestions: ['action:"view" to inspect page images', 'Check OCR settings or try a clearer PDF'] } } : {}),
+          }
+        }
+        // view
+        if (pdf.renderPage === undefined) return unavailable('PDF page rendering is unavailable in this Host')
+        let page = Number.isInteger(args.page) ? args.page : 1
+        let caption = ''
+        let label = typeof args.label === 'string' ? args.label.trim() : ''
+        if (pageTexts.length > 0 && (label !== '' || !Number.isInteger(args.page))) {
+          const normalizeLabel = (value) => String(value ?? '').replace(/^Fig\.?/i, 'Figure').replace(/\s+/g, ' ').trim().toLowerCase()
+          const wanted = normalizeLabel(label)
+          const fromCaptions = label === '' ? null : visualCaptions(pageTexts).find((item) => normalizeLabel(item.label) === wanted)
+          if (fromCaptions !== null) {
+            page = fromCaptions.page
+            caption = fromCaptions.caption
+          } else {
+            const escape = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            const variants = label === ''
+              ? []
+              : [label, label.replace(/^Figure/i, 'Fig.'), label.replace(/^Fig\.?/i, 'Figure')]
+            const target = variants.length > 0
+              ? new RegExp('(?:' + [...new Set(variants)].map(escape).join('|') + ')\\b', 'i')
+              : null
+            const found = target === null ? -1 : pageTexts.findIndex((value) => target.test(value))
+            if (found >= 0) page = found + 1
+            if (label !== '') {
+              const foundText = pageTexts[page - 1] ?? ''
+              const line = foundText.split('\n').find((value) => target !== null && target.test(value))
+              caption = (line ?? '').replace(/\s+/g, ' ').trim().slice(0, 300)
+            }
+          }
+        }
+        page = Math.max(1, Math.min(pageTexts.length || 9999, page))
+        const width = Math.max(600, Math.min(2400, Number.isInteger(args.width) ? args.width : 1400))
+        // A label view should show the actual figure/table, not the whole page.
+        // Use the layout block geometry around the caption when available.
+        let cropBox = null
+        if (label !== '' && args.crop !== false && typeof pdf.layoutPages === 'function') {
+          try {
+            const layoutPages = await pdf.layoutPages(resolved)
+            const pageLayout = layoutPages.find((value) => Number(value.page) === page)
+            if (pageLayout !== undefined && Array.isArray(pageLayout.blocks)) {
+              const normalize = (value) => String(value ?? '').replace(/\s+/g, ' ').trim().toLowerCase()
+              const wanted = normalize(label)
+              const block = pageLayout.blocks.find((candidate) => {
+                if (candidate === null || typeof candidate !== 'object') return false
+                const text = normalize(candidate.text || (Array.isArray(candidate.lines) ? candidate.lines.map((line) => line.text).join(' ') : ''))
+                  .replace(/^(figure|fig\.|table)\s*/, (prefix) => /^table/i.test(prefix) ? 'table ' : 'figure ')
+                return text.startsWith(wanted)
+              })
+              if (block !== null && block !== undefined && block.bbox) {
+                const pageWidth = Number(pageLayout.width) || 595
+                const pageHeight = Number(pageLayout.height) || 842
+                const isTable = /^table/i.test(label)
+                let top
+                let bottom
+                if (isTable) {
+                  top = Math.max(0, block.bbox.y - 6)
+                  bottom = Math.min(pageHeight, top + pageHeight * 0.55)
+                } else {
+                  top = Math.max(0, block.bbox.y - pageHeight * 0.62)
+                  bottom = Math.min(pageHeight, block.bbox.y + block.bbox.h + 6)
+                }
+                const cropHeight = bottom - top
+                if (cropHeight >= 40) {
+                  cropBox = { x: 0, y: top, w: pageWidth, h: cropHeight, mode: 'caption', pageWidth, pageHeight }
+                }
+              }
+            }
+          } catch (error) { cropBox = null }
+        }
+        let directory
+        try {
+          directory = await mkdtemp(path.join(tmpdir(), 'pappers-hall-pdf-'))
+          const outputPath = path.join(directory, 'page.png')
+          const size = cropBox !== null
+            ? await pdf.renderCrop({ filePath: resolved, page, bbox: cropBox, pageSize: { width: cropBox.pageWidth, height: cropBox.pageHeight }, targetWidth: width, outputPath })
+            : await pdf.renderPage({ filePath: resolved, page, width, outputPath })
+          const bytes = await readFile(outputPath)
+          const value = {
+            status: 'ok',
+            action: 'view',
+            path: resolved,
+            page,
+            pageCount: pageTexts.length,
+            label: label || null,
+            caption: caption || null,
+            local: true,
+            paper: { id: null, title: path.basename(resolved), titleZh: null },
+            figure: { id: null, paperId: null, label: label || null, caption: caption || null, page, imageUrl: null },
+            size,
+            crop: cropBox === null ? null : { mode: cropBox.mode, x: cropBox.x, y: cropBox.y, w: cropBox.w, h: cropBox.h },
+            image: { status: 'unavailable' },
+          }
+          // Cache a thumbnail for the same figure-card style as imported figures.
+          // Content-addressed: repeated views of the same rendered page reuse one
+          // file; old files are pruned so unimported previews stay bounded.
+          try {
+            const token = createHash('sha256').update(bytes).digest('hex').slice(0, 24)
+            const previewDir = path.join(layout.tmpDir, 'pdf-previews')
+            await mkdir(previewDir, { recursive: true })
+            await writeFile(path.join(previewDir, token + '.png'), bytes)
+            value.figure.imageUrl = '/pappers-hall/pdf-preview/' + token + '.png'
+            await prunePdfPreviewCache(previewDir)
+          } catch (error) { /* the card still shows metadata if preview caching fails */ }
+          const attachmentStore = attachments()
+          if (attachmentStore === undefined || typeof attachmentStore.saveImage !== 'function') {
+            value.image = { status: 'degraded', reason: 'attachment service is unavailable; no ImageBlock can be produced' }
+          } else {
+            try {
+              const reference = await attachmentStore.saveImage({ data: bytes, mediaType: 'image/png', name: `pdf-page-${page}.png` })
+              value.imageAttachmentRef = reference
+              value.image = { status: 'ready', mediaType: reference.mediaType ?? 'image/png', width: reference.width ?? size.width ?? null, height: reference.height ?? size.height ?? null, bytes: reference.bytes ?? bytes.byteLength, attachmentId: String(reference.attachmentId ?? '') }
+            } catch (error) {
+              value.image = { status: 'degraded', reason: `attachment save failed: ${String(error?.message ?? error)}` }
+            }
+          }
+          return value
+        } finally {
+          if (directory !== undefined) await rm(directory, { recursive: true, force: true }).catch(() => {})
+        }
+      },
+    },
+    toolByName.get('papers_translate'),
+
+    {
+      name: 'notes_search',
+      description:
+        'Find personal notes. With q it runs full-text search; without q it lists notes (title preview, folder, linked papers). ' +
+        'Filter by note folder or linked paper; use for note recall and paper↔note discovery.',
+      parameters: {
+        type: 'object',
+        properties: {
+          q: { type: 'string', description: 'Search query; omit to list notes.' },
+          folderId: { type: 'string', description: 'Note folder filter.' },
+          paperId: { type: 'string', description: 'Linked-paper filter.' },
+          limit: { type: 'integer', description: 'Page size.' },
+          offset: { type: 'integer', description: 'List offset.' },
+        },
+        additionalProperties: false,
+      },
+      output: { schema: JSON_OUTPUT_SCHEMA, render: (_args, value) => renderJson(value) },
+      execute(args, exec) {
+        const q = String(args.q ?? '').trim()
+        if (q === '') return invoke('notes_list', { folderId: args.folderId, paperId: args.paperId, limit: args.limit, offset: args.offset }, exec)
+        return invoke('notes_search', { q, folderId: args.folderId, paperId: args.paperId, limit: args.limit }, exec)
+      },
+    },
+
+    toolByName.get('notes_get'),
+
+    {
+      name: 'notes_edit',
+      description:
+        'Create/edit personal notes and folders: action:"create"/"update"/"link"/"unlink"; folder actions ' +
+        '"folder_tree"/"folder_create"/"folder_rename"/"folder_delete"/"folder_assign"/"folder_unassign". ' +
+        'Never overwrite content_md when only beautifying a note.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', enum: ['create', 'update', 'link', 'unlink', 'folder_tree', 'folder_create', 'folder_rename', 'folder_delete', 'folder_assign', 'folder_unassign'], description: 'Operation.' },
+          noteId: { type: 'string', description: 'Note id for update/link/unlink.' },
+          noteIds: { type: 'array', items: { type: 'string' }, description: 'Folder assign/unassign: note ids.' },
+          id: { type: 'string', description: 'Folder rename/delete id.' },
+          name: { type: 'string', description: 'Folder name (create/rename).' },
+          parentId: { type: 'string', description: 'Folder create: parent folder id.' },
+          color: { type: 'string', description: 'Folder create/rename: optional color.' },
+          title: { type: 'string', description: 'Create/update title.' },
+          content: { type: 'string', description: 'Create/update original Markdown.' },
+          folderId: { type: 'string', description: 'Create: note folder id; folder_assign: target folder id.' },
+          paperIds: { type: 'array', items: { type: 'string' }, description: 'Create/link: paper ids.' },
+          patch: { type: 'object', description: 'Update fields (title, content/contentMd, contentJson, folderId, paperIds, status).' },
+          expectedRevision: { type: 'integer', description: 'Update: optimistic revision.' },
+        },
+        required: ['action'],
+        additionalProperties: false,
+      },
+      output: { schema: JSON_OUTPUT_SCHEMA, render: (_args, value) => renderJson(value) },
+      execute(args, exec) {
+        if (notes === undefined || notes === null) return unavailable('notes service is not initialized')
+        switch (args.action) {
+          case 'folder_tree':
+            return jsonSafe(notes.folderTree())
+          case 'folder_create':
+            return jsonSafe(notes.folderCreate({ name: args.name, parentId: args.parentId, color: args.color }))
+          case 'folder_rename':
+            return jsonSafe(notes.folderUpdate({ id: args.id, name: args.name, color: args.color }))
+          case 'folder_delete':
+            return jsonSafe(notes.folderDelete({ id: args.id }))
+          case 'folder_assign':
+            return jsonSafe(notes.folderAssign({ folderId: args.folderId, noteIds: args.noteIds }))
+          case 'folder_unassign':
+            return jsonSafe(notes.folderUnassign({ noteIds: args.noteIds }))
+          case 'create':
+            return invoke('notes_create', { title: args.title, content: args.content, folderId: args.folderId, paperIds: args.paperIds }, exec)
+          case 'link':
+          case 'unlink':
+            return invoke('notes_link_papers', { noteId: args.noteId, paperIds: args.paperIds, action: args.action }, exec)
+          default:
+            return invoke('notes_update', { noteId: args.noteId, patch: args.patch, expectedRevision: args.expectedRevision }, exec)
+        }
       },
     },
   ]

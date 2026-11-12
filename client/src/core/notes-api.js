@@ -43,6 +43,7 @@ import {
   notesOffline,
   notesUnavailable,
   parseBeautifyPayload,
+  ensureStyleVariety,
 } from './notes-model.js'
 import { firstText, arrayOf } from './texts.js'
 
@@ -417,83 +418,228 @@ export function createNotesService(api) {
      */
     beautify(options) {
       const opts = options || {}
-      const note = opts.note || {}
       const direction = DIRECTION_PROMPTS[opts.direction] ? opts.direction : 'plain'
       const layout = LAYOUT_PROMPTS[opts.layout] ? opts.layout : 'auto'
-      // Linked notes stay paper-grounded (`ai.ask`); standalone notes use the
-      // generic `ai.complete` primitive (v0.17.1 host).
-      const paperId = firstText(opts.paperId, arrayOf(note.paperIds)[0])
       const figureCandidates = arrayOf(opts.figureCandidates).slice(0, 18)
-      // Keep the prompt inside the Host's 6000-char input budget: truncate per
-      // section and stop at the section/char cap, reporting what was skipped.
-      const sent = []
-      let chars = 0
+      const context = String(opts.contextText || '').trim()
+      const sourceSections = arrayOf(opts.sections).slice(0, BEAUTIFY_MAX_SECTIONS)
       const skippedTooLong = []
-      for (const section of arrayOf(opts.sections).slice(0, BEAUTIFY_MAX_SECTIONS)) {
-        const body = String(section.text || section.raw || '').trim()
-        const budget = Math.min(900, BEAUTIFY_MAX_CHARS - chars)
-        if (budget < 80) {
-          skippedTooLong.push(section.id)
-          continue
+      const byBaseId = new Map()
+      const failedBaseIds = new Set()
+      let lastProvider = ''
+      let lastModel = ''
+      let totalElapsed = 0
+      let lastCached = false
+      let lastError = null
+      let calls = 0
+
+      /**
+       * Split a section into model-sized chunks. The provider caps a single
+       * answer at ~1600 tokens; a 1000-character Chinese section becomes
+       * truncated JSON. Chunking keeps each answer small and lets us merge the
+       * blocks back into one section.
+       */
+      const chunkText = (text, maxChars) => {
+        const value = String(text || '').trim()
+        if (value.length <= maxChars) return [value]
+        const chunks = []
+        let rest = value
+        while (rest.length > maxChars) {
+          let cut = -1
+          const window = rest.slice(0, maxChars)
+          for (const mark of ['\n\n', '\n', '。', '；', '！', '？', '. ']) {
+            const found = window.lastIndexOf(mark)
+            if (found > maxChars * 0.45) { cut = found + mark.length; break }
+          }
+          if (cut <= 0) cut = maxChars
+          chunks.push(rest.slice(0, cut).trim())
+          rest = rest.slice(cut).trim()
         }
-        const clipped = body.length > budget ? body.slice(0, budget).trimEnd() + (body.length > budget ? '…' : '') : body
-        chars += clipped.length + String(section.heading || '').length + 24
-        sent.push({ id: String(section.id), heading: String(section.heading || ''), text: clipped, hash: String(section.hash || '') })
-        if (chars >= BEAUTIFY_MAX_CHARS) break
+        if (rest !== '') chunks.push(rest)
+        return chunks.filter(Boolean)
       }
-      if (sent.length === 0) {
+
+      const units = []
+      for (const section of sourceSections) {
+        const body = String(section.text || section.raw || '').trim()
+        if (body === '') continue
+        const chunks = chunkText(body, 650)
+        const sectionIndex = sourceSections.indexOf(section)
+        chunks.forEach((chunk, index) => {
+          units.push({
+            baseId: String(section.id),
+            heading: String(section.heading || ''),
+            text: chunk,
+            hash: String(section.hash || ''),
+            index,
+            count: chunks.length,
+            sectionIndex,
+            sectionCount: sourceSections.length,
+          })
+        })
+      }
+      if (units.length === 0) {
         const error = new Error('no finished section is small enough to beautify')
         error.code = 'empty'
         return Promise.reject(error)
       }
-      const context = String(opts.contextText || '').trim()
-      const prompt = buildBeautifyPrompt({
-        direction,
-        layout,
-        sections: sent,
-        context,
-        figureCandidates,
-        useFigures: opts.useFigures === true,
-        mode: opts.mode || 'manual',
-      })
-      const params = paperId
-        ? { paperId, prompt, mode: 'deep', fast: false }
-        : { prompt, system: '你是一名科研笔记编辑，只输出用户要求的 JSON，不添加原文没有的事实。', fast: false, reasoningEffort: 'medium', kind: 'note-beautify', maxTokens: 3000 }
-      if (opts.sessionId) params.sessionId = opts.sessionId
-      return aiCall(paperId ? 'ai.ask' : 'ai.complete', params)
-        .then((result) => {
-          const data = result || {}
-          if (data.status !== 'ok') {
-            const error = new Error(firstText(data.reason, 'AI unavailable'))
-            error.code = data.status === 'unavailable' ? 'unavailable' : 'error'
-            error.reason = firstText(data.reason)
-            throw error
-          }
-          const sections = parseBeautifyPayload(data.answer, sent, { figureCandidates })
-          const contentJson = mergeContentJson(opts.baseContentJson || null, sections, {
-            direction,
-            layout,
-            engine: { provider: firstText(data.provider), model: firstText(data.model), elapsedMs: Number(data.elapsedMs) || 0 },
-            liveSections: arrayOf(opts.liveSections),
-          })
-          let figureCount = 0
-          for (const section of sections) {
-            for (const block of arrayOf(section.blocks)) if (block.type === 'figure') figureCount += 1
-          }
-          return {
-            contentJson,
-            sections,
-            sentCount: sent.length,
-            skippedTooLong,
-            figureCount,
-            styles: Array.from(new Set(sections.map((section) => section.style))),
-            mode: opts.mode || 'manual',
-            provider: firstText(data.provider),
-            model: firstText(data.model),
-            elapsedMs: Number(data.elapsedMs) || 0,
-            cached: data.cached === true,
-          }
+      // Bound one run; the next auto pass picks up the remainder.
+      if (units.length > 8) {
+        for (const unit of units.slice(8)) {
+          if (!skippedTooLong.includes(unit.baseId)) skippedTooLong.push(unit.baseId)
+        }
+        units.length = 8
+      }
+
+      const callUnit = (unit) => {
+        if (failedBaseIds.has(unit.baseId)) return Promise.resolve()
+        calls += 1
+        const sent = [{ id: unit.baseId, heading: unit.heading, text: unit.text, hash: unit.hash }]
+        const prompt = buildBeautifyPrompt({
+          direction,
+          layout,
+          sections: sent,
+          context: unit.index === 0 ? context : '',
+          figureCandidates,
+          useFigures: opts.useFigures === true,
+          mode: opts.mode || 'manual',
+          sectionIndex: unit.sectionIndex,
+          sectionCount: unit.sectionCount,
         })
+        return aiCall('ai.complete', {
+          prompt,
+          system: '你是一名科研笔记编辑，只输出用户要求的 JSON，不添加原文没有的事实。',
+          fast: false,
+          reasoningEffort: 'medium',
+          kind: 'note-beautify',
+          maxTokens: 3000,
+          cache: false,
+          ...(opts.sessionId ? { sessionId: opts.sessionId } : {}),
+        })
+          .then((result) => {
+            const data = result || {}
+            if (data.status !== 'ok') {
+              const error = new Error(firstText(data.reason, 'AI unavailable'))
+              error.code = data.status === 'unavailable' ? 'unavailable' : 'error'
+              error.reason = firstText(data.reason)
+              throw error
+            }
+            lastProvider = firstText(data.provider)
+            lastModel = firstText(data.model)
+            totalElapsed += Number(data.elapsedMs) || 0
+            lastCached = data.cached === true
+            let parsed
+            try {
+              parsed = parseBeautifyPayload(data.answer, sent, { figureCandidates })
+            } catch (error) {
+              failedBaseIds.add(unit.baseId)
+              lastError = error
+              return
+            }
+            const section = parsed.find((candidate) => candidate.id === unit.baseId) || parsed[0]
+            if (!section) {
+              failedBaseIds.add(unit.baseId)
+              return
+            }
+            const existing = byBaseId.get(unit.baseId)
+            if (!existing) {
+              byBaseId.set(unit.baseId, {
+                id: unit.baseId,
+                sourceHash: unit.hash,
+                heading: section.heading || unit.heading,
+                style: section.style,
+                blocks: section.blocks.slice(),
+              })
+              return
+            }
+            // Later chunks continue the same section; drop repeated heading
+            // blocks so the merged document does not repeat its title.
+            for (const block of section.blocks) {
+              if (block.type === 'heading') continue
+              existing.blocks.push(block)
+            }
+          })
+          .catch((error) => {
+            failedBaseIds.add(unit.baseId)
+            lastError = error
+          })
+      }
+
+      let chain = Promise.resolve()
+      for (const unit of units) chain = chain.then(() => callUnit(unit))
+      return chain.then(() => {
+        const sections = []
+        for (const section of sourceSections) {
+          const merged = byBaseId.get(String(section.id))
+          if (!merged || failedBaseIds.has(String(section.id))) continue
+          sections.push(merged)
+        }
+        if (sections.length === 0) {
+          const error = lastError || new Error('AI 返回的排版不是有效 JSON，已保持原样')
+          if (!error.code) error.code = 'shape'
+          throw error
+        }
+        // Keep figures sparse across the whole run, not per chunk.
+        let figureBudget = MAX_FIGURES_PER_RUN
+        for (const section of sections) {
+          section.blocks = section.blocks.filter((block) => {
+            if (block.type !== 'figure') return true
+            if (figureBudget <= 0) return false
+            figureBudget -= 1
+            return true
+          })
+        }
+        // A `figure` style without a real figure would render an empty media
+        // frame; treat it as accent instead.
+        for (const section of sections) {
+          if (section.style === 'figure' && !section.blocks.some((block) => block.type === 'figure')) section.style = 'accent'
+        }
+        if (sections.length >= 3) {
+          // Balanced document rhythm: plain → accent → plain → columns → plain…
+          // Only fills sections the model left as plain; real table/figure and
+          // existing accents keep their style.
+          for (let index = 0; index < sections.length; index += 1) {
+            const section = sections[index]
+            if (section.style !== 'plain') continue
+            if (index % 4 === 1 && !section.blocks.some((block) => block.type === 'table' || block.type === 'stats' || block.type === 'figure')) section.style = 'accent'
+            if (index % 4 === 3 && !section.blocks.some((block) => block.type === 'table' || block.type === 'figure' || block.type === 'columns')) section.style = 'columns'
+          }
+          // Do not let emphasis take over the document: at most ~1/3 accent
+          // sections; sections with a callout keep their accent, extras go plain.
+          const maxAccents = Math.max(1, Math.round(sections.length / 3))
+          let accentCount = 0
+          for (const section of sections) {
+            if (section.style !== 'accent') continue
+            accentCount += 1
+            if (accentCount > maxAccents) section.style = 'plain'
+          }
+        }
+        ensureStyleVariety(sections)
+        const contentJson = mergeContentJson(opts.baseContentJson || null, sections, {
+          direction,
+          layout,
+          engine: { provider: lastProvider, model: lastModel, elapsedMs: totalElapsed },
+          liveSections: arrayOf(opts.liveSections),
+        })
+        let figureCount = 0
+        for (const section of sections) {
+          for (const block of arrayOf(section.blocks)) if (block.type === 'figure') figureCount += 1
+        }
+        return {
+          contentJson,
+          sections,
+          sentCount: sourceSections.length,
+          skippedTooLong,
+          figureCount,
+          styles: Array.from(new Set(sections.map((section) => section.style))),
+          mode: opts.mode || 'manual',
+          provider: lastProvider,
+          model: lastModel,
+          elapsedMs: totalElapsed,
+          cached: lastCached,
+          calls,
+        }
+      })
     },
 
     /** The format version written with every beautified note. */
@@ -504,47 +650,33 @@ export function createNotesService(api) {
 }
 
 /** Build the one-shot v2 beautify instruction (kept exported so tests can assert it). */
-export function buildBeautifyPrompt({ direction, layout, sections, context, figureCandidates, useFigures, mode }) {
+export function buildBeautifyPrompt({ direction, layout, sections, context, figureCandidates, useFigures, mode, sectionIndex, sectionCount }) {
   const list = arrayOf(sections).map((section) => ({
     id: section.id,
     heading: section.heading || '',
     text: section.text || '',
   }))
-  const candidates = figureCandidatesForPrompt(figureCandidates, 10)
+  // Only id/label/page are needed; captions would bloat the prompt and make the
+  // model route less reliable. The renderer takes the real caption from Host.
+  const candidates = arrayOf(figureCandidates).slice(0, 6).map((candidate) => ({
+    figureId: candidate.figureId || candidate.id,
+    label: candidate.label || '',
+    page: candidate.page || 1,
+  }))
   const lines = [
-    '你是 Pappers-Hall 的科研笔记排版助手。任务以“恢复和强化排版结构”为主，多样化表达只作辅助；这不是重写任务。',
-    '硬性规则：',
-    '1) 信息零丢失（最高优先级）：原文的每个事实、数字、单位、公式、限定词（如“可能/显著/仅/约”）、引用编号与专有名词都必须保留；禁止概括、合并、删减或改写句意；只允许调整分段、标题层级、列表化、表格化和排版顺序。',
-    '2) 只输出给定 id 的章节，不得新增 id；未完成章节不在输入里，不要臆造它们。',
-    '3) 排版为主：优先还原原文的标题层级、段落顺序和阅读节奏；只有当原文本身确实包含并列关系、步骤、对比或数值比较时才用分点/表格；columns/figure 只在内容确实适合时使用，严禁为了“多样”而拆散原句或制造卡片。',
-    '4) 每节必须给 style：plain / accent / columns（两栏）/ figure（图文）；style 只是辅助，拿不准就用 plain。避免整篇 plain 或整篇卡片化即可，不要强行求多。',
-    '5) blocks 类型：heading / paragraph / bullets / table / quote / callout / figure / columns。',
-    '   - columns 必须正好 2 栏：{"type":"columns","columns":[{"blocks":[...]},{"blocks":[...]}]}，栏内放段落/分点；',
-    '   - 少而精：整次输出最多 1 个 columns、最多 1 个表格、最多 ' + String(MAX_FIGURES_PER_RUN) + ' 张 figure；不要为凑数使用；',
-    '   - figure 只能写 figureId（来自下面候选），不要编造 id、不要自己写图注（正文可配一句说明）；',
-    '   - 没有相关图就不要放 figure；候选为空时禁止 figure。',
-    (useFigures
-      ? '6) 本次主人希望“图文并茂一点”：如果确实有助于理解，请从候选中选 1 张最相关的真实配图放进 figure（没有相关图就不放）。'
-      : '6) 配图按需：只有确实帮助理解时才从候选中选 1 张真实配图。'),
-    '7) 输出语言与笔记正文一致；段落 ≤ 300 字，分点每条 ≤ 200 字。',
-    '8) 严格只输出一个 JSON 对象，不要 Markdown 代码围栏、不要任何解释。schema：',
-    '{"sections":[{"id":"s0","heading":"...","style":"plain","blocks":[{"type":"heading","text":"..."},{"type":"paragraph","text":"..."},{"type":"bullets","items":["..."]},{"type":"table","headers":["..."],"rows":[["..."]]},{"type":"quote","text":"..."},{"type":"callout","tone":"info","title":"...","text":"..."},{"type":"columns","columns":[{"blocks":[{"type":"paragraph","text":"..."}]},{"blocks":[{"type":"paragraph","text":"..."}]}]},{"type":"figure","figureId":"fg-..."}]}]}',
-    '美化方向：' + DIRECTION_PROMPTS[direction],
-    '排版偏好：' + LAYOUT_PROMPTS[layout],
-    '运行模式：' + (mode === 'auto' ? '自动增量（只排版给出的章节，其余章节保持已有排版）' : '手动'),
+    '你是科研笔记排版助手。只重排给定章节，不得增删或改写事实、数字、单位、限定词、引用与专名；原文每句信息都要保留；不新增章节。这是科研笔记，不是问答或科普：保留原文的短句、名词短语、判断句和笔记口吻，不要改写成解说/对话，不要扩写因果，不要用“我们/你会发现”等讲解语气。',
+    '只输出一个 JSON 对象，不要代码围栏或解释。',
+    '{"sections":[{"id":"s0","heading":"...","style":"plain","blocks":[{"type":"paragraph","text":"..."}]}]}',
+    'block 支持 paragraph(text)、stats(items:[{value,label,note,tone:blue|green|amber|violet}])、bullets(items)、table(headers,rows)、quote(text)、callout(title,text)、columns(两栏)、figure(figureId)。以段落为主，stats/表格/两栏/强调块只用于真正需要的地方：stats 最多1个（关键数字），表格最多1个，columns最多1个，figure最多2张；不确定用 plain，不要每节都做强调卡片。',
+    '章节输入（JSON）：' + JSON.stringify(list),
   ]
-  if (candidates.length > 0) {
-    lines.push('真实论文配图候选（只能从这里选 figureId）：')
-    lines.push(JSON.stringify(candidates))
-  } else {
-    lines.push('真实论文配图候选：无（禁止输出 figure block）')
+  if (Number.isInteger(sectionIndex) && Number.isInteger(sectionCount) && sectionCount > 1) {
+    lines.push('本节位置：第 ' + (sectionIndex + 1) + ' / ' + sectionCount + ' 节。全篇不要连续两节用同样的 style；有明确关键数字时可用 stats 或 table，有并列/对比时可用 columns，有一句核心结论时可用 accent + callout，其余以 plain 段落为主。')
   }
-  if (context) {
-    lines.push('上文（用户还没写完，仅用于理解上下文，绝对不要输出、不要补写）：')
-    lines.push(context.slice(0, 600))
-  }
-  lines.push('笔记章节输入（JSON）：')
-  lines.push(JSON.stringify(list))
+  if (candidates.length > 0) lines.push('真实配图候选（figureId 只能从这里选）：' + JSON.stringify(candidates))
+  else lines.push('真实配图候选：无（禁止 figure block）')
+  if (context) lines.push('上文（未写完，仅帮助理解，不要输出）：' + String(context).slice(0, 300))
+  if (direction || layout || mode) lines.push('方向=' + String(direction || 'plain') + '；排版=' + String(layout || 'auto') + '；模式=' + String(mode || 'manual') + (useFigures ? '；可配图' : ''))
   return lines.join('\n')
 }
 

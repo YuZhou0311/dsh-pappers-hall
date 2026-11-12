@@ -15,7 +15,6 @@ import { navigation } from '../core/navigation.js'
 import { LibraryShell } from './library/shell.jsx'
 import { FigureSearch } from './figure-search.jsx'
 import { ReaderShell } from './reader/shell.jsx'
-import { NotesWorkspace } from './notes/workspace.jsx'
 
 function useNavigation() {
   return React.useSyncExternalStore(navigation.subscribe, navigation.getSnapshot, navigation.getSnapshot)
@@ -98,25 +97,21 @@ export function PaperCenter(props) {
   }
 
   if (route.view === 'notes') {
+    // v0.22: notes no longer open a separate workspace. The paper library keeps
+    // its left tree and opens the chosen note inline, with the paper panel beside
+    // it for reading/translation.
     return h(
       'div',
       { className: 'ph-app' },
-      h(NotesWorkspace, {
+      h(LibraryShell, {
         t: t,
         api: api,
-        sessionId: sessionId,
+        pending: pending,
+        library: library,
         initialNoteId: route.noteId || '',
-        onBack: () => navigation.backToLibrary(),
-        onOpenPaper: (paperId, page, annotationId) =>
-          navigation.openPaper({
-            paperId: paperId,
-            page: page || 1,
-            annotationId: annotationId || null,
-            source: 'notes',
-            returnTo: 'notes',
-            noteId: route.noteId || undefined,
-          }),
-        onOpenSettings: () => bus.emit('open-settings'),
+        onOpenPaper: openPaper,
+        onOpenFigure: openFigure,
+        onOpenFigures: () => navigation.openFigureSearch({}),
       }),
       h(ToastStack, { toasts: toasts, onDismiss: dismiss }),
       h(FeedbackHost, null),

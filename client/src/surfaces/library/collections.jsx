@@ -203,7 +203,13 @@ export function CollectionsPane(props) {
       { className: 'ph-left__scroll ph-scroll' },
       h(
         'div',
-        { className: 'ph-left__section' },
+        { className: 'ph-left__section ph-left__section--browse' },
+        h(
+          'div',
+          { className: 'ph-left__sectionHead ph-left__sectionHead--quiet' },
+          h(Icon, { name: 'layers', size: 12 }),
+          h('span', null, t('library.sidebar.browse')),
+        ),
         h(
           'div',
           { className: 'ph-left__list' + (smartSlider.rect ? ' ph-left__list--sliding' : ''), ref: smartSlider.ref },
@@ -216,7 +222,7 @@ export function CollectionsPane(props) {
                 type: 'button',
                 'data-ph-active': (filters.view === view.id && !filters.collectionId && !filters.field) || (view.id === 'trash' && filters.view === 'trash') ? 'true' : undefined,
                 className: 'ph-navitem' + (filters.view === view.id && !filters.collectionId && !filters.field ? ' ph-navitem--active' : '') + (view.id === 'trash' && filters.view === 'trash' ? ' ph-navitem--active' : ''),
-                onClick: () => controller.setView(view.id),
+                onClick: () => { if (props.onLeaveNote) props.onLeaveNote(); controller.setView(view.id) },
               },
               h(Icon, { name: view.icon, size: 14, className: 'ph-navitem__icon' }),
               h('span', { className: 'ph-navitem__label' }, t(view.label)),
@@ -225,7 +231,7 @@ export function CollectionsPane(props) {
           ),
         ),
       ),
-      h(FolderTree, { t: t, folders: snapshot.folders, filter: filter, snapshot: snapshot, controller: controller, favoriteCount: (snapshot.statusData && snapshot.statusData.counts && snapshot.statusData.counts.favorite) || snapshot.items.filter((p) => p.favorite).length, onToast: props.pushToast }),
+      h(FolderTree, { t: t, folders: snapshot.folders, filter: filter, snapshot: snapshot, controller: controller, favoriteCount: (snapshot.statusData && snapshot.statusData.counts && snapshot.statusData.counts.favorite) || snapshot.items.filter((p) => p.favorite).length, onToast: props.pushToast, onLeaveNote: props.onLeaveNote }),
       tags.length === 0 ? null : h(
         'div',
         { className: 'ph-left__section' },
@@ -247,7 +253,7 @@ export function CollectionsPane(props) {
                     type: 'button',
                     className: 'ph-tagchip' + (filters.tags.indexOf(tag.name) >= 0 ? ' ph-tagchip--active' : ''),
                     'data-tag-color': tagColor(tag.name),
-                    onClick: () => controller.toggleTag(tag.name),
+                    onClick: () => { if (props.onLeaveNote) props.onLeaveNote(); controller.toggleTag(tag.name) },
                     title: t('library.sidebar.tagHint'),
                   },
                   h('span', { className: 'ph-tagchip__label' }, tag.name),

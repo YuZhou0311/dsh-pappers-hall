@@ -1272,7 +1272,7 @@ export function Tabs(props) {
       role: 'tablist',
       'aria-label': props['aria-label'],
     },
-    React.createElement(SlidingThumb, { rect: slider.rect, className: 'ph-thumb--pill', inset: 6, popKey: props.value }),
+    React.createElement(SlidingThumb, { rect: slider.rect, className: 'ph-thumb--pill', inset: 2, popKey: props.value }),
     items.map((item) =>
       React.createElement(
         'button',

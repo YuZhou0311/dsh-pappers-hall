@@ -163,8 +163,10 @@ function PageViewImpl(props) {
   } = props
   const page = pageInfo.page
   const pageRef = React.useRef(null)
+  const imgRef = React.useRef(null)
   const [imageState, setImageState] = React.useState('loading')
   const [imageVersion, setImageVersion] = React.useState(0)
+  const [imageSlow, setImageSlow] = React.useState(false)
   const [areaDrag, setAreaDrag] = React.useState(null)
   const areaRectRef = React.useRef(null)
   const [hover, setHover] = React.useState(null)
@@ -195,6 +197,7 @@ function PageViewImpl(props) {
 
   React.useEffect(() => {
     setImageState('loading')
+    setImageSlow(false)
     setImageVersion(0)
     setHover(null)
     setAreaDrag(null)
@@ -203,6 +206,12 @@ function PageViewImpl(props) {
     setSelecting(false)
     setNoteGhost(null)
   }, [paperId, page])
+
+  const retryImage = React.useCallback(() => {
+    setImageState('loading')
+    setImageSlow(false)
+    setImageVersion((value) => value + 1)
+  }, [])
 
   /* -- geometry helpers ---------------------------------------------------- */
 
@@ -605,8 +614,41 @@ function PageViewImpl(props) {
       })()
     : null
 
-  const imageSrc = pageUrlOf(paperId, Object.assign({ page }, pageInfo, { imageUrl: pageInfo.imageUrl }))
+  const baseImageSrc = pageUrlOf(paperId, Object.assign({ page }, pageInfo, { imageUrl: pageInfo.imageUrl }))
+  /* A retry must bypass a stale HTTP cache entry; the host ignores `retry`. */
+  const imageSrc =
+    imageVersion > 0
+      ? baseImageSrc + (baseImageSrc.indexOf('?') >= 0 ? '&' : '?') + 'retry=' + imageVersion
+      : baseImageSrc
   const showImageSkeleton = imageState === 'loading'
+
+  /* A cached raster can finish before React attaches its load handler, which
+     would leave the page skeleton up forever. Settle from `img.complete` and
+     expose a retry after a few seconds instead of waiting silently. */
+  React.useEffect(() => {
+    setImageSlow(false)
+    const node = imgRef.current
+    if (!node) return undefined
+    const settle = () => {
+      if (!node.complete) return false
+      setImageState(node.naturalWidth > 0 ? 'loaded' : 'error')
+      return true
+    }
+    if (settle()) return undefined
+    const slowTimer = setTimeout(() => setImageSlow(true), 8000)
+    const poll = setInterval(() => {
+      if (settle()) {
+        clearInterval(poll)
+        clearTimeout(slowTimer)
+      }
+    }, 500)
+    const stopPoll = setTimeout(() => clearInterval(poll), 20000)
+    return () => {
+      clearTimeout(slowTimer)
+      clearInterval(poll)
+      clearTimeout(stopPoll)
+    }
+  }, [imageSrc, imageVersion])
 
   const layerStatus = layerEntry ? layerEntry.status : 'idle'
 
@@ -632,36 +674,43 @@ function PageViewImpl(props) {
       'img',
       {
         key: 'img-' + imageVersion,
+        ref: imgRef,
         className: cx('ph-r-page__img', imageState === 'loaded' && 'ph-r-page__img--loaded'),
         src: imageSrc,
         alt: t('reader.thumbPage', { page }),
         draggable: false,
         decoding: 'async',
-        loading: 'lazy',
-        onLoad: () => setImageState('loaded'),
-        onError: () => setImageState('error'),
+        // Only the viewport buffer is mounted, so eager loading is bounded and
+        // avoids lazy-loading races inside the virtualised scroll box.
+        loading: 'eager',
+        fetchPriority: active ? 'high' : 'auto',
+        onLoad: () => {
+          setImageSlow(false)
+          setImageState('loaded')
+        },
+        onError: () => {
+          setImageSlow(false)
+          setImageState('error')
+        },
       },
     ),
     showImageSkeleton ? React.createElement('div', { className: 'ph-r-page__skeleton' }) : null,
+    showImageSkeleton && imageSlow
+      ? React.createElement(
+          'div',
+          { className: 'ph-r-page__slow', role: 'status' },
+          React.createElement(Spinner, { size: 14 }),
+          React.createElement('span', null, t('reader.page.slow')),
+          React.createElement(Btn, { size: 'sm', variant: 'soft', icon: 'refresh', onClick: retryImage }, t('reader.page.imageRetry')),
+        )
+      : null,
     imageState === 'error'
       ? React.createElement(
           'div',
           { className: 'ph-r-page__error' },
           React.createElement(Icon, { name: 'warning', size: 18 }),
           React.createElement('span', null, t('reader.page.imageFailed')),
-          React.createElement(
-            Btn,
-            {
-              size: 'sm',
-              variant: 'soft',
-              icon: 'refresh',
-              onClick: () => {
-                setImageState('loading')
-                setImageVersion((value) => value + 1)
-              },
-            },
-            t('reader.page.imageRetry'),
-          ),
+          React.createElement(Btn, { size: 'sm', variant: 'soft', icon: 'refresh', onClick: retryImage }, t('reader.page.imageRetry')),
         )
       : null,
     React.createElement(PageTextLayer, {

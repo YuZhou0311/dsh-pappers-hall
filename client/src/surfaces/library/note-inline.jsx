@@ -48,6 +48,7 @@ export function NoteInline(props) {
     h(
       'div',
       { className: 'ph-n-inline__head' },
+      h(IconButton, { icon: 'panelLeft', title: t('notes.inline.toggleSidebar') || '展开/收起侧栏', onClick: () => props.onToggleLeft && props.onToggleLeft() }),
       h(Icon, { name: 'note', size: 15 }),
       h('span', { className: 'ph-n-inline__title' }, t('notes.library.title') || '笔记'),
       h('span', { className: 'ph-spacer' }),
@@ -60,6 +61,7 @@ export function NoteInline(props) {
         : state.note
           ? h(NoteEditor, {
               t,
+              api: api,
               service,
               note: state.note,
               variant: 'full',

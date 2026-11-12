@@ -28,17 +28,14 @@ const SORT_OPTIONS = [
   ['authors', 'library.sort.authors'],
 ]
 
-export function LibraryToolbar(props) {
+/**
+ * Global import control. It lives in the library top bar because importing is a
+ * workspace-level action, not a table filter; the hidden file input stays here
+ * so the command palette can trigger the same element.
+ */
+export function ImportControl(props) {
   const t = props.t
-  const [narrow, setNarrow] = React.useState(() => typeof window !== 'undefined' && window.innerWidth <= 980)
-  React.useEffect(() => {
-    const onResize = () => setNarrow(typeof window !== 'undefined' && window.innerWidth <= 980)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
-  const leftOpen = narrow ? Boolean(props.snapshot.mobileLeftOpen) && !props.snapshot.ui.leftCollapsed : !props.snapshot.ui.leftCollapsed
   const api = props.api
-  const snapshot = props.snapshot
   const controller = props.controller
   const [importing, setImporting] = React.useState(false)
   const fileRef = React.useRef(null)
@@ -98,32 +95,8 @@ export function LibraryToolbar(props) {
   }
 
   return h(
-    'div',
-    { className: 'ph-toolbar' },
-    h(IconButton, {
-      icon: 'panelLeft',
-      title: leftOpen ? t('library.sidebar.hide') : t('library.sidebar.show'),
-      'aria-label': leftOpen ? t('library.sidebar.hide') : t('library.sidebar.show'),
-      'aria-pressed': leftOpen ? 'true' : 'false',
-      active: leftOpen,
-      onClick: () => (narrow && controller.toggleMobileLeft ? controller.toggleMobileLeft() : controller.toggleLeft()),
-    }),
-    h(
-      'select',
-      { className: 'ph-select', value: snapshot.filters.sort, onChange: (event) => controller.setSort(event.target.value), 'aria-label': t('library.sort') },
-      SORT_OPTIONS.map(([value, key]) => h('option', { key: value, value: value }, t(key))),
-    ),
-    h(Segmented, {
-      'aria-label': t('library.view.table'),
-      value: snapshot.viewMode,
-      items: [
-        { id: 'table', icon: 'list', title: t('library.view.table') },
-        { id: 'grid', icon: 'grid', title: t('library.view.grid') },
-      ],
-      onChange: (value) => controller.setViewMode(value),
-    }),
-    h('span', { className: 'ph-spacer' }),
-    h('span', { className: 'ph-toolbar__count' }, t('library.table.total', { count: snapshot.total || snapshot.items.length })),
+    React.Fragment,
+    null,
     h('input', {
       ref: fileRef,
       type: 'file',
@@ -135,8 +108,81 @@ export function LibraryToolbar(props) {
         event.target.value = ''
       },
     }),
-    h(Button, { variant: 'primary', icon: 'import', loading: importing, onClick: () => fileRef.current && fileRef.current.click() }, importing ? t('library.importing') : t('library.import')),
-    h(IconButton, { icon: 'panelRight', title: snapshot.ui.rightCollapsed ? t('library.details.expand') : t('library.details.collapse'), active: !snapshot.ui.rightCollapsed, onClick: () => controller.toggleRight() }),
+    h(
+      Button,
+      {
+        variant: 'primary',
+        icon: 'import',
+        loading: importing,
+        className: 'ph-importbtn',
+        onClick: () => fileRef.current && fileRef.current.click(),
+        title: t('library.import'),
+      },
+      importing ? t('library.importing') : t('library.import'),
+    ),
+  )
+}
+
+export function LibraryToolbar(props) {
+  const t = props.t
+  const [narrow, setNarrow] = React.useState(() => typeof window !== 'undefined' && window.innerWidth <= 1100)
+  React.useEffect(() => {
+    const onResize = () => setNarrow(typeof window !== 'undefined' && window.innerWidth <= 1100)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  const leftOpen = narrow ? Boolean(props.snapshot.mobileLeftOpen) && !props.snapshot.ui.leftCollapsed : !props.snapshot.ui.leftCollapsed
+  const snapshot = props.snapshot
+  const controller = props.controller
+
+  return h(
+    'div',
+    { className: 'ph-toolbar ph-toolbar--library' },
+    h(
+      'div',
+      { className: 'ph-toolbar__lead' },
+      h(IconButton, {
+        icon: 'panelLeft',
+        title: leftOpen ? t('library.sidebar.hide') : t('library.sidebar.show'),
+        'aria-label': leftOpen ? t('library.sidebar.hide') : t('library.sidebar.show'),
+        'aria-pressed': leftOpen ? 'true' : 'false',
+        active: leftOpen,
+        onClick: () => (narrow && controller.toggleMobileLeft ? controller.toggleMobileLeft() : controller.toggleLeft()),
+      }),
+      h('span', { className: 'ph-toolbar__divider', 'aria-hidden': 'true' }),
+      h(
+        'label',
+        { className: 'ph-toolbar__sort' },
+        h(Icon, { name: 'sort', size: 13, className: 'ph-toolbar__sorticon' }),
+        h(
+          'select',
+          { className: 'ph-select ph-select--quiet', value: snapshot.filters.sort, onChange: (event) => controller.setSort(event.target.value), 'aria-label': t('library.sort') },
+          SORT_OPTIONS.map(([value, key]) => h('option', { key: value, value: value }, t(key))),
+        ),
+      ),
+      h(Segmented, {
+        'aria-label': t('library.view.table'),
+        value: snapshot.viewMode,
+        items: [
+          { id: 'table', icon: 'list', title: t('library.view.table') },
+          { id: 'grid', icon: 'grid', title: t('library.view.grid') },
+        ],
+        onChange: (value) => controller.setViewMode(value),
+      }),
+    ),
+    h('span', { className: 'ph-spacer' }),
+    h(
+      'div',
+      { className: 'ph-toolbar__tail' },
+      h('span', { className: 'ph-toolbar__count' }, t('library.table.total', { count: snapshot.total || snapshot.items.length })),
+      h(IconButton, {
+        icon: 'panelRight',
+        title: snapshot.ui.rightCollapsed ? t('library.details.expand') : t('library.details.collapse'),
+        'aria-label': snapshot.ui.rightCollapsed ? t('library.details.expand') : t('library.details.collapse'),
+        active: !snapshot.ui.rightCollapsed,
+        onClick: () => controller.toggleRight(),
+      }),
+    ),
   )
 }
 
@@ -230,41 +276,50 @@ export function BatchBar(props) {
       : h(
           React.Fragment,
           null,
-          h(Button, { size: 'sm', icon: 'star', onClick: () => { const next = !allFavorite; setBusy('fav'); controller.setFavorite(snapshot.selection, next).then(() => toast('success', next ? t('details.favoriteOn') : t('folders.unfavorite'))).catch((error) => toast('error', describeError(t, error))).then(() => setBusy('')) } }, allFavorite ? t('folders.unfavorite') : t('details.favoriteOff')),
-          h(FolderPicker, { t: t, folders: props.folders, value: '', allowAll: true, className: 'ph-select--inline', label: t('folders.assignTo'), onChange: (id) => { if (!id) return; setBusy('folder'); controller.assignFolder(id, snapshot.selection, true).then(() => toast('success', t('folders.assigned'))).catch((error) => toast('error', describeError(t, error))).then(() => setBusy('')) } }),
-          h(Button, { size: 'sm', icon: 'quote', loading: busy === 'cite', onClick: cite }, t('library.batch.cite')),
-          h(Button, { size: 'sm', icon: 'chart', loading: busy === 'metrics', onClick: () => { setBusy('metrics'); controller.refreshMetrics(snapshot.selection).then((result) => { const results = result && Array.isArray(result.results) ? result.results : []; const ok = results.filter((entry) => entry && entry.status !== 'failed').length; toast(ok > 0 ? 'success' : 'warning', ok > 0 ? t('metrics.batchUpdated', { count: ok }) : t('metrics.refreshUnavailable')) }).catch((error) => toast('error', t('metrics.refreshFailed', { message: describeError(t, error) }))).then(() => setBusy('')) } }, t('library.batch.updateMetrics')),
-          h(Button, { size: 'sm', icon: 'copy', loading: busy === 'citeCopy', onClick: () => { setBusy('citeCopy'); api('citation.format', { ids: snapshot.selection, style: 'bibtex' }).then((result) => copyText(result && result.content ? result.content : '')).then((ok) => toast(ok ? 'success' : 'warning', ok ? t('common.copied') : t('common.unavailable'))).catch((error) => toast('error', t('toast.failed', { message: describeError(t, error) }))).then(() => setBusy('')) } }, t('library.batch.copyCitation')),
-          tagOpen
-            ? h(
-                'span',
-                { className: 'ph-batch__tag' },
-                h('input', { value: tagValue, autoFocus: true, placeholder: t('library.batch.tagPlaceholder'), onChange: (event) => setTagValue(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter') applyTag(); if (event.key === 'Escape') { setTagOpen(false); setTagValue('') } } }),
-                h(Button, { size: 'sm', variant: 'primary', loading: busy === 'tag', onClick: applyTag }, t('library.batch.tagApply')),
-              )
-            : h(Button, { size: 'sm', icon: 'tag', onClick: () => setTagOpen(true) }, t('library.batch.tag')),
-          collectionOpen
-            ? h(
-                'span',
-                { className: 'ph-batch__tag' },
-                h(
-                  'select',
-                  {
-                    className: 'ph-select',
-                    defaultValue: '',
-                    onChange: (event) => {
-                      const collection = collections.find((item) => item.id === event.target.value)
-                      if (collection) assign(collection)
+          h(
+            'div',
+            { className: 'ph-batch__group ph-batch__group--primary' },
+            h(Button, { size: 'sm', variant: 'primary', icon: 'quote', loading: busy === 'cite', onClick: cite }, t('library.batch.cite')),
+            h(Button, { size: 'sm', icon: 'star', className: allFavorite ? 'ph-batch__icon ph-batch__icon--on' : 'ph-batch__icon', title: allFavorite ? t('folders.unfavorite') : t('details.favoriteOff'), onClick: () => { const next = !allFavorite; setBusy('fav'); controller.setFavorite(snapshot.selection, next).then(() => toast('success', next ? t('details.favoriteOn') : t('folders.unfavorite'))).catch((error) => toast('error', describeError(t, error))).then(() => setBusy('')) } }, allFavorite ? t('folders.unfavorite') : t('details.favoriteOff')),
+          ),
+          h('span', { className: 'ph-batch__divider ph-batch__divider--soft' }),
+          h(
+            'div',
+            { className: 'ph-batch__group ph-batch__group--secondary' },
+            h(FolderPicker, { t: t, folders: props.folders, value: '', allowAll: true, className: 'ph-select--inline ph-select--quiet', label: t('folders.assignTo'), onChange: (id) => { if (!id) return; setBusy('folder'); controller.assignFolder(id, snapshot.selection, true).then(() => toast('success', t('folders.assigned'))).catch((error) => toast('error', describeError(t, error))).then(() => setBusy('')) } }),
+            tagOpen
+              ? h(
+                  'span',
+                  { className: 'ph-batch__tag' },
+                  h('input', { value: tagValue, autoFocus: true, placeholder: t('library.batch.tagPlaceholder'), onChange: (event) => setTagValue(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter') applyTag(); if (event.key === 'Escape') { setTagOpen(false); setTagValue('') } } }),
+                  h(Button, { size: 'sm', variant: 'primary', loading: busy === 'tag', onClick: applyTag }, t('library.batch.tagApply')),
+                )
+              : h(Button, { size: 'sm', icon: 'tag', title: t('library.batch.tag'), onClick: () => setTagOpen(true) }, t('library.batch.tag')),
+            collectionOpen
+              ? h(
+                  'span',
+                  { className: 'ph-batch__tag' },
+                  h(
+                    'select',
+                    {
+                      className: 'ph-select',
+                      defaultValue: '',
+                      onChange: (event) => {
+                        const collection = collections.find((item) => item.id === event.target.value)
+                        if (collection) assign(collection)
+                      },
                     },
-                  },
-                  h('option', { value: '', disabled: true }, t('library.batch.collection')),
-                  collections.map((collection) => h('option', { key: collection.id, value: collection.id }, collection.name)),
-                ),
-                h(IconButton, { icon: 'close', title: t('common.cancel'), onClick: () => setCollectionOpen(false) }),
-              )
-            : h(Button, { size: 'sm', icon: 'collection', onClick: () => setCollectionOpen(true) }, t('library.batch.collection')),
-          h('select', { className: 'ph-select ph-select--inline', defaultValue: '', 'aria-label': t('library.batch.reading'), onChange: (event) => { const value = event.target.value; if (!value) return; setBusy('reading'); controller.setReadingSelection(snapshot.selection, value).then(() => toast('success', t('library.batch.readingUpdated'))).catch((error) => toast('error', t('toast.failed', { message: describeError(t, error) }))).then(() => setBusy('')) } }, h('option', { value: '' }, t('library.batch.reading')), h('option', { value: 'to-read' }, t('library.smart.toRead')), h('option', { value: 'reading' }, t('library.smart.reading')), h('option', { value: 'read' }, t('library.smart.read'))),
-          h(Button, { size: 'sm', variant: 'danger', icon: 'trash', loading: busy === 'trash', onClick: () => { if (!armed) { setArmed(true); setTimeout(() => setArmed(false), 4500); return } setBusy('trash'); controller.trashSelection().then((removed) => { toast('success', t('toast.trashed') + (removed ? ' · ' + removed : '')); setArmed(false) }).catch((error) => toast('error', t('toast.failed', { message: describeError(t, error) }))).then(() => setBusy('')) } }, armed ? t('library.batch.trashConfirm') : t('library.batch.trash')),
+                    h('option', { value: '', disabled: true }, t('library.batch.collection')),
+                    collections.map((collection) => h('option', { key: collection.id, value: collection.id }, collection.name)),
+                  ),
+                  h(IconButton, { icon: 'close', title: t('common.cancel'), onClick: () => setCollectionOpen(false) }),
+                )
+              : h(Button, { size: 'sm', icon: 'collection', title: t('library.batch.collection'), onClick: () => setCollectionOpen(true) }, t('library.batch.collection')),
+            h('select', { className: 'ph-select ph-select--inline ph-select--quiet', defaultValue: '', 'aria-label': t('library.batch.reading'), onChange: (event) => { const value = event.target.value; if (!value) return; setBusy('reading'); controller.setReadingSelection(snapshot.selection, value).then(() => toast('success', t('library.batch.readingUpdated'))).catch((error) => toast('error', t('toast.failed', { message: describeError(t, error) }))).then(() => setBusy('')) } }, h('option', { value: '' }, t('library.batch.reading')), h('option', { value: 'to-read' }, t('library.smart.toRead')), h('option', { value: 'reading' }, t('library.smart.reading')), h('option', { value: 'read' }, t('library.smart.read'))),
+            h(Button, { size: 'sm', icon: 'copy', loading: busy === 'citeCopy', title: t('library.batch.copyCitation'), onClick: () => { setBusy('citeCopy'); api('citation.format', { ids: snapshot.selection, style: 'bibtex' }).then((result) => copyText(result && result.content ? result.content : '')).then((ok) => toast(ok ? 'success' : 'warning', ok ? t('common.copied') : t('common.unavailable'))).catch((error) => toast('error', t('toast.failed', { message: describeError(t, error) }))).then(() => setBusy('')) } }, t('library.batch.copyCitation')),
+            h(Button, { size: 'sm', icon: 'chart', loading: busy === 'metrics', title: t('library.batch.updateMetrics'), onClick: () => { setBusy('metrics'); controller.refreshMetrics(snapshot.selection).then((result) => { const results = result && Array.isArray(result.results) ? result.results : []; const ok = results.filter((entry) => entry && entry.status !== 'failed').length; toast(ok > 0 ? 'success' : 'warning', ok > 0 ? t('metrics.batchUpdated', { count: ok }) : t('metrics.refreshUnavailable')) }).catch((error) => toast('error', t('metrics.refreshFailed', { message: describeError(t, error) }))).then(() => setBusy('')) } }, t('library.batch.updateMetrics')),
+            h(Button, { size: 'sm', variant: 'danger', icon: 'trash', className: 'ph-batch__trash', loading: busy === 'trash', title: armed ? t('library.batch.trashConfirm') : t('library.batch.trash'), onClick: () => { if (!armed) { setArmed(true); setTimeout(() => setArmed(false), 4500); return } setBusy('trash'); controller.trashSelection().then((removed) => { toast('success', t('toast.trashed') + (removed ? ' · ' + removed : '')); setArmed(false) }).catch((error) => toast('error', t('toast.failed', { message: describeError(t, error) }))).then(() => setBusy('')) } }, armed ? t('library.batch.trashConfirm') : t('library.batch.trash')),
+          ),
         ),
     h('span', { className: 'ph-batch__divider' }),
     h(IconButton, { icon: 'close', title: t('library.clearSelection'), onClick: () => { controller.clearSelection(); setTagOpen(false); setCollectionOpen(false); setArmed(false) } }),

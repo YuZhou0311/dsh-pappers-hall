@@ -365,14 +365,13 @@ figure itself and never reports an embedding-style percentage.
   (`{status:'applied', applied:[…], createdFolders, operationId}` or
   `{status:'unavailable', reason}` / `{status:'error'}`); failures never block the
   import. An explicit `collectionId` skips auto-classification.
-- **Agent tools (+5, total 15)**: `papers_overview` (counts/folders/tags/recent
-  items/embedding state), `papers_folders` (tree/create/rename/delete/assign/
-  unassign, all undoable), `papers_classify` (suggest/apply), `papers_import_file`
-  (`confirm!==true` = read-only PDF preview returning `needs_confirmation` +
-  title/DOI/question — **never writes**; `confirm:true` = import via the normal
-  ingest pipeline + auto-classification; duplicate/invalid paths return explicit
-  statuses; relative paths resolve against the workspace cwd), and
-  `papers_related` (semantic neighbors by `paperId` or `query`, excludes itself).
+- **Agent tools (v0.24 consolidated to 14)**: `papers_search` (search/related/
+  abstracts), `papers_get` (detail/outline/citation), `papers_list`,
+  `papers_get_passage` (page or batch/range), `papers_get_figure`,
+  `papers_manage` (metadata update + folder CRUD/assign/hints),
+  `papers_annotations` (list/create), `papers_overview` (+index status),
+  `papers_changes` (propose/apply), `papers_pdf`,
+  `papers_translate`, and `notes_search` / `notes_get` / `notes_edit`.
 - **System prompt**: a second section `plugin:pappers-hall-management`
   (`FILE_REFERENCE+2`) teaches the Agent to search/read with papers_*, ALWAYS
   preview a PDF and ask the user before importing it (confirm only after explicit
@@ -440,10 +439,10 @@ figure itself and never reports an embedding-style percentage.
 
 ## Agent tools
 
-`papers_search`, `papers_get_passage`, `papers_get_figure`, `papers_get_annotations`,
-`papers_annotate`,
-`papers_translate`, `papers_propose_changes`, `papers_apply_changes`,
-`papers_cite`, `papers_index_status` — registered through
+`papers_search`, `papers_get`, `papers_list`, `papers_get_passage`,
+`papers_get_figure`, `papers_manage`, `papers_annotations`, `papers_overview`,
+`papers_changes`, `papers_pdf`, `papers_translate`,
+`notes_search`, `notes_get`, `notes_edit` — registered through
 `ctx.tools.register(...)` inside the mount effect.
 
 - `papers_get_figure` loads the real crop, calls

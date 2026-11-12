@@ -105,6 +105,7 @@ export function SearchInput(props) {
     props.value && props.clearLabel
       ? h(IconButton, { icon: 'close', title: props.clearLabel, onClick: () => props.onChange(''), className: 'ph-search__clear' })
       : null,
+    !props.value && props.hint ? h('kbd', { className: 'ph-search__hint', 'aria-hidden': 'true' }, props.hint) : null,
   )
 }
 

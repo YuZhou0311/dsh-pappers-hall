@@ -1,8 +1,9 @@
 {
   "name": "dsh-pappers-hall",
-  "version": "0.19.3",
-  "private": true,
-  "description": "Pappers-Hall: a native DSH paper center with library, reader, annotations, figure search and conversation references.",
+  "version": "0.21.0",
+  "description": "Pappers-Hall: a native DSH paper center with library, PDF reader, notes, annotations, figures and conversation references.",
+  "license": "MIT",
+  "author": "Pappers-Hall contributors",
   "type": "module",
   "main": "index.js",
   "exports": {
@@ -18,14 +19,22 @@
     "cordis.patch.yml",
     "locale/*.json",
     "icon.svg",
+    "docs/DETAIL.md",
+    "docs/DETAIL.zh.md",
+    "docs/preview.svg",
     "README.md",
-    "docs",
-    "client.js"
+    "LICENSE",
+    "CHANGELOG.md",
+    "client.js",
+    "CONTRIBUTING.md",
+    "SECURITY.md"
   ],
   "engines": {
-    "node": ">=24"
+    "node": ">=24",
+    "dsh": ">=0.2.2-rc.2 <0.3.0"
   },
   "dsh": {
+    "manifestVersion": 1,
     "bundle": {
       "patch": "./cordis.patch.yml"
     },
@@ -43,11 +52,40 @@
       ]
     }
   },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "papers",
+    "pdf",
+    "research",
+    "notes",
+    "annotations",
+    "citations"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "esbuild": "0.28.2"
   },
   "scripts": {
+    "build": "node client/build.mjs",
     "build:client": "node client/build.mjs",
-    "setup:embedding": "bash scripts/setup-embedding.sh"
+    "test:host": "node host/selftest.mjs",
+    "test:notes": "node test/notes.mjs",
+    "test:ui": "node test/ui-contract.mjs",
+    "verify": "node scripts/verify-release.mjs",
+    "prepack": "npm run build:client",
+    "test:api": "node test/api-contract.mjs",
+    "test:i18n": "node test/i18n-contract.mjs"
+  },
+  "packageManager": "npm@11.20.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YuZhou0311/dsh-pappers-hall.git"
+  },
+  "homepage": "https://github.com/YuZhou0311/dsh-pappers-hall#readme",
+  "bugs": {
+    "url": "https://github.com/YuZhou0311/dsh-pappers-hall/issues"
   }
 }

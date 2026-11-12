@@ -17,7 +17,8 @@ import { pendingStore } from '../../core/pending.js'
 import { STATUS_POLL_MS } from '../../core/constants.js'
 import { CollectionsPane } from './collections.jsx'
 import { NoteInline } from './note-inline.jsx'
-import { BatchBar, LibraryToolbar } from './toolbar.jsx'
+import { PaperPanel } from '../notes/paper-panel.jsx'
+import { BatchBar, ImportControl, LibraryToolbar } from './toolbar.jsx'
 import { ItemTable } from './item-table.jsx'
 import { DetailsPane } from './details.jsx'
 import { DuplicatesPane } from './duplicates.jsx'
@@ -56,7 +57,85 @@ function GlobalSearch(props) {
     'aria-label': t('library.searchPlaceholder'),
     clearLabel: t('common.clear'),
     loading: snapshot.status === 'loading',
+    hint: '⌘K',
   })
+}
+
+/** Compact overflow menu for workspace-level actions. */
+function TopbarMenu(props) {
+  const t = props.t
+  const [open, setOpen] = React.useState(false)
+  const ref = React.useRef(null)
+  React.useEffect(() => {
+    if (!open) return undefined
+    const close = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false)
+    }
+    const onKey = (event) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+  const run = (fn) => () => {
+    setOpen(false)
+    fn()
+  }
+  return h(
+    'div',
+    { className: 'ph-menuwrap', ref: ref },
+    h(IconButton, {
+      icon: 'more',
+      title: t('common.more'),
+      'aria-label': t('common.more'),
+      'aria-haspopup': 'menu',
+      'aria-expanded': open ? 'true' : 'false',
+      active: open,
+      onClick: () => setOpen((value) => !value),
+    }),
+    open
+      ? h(
+          'div',
+          { className: 'ph-menu', role: 'menu' },
+          h(
+            'button',
+            { type: 'button', className: 'ph-menu__item', role: 'menuitem', onClick: run(() => { if (props.onOpenFigures) props.onOpenFigures(); else navigation.openFigureSearch({}) }) },
+            h(Icon, { name: 'image', size: 15 }),
+            h('span', null, t('library.smart.figures')),
+          ),
+          h(
+            'button',
+            { type: 'button', className: 'ph-menu__item', role: 'menuitem', onClick: run(() => props.onOpenDuplicates()) },
+            h(Icon, { name: 'copy', size: 15 }),
+            h('span', null, t('cmd.duplicates')),
+          ),
+          h('div', { className: 'ph-menu__sep', role: 'separator' }),
+          h(
+            'button',
+            { type: 'button', className: 'ph-menu__item', role: 'menuitem', onClick: run(() => bus.emit('open-settings')) },
+            h(Icon, { name: 'settings', size: 15 }),
+            h('span', null, t('settings.open')),
+          ),
+          h(
+            'button',
+            { type: 'button', className: 'ph-menu__item', role: 'menuitem', onClick: run(() => props.onRefresh()) },
+            h(Icon, { name: 'refresh', size: 15 }),
+            h('span', null, t('page.refresh')),
+          ),
+          h(
+            'button',
+            { type: 'button', className: 'ph-menu__item', role: 'menuitem', onClick: run(() => props.onHelp()) },
+            h(Icon, { name: 'info', size: 15 }),
+            h('span', null, t('help.title')),
+            h('kbd', { className: 'ph-menu__kbd' }, '?'),
+          ),
+        )
+      : null,
+  )
 }
 
 function operationId(prefix) {
@@ -275,9 +354,9 @@ function LibrarySkeleton() {
 }
 
 function useNarrowLayout() {
-  const [narrow, setNarrow] = React.useState(() => typeof window !== 'undefined' && window.innerWidth <= 980)
+  const [narrow, setNarrow] = React.useState(() => typeof window !== 'undefined' && window.innerWidth <= 1100)
   React.useEffect(() => {
-    const onResize = () => setNarrow(typeof window !== 'undefined' && window.innerWidth <= 980)
+    const onResize = () => setNarrow(typeof window !== 'undefined' && window.innerWidth <= 1100)
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
@@ -297,7 +376,32 @@ export function LibraryShell(props) {
   const [paletteOpen, setPaletteOpen] = React.useState(false)
   const [citationOpen, setCitationOpen] = React.useState(false)
   const [helpOpen, setHelpOpen] = React.useState(false)
-  const [inlineNoteId, setInlineNoteId] = React.useState('')
+  const [inlineNoteId, setInlineNoteId] = React.useState(() => String(props.initialNoteId || ''))
+  // A paper-sidebar navigation must leave the inline note; otherwise the middle
+  // pane keeps showing the note and clicks look broken. Skip the initial run so
+  // an `initialNoteId` route (notes library hand-off) is not cleared on mount.
+  const filtersKeyRef = React.useRef(null)
+  const notePrevLeftRef = React.useRef(null)
+  React.useEffect(() => {
+    const key = [snapshot.filters.view, snapshot.filters.collectionId, snapshot.filters.folderId, snapshot.filters.favorite, snapshot.filters.reading, snapshot.filters.query, (snapshot.filters.tags || []).join('|')].join('\u0001')
+    if (filtersKeyRef.current === null) { filtersKeyRef.current = key; return }
+    if (filtersKeyRef.current === key) return
+    filtersKeyRef.current = key
+    setInlineNoteId('')
+  }, [snapshot.filters.view, snapshot.filters.collectionId, snapshot.filters.folderId, snapshot.filters.favorite, snapshot.filters.reading, snapshot.filters.query, (snapshot.filters.tags || []).join('|')])
+  React.useEffect(() => {
+    if (props.initialNoteId) setInlineNoteId(String(props.initialNoteId))
+  }, [props.initialNoteId])
+  React.useEffect(() => {
+    if (inlineNoteId) {
+      if (notePrevLeftRef.current === null) notePrevLeftRef.current = Boolean(snapshot.ui.leftCollapsed)
+      if (!snapshot.ui.leftCollapsed) library.setUi({ leftCollapsed: true })
+    } else if (notePrevLeftRef.current !== null) {
+      const previous = notePrevLeftRef.current
+      notePrevLeftRef.current = null
+      if (!previous) library.setUi({ leftCollapsed: false })
+    }
+  }, [inlineNoteId])
 
   React.useEffect(() => {
     if (snapshot.status === 'idle') library.refresh()
@@ -433,7 +537,7 @@ export function LibraryShell(props) {
     { id: 'open', label: t('cmd.openReader'), icon: 'book', hint: selectedForCommand ? paperTitle(t, selectedForCommand) : '', run: () => selectedForCommand && openPaper(selectedForCommand.id, 1) },
     { id: 'table', label: t('cmd.tableView'), icon: 'list', run: () => library.setViewMode('table') },
     { id: 'grid', label: t('cmd.gridView'), icon: 'grid', run: () => library.setViewMode('grid') },
-    { id: 'search', label: t('cmd.focusSearch'), icon: 'search', run: () => { const input = rootRef.current && rootRef.current.querySelector('.ph-toolbar .ph-search input'); if (input) input.focus() } },
+    { id: 'search', label: t('cmd.focusSearch'), icon: 'search', run: () => { const input = rootRef.current && rootRef.current.querySelector('.ph-center__globalsearch input, .ph-search input'); if (input) input.focus() } },
     { id: 'import', label: t('cmd.import'), icon: 'import', run: () => { const input = rootRef.current && rootRef.current.querySelector('input[type=file]'); if (input) input.click() } },
     { id: 'metrics', label: t('cmd.refreshMetrics'), icon: 'chart', run: () => library.refreshMetrics(snapshot.selection.length > 0 ? snapshot.selection : snapshot.items.slice(0, 5).map((paper) => paper.id)).catch((error) => notify('error', describeError(t, error))) },
     selectedForCommand ? { id: 'cite', label: t('cmd.copyCitation'), icon: 'quote', run: () => copyCitation(selectedForCommand, 'bibtex') } : null,
@@ -442,7 +546,7 @@ export function LibraryShell(props) {
     { id: 'figures', label: t('cmd.figureSearch'), icon: 'image', run: () => props.onOpenFigures && props.onOpenFigures() },
     { id: 'notes', label: t('cmd.notesLibrary'), icon: 'note', run: () => navigation.openNotes({}) },
     { id: 'undo', label: t('common.undo'), icon: 'restore', run: () => undo.undoLast().then((result) => notify(result.ok ? 'success' : 'info', result.ok ? t('common.undo') + ' · ' + (result.label || '') : t('additional.noUndo'))) },
-    { id: 'semantic', label: t('cmd.semantic'), icon: 'search', run: () => { const input = rootRef.current && rootRef.current.querySelector('.ph-toolbar .ph-search input'); if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length) } } },
+    { id: 'semantic', label: t('cmd.semantic'), icon: 'search', run: () => { const input = rootRef.current && rootRef.current.querySelector('.ph-center__globalsearch input, .ph-search input'); if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length) } } },
     { id: 'help', label: t('help.title'), icon: 'info', run: () => setHelpOpen(true) },
   ].filter(Boolean)
 
@@ -468,12 +572,27 @@ export function LibraryShell(props) {
   const topbar = h(
     'div',
     { className: 'ph-center__topbar' },
-    h('div', { className: 'ph-center__brand' }, h(Icon, { name: 'book', size: 20, className: 'ph-center__mark' }), h('h1', { className: 'ph-center__title' }, t('library.title'))),
+    h(
+      'div',
+      { className: 'ph-center__brand' },
+      h(Icon, { name: 'book', size: 18, className: 'ph-center__mark' }),
+      h('div', { className: 'ph-center__brandtext' },
+        h('h1', { className: 'ph-center__title' }, t('library.title')),
+        h('span', { className: 'ph-center__subtitle' }, t('library.subtitle')),
+      ),
+    ),
     h(GlobalSearch, { t: t, snapshot: snapshot, controller: library }),
-    h('div', { className: 'ph-center__actions' },
-      h(Button, { size: 'sm', variant: 'soft', icon: 'image', onClick: () => { if (props.onOpenFigures) props.onOpenFigures(); else navigation.openFigureSearch({}) }, title: t('library.smart.figures') }, t('library.smart.figures')),
-      h(IconButton, { icon: 'settings', title: t('settings.open'), 'aria-label': t('settings.open'), onClick: () => bus.emit('open-settings') }),
-      h(IconButton, { icon: 'refresh', title: t('page.refresh'), onClick: () => library.refresh() }),
+    h(
+      'div',
+      { className: 'ph-center__actions' },
+      h(ImportControl, { t: t, api: api, controller: library, pushToast: push }),
+      h(TopbarMenu, {
+        t: t,
+        onOpenFigures: props.onOpenFigures,
+        onOpenDuplicates: () => library.setView('duplicates'),
+        onRefresh: () => library.refresh(),
+        onHelp: () => setHelpOpen(true),
+      }),
     ),
   )
 
@@ -485,6 +604,7 @@ export function LibraryShell(props) {
           t: t,
           api: api,
           noteId: inlineNoteId,
+          onToggleLeft: () => library.setUi({ leftCollapsed: !snapshot.ui.leftCollapsed }),
           onClose: () => setInlineNoteId(''),
           onOpenPaper: (paperId, page, annotationId) => openPaper(paperId, page || 1, annotationId),
           notify: push,
@@ -524,6 +644,7 @@ export function LibraryShell(props) {
       t: t,
       api: api,
       onOpenNote: (noteId) => setInlineNoteId(noteId || ''),
+      onLeaveNote: () => setInlineNoteId(''),
       snapshot: snapshot,
       controller: library,
       figuresActive: props.figuresActive,
@@ -534,7 +655,21 @@ export function LibraryShell(props) {
     }),
   )
 
-  const right = inlineNoteId ? null : h(
+  const right = inlineNoteId
+    ? h(
+        'div',
+        { className: 'ph-pane ph-pane--right ph-pane--notepaper' },
+        h(PaperPanel, {
+          t: t,
+          api: api,
+          noteId: inlineNoteId,
+          onOpenPaper: (paperId, page) => openPaper(paperId, page || 1),
+          onFilterByPaper: null,
+          onLinkPaper: null,
+          onCreateNote: null,
+        }),
+      )
+    : h(
     'div',
     { className: 'ph-pane ph-pane--right' + (snapshot.ui.rightCollapsed ? ' ph-pane--collapsed' : '') },
     h(DetailsPane, {

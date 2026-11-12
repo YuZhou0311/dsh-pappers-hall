@@ -89,7 +89,14 @@ function PaperRow(props) {
     h(Thumb, { src: thumbOf(paper), paperId: paper.id, eager: props.index != null && props.index < 8 }),
     h(
       'div',
-      Object.assign({ className: 'ph-side-row__main', onClick: () => props.onOpen(paper, 1), role: 'button', tabIndex: 0, onKeyDown: (event) => { if (event.key === 'Enter') props.onOpen(paper, 1) } }, drag),
+      Object.assign({
+        className: 'ph-side-row__main',
+        onClick: () => props.onSelect(paper),
+        role: 'button',
+        tabIndex: 0,
+        'aria-pressed': selected ? 'true' : 'false',
+        onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); props.onSelect(paper) } },
+      }, drag),
       h('div', { className: 'ph-side-row__title' }, paperTitle(t, paper)),
       paper.title && paper.title !== paperTitle(t, paper) ? h('div', { className: 'ph-side-row__original' }, paper.title) : null,
       h('div', { className: 'ph-side-row__meta' }, [authorLine(paper.authors), paper.year ? String(paper.year) : '', firstText(paper.venue, paper.containerTitle)].filter(Boolean).join(' · ')),
@@ -106,7 +113,7 @@ function PaperRow(props) {
     h(
       'div',
       { className: 'ph-side-row__actions' },
-      h(IconButton, { icon: 'book', title: t('drawer.action.open'), onClick: () => props.onOpen(paper, 1) }),
+      h(IconButton, { icon: 'external', title: t('drawer.action.open'), onClick: () => props.onOpen(paper, 1) }),
       h(IconButton, { icon: 'quote', title: t('drawer.action.cite'), onClick: () => props.onCite([{ kind: 'paper', id: paper.id, title: paperTitle(t, paper) }]) }),
       h(IconButton, { icon: 'panelRight', title: t('drawer.action.details'), onClick: () => props.onDetails(paper) }),
     ),
@@ -155,6 +162,7 @@ export function DrawerBody(props) {
   const [annotations, setAnnotations] = React.useState({ status: 'loading', items: [], error: null, hasMore: false })
   const [figures, setFigures] = React.useState({ status: 'loading', items: [], error: null })
   const [notes, setNotes] = React.useState({ status: 'idle', items: [], error: null })
+  const [noteTotal, setNoteTotal] = React.useState(0)
   const [filters, setFilters] = React.useState({ quick: 'all', collectionId: '', tag: '', color: '', kind: '', paperId: '' })
   const [selected, setSelected] = React.useState([])
   const [collapsed, setCollapsed] = React.useState({})
@@ -206,6 +214,14 @@ export function DrawerBody(props) {
       })
     }
   }, [tab])
+
+  React.useEffect(() => {
+    let alive = true
+    Promise.resolve(defaultApi('notes.list', { limit: 1 }))
+      .then((value) => { if (alive) setNoteTotal(Number(value && value.total) || 0) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [revision])
 
   /* ---------------------------------------------------------------- feeds */
   React.useEffect(() => {
@@ -389,10 +405,21 @@ export function DrawerBody(props) {
         }
       }
       try {
-        const value = await defaultApi('search.query', { q: debounced || ' ', scope: 'notes', limit: 30 })
+        // v0.22: the conversation drawer reads the notes workbench (note_docs),
+        // not the legacy `search.query scope:'notes'` paper snippets.
+        const value = debounced
+          ? await defaultApi('notes.search', { q: debounced, limit: 30 })
+          : await defaultApi('notes.list', { limit: 30 })
         if (!alive) return
-        const items = (Array.isArray(value && value.items) ? value.items : []).filter((hit) => (allowed === null ? true : !hit.paperId || allowed.has(hit.paperId)))
-        setNotes({ status: 'ready', items: items, error: null, filtered: hasFolderScope })
+        const items = (Array.isArray(value && value.items) ? value.items : []).map((note) => ({
+          id: note.id || note.noteId,
+          title: note.title || '',
+          preview: note.preview || note.snippet || '',
+          folder: note.folder || null,
+          paperIds: Array.isArray(note.paperIds) ? note.paperIds : [],
+          updatedAt: note.updatedAt,
+        }))
+        setNotes({ status: 'ready', items, error: null, total: Number(value && value.total) || items.length, filtered: hasFolderScope })
       } catch (error) {
         if (alive) setNotes({ status: 'error', items: [], error: error })
       }
@@ -436,7 +463,7 @@ export function DrawerBody(props) {
     if (openLibrary) openLibrary()
     bus.emit('open-library-paper', { paperId: paper.id })
   }
-  // v0.17: one-click entry into the standalone notes library.
+  // v0.22: open the note inside the paper library (inline editor + paper panel).
   const openNotesLibrary = (noteId) => {
     if (openLibrary) openLibrary()
     navigation.openNotes({ noteId: noteId || null })
@@ -455,7 +482,7 @@ export function DrawerBody(props) {
     papers: stats.papers != null ? stats.papers : (feed.data && feed.data.unread ? feed.data.unread.length : 0),
     annotations: stats.annotations != null ? stats.annotations : annotations.items.length || recentAnnotations.length,
     figures: stats.figures != null ? stats.figures : figures.items.length || recentFigures.length,
-    notes: stats.notes != null ? stats.notes : notes.items.length || recentAnnotations.filter((item) => item && item.kind === 'note').length,
+    notes: noteTotal || (stats.noteDocs != null ? Number(stats.noteDocs) || 0 : 0) || notes.items.length || recentAnnotations.filter((item) => item && item.kind === 'note').length,
   }
   const tabs = [
     { id: 'papers', label: t('drawer.tab.papers'), count: counts.papers },
@@ -575,7 +602,31 @@ export function DrawerBody(props) {
         ? h(EmptyState, { compact: true, tone: 'error', icon: 'warning', title: t('drawer.loadFailed', { message: describeError(t, notes.error) }) })
         : notes.items.length === 0
           ? h(EmptyState, { compact: true, icon: 'note', title: t('drawer.hint.notes'), action: h(Button, { size: 'sm', variant: 'secondary', icon: 'note', onClick: () => openNotesLibrary() }, t('notes.library.open')) })
-          : h('div', { className: 'ph-side-notes' }, notes.items.map((hit, index) => h(AnnotationRow, { key: hit.id || index, t: t, item: { id: hit.id, paperId: hit.paperId, page: hit.page, kind: 'note', quote: hit.snippet, comment: hit.title || '', color: 'blue', createdAt: hit.createdAt }, onOpen: (entry) => openItem({ paperId: entry.paperId, page: entry.page }), onCite: cite, onCopy: (entry) => copyText(entry.quote || '').then((ok) => push(ok ? 'success' : 'warning', ok ? t('common.copied') : t('common.unavailable'))) })))
+          : h('div', { className: 'ph-side-notes' }, notes.items.map((note, index) => {
+              const selectedNote = selectedKeys.has('note:' + note.id)
+              return h('div', {
+                key: note.id || index,
+                className: 'ph-side-note' + (selectedNote ? ' ph-side-note--selected' : ''),
+                role: 'button',
+                tabIndex: 0,
+                onClick: () => toggleSelect({ kind: 'note', id: note.id, title: note.title || t('notes.untitled') }),
+                onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleSelect({ kind: 'note', id: note.id, title: note.title || t('notes.untitled') }) } },
+                title: note.title || t('notes.untitled'),
+              },
+                h('span', { className: 'ph-side-row__check', onClick: (event) => event.stopPropagation() }, h(Check, { checked: selectedNote, onChange: () => toggleSelect({ kind: 'note', id: note.id, title: note.title || t('notes.untitled') }) })),
+                h(Icon, { name: 'note', size: 13 }),
+                h('span', { className: 'ph-side-note__main' },
+                  h('span', { className: 'ph-side-note__title' }, note.title || t('notes.untitled')),
+                  h('span', { className: 'ph-side-note__preview' }, (note.preview || '').replace(/\s+/g, ' ').slice(0, 90) || t('notes.empty.preview')),
+                ),
+                h(IconButton, {
+                  icon: 'external',
+                  size: 13,
+                  title: t('drawer.openNote'),
+                  onClick: (event) => { event.stopPropagation(); openNotesLibrary(note.id) },
+                }),
+              )
+            }))
   }
 
   return h(

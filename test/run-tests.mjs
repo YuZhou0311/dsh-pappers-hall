@@ -9,7 +9,7 @@
  *   node test/run-tests.mjs --bibliography            # also exercise BibTeX/RIS/CSL import
  *
  * Live runs require the plugin to be installed and enabled in the desktop
- * profile. The script only talks to `http://127.0.0.1:54731/pappers-hall/api`
+ * profile. The script only talks to `http://127.0.0.1:3080/pappers-hall/api`
  * (plain localhost; the plugin prefix route is not behind the index cookie) and
  * never mutates the profile, the plugin source, the devkit or the PDFs.
  *
@@ -116,7 +116,7 @@ function suggestionFor(testCase) {
     return '核对 host/apply.js 的 ctx.effect 清理：HTTP 路由、SQLite 连接、job worker 定时器、工具注册都必须在停用后释放；用 plugin_manager 复测并附证据'
   }
   if (prefix === 'PREFLIGHT') {
-    return '确认插件已安装并启用、DSH Web GUI 端口正确；`curl -s -X POST http://127.0.0.1:54731/pappers-hall/api -d \'{"method":"status","params":{}}\' -H \'content-type: application/json\'`'
+    return '确认插件已安装并启用、DSH Web GUI 端口正确；`curl -s -X POST http://127.0.0.1:3080/pappers-hall/api -d \'{"method":"status","params":{}}\' -H \'content-type: application/json\'`'
   }
   return '查看 reports/test-results.json 中该 case 的 assertions/actual/evidence'
 }

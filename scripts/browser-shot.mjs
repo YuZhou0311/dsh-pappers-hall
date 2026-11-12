@@ -20,7 +20,8 @@ import { DatabaseSync } from 'node:sqlite'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const BASE = process.env.PAPPERS_BASE ?? 'http://127.0.0.1:54731'
+const BASE = process.env.PAPPERS_BASE ?? process.env.DSH_WEB_URL ?? 'http://127.0.0.1:3080'
+const TOKEN = process.env.PAPPERS_TOKEN ?? ''
 const args = process.argv.slice(2)
 const arg = (name, fallback) => {
   const i = args.indexOf(name)
@@ -38,18 +39,34 @@ mkdirSync(profileDir, { recursive: true })
 /** Read the freshest authenticated cookie for 127.0.0.1 from the Electron store. */
 function readCookie() {
   const base = join(process.env.HOME ?? '', 'Library/Application Support/@deepseek-ai/dsh-desktop')
-  const entries = readdirSync(base).filter((name) => name === 'Cookies' || name.startsWith('Cookies'))
-  const copy = join(tmpdir(), `pappers-cookies-${process.pid}.db`)
-  const source = entries.map((name) => join(base, name)).find((path) => path.endsWith('/Cookies'))
-  if (!source) throw new Error('no Electron cookie store found')
-  copyFileSync(source, copy)
-  const db = new DatabaseSync(copy, { readOnly: true })
-  const rows = db.prepare(
-    'SELECT name, value, cast(last_access_utc as text) AS accessed FROM cookies WHERE host_key = ? AND value IS NOT NULL AND length(value) > 0 ORDER BY accessed DESC',
-  ).all('127.0.0.1')
-  db.close()
-  if (rows.length === 0) throw new Error('no DSH browser cookie found; open the DSH window once')
-  return { name: rows[0].name, value: rows[0].value }
+  const candidates = []
+  const walk = (dir, depth) => {
+    if (depth < 0) return
+    let entries = []
+    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
+    for (const entry of entries) {
+      const full = join(dir, entry.name)
+      if (entry.isDirectory()) walk(full, depth - 1)
+      else if (entry.name === 'Cookies') candidates.push(full)
+    }
+  }
+  walk(base, 4)
+  for (const source of candidates) {
+    const copy = join(tmpdir(), `pappers-cookies-${process.pid}-${candidates.indexOf(source)}.db`)
+    try { copyFileSync(source, copy) } catch { continue }
+    try {
+      const db = new DatabaseSync(copy, { readOnly: true })
+      const rows = db.prepare(
+        'SELECT host_key, name, value, cast(last_access_utc as text) AS accessed FROM cookies WHERE value IS NOT NULL AND length(value) > 0 AND (host_key = ? OR host_key = ? OR host_key LIKE ?) ORDER BY accessed DESC',
+      ).all('127.0.0.1', 'localhost', '%127.0.0.1%')
+      db.close()
+      const row = rows.find((entry) => entry.name && entry.value)
+      if (row) return { name: row.name, value: row.value }
+    } catch {
+      /* encrypted/locked cookie DB: try the next partition */
+    }
+  }
+  throw new Error('no DSH browser cookie found; open the DSH window once')
 }
 
 class Cdp {
@@ -120,7 +137,7 @@ async function waitForDevTools(timeoutMs = 20_000) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function main() {
-  const cookie = readCookie()
+  const cookie = TOKEN === '' ? readCookie() : null
   const chrome = launchChrome()
   let ws
   try {
@@ -135,15 +152,17 @@ async function main() {
     await cdp.send('Runtime.enable')
     await cdp.send('Network.enable')
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1586, height: 992, deviceScaleFactor: 1, mobile: false })
-    await cdp.send('Network.setCookie', {
-      name: cookie.name,
-      value: cookie.value,
-      domain: '127.0.0.1',
-      path: '/',
-      httpOnly: true,
-      secure: false,
-      url: BASE,
-    })
+    if (cookie !== null) {
+      await cdp.send('Network.setCookie', {
+        name: cookie.name,
+        value: cookie.value,
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        secure: false,
+        url: BASE,
+      })
+    }
 
     const shots = []
     async function shot(name) {
@@ -161,6 +180,21 @@ async function main() {
       return result.result.value
     }
 
+    async function captureButtons(name) {
+      const list = await evaluate(`(() => [...document.querySelectorAll('button, [role="button"]')].filter((element) => {
+        const rect = element.getBoundingClientRect()
+        return rect.width > 0 && rect.height > 0
+      }).map((element) => ({
+        label: (element.getAttribute('aria-label') || element.getAttribute('title') || element.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120),
+        className: String(element.getAttribute('class') || '').slice(0, 160),
+        disabled: element.disabled === true,
+        tag: element.tagName,
+      })))()`)
+      writeFileSync(join(OUT, 'buttons-' + name + '.json'), JSON.stringify(list, null, 2))
+      console.log('visible buttons ' + name + ':', list.length)
+      return list
+    }
+
     async function waitFor(expression, timeoutMs = 30_000, label = expression) {
       const started = Date.now()
       for (;;) {
@@ -171,7 +205,7 @@ async function main() {
       }
     }
 
-    await cdp.send('Page.navigate', { url: BASE + '/' })
+    await cdp.send('Page.navigate', { url: TOKEN === '' ? BASE + '/' : BASE + '/?token=' + encodeURIComponent(TOKEN) })
     await waitFor("document.readyState === 'complete'", 40_000, 'page load')
     await waitFor("document.querySelector('#root') !== null", 40_000, 'react root')
     await sleep(2500)
@@ -190,14 +224,38 @@ async function main() {
     console.log('first-run notice dismissed:', dismissed)
 
     async function ensureLibrary() {
+      const already = await evaluate("document.querySelector('.ph-center') !== null")
+      if (already) return
       await evaluate(`(() => {
-        const candidates = [...document.querySelectorAll('button')]
+        const candidates = [...document.querySelectorAll('button, a, [role="button"]')]
         const exact = candidates.find((element) => (element.textContent || '').trim() === '论文中心')
-        if (exact) exact.click()
-        return Boolean(exact)
+        if (exact) { exact.click(); return true }
+        const icon = document.querySelector('[class*="ph-panel-icon"], [aria-label="论文中心"]')
+        if (icon) { icon.click(); return true }
+        return false
       })()`)
-      await waitFor("document.querySelector('.ph-app') !== null", 20_000, 'library page')
+      await waitFor("document.querySelector('.ph-center') !== null", 20_000, 'library page')
       await sleep(800)
+    }
+
+    async function ensureConversation() {
+      const hasHeader = await evaluate("Boolean(document.querySelector('button[aria-label=\"打开论文抽屉\"], button[aria-label=\"Open the paper drawer\"]'))")
+      if (hasHeader) return true
+      const clicked = await evaluate(`(() => {
+        const direct = [...document.querySelectorAll('[data-session-id], [data-dsh-session-id]')]
+        if (direct.length > 0) { direct[0].click(); return true }
+        const all = [...document.querySelectorAll('button, a, [role="button"], div, li')]
+        const candidates = all.filter((element) => /开发 Pappers-Hall 插件并测试|Pappers-Hall 论文内容询问|Reflexion 速记笔记解读/.test((element.textContent || '').trim()))
+          .sort((left, right) => (left.textContent || '').length - (right.textContent || '').length)
+        if (candidates.length === 0) return false
+        candidates[0].click()
+        return true
+      })()`)
+      if (!clicked) return false
+      try {
+        await waitFor("Boolean(document.querySelector('button[aria-label=\"打开论文抽屉\"], button[aria-label=\"Open the paper drawer\"]'))", 12_000, 'conversation header')
+        return true
+      } catch { return false }
     }
 
     const want = (step) => STEPS.includes('all') || STEPS.includes(step)
@@ -215,9 +273,9 @@ async function main() {
     // Click the sidebar entry (button whose accessible name contains 论文中心).
     if (want('library') || want('all')) {
       const clicked = await evaluate(`(() => {
-        const candidates = [...document.querySelectorAll('button, a, [role="button"], li, div')]
+        const candidates = [...document.querySelectorAll('button, a, [role="button"]')]
         const exact = candidates.find((element) => (element.textContent || '').trim() === '论文中心')
-        const target = exact && (exact.closest('button, a, [role="button"]') || exact)
+        const target = exact || document.querySelector('[aria-label="论文中心"], [class*="ph-panel-icon"]')
         if (!target) return { clicked: false, count: candidates.length }
         target.click()
         return { clicked: true, tag: target.tagName, label: (target.getAttribute('aria-label') || target.textContent || '').trim().slice(0, 80) }
@@ -230,14 +288,15 @@ async function main() {
       })()`)
       console.log('library state:', JSON.stringify(state).slice(0, 1200))
       await shot('02-library')
+      await captureButtons('library')
     }
 
     if (want('reader') || want('all')) {
       await ensureLibrary()
       // Open the first paper card in the library grid.
       const opened = await evaluate(`(() => {
-        const card = document.querySelector('[data-ph-card="paper"]')
-        if (!card) return { opened: false, cards: document.querySelectorAll('[data-ph-card="paper"]').length }
+        const card = document.querySelector('[data-ph-card="paper"], [data-ph-id]')
+        if (!card) return { opened: false, cards: document.querySelectorAll('[data-ph-card="paper"], [data-ph-id]').length }
         card.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true, view: window }))
         return { opened: true, id: card.getAttribute('data-ph-id') }
       })()`)
@@ -250,6 +309,7 @@ async function main() {
       })()`)
       console.log('reader state:', JSON.stringify(reader).slice(0, 1500))
       writeFileSync(join(OUT, 'reader-text.txt'), reader.snippet ?? '')
+      await captureButtons('reader')
     }
 
     if (want('drawer') || want('all')) {
@@ -263,8 +323,11 @@ async function main() {
       console.log('new session click:', toConversation)
       await sleep(1800)
       await shot('04-conversation')
+      const sessionOpened = await ensureConversation()
+      console.log('existing session opened:', sessionOpened)
+      await sleep(1600)
       const opened = await evaluate(`(() => {
-        const target = document.querySelector('button[aria-label="打开论文抽屉"]')
+        const target = document.querySelector('button[aria-label="打开论文抽屉"], button[aria-label="Open the paper drawer"]')
         if (!target) return { found: false }
         target.click()
         return { found: true, label: target.getAttribute('aria-label') }
@@ -278,6 +341,7 @@ async function main() {
       })()`)
       writeFileSync(join(OUT, 'drawer-text.txt'), drawerState.snippet ?? '')
       console.log('drawer state:', JSON.stringify(drawerState.hasDrawer))
+      await captureButtons('drawer')
     }
 
     if (want('dock') || want('all')) {
@@ -290,14 +354,21 @@ async function main() {
       })()`)
       console.log('conversation:', toConversation)
       await sleep(1800)
-      await evaluate(`(() => { const b = document.querySelector('button[aria-label="打开论文抽屉"]'); if (b) b.click(); return Boolean(b); })()`)
+      await ensureConversation()
+      await sleep(1500)
+      await evaluate(`(() => { const b = document.querySelector('button[aria-label="打开论文抽屉"], button[aria-label="Open the paper drawer"]'); if (b) b.click(); return Boolean(b); })()`)
       await sleep(1600)
       await evaluate(`(() => { window.__phApiLog = []; const original = window.fetch; window.fetch = async (...args) => { try { const response = await original(...args); const url = String(args[0]); if (url.includes('pappers-hall')) window.__phApiLog.push({ url: url, status: response.status, body: args[1] && args[1].body ? String(args[1].body).slice(0, 300) : null }); } catch (error) { window.__phApiLog.push({ url: String(args[0]), error: String(error) }); } return original(...args); }; return true })()`)
+      const selectedRow = await evaluate(`(() => {
+        const row = document.querySelector('.ph-side-row--paper .ph-side-row__main') || document.querySelector('.ph-side-row--paper')
+        if (!row) return false
+        row.click()
+        return true
+      })()`)
+      await sleep(900)
       const cited = await evaluate(`(() => {
-        const row = document.querySelector('.ph-drow')
-        if (row) row.click()
         const cite = [...document.querySelectorAll('button')].find((button) => (button.textContent || '').includes('引用所选'))
-        if (!cite) return { row: Boolean(row), cite: false }
+        if (!cite) return { row: ${JSON.stringify(selectedRow)}, cite: false }
         cite.click()
         return { row: true, cite: true }
       })()`)
@@ -325,15 +396,39 @@ async function main() {
       await shot('07-dock-inserted')
     }
 
-    if (want('figures') || want('all')) {
+    if (want('notes') || STEPS.includes('all')) {
       await ensureLibrary()
       const opened = await evaluate(`(() => {
-        const tab = [...document.querySelectorAll('button')].find((button) => (button.textContent || '').trim() === '图片')
-        if (!tab) return false
-        tab.click()
+        const note = document.querySelector('.ph-notes-sidebar__note')
+        if (!note) return false
+        note.click()
         return true
       })()`)
-      await sleep(800)
+      await sleep(1200)
+      const notes = await evaluate(`(() => {
+        const text = document.body.innerText || ''
+        return { hasEditor: Boolean(document.querySelector('.ph-n-app, .ph-note, [contenteditable="true"]')), hasTitle: text.includes('Reflexion'), snippet: text.slice(0, 1200) }
+      })()`)
+      console.log('notes opened:', opened, JSON.stringify(notes).slice(0, 500))
+      await shot('13-notes')
+    }
+
+    if (want('figures') || want('all')) {
+      await ensureLibrary()
+      const menuOpened = await evaluate(`(() => {
+        const wrap = document.querySelector('.ph-menuwrap button, .ph-center__actions .ph-iconbtn')
+        if (wrap) wrap.click()
+        return Boolean(wrap)
+      })()`)
+      await sleep(350)
+      const opened = await evaluate(`(() => {
+        const item = [...document.querySelectorAll('button, [role="menuitem"]')].find((button) => /图片搜索|Figure search/.test((button.textContent || '').trim()))
+        if (!item) return false
+        item.click()
+        return true
+      })()`)
+      console.log('figure menu:', menuOpened, 'item:', opened)
+      await sleep(900)
       const typed = await evaluate(`(() => {
         const input = document.querySelector('.ph-figsearch__bar input')
         if (!input) return false
@@ -346,6 +441,33 @@ async function main() {
       console.log('figures tab:', opened, 'typed:', typed)
       await sleep(2500)
       await shot('08-figure-search')
+      await captureButtons('figures')
+    }
+
+    if (want('settings') || STEPS.includes('all')) {
+      await ensureConversation()
+      await sleep(800)
+      await evaluate(`(() => { const b = document.querySelector('button[aria-label="打开论文抽屉"], button[aria-label="Open the paper drawer"]'); if (b) b.click(); return Boolean(b); })()`)
+      await sleep(1200)
+      const settingsOpened = await evaluate(`(() => {
+        const b = document.querySelector('button[aria-label="设置"], button[aria-label="Settings"]')
+        if (!b) return false
+        b.click()
+        return true
+      })()`)
+      await sleep(800)
+      await shot('11-settings')
+      const cacheClicked = await evaluate(`(() => {
+        const b = [...document.querySelectorAll('.ph-settings button')].filter((button) => /清空 PDF 预览缓存|Clear PDF preview cache/.test((button.textContent || '').trim())).sort((left, right) => (left.textContent || '').length - (right.textContent || '').length)[0]
+        if (!b) return { found: false }
+        b.click()
+        return { found: true, label: b.textContent.trim() }
+      })()`)
+      await sleep(1200)
+      const toast = await evaluate("document.body.innerText.includes('已清空') || document.body.innerText.includes('Cleared') || document.body.innerText.includes('没有可清理') || document.body.innerText.includes('No PDF preview')")
+      console.log('settings opened:', settingsOpened, 'cache clicked:', JSON.stringify(cacheClicked), 'toast:', toast)
+      await captureButtons('settings')
+      await shot('12-settings-cache-cleared')
     }
 
     if (want('disabled') || want('all')) {

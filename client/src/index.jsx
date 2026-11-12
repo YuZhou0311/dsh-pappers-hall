@@ -19,7 +19,7 @@ import { withBoundary } from './core/boundary.jsx'
 import { PanelIcon } from './surfaces/panel-icon.jsx'
 import { PaperCenter } from './surfaces/center.jsx'
 import { DrawerBody } from './surfaces/drawer.jsx'
-import { DockBody } from './surfaces/dock.jsx'
+import { DockBody, ComposerEntry } from './surfaces/dock.jsx'
 import { HeaderDrawerButton } from './surfaces/header-button.jsx'
 import { registerConversationIntegration } from './surfaces/integration/turn-tail.jsx'
 import { SettingsHost } from './surfaces/settings/host.jsx'
@@ -75,11 +75,27 @@ export function apply(ctx) {
         ctx.slots.register(
           { name: 'sidebar.panellist', id: PANEL_ID, order: 20, label: () => t('panel.title'), locale: NS },
           withBoundary(function PanelEntry(props) {
-            return h(React.Fragment, null, h(PanelIcon, props), h(SettingsHost, { t: t }))
+            return h(PanelIcon, props)
           }, 'sidebar settings host'),
         ),
       ),
     'pappers-hall: sidebar entry',
+  )
+
+  // 1b. Frame-wide settings overlay. Mounting inside the sidebar button would
+  //     nest interactive content inside a <button>; shell.overlay is outside
+  //     every column and scroll container.
+  ctx.effect(
+    () =>
+      ctx.slots.inject('shell.overlay', () =>
+        ctx.slots.register(
+          { name: 'shell.overlay', id: 'pappers-hall-settings', order: 40, locale: NS },
+          withBoundary(function SettingsOverlay(props) {
+            return h(SettingsHost, { t: t })
+          }, 'settings overlay'),
+        ),
+      ),
+    'pappers-hall: settings overlay',
   )
 
   // 2. Paper Center main panel: Zotero-like library shell and the reader share
@@ -113,6 +129,25 @@ export function apply(ctx) {
         ),
       ),
     'pappers-hall: header button',
+  )
+
+  // 4a. New-conversation composer entry: opens the paper drawer and keeps the
+  // insertion bridge available even when the native dock slot is absent.
+  ctx.effect(
+    () =>
+      ctx.slots.inject('conversation.input.left', () =>
+        ctx.slots.register(
+          {
+            name: 'conversation.input.left',
+            id: 'pappers-hall-composer-entry',
+            order: 25,
+            locale: NS,
+            inject: () => ({ openPapers: () => openPaperDrawer(ctx) || openLibraryPanel(ctx) }),
+          },
+          withBoundary(ComposerEntry, 'composer entry'),
+        ),
+      ),
+    'pappers-hall: composer entry',
   )
 
   // 4. Composer dock with the pending conversation materials.

@@ -43,26 +43,33 @@ function request(method, body, signal) {
       })
     })
     .then((response) => {
-      if (response.status === 404) throw apiError('not_running', 'Pappers-Hall is not running or is disabled')
-      if (!response.ok) throw apiError('http_' + response.status, 'HTTP ' + response.status)
       return response.text().then((text) => {
+        let payload = null
         try {
-          return JSON.parse(text)
+          payload = JSON.parse(text)
         } catch {
-          throw apiError('invalid', 'malformed JSON response')
+          payload = null
         }
+        // A JSON contract error (e.g. `not_found` for a stale note id) must keep
+        // its real code. Only a bare 404 from the plugin route means the Host is
+        // disabled; mapping every 404 to "not running" hid the actual failure.
+        if (!response.ok) {
+          if (payload && payload.error && typeof payload.error === 'object') {
+            const error = payload.error
+            const failure = apiError(error.code || 'http_' + response.status, error.message || 'HTTP ' + response.status)
+            if (error.detail && typeof error.detail === 'object') failure.detail = error.detail
+            throw failure
+          }
+          if (response.status === 404) throw apiError('not_running', 'Pappers-Hall is not running or is disabled')
+          throw apiError('http_' + response.status, 'HTTP ' + response.status)
+        }
+        if (!payload || typeof payload !== 'object') throw apiError('invalid', 'malformed JSON response')
+        if (payload.ok === true) return payload.data
+        const error = payload.error && typeof payload.error === 'object' ? payload.error : {}
+        const failure = apiError(error.code || 'internal', error.message || 'request failed')
+        if (error.detail && typeof error.detail === 'object') failure.detail = error.detail
+        throw failure
       })
-    })
-    .then((payload) => {
-      if (!payload || typeof payload !== 'object') throw apiError('invalid', 'empty response')
-      if (payload.ok === true) return payload.data
-      const error = payload.error && typeof payload.error === 'object' ? payload.error : {}
-      const failure = apiError(error.code || 'internal', error.message || 'request failed')
-      // Keep the contract `detail` payload (e.g. notes.update conflict
-      // `currentRevision`) so surfaces can offer "overwrite / reload" instead of
-      // a generic failure.
-      if (error.detail && typeof error.detail === 'object') failure.detail = error.detail
-      throw failure
     })
     .catch((error) => {
       if (error && error.name === 'AbortError') throw error

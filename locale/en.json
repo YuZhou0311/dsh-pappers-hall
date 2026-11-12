@@ -1,7 +1,8 @@
 {
   "meta": {
-    "title": "Pappers-Hall Paper Center",
-    "description": "Manage papers, read the original PDF, annotate passages, and reference papers, selections and figures in research conversations inside DSH."
+    "title": "Pappers-Hall paper center",
+    "description": "Open Papers in the DSH sidebar to manage a local library, read PDFs, take notes, and cite papers, figures or notes in conversations. Requires poppler; OCR and translation use configured services.",
+    "detail": "docs/DETAIL.md"
   },
   "panel.title": "Paper Center",
   "panel.subtitle": "Pappers-Hall · library and conversation references",

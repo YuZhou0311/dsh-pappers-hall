@@ -135,7 +135,7 @@ export function FolderTree(props) {
   return h(
     'div',
     { className: 'ph-folders' },
-    favoriteMatches && Number(props.favoriteCount || 0) > 0 ? h('button', { type: 'button', className: 'ph-navitem' + (filters.view === 'favorite' ? ' ph-navitem--active' : ''), onClick: () => props.controller.setView('favorite') }, h(Icon, { name: 'star', size: 14, className: 'ph-navitem__icon' }), h('span', { className: 'ph-navitem__label' }, t('folders.favorite')), h('span', { className: 'ph-navitem__count' }, String(props.favoriteCount))) : null,
+    favoriteMatches && Number(props.favoriteCount || 0) > 0 ? h('button', { type: 'button', className: 'ph-navitem' + (filters.view === 'favorite' ? ' ph-navitem--active' : ''), onClick: () => { if (props.onLeaveNote) props.onLeaveNote(); props.controller.setView('favorite') } }, h(Icon, { name: 'star', size: 14, className: 'ph-navitem__icon' }), h('span', { className: 'ph-navitem__label' }, t('folders.favorite')), h('span', { className: 'ph-navitem__count' }, String(props.favoriteCount))) : null,
     h('div', { className: 'ph-left__sectionHead' },
       h(Icon, { name: 'collection', size: 13 }), h('span', null, t('folders.mine')),
       h(IconButton, { icon: 'plus', title: t('folders.new'), onClick: () => setNewOpen(!newOpen), 'aria-expanded': newOpen ? 'true' : 'false' }),
@@ -146,7 +146,7 @@ export function FolderTree(props) {
       userFolders.map((node) => h(Node, {
         key: node.id, t: t, node: node, depth: 0, folders: folders, forceOpen: Boolean(query),
         activeId: filters.folderId, active: filters.folderId === node.id,
-        onSelect: (target) => props.controller.setFolderFilter(target.id),
+        onSelect: (target) => { if (props.onLeaveNote) props.onLeaveNote(); props.controller.setFolderFilter(target.id) },
         onCreate: (parent, name) => props.controller.createFolder(parent.id, name).catch((error) => props.onToast('error', describeError(t, error))),
         onRename: (target, name) => props.controller.updateFolder(target.id, { name: name }).catch((error) => props.onToast('error', describeError(t, error))),
         onRecolor: (target, color) => props.controller.updateFolder(target.id, { color: color }).catch((error) => props.onToast('error', describeError(t, error))),

@@ -495,22 +495,60 @@ export function PaperLinkDialog(props) {
   const [selected, setSelected] = React.useState(() => new Set(initial))
   const [query, setQuery] = React.useState('')
   const [state, setState] = React.useState({ status: 'idle', items: [], error: '' })
+  const [folders, setFolders] = React.useState([])
+  const [folderId, setFolderId] = React.useState('')
+  const [annotatedOnly, setAnnotatedOnly] = React.useState(false)
   const [busy, setBusy] = React.useState(false)
   const debounced = React.useRef('')
+
+  React.useEffect(() => {
+    let alive = true
+    Promise.resolve(api('library.folders.tree', {}))
+      .then((result) => {
+        if (!alive) return
+        const root = result && (result.items || result.folders)
+        const list = Array.isArray(root) ? root : []
+        const flat = []
+        const walk = (nodes, depth) => {
+          for (const node of nodes || []) {
+            flat.push({ id: node.id, name: node.name, depth })
+            walk(node.children, (depth || 0) + 1)
+          }
+        }
+        walk(list, 0)
+        setFolders(flat)
+      })
+      .catch(() => { if (alive) setFolders([]) })
+    return () => { alive = false }
+  }, [api])
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
       debounced.current = query
       setState((previous) => Object.assign({}, previous, { status: 'loading' }))
-      Promise.resolve(api('library.list', { query: query.trim(), limit: 30 }))
+      // Defensive: an inline/misused editor may not receive the Host `api`.
+      // Surface that clearly instead of leaving the dialog on "加载中…" forever.
+      if (typeof api !== 'function') {
+        setState({ status: 'error', items: [], error: 'paper link dialog is missing the Host api' })
+        return
+      }
+      let request
+      try {
+        request = Promise.resolve(api('library.list', { query: query.trim(), limit: 100, ...(folderId ? { folderId: folderId } : {}) }))
+      } catch (error) {
+        setState({ status: 'error', items: [], error: String((error && error.message) || error) })
+        return
+      }
+      request
         .then((result) => {
-          const items = Array.isArray(result && result.items) ? result.items : Array.isArray(result) ? result : []
-          setState({ status: 'ready', items: items, error: '' })
+          let items = Array.isArray(result && result.items) ? result.items : Array.isArray(result) ? result : []
+          if (annotatedOnly) items = items.filter((paper) => Number(paper.annotationCount) > 0)
+          setState({ status: 'ready', items: items.slice(0, 60), error: '' })
         })
         .catch((error) => setState({ status: 'error', items: [], error: String((error && error.message) || error) }))
     }, 240)
     return () => clearTimeout(timer)
-  }, [api, query])
+  }, [api, query, folderId, annotatedOnly])
 
   const toggle = (paperId) => {
     setSelected((previous) => {
@@ -563,6 +601,22 @@ export function PaperLinkDialog(props) {
     React.createElement(SearchInput, { value: query, onChange: setQuery, placeholder: t('notes.papers.search'), clearLabel: t('common.clear') }),
     React.createElement(
       'div',
+      { className: 'ph-n-paperpick__filters' },
+      React.createElement(
+        'select',
+        { className: 'ph-select ph-select--inline', value: folderId, 'aria-label': t('folders.pick'), onChange: (event) => setFolderId(event.target.value) },
+        React.createElement('option', { value: '' }, t('folders.all')),
+        folders.map((folder) => React.createElement('option', { key: folder.id, value: folder.id }, '　'.repeat(folder.depth || 0) + folder.name)),
+      ),
+      React.createElement(
+        'label',
+        { className: 'ph-n-paperpick__annot' },
+        React.createElement('input', { type: 'checkbox', checked: annotatedOnly, onChange: (event) => setAnnotatedOnly(event.target.checked) }),
+        t('notes.papers.annotatedOnly'),
+      ),
+    ),
+    React.createElement(
+      'div',
       { className: 'ph-n-paperpick' },
       state.status === 'loading'
         ? React.createElement('div', { className: 'ph-n-progress' }, React.createElement(Spinner), React.createElement('span', null, t('common.loading')))
@@ -583,6 +637,7 @@ export function PaperLinkDialog(props) {
             React.createElement('input', { type: 'checkbox', checked: selected.has(paper.id), onChange: () => toggle(paper.id) }),
             React.createElement('span', { className: 'ph-n-paperpick__title', title: titleOf(paper) }, titleOf(paper)),
             paper.year ? React.createElement('span', { className: 'ph-n-caption' }, String(paper.year)) : null,
+            Number(paper.annotationCount) > 0 ? React.createElement('span', { className: 'ph-n-caption' }, '批注 ' + paper.annotationCount) : null,
           ),
         ),
       ),

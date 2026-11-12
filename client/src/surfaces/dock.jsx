@@ -14,8 +14,6 @@ import { pendingStore } from '../core/pending.js'
 import { insertTokenIntoComposer, registerComposerBridge } from '../core/dnd.js'
 import { installCitationTokens } from '../core/cite-token.js'
 import { FeedbackHost, notify } from '../core/feedback.js'
-import { bus } from '../core/bus.js'
-import { SettingsHost } from './settings/host.jsx'
 
 /** Localized material mix label ("论文 3 · 图 1") instead of the Host's English display. */
 export function bundleSummaryLabel(t, bundle) {
@@ -35,6 +33,56 @@ function usePendingSnapshot() {
   return React.useSyncExternalStore(pendingStore.subscribe, pendingStore.getSnapshot, pendingStore.getSnapshot)
 }
 
+/**
+ * Compact, always-mounted composer entry (v0.25).
+ *
+ * The native `conversation.input.dock` slot is not rendered for a brand-new
+ * conversation (no Session/InputState yet), so the dock and its composer bridge
+ * were absent there. This entry lives in `conversation.input.left` — which the
+ * hero composer always renders — registers the same insertion bridge and, in a
+ * new conversation, auto-inserts pending citations into the draft.
+ */
+export function ComposerEntry(props) {
+  const t = props.t
+  const inputActions = props.inputActions
+  const sessionId = props.sessionId
+  const snapshot = usePendingSnapshot()
+  const pending = snapshot.bundles.filter(
+    (bundle) => !bundle.added && bundle.token && (!bundle.sessionId || bundle.sessionId === sessionId),
+  )
+  const pendingKey = pending.map((bundle) => bundle.bundleId).join('|')
+  React.useEffect(() => {
+    if (sessionId) return
+    const timers = []
+    pending.forEach((bundle) => {
+      let tries = 8
+      const attempt = () => {
+        if (insertTokenIntoComposer(bundle.token)) {
+          pendingStore.markAdded(bundle.bundleId)
+          return
+        }
+        tries -= 1
+        if (tries > 0) timers.push(setTimeout(attempt, 160))
+      }
+      attempt()
+    })
+    return () => timers.forEach((timer) => clearTimeout(timer))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, pendingKey])
+  return h(
+    'button',
+    {
+      type: 'button',
+      className: 'ph-composer-entry',
+      title: t('composer.papers'),
+      onClick: () => props.openPapers && props.openPapers(),
+    },
+    h(Icon, { name: 'book', size: 14 }),
+    h('span', { className: 'ph-composer-entry__label' }, t('composer.papers')),
+    pending.length > 0 ? h('span', { className: 'ph-composer-entry__badge' }, String(pending.length)) : null,
+  )
+}
+
 export function DockBody(props) {
   const t = props.t
   const inputActions = props.inputActions
@@ -43,9 +91,6 @@ export function DockBody(props) {
   const [expanded, setExpanded] = React.useState({})
   const [busyId, setBusyId] = React.useState(null)
   const [errors, setErrors] = React.useState({})
-  const [pdfPrompt, setPdfPrompt] = React.useState(false)
-  const [pdfDismissed, setPdfDismissed] = React.useState('')
-  const [pdfName, setPdfName] = React.useState('')
   const insertingRef = React.useRef({})
   const bundles = snapshot.bundles.filter((bundle) => !bundle.sessionId || bundle.sessionId === props.sessionId)
 
@@ -55,26 +100,6 @@ export function DockBody(props) {
 
   React.useEffect(() => registerComposerBridge(inputActions), [inputActions])
   React.useEffect(() => installCitationTokens(), [])
-
-  // Detect PDF attachments in the live composer draft (public DOM only) and
-  // suggest adding them to the paper centre; never imports automatically.
-  React.useEffect(() => {
-    if (typeof document === 'undefined') return undefined
-    const scan = () => {
-      const composer = document.querySelector('[data-conversation-region="composer"]')
-      if (!composer) { setPdfPrompt(false); setPdfName(''); return }
-      const text = (composer.innerText || '')
-      const names = text.match(/[\w\- .()\u4e00-\u9fff]+\.pdf/gi) || []
-      const name = names.length > 0 ? names[0].trim() : ''
-      setPdfName(name)
-      if (!name && pdfDismissed) setPdfDismissed('')
-      setPdfPrompt(Boolean(name) && name !== pdfDismissed)
-    }
-    const observer = new MutationObserver(scan)
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true })
-    scan()
-    return () => observer.disconnect()
-  }, [pdfDismissed])
 
   React.useEffect(() => {
     bundles.forEach((bundle) => {
@@ -154,14 +179,8 @@ export function DockBody(props) {
   if (bundles.length === 0) {
     return h(
       'div',
-      null,
+      { className: 'ph-dock-slot ph-dock-slot--empty' },
       h(FeedbackHost, null),
-      h(SettingsHost, { t: t }),
-      pdfPrompt ? h('div', { className: 'ph-pdfprompt', role: 'status' },
-        h('span', { className: 'ph-pdfprompt__text' }, t('pdf.prompt')),
-        h('button', { type: 'button', className: 'ph-btn ph-btn--sm ph-btn--primary', onClick: () => { bus.emit('open-library-view', { view: 'all' }) } }, t('pdf.open')),
-        h('button', { type: 'button', className: 'ph-btn ph-btn--sm ph-btn--ghost', onClick: () => { setPdfDismissed(pdfName); setPdfPrompt(false) } }, t('pdf.dismiss')),
-      ) : null,
     )
   }
 
@@ -170,14 +189,8 @@ export function DockBody(props) {
   const hiddenCount = bundles.length - visibleBundles.length
   return h(
     'div',
-    null,
+    { className: 'ph-dock-slot' },
     h(FeedbackHost, null),
-    h(SettingsHost, { t: t }),
-    pdfPrompt ? h('div', { className: 'ph-pdfprompt', role: 'status' },
-      h('span', { className: 'ph-pdfprompt__text' }, t('pdf.prompt')),
-      h('button', { type: 'button', className: 'ph-btn ph-btn--sm ph-btn--primary', onClick: () => { bus.emit('open-library-view', { view: 'all' }) } }, t('pdf.open')),
-      h('button', { type: 'button', className: 'ph-btn ph-btn--sm ph-btn--ghost', onClick: () => { setPdfDismissed(pdfName); setPdfPrompt(false) } }, t('pdf.dismiss')),
-    ) : null,
     h(
       'div',
       { className: 'ph-dock', role: 'group', 'aria-label': t('dock.materials') },

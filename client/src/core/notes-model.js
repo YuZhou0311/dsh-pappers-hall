@@ -29,8 +29,8 @@ export const DRAFT_PREFIX = 'pappers-hall.notes.draft.'
 export const INCOMPLETE_PREFIX = 'pappers-hall.notes.incomplete.'
 export const FLAG_PREFIX = 'pappers-hall.flag.'
 /** One beautify request keeps the prompt inside the Host's input budget. */
-export const BEAUTIFY_MAX_CHARS = 2600
-export const BEAUTIFY_MAX_SECTIONS = 16
+export const BEAUTIFY_MAX_CHARS = 1800
+export const BEAUTIFY_MAX_SECTIONS = 8
 /** v2 document styles; at least two alternate in a beautified note. */
 export const SECTION_STYLES = ['plain', 'accent', 'columns', 'figure']
 /** At most this many real paper figures per beautify run (sparse by design). */
@@ -272,6 +272,21 @@ export function normalizeBlock(raw, options) {
       text: text.slice(0, MAX_BLOCK_TEXT),
     }
   }
+  if (type === 'stats' || type === 'metrics' || type === 'numbers') {
+    const items = arrayOf(raw.items)
+      .map((item) => {
+        if (!item || typeof item !== 'object') return null
+        const value = firstText(item.value, item.number).slice(0, 24)
+        const label = firstText(item.label, item.title).slice(0, 60)
+        if (!value || !label) return null
+        const rawTone = String(item.tone || item.color || '').toLowerCase()
+        const tone = ['blue', 'green', 'amber', 'violet'].includes(rawTone) ? rawTone : ''
+        return { value, label, note: firstText(item.note, item.desc).slice(0, 120), ...(tone ? { tone } : {}) }
+      })
+      .filter(Boolean)
+      .slice(0, 4)
+    return items.length > 0 ? { type: 'stats', items } : null
+  }
   if (type === 'bullets' || type === 'list' || type === 'ul') {
     const items = arrayOf(raw.items)
       .map((item) => (typeof item === 'string' ? item : item && typeof item === 'object' ? firstText(item.text) : ''))
@@ -506,7 +521,7 @@ export function mergeContentJson(base, incoming, meta) {
 function blockText(block) {
   if (!block || typeof block !== 'object') return ''
   if (typeof block.text === 'string') return block.text
-  if (Array.isArray(block.items)) return block.items.join(' ')
+  if (Array.isArray(block.items)) return block.items.map((item) => (typeof item === 'string' ? item : [item && item.value, item && item.label, item && item.note].filter(Boolean).join(' '))).join(' ')
   if (Array.isArray(block.headers) || Array.isArray(block.rows)) {
     return [].concat(Array.isArray(block.headers) ? block.headers : [], ...(Array.isArray(block.rows) ? block.rows : [])).join(' ')
   }

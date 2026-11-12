@@ -72,11 +72,14 @@ export function registerComposerBridge(actions) {
   return () => { composer = null }
 }
 export function hasComposer() { return Boolean(composer) }
-export function insertTokenIntoComposer(token) {
+export function insertTokenIntoComposer(token, options) {
   if (!composer || !token) return false
   try {
     const span = composer.captureInsertion()
-    return composer.insertText(token, span) !== false
+    // A citation token is a block-level material reference; continue typing on a
+    // fresh paragraph instead of appending text directly behind the token.
+    const trailing = options && options.newline === false ? '' : '\n\n'
+    return composer.insertText(String(token) + trailing, span) !== false
   } catch (error) {
     console.warn('[pappers-hall] composer insertion failed', error)
     return false

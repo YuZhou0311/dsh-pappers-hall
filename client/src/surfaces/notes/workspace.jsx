@@ -196,8 +196,10 @@ export function NotesWorkspace(props) {
   const [paperFilter, setPaperFilter] = React.useState(null)
   const [activeId, setActiveId] = React.useState(() => String(props.initialNoteId || ''))
   const [active, setActive] = React.useState({ status: 'idle', note: null, error: null })
-  const [foldersOpen, setFoldersOpen] = React.useState(true)
-  const [paperOpen, setPaperOpen] = React.useState(true)
+  // Narrow panels start closed so the writing column is never covered on first
+  // paint; both remain one click away in the top bar.
+  const [foldersOpen, setFoldersOpen] = React.useState(() => (typeof window === 'undefined' ? true : window.innerWidth > 1250))
+  const [paperOpen, setPaperOpen] = React.useState(() => (typeof window === 'undefined' ? true : window.innerWidth > 1420))
   const [refreshToken, setRefreshToken] = React.useState(0)
   const activeIdRef = React.useRef(activeId)
   activeIdRef.current = activeId

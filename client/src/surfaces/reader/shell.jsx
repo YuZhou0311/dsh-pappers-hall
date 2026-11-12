@@ -391,7 +391,9 @@ function ReaderShellInner(props) {
     [notify, rt],
   )
 
-  const [sideOpen, setSideOpen] = React.useState(true)
+  // On narrow windows the side panel overlays the page, so start closed and
+  // let the AI / notes buttons in the toolbar reveal it on demand.
+  const [sideOpen, setSideOpen] = React.useState(() => (typeof window === 'undefined' ? true : window.innerWidth > 1150))
   const [sideTab, setSideTab] = React.useState(() => {
     const requested = firstText(props.initialTab)
     return SIDE_TABS.indexOf(requested) >= 0 ? requested : 'outline'

@@ -590,6 +590,19 @@ export function createAi({ ctx, store, layout, pdf, config = {}, logger }) {
         })
       }
       const text = String(finalText ?? assembled ?? '').trim()
+      // Never accept or cache a truncated answer: an incomplete JSON layout is
+      // useless and poisoning the cache would make every retry return the same
+      // broken fragment. `length` is the provider's max-token finish reason.
+      const finish = finishReason && typeof finishReason === 'object'
+        ? String(finishReason.kind ?? finishReason.reason ?? finishReason.type ?? '')
+        : String(finishReason ?? '')
+      if (text !== '' && /^(length|max_tokens|max-output)$/i.test(finish)) {
+        throw new AiFailure('error', `model output was truncated by the ${finish || 'max-token'} limit`, {
+          provider: route.provider,
+          model: route.model,
+          finishReason: finish,
+        })
+      }
       if (text === '') throw new AiFailure('error', 'model returned an empty response')
       const elapsedMs = Date.now() - startedAt
       const value = { text, provider: route.provider, model: route.model, elapsedMs, fast, reasoningEffort, reasoningEffortRequested: fast ? null : requestedEffort }

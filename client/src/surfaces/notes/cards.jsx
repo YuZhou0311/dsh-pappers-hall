@@ -104,6 +104,19 @@ function Block(props) {
   if (block.type === 'heading') return React.createElement('h4', { className: 'ph-n-doc__h' }, block.text)
   if (block.type === 'paragraph') return React.createElement('p', { className: 'ph-n-doc__p' }, block.text)
   if (block.type === 'quote') return React.createElement('blockquote', { className: 'ph-n-doc__quote' }, block.text)
+  if (block.type === 'stats') {
+    return React.createElement(
+      'div',
+      { className: 'ph-n-doc__stats' },
+      (block.items || []).map((item, index) => React.createElement(
+        'div',
+        { key: index, className: 'ph-n-doc__stat' + (item.tone ? ' ph-n-doc__stat--tone-' + item.tone : '') },
+        React.createElement('div', { className: 'ph-n-doc__stat-value' }, item.value),
+        React.createElement('div', { className: 'ph-n-doc__stat-label' }, item.label),
+        item.note ? React.createElement('div', { className: 'ph-n-doc__stat-note' }, item.note) : null,
+      )),
+    )
+  }
   if (block.type === 'bullets') {
     return React.createElement(
       'ul',

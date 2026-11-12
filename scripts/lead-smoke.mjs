@@ -8,14 +8,14 @@
  * alive and does the core paper loop work right now?".
  *
  * Usage:
- *   node scripts/lead-smoke.mjs                 # uses http://127.0.0.1:54731
+ *   node scripts/lead-smoke.mjs                 # uses http://127.0.0.1:3080
  *   PAPPERS_BASE=http://127.0.0.1:1234 node scripts/lead-smoke.mjs
  *   node scripts/lead-smoke.mjs --pdf /abs/A01_react.pdf --skip-write
  */
 import { readFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 
-const BASE = process.env.PAPPERS_BASE ?? 'http://127.0.0.1:54731'
+const BASE = process.env.PAPPERS_BASE ?? 'http://127.0.0.1:3080'
 const API = `${BASE}/pappers-hall/api`
 const args = process.argv.slice(2)
 const arg = (name, fallback) => {

@@ -10,7 +10,7 @@
  *
  * @module pappers-hall/host/api
  */
-import { readFile, stat } from 'node:fs/promises'
+import { readdir, readFile, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { DomainError } from './store.js'
 import { clampInt, safeFileStem } from './paths.js'
@@ -104,7 +104,7 @@ function dispatchNoteDelete(params, store, notes) {
  * @param {object} [services.notes] notes workbench service (v0.17).
  * @returns {{handlers:Map<string,Function>, call:(method:string, params?:object)=>Promise<object>, envelope:(method:string,params?:object)=>Promise<object>, methods:string[]}} API facade.
  */
-export function createApi({ store, search, ingest, queue, settings, models, ocr, notes }) {
+export function createApi({ store, search, ingest, queue, settings, models, ocr, notes, layout }) {
   const handlers = new Map([
     // ---- read-only -------------------------------------------------
     ['status', () => store.status()],
@@ -126,6 +126,28 @@ export function createApi({ store, search, ingest, queue, settings, models, ocr,
     ['export.notes', (params) => store.exportNotes(params)],
     ['export.locations', (params) => store.exportLocations(params)],
     ['diagnostics', () => store.diagnostics()],
+    ['cache.clearPdfPreviews', async () => {
+      if (layout === undefined || layout === null || typeof layout.tmpDir !== 'string') {
+        throw new DomainError('unavailable', 'PDF preview cache is not available in this Host')
+      }
+      const directory = path.join(layout.tmpDir, 'pdf-previews')
+      let names = []
+      try { names = await readdir(directory) } catch { return { status: 'ok', cleared: 0, freedBytes: 0, available: true } }
+      let cleared = 0
+      let freedBytes = 0
+      for (const name of names) {
+        if (!/\.png$/i.test(name)) continue
+        const filePath = path.join(directory, name)
+        try {
+          const info = await stat(filePath)
+          if (!info.isFile()) continue
+          freedBytes += info.size
+          await rm(filePath, { force: true })
+          cleared += 1
+        } catch (error) { /* keep clearing the remaining files */ }
+      }
+      return { status: 'ok', cleared, freedBytes, available: true }
+    }],
 
     // ---- writes ----------------------------------------------------
     ['library.import', (params) => ingest.importRequest(params ?? {})],
@@ -192,6 +214,35 @@ export function createApi({ store, search, ingest, queue, settings, models, ocr,
     ['notes.indexStatus', () => notes.indexStatus()],
     ['translate.title', (params) => store.translateTitle(params)],
     ['translate.text', (params) => store.translateText(params)],
+    ['translate.region', async (params) => {
+      const paperId = String(params?.paperId ?? '')
+      const page = Number(params?.page)
+      const rects = Array.isArray(params?.rects) ? params.rects : []
+      if (paperId === '' || !Number.isInteger(page) || page < 1 || rects.length === 0) return { status: 'invalid', translation: null, regionText: '', reason: 'translate.region requires paperId, page and rects' }
+      const regionText = await store.ocrRegionText(paperId, page, rects)
+      if (regionText === '') return { status: 'unavailable', translation: null, regionText: '', reason: '选区没有识别出可翻译文字（可能是图内文字或 OCR 未就绪）' }
+      // Selection text is short and often contains emails/URLs that the free
+      // translation chain rejects; use the model's translation primitive directly.
+      const aiResult = await store.aiComplete({
+        prompt: '把下面这段论文页面选区翻译成简体中文，只输出译文；保留公式、数字、专有名词与引用编号：\n\n' + regionText,
+        system: '你是学术翻译，只输出翻译结果，不解释、不总结、不添加原文没有的内容。',
+        fast: false,
+        reasoningEffort: 'medium',
+        maxTokens: 1400,
+        kind: 'translate-region',
+      })
+      if (aiResult && aiResult.status === 'ok') {
+        return {
+          status: 'translated',
+          translation: String(aiResult.answer || ''),
+          regionText,
+          provider: aiResult.provider || '',
+          model: aiResult.model || '',
+          elapsedMs: Number(aiResult.elapsedMs) || 0,
+        }
+      }
+      return { status: 'unavailable', translation: null, regionText, reason: String((aiResult && (aiResult.reason || 'AI 翻译不可用')) || 'AI 翻译不可用') }
+    }],
     ['translate.blocks', (params) => store.translateBlocks(params)],
     ['embedding.status', () => store.embeddingStatus()],
     // ---- v0.11 settings center / model installation / OCR ----------
@@ -360,6 +411,30 @@ export function createWebHandler({ api, store, pdf, layout, logger, bodyLimitByt
   /** Whether the poppler facade is usable for render requests. */
   const rendersAvailable = () => pdf?.detection?.available === true
 
+  /* Page rasters are expensive and the reader asks for several at once. Keep
+     at most two poppler processes alive and coalesce duplicate requests for the
+     same cache path, so opening a page can never queue a second identical
+     render behind the first. */
+  const pageRenderSlots = { active: 0, queue: [] }
+  const pageRenders = new Map()
+  function queuePageRender(task) {
+    return new Promise((resolve, reject) => {
+      const run = () => {
+        pageRenderSlots.active += 1
+        Promise.resolve()
+          .then(task)
+          .then(resolve, reject)
+          .finally(() => {
+            pageRenderSlots.active -= 1
+            const next = pageRenderSlots.queue.shift()
+            if (next) next()
+          })
+      }
+      if (pageRenderSlots.active < 2) run()
+      else pageRenderSlots.queue.push(run)
+    })
+  }
+
   /** Serve one file with the private cache policy used by every asset route. */
   async function serveFile(req, res, filePath, contentType) {
     let info
@@ -413,23 +488,46 @@ export function createWebHandler({ api, store, pdf, layout, logger, bodyLimitByt
       sendJson(res, 404, { ok: false, error: { code: 'not_found', message: `page ${page} is outside 1..${pageCount}` } })
       return
     }
+    const cachePath = path.join(layout.pagesCacheDir, `${paperId}-${page}-w${width}.png`)
+    /* Serve an existing raster before asking whether poppler is available:
+       cached pages must keep working even if the tool was removed later. */
+    try {
+      const cached = await stat(cachePath)
+      // A truncated cache file must never be served as a blank page.
+      if (cached.isFile() && cached.size > 512) {
+        await serveFile(req, res, cachePath, 'image/png')
+        return
+      }
+    } catch {
+      // Not cached yet: render below.
+    }
     if (!rendersAvailable()) {
       sendJson(res, 503, { ok: false, error: { code: 'unavailable', message: 'poppler is not installed; page rendering is unavailable' } })
       return
     }
-    const cachePath = path.join(layout.pagesCacheDir, `${paperId}-${page}-w${width}.png`)
-    try {
-      await stat(cachePath)
-      await serveFile(req, res, cachePath, 'image/png')
-      return
-    } catch {
-      // Not cached yet: render below.
+    let render = pageRenders.get(cachePath)
+    if (render === undefined) {
+      const startedAt = Date.now()
+      render = queuePageRender(() =>
+        pdf.renderPage({ filePath: version.file_path, page, width, outputPath: cachePath, timeoutMs: 45_000 }),
+      )
+      const tracked = render
+      pageRenders.set(cachePath, tracked)
+      tracked
+        .then(() => {
+          logger?.debug?.(`pappers-hall: rendered page ${page} of ${paperId} at ${width}px in ${Date.now() - startedAt}ms`)
+        })
+        .catch(() => {
+          /* the per-request handler reports the actionable error */
+        })
+        .finally(() => {
+          if (pageRenders.get(cachePath) === tracked) pageRenders.delete(cachePath)
+        })
     }
     try {
-      await pdf.renderPage({ filePath: version.file_path, page, width, outputPath: cachePath })
-      logger?.debug?.(`pappers-hall: rendered page ${page} of ${paperId} at ${width}px`)
+      await render
     } catch (error) {
-      const status = error?.code === 'unavailable' ? 503 : 500
+      const status = error?.code === 'unavailable' ? 503 : error?.code === 'timeout' ? 504 : 500
       sendJson(res, status, { ok: false, error: toErrorPayload(error) })
       return
     }
@@ -592,6 +690,15 @@ export function createWebHandler({ api, store, pdf, layout, logger, bodyLimitByt
         return
       }
       await servePage(req, res, paperId, Number(pageMatch[1]), width ?? 1400)
+      return
+    }
+    if (kind === 'pdf-preview') {
+      const match = /^([a-z0-9]{8,40})\.png$/.exec(segments[2] ?? '')
+      if (segments.length !== 3 || match === null) {
+        sendJson(res, 400, { ok: false, error: { code: 'invalid', message: 'invalid PDF preview path' } })
+        return
+      }
+      await serveFile(req, res, path.join(layout.tmpDir, 'pdf-previews', match[1] + '.png'), 'image/png')
       return
     }
     if (kind === 'figure') {

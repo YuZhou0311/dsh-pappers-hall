@@ -24,7 +24,7 @@
  * Usage:
  *   node test/v04.mjs --dry-run    # print case plan + read-only environment probe
  *   node test/v04.mjs              # real run (requires the v0.4 host loaded)
- *   node test/v04.mjs --base http://127.0.0.1:54731 --out ../reports/v04-api-results.json
+ *   node test/v04.mjs --base http://127.0.0.1:3080 --out ../reports/v04-api-results.json
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -40,7 +40,7 @@ const arg = (name, fallback) => {
 }
 
 const DRY_RUN = flag('--dry-run')
-const BASE = arg('--base', process.env.PAPPERS_BASE ?? 'http://127.0.0.1:54731')
+const BASE = arg('--base', process.env.PAPPERS_BASE ?? 'http://127.0.0.1:3080')
 const API = `${BASE}/pappers-hall/api`
 const OUT = resolve(HERE, arg('--out', '../../reports/v04-api-results.json'))
 /** ReAct (A01): dense 2-column page 3, good for paragraph translation. */

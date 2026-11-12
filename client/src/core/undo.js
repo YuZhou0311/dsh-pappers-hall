@@ -86,8 +86,9 @@ export const undo = {
     busy = true
     try {
       const record = redoStack.pop()
+      // The Host journal currently exposes undo only; never call an endpoint
+      // that does not exist. Local thunks can still be redone.
       if (record && typeof record.redo === 'function') await record.redo()
-      else if (record && record.operationId) await defaultApi('operations.redo', { operationId: record.operationId })
       else return { ok: false, reason: 'not_redoable' }
       entries.push(record)
       refreshSnapshot()

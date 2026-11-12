@@ -46,7 +46,7 @@ const arg = (name, fallback) => {
 }
 
 const DRY_RUN = flag('--dry-run')
-const BASE = arg('--base', process.env.PAPPERS_BASE ?? 'http://127.0.0.1:54731')
+const BASE = arg('--base', process.env.PAPPERS_BASE ?? 'http://127.0.0.1:3080')
 const API = `${BASE}/pappers-hall/api`
 const OUT = resolve(HERE, arg('--out', '../../reports/v06-api-results.json'))
 const HOME = process.env.DSH_HOME ?? join(homedir(), '.dsh')

@@ -164,7 +164,7 @@ export function ReaderToolbar(props) {
           Btn,
           {
             size: 'sm',
-            variant: props.sideOpen && props.sideTab === 'notes' ? 'solid' : 'soft',
+            variant: 'soft',
             icon: 'note',
             onClick: props.onToggleNotes,
             title: rt('reader.notes.tab'),
@@ -176,7 +176,7 @@ export function ReaderToolbar(props) {
           Btn,
           {
             size: 'sm',
-            variant: props.sideOpen && props.sideTab === 'ai' ? 'solid' : 'soft',
+            variant: 'soft',
             icon: 'sparkles',
             onClick: props.onToggleAi,
             title: rt('reader.ai'),

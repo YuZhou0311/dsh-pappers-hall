@@ -7,8 +7,8 @@
 
 | 项 | 值 | 证据 |
 | --- | --- | --- |
-| DSH 运行时版本 | `@deepseek-ai/dsh-desktop-runtime 0.2.2-rc.1` | `/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/package.json:4` |
-| 应用版本 | `0.2.2-rc.1` | `/Applications/DeepSeek Harness.app/Contents/Info.plist` CFBundleShortVersionString |
+| DSH 运行时版本 | `@deepseek-ai/dsh-desktop-runtime 0.2.2-rc.2` | `/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/package.json:4` |
+| 应用版本 | `0.2.2-rc.2` | `/Applications/DeepSeek Harness.app/Contents/Info.plist` CFBundleShortVersionString |
 | Profile | `desktop` | `DSH_PROFILE=desktop`，`DSH_PROFILE_DIR=~/.dsh/profiles/desktop` |
 | 运行方式 | macOS Desktop（Electron），Web GUI 由 Host 的 `webServer` 提供 | GUI URL `http://127.0.0.1:54731`（本轮会话 runtime context）；`ctx.webServer` 服务在运行 |
 | 操作系统 | macOS 27.3，arm64 | `sw_vers`、`uname -m` |
@@ -108,6 +108,6 @@
 
 ## 6 兼容性结论
 
-- 已验证可安装并运行的组合：DSH **0.2.2-rc.1**（desktop profile，macOS arm64，Node 26）。
+- 已验证可安装并运行的组合：DSH **0.2.2-rc.2**（desktop profile，macOS arm64，Node 26）。
 - 本插件不修改 DSH 源码、不改 profile 配置文件、不监听私有 DOM、不写 `localStorage` 作为资料库；停用即卸载全部注册（见 `reports/verify.md` 的开关测试）。
-- 对更早版本：开发包快照（fcc0ad4，约 0.2.1-rc 系列）中的 Slot/服务名与当前基本一致，但本插件**只声明并实测 0.2.2-rc.1**；其它版本未验证，不宣称兼容。
+- 对更早版本：开发包快照（fcc0ad4，约 0.2.1-rc 系列）中的 Slot/服务名与当前基本一致，但本插件**只声明并实测 0.2.2-rc.2**；其它版本未验证，不宣称兼容。

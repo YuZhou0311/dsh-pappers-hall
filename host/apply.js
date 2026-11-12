@@ -37,7 +37,7 @@ import { ensureLayout, layoutFor, readJsonIfPresent, readPluginVersion, resolveD
 import { createSearch } from './search.js'
 import { createStore, emptyManifest, manifestIndex } from './store.js'
 import { createNotes } from './notes.js'
-import { buildToolDefinitions } from './tools.js'
+import { buildToolDefinitions, prunePdfPreviewCache } from './tools.js'
 
 /** Plugin id used by `status`, the Loader row and the Client. */
 export const PLUGIN_ID = 'dsh-pappers-hall'
@@ -62,13 +62,16 @@ export const ROUTE_PREFIX = '/pappers-hall'
  * with the other registrations.
  */
 export const MATERIALS_PROMPT =
-  'Pappers-Hall paper-library materials can appear in the conversation as a token like ' +
-  '`⟦Pappers-Hall 2 篇论文 + 1 张图 · bundle=bn-xxxxxxxxxxxx⟧`. When such a token is present, ' +
-  'call papers_search, papers_get_passage or papers_get_figure with scope:"reference_bundle" and ' +
-  'bundle_id set to the `bn-…` value inside the token, and read only that material set. ' +
-  'Use scope:"library" only when the user explicitly asks to search the whole paper library. ' +
-  'papers_get_figure returns the real figure image; when its JSON reports image.status other than "ready", ' +
-  'say the image is unavailable instead of describing it.'
+  'Pappers-Hall materials can appear in the conversation as a token like ' +
+  '`⟦Pappers-Hall 2 篇论文 + 1 张图 · bundle=bn-xxxxxxxxxxxx⟧` or ' +
+  '`⟦Pappers-Hall 1 条笔记《标题》 · bundle=bn-xxxxxxxxxxxx⟧`. When such a token is present, ' +
+  'call papers_search with scope:"reference_bundle" and bundle_id set to the `bn-…` value inside the token, ' +
+  'and read only that material set. For notes use kinds:["note"]: bundle-scoped results include the note id, ' +
+  'title, snippet and text, so do not guess which note was attached and do not scan the whole note library; ' +
+  'use notes_get with the returned note id if the full note is needed. For papers use papers_get_passage or ' +
+  'papers_get_figure with the same bundle_id. Use scope:"library" only when the user explicitly asks to search ' +
+  'the whole paper library. papers_get_figure returns the real figure image; when its JSON reports ' +
+  'image.status other than "ready", say the image is unavailable instead of describing it.'
 
 /** Stable system-prompt section name owned by this plugin. */
 export const MATERIALS_PROMPT_SECTION = 'plugin:pappers-hall-materials'
@@ -82,19 +85,34 @@ export const MATERIALS_PROMPT_SECTION = 'plugin:pappers-hall-materials'
  */
 export const MANAGEMENT_PROMPT =
   'You are connected to the user\'s Pappers-Hall paper center through papers_* tools. ' +
-  'When the user asks to find literature, recommends papers, or asks what exists on a topic: call papers_search and/or papers_related first ' +
+  'When the user asks to find literature, recommends papers, or asks what exists on a topic: call papers_search (mode:"search" or "related") first; for an exact title/DOI pass ai:false ' +
   '(semantic neighbors; Chinese queries work), then papers_get_passage when you need exact text. Never invent papers, numbers or quotes. ' +
-  'When the user uploads a PDF or mentions a PDF path/attachment: FIRST call papers_import_file with confirm:false to preview it, ' +
-  'and then you MUST ask the user whether to add it to the paper center (state the previewed title). Only after the user explicitly agrees, ' +
-  'call papers_import_file again with confirm:true. Import does NOT auto-classify: the paper lands unclassified, so after importing tell the user ' +
-  'it is unclassified and offer to read it and organize it yourself. If the user declines, do not import. ' +
+  'For 精读/全文/逐段/方法细节/结果表 requests: call papers_get with view:"outline" first, then read every relevant page in batches ' +
+  'with papers_get_passage pages:[...] or page_start/page_end, and state which pages were covered. Do not answer a deep-read ' +
+  'request from the abstract or a few key pages. For a quick “讲什么” summary, selective reading is acceptable but do not claim it was a full read. ' +
+  'Do not rely on figure/table captions alone: before summarizing or evaluating a paper, inspect its key visuals. For a library paper use ' +
+  'papers_get view:"outline" (figures list) then papers_get_figure; for an unimported PDF use papers_pdf read/inspect (which return a visuals ' +
+  'list of label/page/caption) then papers_pdf action:"view" with the label. For a quick summary inspect at least the main results figure/table; ' +
+  'for a deep read cover every figure/table cited by the results and say what the visual actually shows. ' +
+  'In summaries, attach page numbers (e.g. p.8) and figure/table labels to key quantitative claims. If you only read a caption, ' +
+  'say so instead of implying you viewed the image. After importing, report only metadata edits you actually performed. ' +
+  'For an unimported local PDF path/attachment, do not run bash/pdftotext/pdfimages and do not search the library first: use papers_pdf. ' +
+  'It works for any PDF, not just papers; inspect/looksLikePaper is advisory, while read/view/ocr still work for non-paper documents. ' +
+  'Call action:"inspect" to decide whether it is a paper, action:"read" for page text, and action:"view" with page or label (e.g. Figure 2) ' +
+  'to inspect a figure/table as a real image. If action:"read" reports no_text_layer (image-only PDF), use action:"view" or action:"ocr" ' +
+  '(when the paper-centre OCR service is installed/enabled); do not fall back to bash/pdftotext. ' +
+  'When the user uploads a PDF or mentions a PDF path/attachment: FIRST call papers_pdf with action:"inspect" to inspect it, ' +
+  'then read its contentSample/signals and decide whether it is genuinely an academic paper. Only if it is a paper, briefly say what it is and ' +
+  'ask whether to add it to the paper center; only after explicit agreement call papers_pdf action:"import" with confirm:true. If it is not a paper (invoice, slides, form, ' +
+  'random document), say so and do not ask to import. Import does NOT auto-classify: the paper lands unclassified, so after importing tell the ' +
+  'user it is unclassified and offer to read it and organize it yourself. If the user declines, do not import. ' +
   'ORGANIZE LIKE A HUMAN LIBRARIAN, NOT LIKE A CLASSIFIER: when the user asks to classify/organize papers, first READ them with papers_list ' +
   '(metadata + abstract) and papers_get / papers_get_passage when details matter; identify each paper\'s domain, method and research question; ' +
   'then design a small, explainable taxonomy (usually 2–6 top-level folders with topic names, no folder named after a single paper, no empty folder) ' +
-  'and apply it with papers_folders (create/rename/assign/unassign). papers_folder_hints and papers_related are embedding references ONLY — ' +
+  'and apply it with papers_manage (folder actions create/rename/assign/unassign; action:"hints" is reference only). Embedding hints are references ONLY — ' +
   'never let a similarity score make the decision, and never create a folder just because a threshold was crossed. Explain the grouping criteria ' +
   'and the placement of borderline papers; confirm with the user before deleting folders or moving many papers at once. ' +
-  'Use papers_overview to summarize the library, papers_cite for citations, and papers_get_figure when real figure images are needed. ' +
+  'Use papers_get view:"cite" for citations, papers_get_figure / papers_pdf for real images, and never add/remove tags (tags are human-only). ' +
   'A conversation reference like `@论文中心(paper:ph-… )` or `@论文中心(folder:cl-… )` means the user attached that paper/folder: resolve it with the papers_* tools.'
 
 /** Stable system-prompt section name for v0.6 management guidance. */
@@ -302,6 +320,8 @@ async function applyHostNow(ctx, config) {
 
   await ensureLayout(layoutFor(resolved.dataDir))
   const layout = layoutFor(resolved.dataDir)
+  // Keep local PDF preview thumbnails bounded across restarts as well.
+  await prunePdfPreviewCache(path.join(layout.tmpDir, 'pdf-previews'))
   trace('layout ready', layout.dataDir)
   const manifest = await loadManifest(resolved.fixtureDir)
   trace('manifest', manifest.available, manifest.byId?.size)
@@ -396,7 +416,7 @@ async function applyHostNow(ctx, config) {
   } catch (error) {
     logger?.warn?.(`pappers-hall: embedding auto-index failed: ${String(error?.message ?? error)}`)
   }
-  const api = createApi({ store, search, ingest, queue, settings, models, ocr, notes })
+  const api = createApi({ store, search, ingest, queue, settings, models, ocr, notes, layout })
   const webHandler = createWebHandler({
     api,
     store,
@@ -405,7 +425,7 @@ async function applyHostNow(ctx, config) {
     logger,
     bodyLimitBytes: resolved.bodyLimitBytes,
   })
-  const toolDefinitions = buildToolDefinitions({ store, search, ctx, layout, logger, config: resolved, classify, ingest, pdf, embedding, notes })
+  const toolDefinitions = buildToolDefinitions({ store, search, ctx, layout, logger, config: resolved, classify, ingest, pdf, embedding, notes, ocr })
   trace('api+tools ready', toolDefinitions.length)
 
   /** Mount-time degradation facts (status() recomputes them live as well). */

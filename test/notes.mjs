@@ -233,7 +233,7 @@ async function main() {
       check(`table ${table} exists`, tables.has(table))
     }
     check('legacy notes_fts kept for paper quick notes', tables.has('notes_fts'))
-    check('notes tools registered (6)', ['notes_list', 'notes_get', 'notes_create', 'notes_update', 'notes_search', 'notes_link_papers'].every((name) => fake.state.tools.has(name)))
+    check('notes tools registered (3 consolidated)', ['notes_search', 'notes_get', 'notes_edit'].every((name) => fake.state.tools.has(name)))
 
     // ---- synthetic papers (never the live library) -------------------
     const now = new Date().toISOString()

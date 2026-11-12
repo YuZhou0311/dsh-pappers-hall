@@ -40,20 +40,28 @@ export function ReaderNotesPanel(props) {
   const releaseStyles = React.useMemo(() => ensureNotesStyles(), [])
   const service = React.useMemo(() => createNotesService(props.api), [props.api])
   const serviceState = useServiceState(service)
-  const [list, setList] = React.useState({ status: 'idle', items: [], error: null })
+  const [list, setList] = React.useState({ status: 'loading', items: [], error: null })
   const [activeId, setActiveId] = React.useState('')
   const [active, setActive] = React.useState({ status: 'idle', note: null, error: null })
   const [creating, setCreating] = React.useState(false)
+  // Two-level navigation: the notes tab opens the paper's note list first; only
+  // a chosen note shows the editor. Back returns to the list to switch notes.
+  const [mode, setMode] = React.useState('list')
+  const [activeRetry, setActiveRetry] = React.useState(0)
 
   React.useEffect(() => () => releaseStyles(), [releaseStyles])
 
   React.useEffect(() => {
     let alive = true
-    service.probe().then((state) => {
-      if (!alive) return
-      if (state.status === 'unavailable' || state.status === 'offline') return
-      load(alive)
-    })
+    service.probe()
+      .then((state) => {
+        if (!alive) return
+        if (state.status === 'unavailable' || state.status === 'offline') return
+        load(alive)
+      })
+      .catch((error) => {
+        if (alive) setList({ status: 'error', items: [], error })
+      })
     return () => {
       alive = false
     }
@@ -70,7 +78,10 @@ export function ReaderNotesPanel(props) {
           setList({ status: 'ready', items, error: null })
           setActiveId((previous) => {
             if (previous && items.some((item) => item.id === previous)) return previous
-            return items.length > 0 ? items[0].id : ''
+            // Prefer a written note over an empty placeholder so the editor
+            // does not open on a blank note just because it is newest.
+            const meaningful = items.find((item) => String(item.title || '').trim() !== '' || String(item.preview || '').trim() !== '')
+            return (meaningful || items[0] || {}).id || ''
           })
         })
         .catch((error) => {
@@ -95,17 +106,31 @@ export function ReaderNotesPanel(props) {
     }
     let alive = true
     setActive({ status: 'loading', note: null, error: null })
-    Promise.resolve(service.get(activeId))
+    let timer = null
+    let request
+    try {
+      request = Promise.resolve(service.get(activeId))
+    } catch (error) {
+      setActive({ status: 'error', note: null, error })
+      return undefined
+    }
+    timer = setTimeout(() => {
+      if (alive) setActive({ status: 'error', note: null, error: new Error('加载笔记超时，请重试') })
+    }, 8000)
+    request
       .then((note) => {
+        if (timer) clearTimeout(timer)
         if (alive) setActive({ status: 'ready', note, error: null })
       })
       .catch((error) => {
+        if (timer) clearTimeout(timer)
         if (alive) setActive({ status: 'error', note: null, error })
       })
     return () => {
       alive = false
+      if (timer) clearTimeout(timer)
     }
-  }, [activeId, service])
+  }, [activeId, service, activeRetry])
 
   const createNote = React.useCallback(() => {
     if (creating) return
@@ -116,6 +141,7 @@ export function ReaderNotesPanel(props) {
         setList((previous) => ({ status: 'ready', items: [Object.assign({}, note, { preview: note.preview || note.contentMd.slice(0, 120) })].concat(previous.items), error: null }))
         setActive({ status: 'ready', note, error: null })
         setActiveId(note.id)
+        setMode('editor')
       })
       .catch((error) => props.notify('error', t('notes.createFailed', { message: String((error && error.message) || error) })))
       .then(() => setCreating(false))
@@ -144,8 +170,9 @@ export function ReaderNotesPanel(props) {
   const onDeleted = React.useCallback((deleted) => {
     setList((previous) => {
       const items = previous.items.filter((item) => item.id !== deleted.id)
-      setActiveId(items.length > 0 ? items[0].id : '')
-      if (items.length === 0) setActive({ status: 'idle', note: null, error: null })
+      setActiveId('')
+      setActive({ status: 'idle', note: null, error: null })
+      setMode('list')
       return Object.assign({}, previous, { items })
     })
   }, [])
@@ -179,118 +206,141 @@ export function ReaderNotesPanel(props) {
   }
 
   const showList = list.items.length > 0
+  const editing = mode === 'editor' && activeId !== ''
+  const activeTitle = active.note && (active.note.title || '') ? active.note.title : t('notes.untitled')
   return React.createElement(
     'div',
     { className: 'ph-n-readernotes' },
     React.createElement(
       'div',
       { className: 'ph-n-readernotes__head' },
-      React.createElement(Icon, { name: 'note', size: 13 }),
-      React.createElement('span', { className: 'ph-n-readernotes__title' }, t('reader.notes.title')),
-      list.status === 'ready' ? React.createElement('span', { className: 'ph-n-caption' }, String(list.items.length)) : null,
+      editing
+        ? React.createElement(IconBtn, { icon: 'chevronLeft', title: t('reader.notes.backToList'), onClick: () => setMode('list') })
+        : React.createElement(Icon, { name: 'note', size: 13 }),
+      React.createElement('span', { className: 'ph-n-readernotes__title' }, editing ? activeTitle : t('reader.notes.title')),
+      !editing && list.status === 'ready' ? React.createElement('span', { className: 'ph-n-caption' }, String(list.items.length)) : null,
       React.createElement('span', { className: 'ph-n-spacer' }),
-      React.createElement(IconBtn, { icon: 'plus', title: t('reader.notes.new'), onClick: createNote, disabled: creating }),
-      props.onOpenNoteLibrary
+      editing
+        ? React.createElement(IconBtn, { icon: 'external', title: t('notes.library.open'), onClick: () => props.onOpenNoteLibrary && props.onOpenNoteLibrary(activeId) })
+        : React.createElement(IconBtn, { icon: 'plus', title: t('reader.notes.new'), onClick: createNote, disabled: creating }),
+      !editing && props.onOpenNoteLibrary
         ? React.createElement(IconBtn, { icon: 'external', title: t('notes.library.open'), onClick: () => props.onOpenNoteLibrary(activeId || '') })
         : null,
-      React.createElement(IconBtn, { icon: 'refresh', title: t('notes.refresh'), onClick: reload }),
+      !editing
+        ? React.createElement(IconBtn, { icon: 'refresh', title: t('notes.refresh'), onClick: reload })
+        : null,
     ),
-    showList
-      ? React.createElement(
-          'div',
-          { className: 'ph-n-readernotes__list ph-n-scroll' },
-          list.items.map((item) =>
-            React.createElement(
-              'button',
-              {
-                key: item.id,
-                type: 'button',
-                className: 'ph-n-readernotes__row' + (item.id === activeId ? ' ph-n-readernotes__row--active' : ''),
-                onClick: () => setActiveId(item.id),
-                title: item.title || t('notes.untitled'),
-              },
-              React.createElement('span', { className: 'ph-n-readernotes__rowtitle' }, item.title || t('notes.untitled')),
-              React.createElement(
-                'span',
-                { className: 'ph-n-readernotes__rowmeta' },
-                (item.preview || '').replace(/\s+/g, ' ').slice(0, 48) || t('notes.empty.preview'),
+    editing
+      ? active.status === 'loading'
+        ? React.createElement('div', { className: 'ph-n-editor__loading' }, React.createElement(Spinner, { size: 13 }), React.createElement('span', null, t('notes.loadingNote')))
+        : active.status === 'error'
+          ? React.createElement(
+              'div',
+              { className: 'ph-r-side__scroll' },
+              React.createElement(Empty, {
+                icon: 'warning',
+                tone: 'error',
+                title: t('notes.loadFailed', { message: String((active.error && active.error.message) || '') }),
+                action: React.createElement(
+                  'button',
+                  { type: 'button', className: 'ph-r-btn ph-r-btn--soft ph-r-btn--sm', onClick: () => { setActive({ status: 'loading', note: null, error: null }); setActiveRetry((value) => value + 1) } },
+                  React.createElement(Icon, { name: 'refresh', size: 13 }),
+                  React.createElement('span', { className: 'ph-r-btn__label' }, t('common.retry')),
+                ),
+              }),
+            )
+          : active.status === 'ready' && active.note
+            ? React.createElement(NoteEditor, {
+                t: t,
+                api: props.api,
+                service: service,
+                note: active.note,
+                variant: 'compact',
+                paperId: paperId,
+                sessionId: props.sessionId,
+                notify: props.notify,
+                linkable: true,
+                onSaved: onSaved,
+                onDeleted: onDeleted,
+                onOpenNoteLibrary: props.onOpenNoteLibrary,
+                onOpenPaper: props.onOpenPaper,
+              })
+            : null
+      : list.status === 'loading' && list.items.length === 0
+        ? React.createElement('div', { className: 'ph-n-editor__loading' }, React.createElement(Spinner, { size: 13 }), React.createElement('span', null, t('notes.loading')))
+        : list.status === 'error'
+          ? React.createElement(
+              'div',
+              { className: 'ph-r-side__scroll' },
+              React.createElement(Empty, {
+                icon: 'warning',
+                tone: 'error',
+                title: t('common.failed'),
+                desc: t('notes.loadFailed', { message: String((list.error && list.error.message) || '') }),
+                action: React.createElement(
+                  'button',
+                  { type: 'button', className: 'ph-r-btn ph-r-btn--soft ph-r-btn--sm', onClick: reload },
+                  React.createElement(Icon, { name: 'refresh', size: 13 }),
+                  React.createElement('span', { className: 'ph-r-btn__label' }, t('common.retry')),
+                ),
+              }),
+            )
+          : !showList
+            ? React.createElement(
+                'div',
+                { className: 'ph-r-side__scroll' },
+                React.createElement(Empty, {
+                  icon: 'note',
+                  title: t('reader.notes.empty'),
+                  desc: t('reader.notes.emptyDesc'),
+                  action: React.createElement(
+                    'button',
+                    { type: 'button', className: 'ph-r-btn ph-r-btn--solid ph-r-btn--sm', onClick: createNote, disabled: creating },
+                    React.createElement(Icon, { name: 'plus', size: 13 }),
+                    React.createElement('span', { className: 'ph-r-btn__label' }, t('reader.notes.new')),
+                  ),
+                }),
+              )
+            : React.createElement(
+                React.Fragment,
+                null,
+                React.createElement(
+                  'div',
+                  { className: 'ph-n-readernotes__hint' },
+                  React.createElement(Icon, { name: 'info', size: 12 }),
+                  React.createElement('span', null, t('reader.notes.pick')),
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'ph-n-readernotes__list ph-n-scroll' },
+                  list.items.map((item) =>
+                    React.createElement(
+                      'button',
+                      {
+                        key: item.id,
+                        type: 'button',
+                        className: 'ph-n-readernotes__row',
+                        onClick: () => {
+                          setActiveId(item.id)
+                          // The list may already have hydated this note as the
+                          // default activeId; without a retry token the load
+                          // effect would not run again and the editor would
+                          // stay on "加载笔记内容…" forever.
+                          setActiveRetry((value) => value + 1)
+                          setMode('editor')
+                        },
+                        title: item.title || t('notes.untitled'),
+                      },
+                      React.createElement('span', { className: 'ph-n-readernotes__rowtitle' }, item.title || t('notes.untitled')),
+                      React.createElement(
+                        'span',
+                        { className: 'ph-n-readernotes__rowmeta' },
+                        (item.preview || '').replace(/\s+/g, ' ').slice(0, 80) || t('notes.empty.preview'),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
-        )
-      : null,
-    list.status === 'loading' && list.items.length === 0
-      ? React.createElement('div', { className: 'ph-n-editor__loading' }, React.createElement(Spinner, { size: 13 }), React.createElement('span', null, t('notes.loading')))
-      : null,
-    list.status === 'error'
-      ? React.createElement(
-          'div',
-          { className: 'ph-r-side__scroll' },
-          React.createElement(Empty, {
-            icon: 'warning',
-            tone: 'error',
-            title: t('common.failed'),
-            desc: t('notes.loadFailed', { message: String((list.error && list.error.message) || '') }),
-            action: React.createElement(
-              'button',
-              { type: 'button', className: 'ph-r-btn ph-r-btn--soft ph-r-btn--sm', onClick: reload },
-              React.createElement(Icon, { name: 'refresh', size: 13 }),
-              React.createElement('span', { className: 'ph-r-btn__label' }, t('common.retry')),
-            ),
-          }),
-        )
-      : null,
-    list.status === 'ready' && list.items.length === 0
-      ? React.createElement(
-          'div',
-          { className: 'ph-r-side__scroll' },
-          React.createElement(Empty, {
-            icon: 'note',
-            title: t('reader.notes.empty'),
-            desc: t('reader.notes.emptyDesc'),
-            action: React.createElement(
-              'button',
-              { type: 'button', className: 'ph-r-btn ph-r-btn--solid ph-r-btn--sm', onClick: createNote, disabled: creating },
-              React.createElement(Icon, { name: 'plus', size: 13 }),
-              React.createElement('span', { className: 'ph-r-btn__label' }, t('reader.notes.new')),
-            ),
-          }),
-        )
-      : null,
-    active.status === 'loading'
-      ? React.createElement('div', { className: 'ph-n-editor__loading' }, React.createElement(Spinner, { size: 13 }), React.createElement('span', null, t('notes.loadingNote')))
-      : null,
-    active.status === 'error'
-      ? React.createElement(
-          'div',
-          { className: 'ph-r-side__scroll' },
-          React.createElement(Empty, {
-            icon: 'warning',
-            tone: 'error',
-            title: t('notes.loadFailed', { message: String((active.error && active.error.message) || '') }),
-          }),
-        )
-      : null,
-    active.status === 'ready' && active.note
-      ? React.createElement(NoteEditor, {
-          t: t,
-          api: props.api,
-          service: service,
-          note: active.note,
-          variant: 'compact',
-          paperId: paperId,
-          sessionId: props.sessionId,
-          notify: props.notify,
-          linkable: true,
-          onSaved: onSaved,
-          onDeleted: onDeleted,
-          onOpenNoteLibrary: props.onOpenNoteLibrary,
-          onOpenPaper: props.onOpenPaper,
-        })
-      : null,
-    list.status === 'ready' && list.items.length > 0 && active.status === 'idle'
-      ? React.createElement('div', { className: 'ph-n-editor__empty' }, React.createElement('p', { className: 'ph-n-caption' }, t('reader.notes.pick')))
-      : null,
-    React.createElement('p', { className: 'ph-n-caption', style: { padding: '6px 12px 10px', margin: 0 } }, t('reader.notes.boundHint')),
+    React.createElement('p', { className: 'ph-n-caption', style: { padding: '6px 12px 10px', margin: 0 } }, editing ? t('reader.notes.boundHint') : t('reader.notes.listHint')),
   )
 }

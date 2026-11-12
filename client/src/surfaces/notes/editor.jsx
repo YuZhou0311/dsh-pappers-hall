@@ -261,6 +261,13 @@ export function NoteEditor(props) {
     setAutoOverlayState(null)
     if (autoTimerRef.current) { clearTimeout(autoTimerRef.current); autoTimerRef.current = null }
     if (autoOverlayTimerRef.current) { clearTimeout(autoOverlayTimerRef.current); autoOverlayTimerRef.current = null }
+    // Also evaluate the loaded body (not only local saves). Notes can arrive
+    // from the Agent/notes API or another editor, and opening such a note with
+    // auto-beautify on should still lay out its finished sections.
+    if (loadedAuto.enabled) {
+      autoFailRef.current = ''
+      scheduleAutoCheck(1200)
+    }
   }, [loadKey, note])
 
   /* ------------------------------- saving -------------------------------- */

@@ -1,7 +1,8 @@
 {
   "meta": {
     "title": "Pappers-Hall 论文中心",
-    "description": "在 DSH 中管理论文、阅读原文、记录批注，并把论文、选区与图表直接引用到研究对话。"
+    "description": "在 DSH 侧栏打开「论文中心」管理本地论文库、阅读 PDF、记录笔记，并在对话中引用论文、图表或笔记。需要 poppler；OCR 与翻译使用已配置的服务。",
+    "detail": "docs/DETAIL.zh.md"
   },
   "panel.title": "论文中心",
   "panel.subtitle": "Pappers-Hall · 论文库与对话引用",

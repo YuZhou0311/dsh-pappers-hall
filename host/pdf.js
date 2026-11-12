@@ -208,8 +208,8 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
   let detection
 
   /** Run one poppler command, throwing a classified error on a non-zero exit. */
-  async function call(argv, { filePath, allowFailure = false } = {}) {
-    const outcome = await run(argv, { timeoutMs })
+  async function call(argv, { filePath, allowFailure = false, timeoutMs: overrideTimeoutMs } = {}) {
+    const outcome = await run(argv, { timeoutMs: overrideTimeoutMs ?? timeoutMs })
     if (outcome.exitCode !== 0 && !allowFailure) throw failureFromOutcome(outcome, argv[0], filePath ?? argv.at(-1) ?? '')
     return outcome
   }
@@ -323,7 +323,7 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
      * @param {string} request.outputPath destination PNG.
      * @returns {Promise<{width:number,height:number}>} rendered pixel dimensions.
      */
-    async renderPage({ filePath, page, width, outputPath }) {
+    async renderPage({ filePath, page, width, outputPath, timeoutMs: overrideTimeoutMs }) {
       const targetWidth = clampInt(width, 120, 3000, 1400)
       return withTempDir(async (directory) => {
         const prefix = path.join(directory, 'page')
@@ -343,7 +343,7 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
             filePath,
             prefix,
           ],
-          { filePath },
+          { filePath, timeoutMs: overrideTimeoutMs },
         )
         const png = await readFile(`${prefix}.png`)
         const size = pngSize(png)

@@ -636,7 +636,7 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
           if (systemPrompt && typeof systemPrompt.section === 'function') {
             const promptLines = params.mode === 'directions'
               ? [
-                'You are Pappers-Hall\'s note direction adviser. You have exactly two note tools; every answer must be a tool call.',
+                'You are Pappers-Hall\'s note direction adviser. You have exactly three note tools; every answer must be a tool call.',
                 'Read the note with note_read, then call note_suggest_directions exactly once with three differentiated, practical micro-directions. Choose direction plain|vivid|scientific and layout auto|bullets|table; useFigures only when real candidates exist. Labels <= 10 characters, reasons <= 24 characters. Call note_finish. Do not lay out or edit the note.',
               ]
               : [

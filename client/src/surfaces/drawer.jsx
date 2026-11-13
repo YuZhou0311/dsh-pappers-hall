@@ -143,7 +143,10 @@ function AnnotationRow(props) {
   const item = props.item
   return h(
     'div',
-    { className: 'ph-side-annot ph-side-annot--' + (item.color || 'yellow') },
+    Object.assign(
+      { className: 'ph-side-annot ph-side-annot--' + (item.color || 'yellow'), title: t('drawer.dragHint') },
+      dragProps(t, [{ kind: 'annotation', id: item.id, page: item.page, title: item.quote || item.comment || '' }], { source: 'sidebar' }),
+    ),
     h(
       'div',
       { className: 'ph-side-annot__body' },
@@ -637,7 +640,7 @@ export function DrawerBody(props) {
               const figure = entry.figure || entry
               const paper = entry.paper || {}
               const imageUrl = figure.imageUrl || (figure.id ? '/pappers-hall/figure/' + figure.id + '.png?width=480' : '')
-              return h('button', { key: figure.id || Math.random(), type: 'button', className: 'ph-side-fig', onClick: () => openItem({ paperId: figure.paperId || paper.id, page: figure.page || entry.page }, figure.page || entry.page) },
+              return h('button', Object.assign({ key: figure.id || Math.random(), type: 'button', className: 'ph-side-fig', title: t('drawer.dragHint'), onClick: () => openItem({ paperId: figure.paperId || paper.id, page: figure.page || entry.page }, figure.page || entry.page) }, dragProps(t, [{ kind: 'figure', id: figure.id, paperId: figure.paperId || paper.id, page: figure.page || entry.page, title: figure.label || t('drawer.tab.figures') }], { source: 'sidebar' })),
                 h('span', { className: 'ph-side-fig__img' }, imageUrl ? h('img', { src: imageUrl, alt: '', loading: 'lazy', onError: (e) => { e.currentTarget.style.display = 'none' } }) : h(Icon, { name: 'figure', size: 20 })),
                 h('span', { className: 'ph-side-fig__caption' }, firstText(figure.caption, paper.titleZh, paper.title, t('drawer.tab.figures'))),
                 h('span', { className: 'ph-caption' }, t('figure.search.pageFigure', { page: Number(figure.page || entry.page) || 1, label: figure.label || '?' })),
@@ -653,15 +656,18 @@ export function DrawerBody(props) {
           ? h(EmptyState, { compact: true, icon: 'note', title: t('drawer.hint.notes'), action: h(Button, { size: 'sm', variant: 'secondary', icon: 'note', onClick: () => openNotesLibrary() }, t('notes.library.open')) })
           : h('div', { className: 'ph-side-notes' }, notes.items.map((note, index) => {
               const selectedNote = selectedKeys.has('note:' + note.id)
-              return h('div', {
-                key: note.id || index,
-                className: 'ph-side-note' + (selectedNote ? ' ph-side-note--selected' : ''),
-                role: 'button',
-                tabIndex: 0,
-                onClick: () => openPreview({ kind: 'note', note: note }),
-                onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPreview({ kind: 'note', note: note }) } },
-                title: note.title || t('notes.untitled'),
-              },
+              return h('div', Object.assign(
+                {
+                  key: note.id || index,
+                  className: 'ph-side-note' + (selectedNote ? ' ph-side-note--selected' : ''),
+                  role: 'button',
+                  tabIndex: 0,
+                  onClick: () => openPreview({ kind: 'note', note: note }),
+                  onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPreview({ kind: 'note', note: note }) } },
+                  title: note.title || t('notes.untitled'),
+                },
+                dragProps(t, [{ kind: 'note', id: note.id, title: note.title || t('notes.untitled') }], { source: 'sidebar' }),
+              ),
                 h('span', { className: 'ph-side-row__check', onClick: (event) => event.stopPropagation() }, h(Check, { checked: selectedNote, onChange: () => toggleSelect({ kind: 'note', id: note.id, title: note.title || t('notes.untitled') }) })),
                 h(Icon, { name: 'note', size: 13 }),
                 h('span', { className: 'ph-side-note__main' },
@@ -708,7 +714,10 @@ export function DrawerBody(props) {
       const noteData = note.contentJson && note.contentJson.data ? note.contentJson.data : {}
       previewBody = h(
         'article',
-        { className: 'ph-side-note-preview' },
+        Object.assign(
+          { className: 'ph-side-note-preview', title: t('drawer.dragHint') },
+          dragProps(t, [{ kind: 'note', id: note.id, title: firstText(note.title, t('notes.untitled')) }], { source: 'sidebar' }),
+        ),
         h('h2', { className: 'ph-side-note-preview__title' }, firstText(note.title, t('notes.untitled'))),
         note.paperLinks && note.paperLinks.length > 0
           ? h('div', { className: 'ph-side-note-preview__papers' }, note.paperLinks.map((link) => h('button', { key: link.paperId, type: 'button', className: 'ph-side-note-preview__paper', onClick: () => setPreview({ kind: 'paper', paper: { id: link.paperId, title: link.title, titleZh: link.titleZh }, page: 1 }) }, h(Icon, { name: 'book', size: 11 }), firstText(link.titleZh, link.title, link.paperId))))

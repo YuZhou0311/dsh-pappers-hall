@@ -757,6 +757,7 @@ export const EN = {
   "drawer.action.open": "Open reader",
   "drawer.action.cite": "Cite into conversation",
   "drawer.action.readHere": "Read here",
+  "drawer.dragHint": "Drag to the chat input to reference",
   "drawer.preview.back": "Back",
   "drawer.preview.close": "Close preview",
   "drawer.preview.openCenter": "Open in paper center",

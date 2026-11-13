@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.24.24
+
+- Conversation-sidebar figures, annotations/passages and notes are draggable into the chat composer; material drops insert a Pappers-Hall reference bundle.
+- The note preview itself is draggable as a note reference.
+
 ## 0.24.23
 
 - Removed the 原文/对照/仅译文 mode switch from the reader toolbar; the translation assistant and side translation tools remain.

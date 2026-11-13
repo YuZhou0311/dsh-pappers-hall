@@ -757,6 +757,7 @@ export const ZH = {
   "drawer.action.open": "打开阅读器",
   "drawer.action.cite": "引用到对话",
   "drawer.action.readHere": "在侧边阅读",
+  "drawer.dragHint": "拖到对话框或输入框以引用",
   "drawer.preview.back": "返回",
   "drawer.preview.close": "关闭预览",
   "drawer.preview.openCenter": "在论文中心查看",

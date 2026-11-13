@@ -389,6 +389,32 @@ async function main() {
       writeFileSync(join(OUT, 'drawer-text.txt'), drawerState.snippet ?? '')
       console.log('drawer state:', JSON.stringify(drawerState.hasDrawer))
       await captureButtons('drawer')
+      if (STEPS.includes('drawer-drag-to-chat')) {
+        const figTab = await evaluate(`(() => {
+          const target = [...document.querySelectorAll('.ph-sidebar__tabs button')].find((button) => (button.textContent || '').includes('图片'))
+          if (!target) return false
+          target.click()
+          return true
+        })()`)
+        await sleep(900)
+        const dragged = await evaluate(`(() => {
+          const source = document.querySelector('.ph-side-fig, .ph-r-figcard, .ph-side-row--paper .ph-side-row__main')
+          const inputs = [...document.querySelectorAll('textarea, [contenteditable="true"]')].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 120 && r.height > 20 })
+          const input = inputs[inputs.length - 1]
+          if (!source || !input) return { source: Boolean(source), input: inputs.length }
+          const dt = new DataTransfer()
+          source.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }))
+          input.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }))
+          input.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }))
+          source.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }))
+          return { source: true, input: inputs.length, types: [...dt.types], text: (dt.getData('text/plain') || '').slice(0, 120) }
+        })()`)
+        console.log('drawer drag to composer:', JSON.stringify(dragged), 'tab:', figTab)
+        await sleep(2200)
+        const composer = await evaluate(`(() => { const inputs = [...document.querySelectorAll('textarea, [contenteditable="true"]')].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 120 && r.height > 20 }); return (inputs[inputs.length - 1]?.value || inputs[inputs.length - 1]?.innerText || '').slice(0, 400) })()`)
+        console.log('composer after drawer drag:', JSON.stringify(composer))
+        await shot('05d-composer-after-drag')
+      }
       if (STEPS.includes('drawer-preview')) {
         const opened = await evaluate(`(() => {
           const row = document.querySelector('.ph-side-row--paper .ph-side-row__main')

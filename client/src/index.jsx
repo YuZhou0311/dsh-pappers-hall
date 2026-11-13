@@ -46,6 +46,10 @@ export function openPaperDrawer(ctx) {
   const right = typeof ctx.get === 'function' ? ctx.get('sidebarRight') : undefined
   if (!right || typeof right.openTab !== 'function') return false
   try {
+    // `openTab` selects the pane but the host right rail can still be closed;
+    // explicitly open the rail first so the reading sidebar is visible.
+    const layout = typeof ctx.get === 'function' ? ctx.get('layout') : undefined
+    if (layout && typeof layout.openRightbar === 'function') layout.openRightbar(false, false)
     right.openTab(DRAWER_KIND)
     return true
   } catch {

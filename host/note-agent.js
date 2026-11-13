@@ -34,9 +34,12 @@ const MAX_DIAGRAM_NODES = 24
 const MAX_DIAGRAM_EDGES = 32
 const MAX_QUOTES = 8
 const MAX_NESTED_BLOCKS = 14
+const MAX_FIELDS = 10
+const MAX_GRID_BLOCKS = 12
+const MAX_DATA_ROWS = 100
 const MAX_MARKDOWN = 6000
 const MAX_WEB_IMAGE_BYTES = 6 * 1024 * 1024
-const DIRECTIVE_PATTERN = /\{\{\s*(figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|diagram|architecture|flowchart|mindmap)\s*:\s*([\s\S]*?)\}\}/gi
+const DIRECTIVE_PATTERN = /\{\{\s*(figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:\s*([\s\S]*?)\}\}/gi
 const STYLE_VALUES = new Set(['plain', 'accent', 'columns', 'figure'])
 
 function text(value) {
@@ -231,8 +234,15 @@ function normalizeAgentChart(raw) {
     const count = Math.min(labels.length, values.length, MAX_CHART_POINTS)
     for (let index = 0; index < count; index += 1) if (Number.isFinite(values[index])) rows.push({ label: labels[index], value: values[index] })
   }
-  if (rows.length === 0) return null
-  return { type: 'chart', variant, title: pickString(raw.title, 120), unit: pickString(raw.unit, 24), data: rows }
+  const series = (Array.isArray(raw.series) ? raw.series : []).map((item) => {
+    if (!item || typeof item !== 'object') return null
+    const name = pickString(item.name ?? item.label, 60)
+    const values = (Array.isArray(item.values) ? item.values : []).map((value) => numberValue(value, NaN)).filter(Number.isFinite).slice(0, MAX_CHART_POINTS)
+    return name && values.length > 0 ? { name, values } : null
+  }).filter(Boolean).slice(0, 4)
+  const labels = strings(raw.labels, MAX_CHART_POINTS, 40)
+  if (rows.length === 0 && series.length === 0) return null
+  return { type: 'chart', variant, title: pickString(raw.title, 120), unit: pickString(raw.unit, 24), stacked: raw.stacked === true, data: rows, series, labels }
 }
 
 function normalizeAgentDiagram(raw) {
@@ -270,6 +280,36 @@ function normalizeAgentDiagram(raw) {
     for (const node of nodes) if (node.parent && byId.has(node.parent) && node.parent !== node.id) edges.push({ from: node.parent, to: node.id, label: '' })
   }
   return { type: 'diagram', layout, title: pickString(raw.title, 140), caption: pickString(raw.caption, 500), nodes, edges }
+}
+
+function normalizeBind(value) {
+  const path = pickString(value, 180)
+  return /^\/[A-Za-z0-9_./-]{1,160}$/.test(path) ? path : ''
+}
+
+function normalizeFormField(item, index) {
+  if (!item || typeof item !== 'object') return null
+  const kind = String(item.kind || item.type || 'text').toLowerCase()
+  const allowed = ['text', 'textarea', 'select', 'multiselect', 'slider', 'date', 'stepper', 'checkbox']
+  if (!allowed.includes(kind)) return null
+  const label = pickString(item.label ?? item.title, 100)
+  if (!label) return null
+  const options = (Array.isArray(item.options) ? item.options : []).map((option) => {
+    if (typeof option === 'string') return { value: option.slice(0, 120), label: option.slice(0, 120) }
+    if (!option || typeof option !== 'object') return null
+    const value = pickString(option.value ?? option.id, 120)
+    return value ? { value, label: pickString(option.label ?? option.name ?? value, 120) } : null
+  }).filter(Boolean).slice(0, 20)
+  return {
+    id: pickString(item.id ?? 'f' + index, 24).replace(/[^A-Za-z0-9_-]/g, '') || 'f' + index,
+    kind,
+    label,
+    bind: normalizeBind(item.bind ?? item.path),
+    placeholder: pickString(item.placeholder, 160),
+    options,
+    value: kind === 'checkbox' ? item.value === true : pickString(item.value, 1200),
+    ...(kind === 'slider' || kind === 'stepper' ? { min: numberValue(item.min, 0), max: numberValue(item.max, 100), step: Math.max(0.0001, numberValue(item.step, 1)) } : {}),
+  }
 }
 
 /** Normalise one model/tool-produced block with bounded, honest values. */
@@ -378,6 +418,59 @@ export function normalizeAgentBlock(raw, candidates = new Map(), depth = 0) {
     if (left.length === 0 && right.length === 0) return null
     return { type: 'compare', leftTitle: pickString(raw.leftTitle, 120), rightTitle: pickString(raw.rightTitle, 120), left, right }
   }
+  if (type === 'computed' || type === 'calculations') {
+    const items = (Array.isArray(raw.items) ? raw.items : []).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const label = pickString(item.label ?? item.title, 100)
+      const op = ['sum', 'avg', 'count', 'min', 'max'].includes(String(item.op || item.operation || '').toLowerCase()) ? String(item.op || item.operation).toLowerCase() : ''
+      const paths = (Array.isArray(item.paths) ? item.paths : []).map((value) => normalizeBind(value)).filter(Boolean).slice(0, 12)
+      return label && op && paths.length > 0 ? { label, op, paths, unit: pickString(item.unit, 24) } : null
+    }).filter(Boolean).slice(0, 6)
+    return items.length > 0 ? { type: 'computed', title: pickString(raw.title, 120), items } : null
+  }
+  if (type === 'form' || type === 'fields') {
+    const fields = (Array.isArray(raw.fields) ? raw.fields : []).map((item, index) => normalizeFormField(item, index)).filter(Boolean).slice(0, MAX_FIELDS)
+    const prefix = '/form/' + hashText(pickString(raw.title ?? raw.id, 80) || 'form').slice(0, 8)
+    for (const field of fields) if (!field.bind) field.bind = prefix + '/' + field.id
+    return fields.length > 0 ? { type: 'form', title: pickString(raw.title, 120), fields } : null
+  }
+  if (type === 'grid') {
+    if (depth > 0) return null
+    const columns = Math.max(1, Math.min(4, Math.round(numberValue(raw.columns, 2))))
+    const blocks = normalizeBlocks(Array.isArray(raw.blocks) ? raw.blocks.slice(0, MAX_GRID_BLOCKS) : [], candidates, depth + 1)
+    return blocks.length > 0 ? { type: 'grid', columns, blocks } : null
+  }
+  if (type === 'data-table' || type === 'datatable') {
+    const columns = (Array.isArray(raw.columns) ? raw.columns : []).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const key = pickString(item.key ?? item.id, 40)
+      const label = pickString(item.label ?? item.title ?? key, 100)
+      if (!key || !label) return null
+      return { key, label, align: ['left', 'center', 'right'].includes(String(item.align || '')) ? String(item.align) : '', width: pickString(item.width, 16) }
+    }).filter(Boolean).slice(0, 8)
+    const rows = (Array.isArray(raw.rows) ? raw.rows : []).map((row) => {
+      if (Array.isArray(row)) return row.slice(0, 8).map((cell) => String(cell ?? '').slice(0, 400))
+      if (!row || typeof row !== 'object') return null
+      return columns.map((column) => String(row[column.key] ?? '').slice(0, 400))
+    }).filter((row) => row && row.length > 0).slice(0, MAX_DATA_ROWS)
+    return columns.length > 0 && rows.length > 0 ? { type: 'data-table', title: pickString(raw.title, 140), columns, rows, rowsPath: normalizeBind(raw.rowsPath), sortable: raw.sortable === true, caption: pickString(raw.caption, 200) } : null
+  }
+  if (type === 'comparison-table' || type === 'comparison') {
+    const columns = (Array.isArray(raw.columns) ? raw.columns : []).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const title = pickString(item.title ?? item.label, 120)
+      if (!title) return null
+      const items = (Array.isArray(item.items) ? item.items : []).map((point) => pickString(point && typeof point === 'object' ? point.text : point, 500)).filter(Boolean).slice(0, 12)
+      return { title, items }
+    }).filter(Boolean).slice(0, 4)
+    return columns.length >= 2 ? { type: 'comparison-table', title: pickString(raw.title, 140), columns, caption: pickString(raw.caption, 300) } : null
+  }
+  if (type === 'media' || type === 'video' || type === 'audio') {
+    const kind = type === 'video' ? 'video' : type === 'audio' ? 'audio' : (String(raw.kind || 'video').toLowerCase() === 'audio' ? 'audio' : 'video')
+    const src = pickUrl(raw.src ?? raw.url)
+    if (!/^https?:\/\//i.test(src) && !/^\/pappers-hall\/note-asset\//i.test(src)) return null
+    return { type: 'media', kind, src, poster: pickUrl(raw.poster), title: pickString(raw.title, 140), caption: pickString(raw.caption, 500) }
+  }
   if (type === 'markdown' || type === 'md' || type === 'richtext') {
     const value = pickString(raw.text ?? raw.markdown, MAX_MARKDOWN)
     return value ? { type: 'markdown', text: value } : null
@@ -392,7 +485,7 @@ export function normalizeAgentBlock(raw, candidates = new Map(), depth = 0) {
       return { title, text: body, eyebrow: pickString(item.eyebrow ?? item.kicker, 60), ...(tone ? { tone } : {}) }
     }).filter(Boolean).slice(0, MAX_CARDS)
     if (items.length === 0) return null
-    const layout = ['grid', 'list'].includes(String(raw.layout || '').toLowerCase()) ? String(raw.layout).toLowerCase() : 'grid'
+    const layout = ['grid', 'list', 'hero', 'compact'].includes(String(raw.layout || '').toLowerCase()) ? String(raw.layout).toLowerCase() : 'grid'
     return { type: 'cards', layout, items }
   }
   if (type === 'chart' || type === 'plot') return normalizeAgentChart(raw)
@@ -408,12 +501,12 @@ export function normalizeAgentBlock(raw, candidates = new Map(), depth = 0) {
       if (blocks.length === 0) return null
       return { id: pickString(item.id ?? 't' + index, 24).replace(/[^a-zA-Z0-9_-]/g, '') || 't' + index, label: pickString(item.label ?? item.title ?? 'Tab ' + (index + 1), 60), blocks }
     }).filter(Boolean).slice(0, MAX_TABS)
-    return tabs.length >= 2 ? { type: 'tabs', tabs } : null
+    return tabs.length >= 2 ? { type: 'tabs', bind: normalizeBind(raw.bind), tabs } : null
   }
   if (type === 'disclosure' || type === 'details' || type === 'accordion') {
     if (depth > 0) return null
     const blocks = normalizeBlocks(Array.isArray(raw.blocks) ? raw.blocks.slice(0, MAX_NESTED_BLOCKS) : [], candidates, depth + 1)
-    return blocks.length > 0 ? { type: 'disclosure', title: pickString(raw.title ?? raw.label, 160), open: raw.open === true, blocks } : null
+    return blocks.length > 0 ? { type: 'disclosure', title: pickString(raw.title ?? raw.label, 160), bind: normalizeBind(raw.bind), open: raw.open === true, blocks } : null
   }
   if (type === 'tasks' || type === 'checklist' || type === 'todo') {
     const items = (Array.isArray(raw.items) ? raw.items : []).map((item) => {
@@ -422,7 +515,7 @@ export function normalizeAgentBlock(raw, candidates = new Map(), depth = 0) {
       const body = pickString(item.text ?? item.title, 500)
       return body ? { text: body, done: item.done === true } : null
     }).filter(Boolean).slice(0, MAX_TASKS)
-    return items.length > 0 ? { type: 'tasks', title: pickString(raw.title, 120), items } : null
+    return items.length > 0 ? { type: 'tasks', title: pickString(raw.title, 120), bind: normalizeBind(raw.bind), items } : null
   }
   if (type === 'status' || type === 'badges') {
     const items = (Array.isArray(raw.items) ? raw.items : []).map((item) => {
@@ -468,9 +561,16 @@ export function normalizeAgentBlock(raw, candidates = new Map(), depth = 0) {
     const items = (Array.isArray(raw.items) ? raw.items : []).map((item) => {
       if (!item || typeof item !== 'object') return null
       const label = pickString(item.label ?? item.title, 100)
+      if (!label) return null
+      const figureId = pickString(item.figureId, 40)
+      const paperId = pickString(item.paperId, 40)
+      if (figureId && paperId) return { kind: 'figure', label, figureId, paperId, page: Math.max(1, Math.round(numberValue(item.page, 1))), note: pickString(item.note, 200) }
       const url = pickUrl(item.url ?? item.href)
-      if (!label || !/^https?:\/\//i.test(url)) return null
-      return { label, url, note: pickString(item.note, 200) }
+      if (!/^https?:\/\//i.test(url)) {
+        if (String(item.kind || '').toLowerCase() === 'copy') return { kind: 'copy', label, value: pickString(item.value, 2000), note: pickString(item.note, 200) }
+        return null
+      }
+      return { kind: 'url', label, url, note: pickString(item.note, 200) }
     }).filter(Boolean).slice(0, 6)
     return items.length > 0 ? { type: 'actions', items } : null
   }
@@ -718,7 +818,7 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
         type: 'object',
         properties: {
           sectionId: { type: 'string', description: 'Section id from note_read.' },
-          action: { type: 'string', enum: ['figure', 'table', 'web_image', 'source', 'callout', 'stats', 'timeline', 'compare', 'steps', 'markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'quotes', 'actions', 'diagram', 'architecture', 'flowchart', 'mindmap'], description: 'Block to add.' },
+          action: { type: 'string', enum: ['figure', 'table', 'web_image', 'source', 'callout', 'stats', 'timeline', 'compare', 'steps', 'markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'quotes', 'actions', 'form', 'grid', 'computed', 'data-table', 'comparison-table', 'media', 'video', 'audio', 'diagram', 'architecture', 'flowchart', 'mindmap'], description: 'Block to add.' },
           figureId: { type: 'string', description: 'figure action: exact id from note_read.figureCandidates.' },
           caption: { type: 'string', description: 'Optional caption/alt text.' },
           headers: { type: 'array', items: { type: 'string' }, description: 'table action: header cells.' },
@@ -775,9 +875,9 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
           block = normalizeAgentBlock({ type: 'compare', leftTitle: args.leftTitle, rightTitle: args.rightTitle, left: args.left, right: args.right }, candidateMap)
         } else if (args.action === 'steps') {
           block = normalizeAgentBlock({ type: 'steps', items: args.items }, candidateMap)
-        } else if (['markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'quotes', 'actions', 'diagram', 'architecture', 'flowchart', 'mindmap'].includes(args.action)) {
+        } else if (['markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'quotes', 'actions', 'form', 'grid', 'computed', 'data-table', 'comparison-table', 'media', 'video', 'audio', 'diagram', 'architecture', 'flowchart', 'mindmap'].includes(args.action)) {
           const payload = args.block && typeof args.block === 'object' ? args.block : {}
-          const mapped = args.action === 'architecture' || args.action === 'flowchart' ? 'diagram' : args.action === 'mindmap' ? 'mindmap' : args.action
+          const mapped = args.action === 'architecture' || args.action === 'flowchart' ? 'diagram' : args.action === 'mindmap' ? 'mindmap' : args.action === 'comparison-table' ? 'comparison-table' : args.action
           const layout = args.action === 'architecture' ? 'architecture' : args.action === 'flowchart' ? 'flow' : args.action === 'mindmap' ? 'mindmap' : payload.layout
           block = normalizeAgentBlock({ ...payload, type: mapped, ...(layout ? { layout } : {}), ...(args.title && !payload.title ? { title: args.title } : {}), ...(args.text && !payload.text ? { text: args.text } : {}) }, candidateMap)
         }
@@ -873,11 +973,11 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
                 'You are Pappers-Hall\'s dedicated note beautification agent. You have exactly five note tools; every action must be a tool call.',
                 'Your job: turn the user\'s note Markdown into a varied, readable content_json layout, and execute the inline directives the user wrote in the note.',
                 'Hard rules: never change the user\'s Markdown; never invent facts, numbers, citations, figures or URLs; preserve every number, unit, qualifier and proper noun; only use figures from note_read.figureCandidates; only add web images through note_insert(web_image) and web facts through note_web_search.',
-                'Inline directives in the note use double-brace markers (open marker, a kind, a colon, the argument, close marker). Supported kinds: figure, table, web-image, web, stats, callout, timeline, compare, steps, markdown, cards, chart, gallery, tabs, disclosure, tasks, status, progress, alert, divider, empty, quotes, actions, diagram, architecture, flowchart, mindmap. Resolve each directive using note_insert on its section.',
+                'Inline directives in the note use double-brace markers (open marker, a kind, a colon, the argument, close marker). Supported kinds: figure, table, web-image, web, stats, callout, timeline, compare, steps, markdown, cards, chart, gallery, tabs, disclosure, tasks, status, progress, alert, divider, empty, quotes, actions, form, grid, computed, data-table, comparison-table, media, video, audio, diagram, architecture, flowchart, mindmap. Resolve each directive using note_insert on its section.',
                 'Natural-language action lines also count: when the user writes something imperative such as “这里加一张论文图”, “加一个统计表”, “找一张联网图片”, “补一个来源”, treat it as an action request for the containing section and use note_insert. Do not merely copy the instruction into a paragraph; the block is the result. Structural/editorial instructions should change only the layout.',
-                'Use note_set_section for each target section. Block vocabulary: heading, paragraph, markdown, bullets, quote, callout, stats, table, cards, chart, gallery, figure, web-image, sources, timeline, compare, steps, tabs, disclosure, tasks, status, progress, alert, empty, divider, quotes, actions, diagram. Use rich blocks only where they make the content clearer; vary sections but do not turn every section into cards.',
+                'Use note_set_section for each target section. Block vocabulary: heading, paragraph, markdown, bullets, quote, callout, stats, table, data-table, comparison-table, cards, chart, gallery, figure, web-image, sources, timeline, compare, steps, tabs, disclosure, tasks, status, progress, alert, empty, divider, quotes, actions, form, grid, media, diagram. Use rich blocks only where they make the content clearer; vary sections but do not turn every section into cards.',
                 'For an architecture diagram, flow chart or mind map, insert a diagram block with layout architecture|flow|mindmap, 2–24 nodes with stable ids/labels, and edges from→to. Never draw ASCII art, Mermaid syntax or raw SVG. A mind map may use nodes with parent instead of edges. Example payload for a three-box architecture: {layout:"architecture",nodes:[{id:"ui",label:"UI"},{id:"api",label:"API"},{id:"db",label:"DB"}],edges:[{from:"ui",to:"api"},{from:"api",to:"db"}]}.',
-                'A natural-language request such as “这里做个架构图” or “这里放个思维图” is an action, not prose: use a diagram block in that section. At most 4 paper figures.',
+                'A natural-language request such as “这里做个架构图”, “这里放个思维图”, “这里放个表单/输入框”, “这里做个可排序数据表” or “这里放个视频” is an action, not prose: use the matching diagram/form/data-table/media block in that section. At most 4 paper figures.',
                 'When you finish all sections and directives, call note_finish. Do not answer with a JSON document or Markdown; the tools are the output.',
               ]
             agentCtx.effect(() => systemPrompt.section({

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.24.0
+
+- Added `contentJson.data` bindings and debounced persistence for interactive note blocks.
+- Form block with text, textarea, select, multiselect, slider, date, stepper and checkbox controls; fields auto-bind when the Agent omits a path.
+- Computed aggregate block (`sum`/`avg`/`count`/`min`/`max`) over bound data paths; no eval.
+- Tabs, checklists and data-table rows can bind to persisted note data.
+- Sortable DataTable, ComparisonTable, 1–4 column Grid, CardList hero/compact variants.
+- Multi-series and stacked bar/line charts.
+- Gallery lightbox with figure/reader and source attribution; action callbacks for figures, links and copy.
+- Video/audio media block with bounded URL validation.
+- Added dynamic-block tests and browser verification for form persistence, charts, tables and lightbox.
+
 ## 0.22.0
 
 - Added a dedicated note beautification Agent built on the DSH Agent runtime.

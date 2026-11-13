@@ -181,7 +181,7 @@ export function isSectionLikelyIncomplete(section) {
 
 /** Sections overlapping the `[start, end)` textarea selection. */
 /** Inline directive kinds the note Agent understands. */
-export const DIRECTIVE_KINDS = ['figure', 'table', 'web-image', 'web', 'stats', 'callout', 'timeline', 'compare', 'steps', 'markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'empty', 'quotes', 'actions', 'diagram', 'architecture', 'flowchart', 'mindmap']
+export const DIRECTIVE_KINDS = ['figure', 'table', 'web-image', 'web', 'stats', 'callout', 'timeline', 'compare', 'steps', 'markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'empty', 'quotes', 'actions', 'form', 'grid', 'computed', 'data-table', 'comparison-table', 'media', 'video', 'audio', 'diagram', 'architecture', 'flowchart', 'mindmap']
 
 /**
  * Find `{{kind: argument}}` directives in the user's Markdown and attach each
@@ -194,7 +194,7 @@ export const DIRECTIVE_KINDS = ['figure', 'table', 'web-image', 'web', 'stats', 
 export function extractDirectives(contentMd, sections) {
   const source = String(contentMd == null ? '' : contentMd)
   const list = Array.isArray(sections) ? sections : sectionizeMarkdown(source)
-  const pattern = /\{\{\s*(figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|diagram|architecture|flowchart|mindmap)\s*:\s*([\s\S]*?)\}\}/gi
+  const pattern = /\{\{\s*(figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:\s*([\s\S]*?)\}\}/gi
   const out = []
   let match
   while ((match = pattern.exec(source)) !== null) {
@@ -214,7 +214,7 @@ export function extractDirectives(contentMd, sections) {
 
 /** Count inline directives without building the full list. */
 export function countDirectives(contentMd) {
-  return (String(contentMd == null ? '' : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|diagram|architecture|flowchart|mindmap)\s*:/gi) || []).length
+  return (String(contentMd == null ? '' : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:/gi) || []).length
 }
 
 export function sectionsForSelection(sections, start, end) {
@@ -245,6 +245,11 @@ const MAX_DIAGRAM_EDGES = 32
 const MAX_QUOTES = 8
 const MAX_STATUS_ITEMS = 4
 const MAX_MARKDOWN = 6000
+const MAX_DATA_KEYS = 80
+const MAX_FIELDS = 10
+const MAX_GRID_BLOCKS = 12
+const MAX_DATA_ROWS = 100
+const MAX_COMPUTED = 6
 /** Accepted callout tones. */
 const CALLOUT_TONES = new Set(['info', 'warn', 'success', 'neutral'])
 /** Accepted beautify directions / layouts. */
@@ -291,6 +296,61 @@ function normalizeColumnsBlock(raw, options) {
     built.push({ blocks })
   }
   return { type: 'columns', columns: built }
+}
+
+/** Bound data path such as `/form/status` (no bracket expressions). */
+function normalizeBind(value) {
+  const path = firstText(value)
+  return /^\/[A-Za-z0-9_./-]{1,160}$/.test(path) ? path : ''
+}
+
+/** Sanitise contentJson.data; it is user/agent state, not executable markup. */
+function sanitizeData(value, depth = 0) {
+  if (depth > 4) return null
+  if (value == null || typeof value === 'boolean' || typeof value === 'number') return value
+  if (typeof value === 'string') return value.slice(0, 2000)
+  if (Array.isArray(value)) return value.slice(0, MAX_DATA_KEYS).map((item) => sanitizeData(item, depth + 1))
+  if (typeof value !== 'object') return null
+  const out = {}
+  for (const [key, item] of Object.entries(value).slice(0, MAX_DATA_KEYS)) {
+    if (!/^[A-Za-z0-9_-]{1,40}$/.test(key)) continue
+    out[key] = sanitizeData(item, depth + 1)
+  }
+  return out
+}
+
+function normalizeFormField(item, index) {
+  if (!item || typeof item !== 'object') return null
+  const kind = String(item.kind || item.type || 'text').toLowerCase()
+  const allowed = ['text', 'textarea', 'select', 'multiselect', 'slider', 'date', 'stepper', 'checkbox']
+  if (!allowed.includes(kind)) return null
+  const label = firstText(item.label, item.title).slice(0, 100)
+  if (!label) return null
+  const bind = normalizeBind(item.bind || item.path)
+  const options = arrayOf(item.options).map((option) => {
+    if (typeof option === 'string') return { value: option.slice(0, 120), label: option.slice(0, 120) }
+    if (!option || typeof option !== 'object') return null
+    const value = firstText(option.value, option.id).slice(0, 120)
+    return value ? { value, label: firstText(option.label, option.name, value).slice(0, 120) } : null
+  }).filter(Boolean).slice(0, 20)
+  const initial = kind === 'checkbox' ? item.value === true : firstText(item.value).slice(0, 1200)
+  return {
+    id: firstText(item.id, 'f' + index).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 24) || 'f' + index,
+    kind,
+    label,
+    bind,
+    placeholder: firstText(item.placeholder).slice(0, 160),
+    options,
+    value: initial,
+    min: kind === 'slider' || kind === 'stepper' ? numberValue(item.min, 0) : undefined,
+    max: kind === 'slider' || kind === 'stepper' ? numberValue(item.max, 100) : undefined,
+    step: kind === 'slider' || kind === 'stepper' ? Math.max(0.0001, numberValue(item.step, 1)) : undefined,
+  }
+}
+
+function numberValue(value, fallback = 0) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : fallback
 }
 
 /** Safe note-asset URL (agent-downloaded image). */
@@ -353,13 +413,22 @@ function normalizeChartBlock(raw) {
     rows.push(...labels.map((label, index) => ({ label, value: values[index] })))
   }
   const data = rows.filter((item) => Number.isFinite(item.value))
-  if (data.length === 0) return null
+  const series = arrayOf(raw.series).map((item) => {
+    if (!item || typeof item !== 'object') return null
+    const name = firstText(item.name, item.label).slice(0, 60)
+    const values = arrayOf(item.values).map((value) => Number(value)).filter(Number.isFinite).slice(0, MAX_CHART_POINTS)
+    return name && values.length > 0 ? { name, values } : null
+  }).filter(Boolean).slice(0, 4)
+  if (data.length === 0 && series.length === 0) return null
   return {
     type: 'chart',
     variant,
     title: firstText(raw.title).slice(0, 120),
     unit: firstText(raw.unit).slice(0, 24),
+    stacked: raw.stacked === true,
     data,
+    series,
+    labels,
   }
 }
 
@@ -530,6 +599,66 @@ export function normalizeBlock(raw, options) {
     }).filter(Boolean).slice(0, 15)
     return items.length > 0 ? { type: 'steps', items } : null
   }
+  if (type === 'computed' || type === 'calculations') {
+    const items = arrayOf(raw.items || raw.values).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const label = firstText(item.label, item.title).slice(0, 100)
+      const op = ['sum', 'avg', 'count', 'min', 'max'].includes(String(item.op || item.operation || '').toLowerCase()) ? String(item.op || item.operation).toLowerCase() : ''
+      const paths = arrayOf(item.paths || item.sources).map((value) => normalizeBind(value)).filter(Boolean).slice(0, 12)
+      if (!label || !op || paths.length === 0) return null
+      return { label, op, paths, unit: firstText(item.unit).slice(0, 24) }
+    }).filter(Boolean).slice(0, MAX_COMPUTED)
+    return items.length > 0 ? { type: 'computed', title: firstText(raw.title).slice(0, 120), items } : null
+  }
+  if (type === 'form' || type === 'fields') {
+    const fields = arrayOf(raw.fields || raw.items).map((item, index) => normalizeFormField(item, index)).filter(Boolean).slice(0, MAX_FIELDS)
+    // A form without an explicit binding still needs stable state paths; derive
+    // one from the form title hash plus the field id.
+    const prefix = '/form/' + hashText(firstText(raw.title, raw.id, 'form')).slice(0, 8)
+    for (const field of fields) if (!field.bind) field.bind = prefix + '/' + field.id
+    return fields.length > 0 ? { type: 'form', title: firstText(raw.title).slice(0, 120), fields } : null
+  }
+  if (type === 'grid') {
+    if (options && options.depth > 0) return null
+    const columns = Math.max(1, Math.min(4, Math.round(numberValue(raw.columns, 2))))
+    const blocks = normalizeBlocks(arrayOf(raw.blocks || raw.items).slice(0, MAX_GRID_BLOCKS), {
+      allowedFigures: options ? options.allowedFigures : undefined,
+      depth: (options && options.depth ? options.depth : 0) + 1,
+    })
+    return blocks.length > 0 ? { type: 'grid', columns, blocks } : null
+  }
+  if (type === 'data-table' || type === 'datatable') {
+    const columns = arrayOf(raw.columns).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const key = firstText(item.key, item.id).slice(0, 40)
+      const label = firstText(item.label, item.title, key).slice(0, 100)
+      if (!key || !label) return null
+      return { key, label, align: ['left', 'center', 'right'].includes(String(item.align || '')) ? String(item.align) : '', width: firstText(item.width).slice(0, 16) }
+    }).filter(Boolean).slice(0, 8)
+    const rows = arrayOf(raw.rows || raw.items).map((row) => {
+      if (Array.isArray(row)) return row.slice(0, 8).map((cell) => String(cell == null ? '' : cell).slice(0, 400))
+      if (!row || typeof row !== 'object') return null
+      return columns.map((column) => String(row[column.key] == null ? '' : row[column.key]).slice(0, 400))
+    }).filter((row) => row && row.length > 0).slice(0, MAX_DATA_ROWS)
+    if (columns.length === 0 || rows.length === 0) return null
+    return { type: 'data-table', title: firstText(raw.title).slice(0, 140), columns, rows, rowsPath: normalizeBind(raw.rowsPath), sortable: raw.sortable === true, caption: firstText(raw.caption).slice(0, 200) }
+  }
+  if (type === 'comparison-table' || type === 'comparison') {
+    const columns = arrayOf(raw.columns || raw.sides).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const title = firstText(item.title, item.label).slice(0, 120)
+      if (!title) return null
+      const items = arrayOf(item.items || item.points || item.rows).map((point) => firstText(point && typeof point === 'object' ? point.text : point).slice(0, 500)).filter(Boolean).slice(0, 12)
+      return { title, items }
+    }).filter(Boolean).slice(0, 4)
+    return columns.length >= 2 ? { type: 'comparison-table', title: firstText(raw.title).slice(0, 140), columns, caption: firstText(raw.caption).slice(0, 300) } : null
+  }
+  if (type === 'media' || type === 'video' || type === 'audio') {
+    const kind = type === 'video' ? 'video' : type === 'audio' ? 'audio' : (String(raw.kind || 'video').toLowerCase() === 'audio' ? 'audio' : 'video')
+    const src = firstText(raw.src, raw.url)
+    if (!/^https?:\/\//i.test(src) && !isNoteAsset(src)) return null
+    return { type: 'media', kind, src: src.slice(0, 1200), poster: firstText(raw.poster).slice(0, 1200), title: firstText(raw.title).slice(0, 140), caption: firstText(raw.caption).slice(0, 500) }
+  }
   if (type === 'markdown' || type === 'md' || type === 'richtext') {
     const text = firstText(raw.text, raw.markdown)
     return text ? { type: 'markdown', text: text.slice(0, MAX_MARKDOWN) } : null
@@ -544,7 +673,7 @@ export function normalizeBlock(raw, options) {
       return { title, text, eyebrow: firstText(item.eyebrow, item.kicker).slice(0, 60), ...(tone ? { tone } : {}) }
     }).filter(Boolean).slice(0, MAX_CARDS)
     if (items.length === 0) return null
-    const layout = ['grid', 'list'].includes(String(raw.layout || '').toLowerCase()) ? String(raw.layout).toLowerCase() : 'grid'
+    const layout = ['grid', 'list', 'hero', 'compact'].includes(String(raw.layout || '').toLowerCase()) ? String(raw.layout).toLowerCase() : 'grid'
     return { type: 'cards', layout, items }
   }
   if (type === 'chart' || type === 'plot') {
@@ -567,7 +696,7 @@ export function normalizeBlock(raw, options) {
       return { id: firstText(item.id, 't' + index).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24), label: firstText(item.label, item.title, 'Tab ' + (index + 1)).slice(0, 60), blocks }
     }).filter(Boolean).slice(0, MAX_TABS)
     if (tabs.length < 2) return null
-    return { type: 'tabs', tabs }
+    return { type: 'tabs', bind: normalizeBind(raw.bind), tabs }
   }
   if (type === 'disclosure' || type === 'details' || type === 'accordion') {
     if (options && options.depth > 0) return null
@@ -576,7 +705,7 @@ export function normalizeBlock(raw, options) {
       depth: (options && options.depth ? options.depth : 0) + 1,
     })
     if (blocks.length === 0) return null
-    return { type: 'disclosure', title: firstText(raw.title, raw.label).slice(0, 160), open: raw.open === true, blocks }
+    return { type: 'disclosure', title: firstText(raw.title, raw.label).slice(0, 160), bind: normalizeBind(raw.bind), open: raw.open === true, blocks }
   }
   if (type === 'tasks' || type === 'checklist' || type === 'todo') {
     const items = arrayOf(raw.items || raw.tasks).map((item) => {
@@ -586,7 +715,7 @@ export function normalizeBlock(raw, options) {
       return text ? { text, done: item.done === true } : null
     }).filter(Boolean).slice(0, MAX_TASKS)
     if (items.length === 0) return null
-    return { type: 'tasks', title: firstText(raw.title).slice(0, 120), items }
+    return { type: 'tasks', title: firstText(raw.title).slice(0, 120), bind: normalizeBind(raw.bind), items }
   }
   if (type === 'status' || type === 'badges') {
     const items = arrayOf(raw.items).map((item) => {
@@ -634,9 +763,18 @@ export function normalizeBlock(raw, options) {
     const items = arrayOf(raw.items || raw.actions).map((item) => {
       if (!item || typeof item !== 'object') return null
       const label = firstText(item.label, item.title).slice(0, 100)
+      if (!label) return null
+      const figureId = firstText(item.figureId).slice(0, 40)
+      const paperId = firstText(item.paperId).slice(0, 40)
+      if (figureId && paperId) {
+        return { kind: 'figure', label, figureId, paperId, page: Math.max(1, Math.round(Number(item.page) || 1)), note: firstText(item.note).slice(0, 200) }
+      }
       const url = firstText(item.url, item.href)
-      if (!label || !/^https?:\/\//i.test(url)) return null
-      return { label, url: url.slice(0, 1000), note: firstText(item.note).slice(0, 200) }
+      if (!/^https?:\/\//i.test(url)) {
+        if (String(item.kind || '').toLowerCase() === 'copy') return { kind: 'copy', label, value: firstText(item.value).slice(0, 2000), note: firstText(item.note).slice(0, 200) }
+        return null
+      }
+      return { kind: 'url', label, url: url.slice(0, 1000), note: firstText(item.note).slice(0, 200) }
     }).filter(Boolean).slice(0, 6)
     return items.length > 0 ? { type: 'actions', items } : null
   }
@@ -672,6 +810,33 @@ export function normalizeSectionStyle(value, blocks) {
   if (style === 'figure') return hasFigureBlock(blocks) ? 'figure' : 'accent'
   if (SECTION_STYLES.includes(style)) return style
   return hasFigureBlock(blocks) ? 'figure' : 'plain'
+}
+
+/** Read a `/a/b` path from contentJson.data (returns undefined when absent). */
+export function getDataPath(data, path) {
+  const parts = String(path || '').split('/').filter(Boolean)
+  let current = data
+  for (const part of parts) {
+    if (current == null || typeof current !== 'object') return undefined
+    current = current[part]
+  }
+  return current
+}
+
+/** Immutable `/a/b` write; returns a shallow-cloned tree. */
+export function setDataPath(data, path, value) {
+  const parts = String(path || '').split('/').filter(Boolean)
+  if (parts.length === 0) return data
+  const root = data && typeof data === 'object' ? { ...data } : {}
+  let current = root
+  for (let index = 0; index < parts.length - 1; index += 1) {
+    const key = parts[index]
+    const child = current[key]
+    current[key] = child && typeof child === 'object' && !Array.isArray(child) ? { ...child } : {}
+    current = current[key]
+  }
+  current[parts[parts.length - 1]] = value
+  return root
 }
 
 /**
@@ -719,6 +884,7 @@ export function normalizeContentJson(raw) {
     layout: BEAUTIFY_LAYOUTS.includes(value.layout) ? value.layout : 'auto',
     createdAt: firstText(value.createdAt),
     engine: value.engine && typeof value.engine === 'object' ? value.engine : null,
+    data: value.data && typeof value.data === 'object' ? sanitizeData(value.data) : {},
     sections,
   }
 }

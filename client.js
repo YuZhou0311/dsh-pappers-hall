@@ -4669,6 +4669,44 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-n-doc__action:hover { background: var(--ph-surface-2); border-color: var(--ph-line); }
 .ph-n-doc__action span { color: var(--ph-ink-3); font-size: 9.5px; }
 .ph-n-doc__table-caption { caption-side: top; margin-bottom: 5px; font-size: var(--ph-fs-10); color: var(--ph-ink-3); text-align: left; }
+.ph-n-doc__gallery-media { display: block; width: 100%; padding: 0; border: 0; background: var(--ph-surface-2); cursor: zoom-in; }
+.ph-n-doc__gallery-media img { display: block; width: 100%; height: 150px; object-fit: cover; }
+.ph-n-doc__lightbox { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 32px; background: rgba(8, 10, 14, 0.72); backdrop-filter: blur(6px); }
+.ph-n-doc__lightbox-body { display: flex; flex-direction: column; max-width: min(92vw, 1100px); max-height: 90vh; border-radius: 14px; background: var(--ph-bg); box-shadow: 0 24px 80px rgba(0,0,0,.35); overflow: hidden; }
+.ph-n-doc__lightbox-body img { display: block; max-width: 100%; max-height: 72vh; object-fit: contain; background: var(--ph-surface-2); }
+.ph-n-doc__lightbox-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 9px 12px 4px; font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+.ph-n-doc__lightbox-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 8px 12px 12px; }
+.ph-n-doc__lightbox-actions button, .ph-n-doc__lightbox-actions a { padding: 5px 10px; border: 1px solid var(--ph-line-soft); border-radius: 8px; background: var(--ph-surface-1); color: var(--ph-ink-2); font: inherit; font-size: var(--ph-fs-11); text-decoration: none; cursor: pointer; }
+
+.ph-n-doc__form { display: grid; gap: 9px; margin: 10px 0 14px; padding: 11px 12px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); }
+.ph-n-doc__form-title { font-size: var(--ph-fs-12); font-weight: var(--ph-fw-semi); color: var(--ph-ink-2); }
+.ph-n-doc__field { display: flex; flex-direction: column; gap: 3px; font-size: var(--ph-fs-11); color: var(--ph-ink-2); }
+.ph-n-doc__field--check { flex-direction: row; align-items: center; gap: 7px; }
+.ph-n-doc__field-label { font-weight: 500; }
+.ph-n-doc__field input[type="text"], .ph-n-doc__field input[type="date"], .ph-n-doc__field input[type="number"], .ph-n-doc__field textarea, .ph-n-doc__field select { width: 100%; box-sizing: border-box; padding: 5px 7px; border: 1px solid var(--ph-line-soft); border-radius: 7px; background: var(--ph-bg); color: var(--ph-ink); font: inherit; font-size: var(--ph-fs-12); }
+.ph-n-doc__field textarea { resize: vertical; }
+.ph-n-doc__field select[multiple] { min-height: 62px; }
+.ph-n-doc__field-slider { display: flex; align-items: center; gap: 8px; }
+.ph-n-doc__field-slider input { flex: 1; }
+.ph-n-doc__field-stepper { display: flex; align-items: center; gap: 4px; }
+.ph-n-doc__field-stepper button { width: 25px; height: 25px; border: 1px solid var(--ph-line-soft); border-radius: 6px; background: var(--ph-surface-2); color: var(--ph-ink); cursor: pointer; }
+.ph-n-doc__field-stepper input { width: 64px; text-align: center; }
+.ph-n-doc__field-bind { font-size: 9px; color: var(--ph-ink-4); font-family: ui-monospace, monospace; }
+.ph-n-doc__grid { display: grid; grid-template-columns: repeat(var(--ph-grid-cols, 2), minmax(0, 1fr)); gap: 10px; margin: 10px 0 14px; align-items: start; }
+.ph-n-doc__datatable { margin: 10px 0 14px; }
+.ph-n-doc__datatable-title, .ph-n-doc__comparisontable > div:first-child { margin-bottom: 5px; font-size: var(--ph-fs-12); font-weight: var(--ph-fw-semi); color: var(--ph-ink-2); }
+.ph-n-doc__datatable th.is-sortable { cursor: pointer; user-select: none; }
+.ph-n-doc__data-table table, .ph-n-doc__comparisontable table { width: 100%; }
+.ph-n-doc__media { margin: 10px 0 14px; }
+.ph-n-doc__media video { display: block; width: 100%; max-height: 420px; border-radius: var(--ph-r-md); background: #000; }
+.ph-n-doc__media audio { display: block; width: 100%; }
+.ph-n-doc__media figcaption { display: flex; gap: 6px; margin-top: 5px; font-size: var(--ph-fs-10); color: var(--ph-ink-3); }
+.ph-n-doc__action { font: inherit; cursor: pointer; }
+.ph-n-doc__cards--compact .ph-n-doc__card { padding: 8px 9px; }
+.ph-n-doc__cards--hero .ph-n-doc__card:first-child { grid-column: 1 / -1; padding: 15px 16px; background: color-mix(in srgb, var(--ph-accent) 7%, var(--ph-surface-1)); border-color: color-mix(in srgb, var(--ph-accent) 28%, var(--ph-line-soft)); }
+.ph-n-doc__cards--hero .ph-n-doc__card:first-child .ph-n-doc__card-title { font-size: var(--ph-fs-15); }
+.ph-n-doc__computed { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); padding: 10px 12px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); }
+.ph-n-doc__computed .ph-n-doc__form-title { grid-column: 1 / -1; margin-bottom: 2px; }
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -7123,7 +7161,7 @@ function isSectionLikelyIncomplete(section) {
   return /(?:TODO|待补充|待补|待完善|待续|未完|继续补充|…|\.\.\.)[。.!！?？；;\s]*$/.test(text2.slice(-48));
 }
 function countDirectives(contentMd) {
-  return (String(contentMd == null ? "" : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|diagram|architecture|flowchart|mindmap)\s*:/gi) || []).length;
+  return (String(contentMd == null ? "" : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:/gi) || []).length;
 }
 function sectionsForSelection(sections, start, end) {
   const list = arrayOf2(sections);
@@ -7151,6 +7189,11 @@ var MAX_DIAGRAM_EDGES = 32;
 var MAX_QUOTES = 8;
 var MAX_STATUS_ITEMS = 4;
 var MAX_MARKDOWN = 6e3;
+var MAX_DATA_KEYS = 80;
+var MAX_FIELDS = 10;
+var MAX_GRID_BLOCKS = 12;
+var MAX_DATA_ROWS = 100;
+var MAX_COMPUTED = 6;
 var CALLOUT_TONES = /* @__PURE__ */ new Set(["info", "warn", "success", "neutral"]);
 var BEAUTIFY_DIRECTIONS = ["plain", "vivid", "scientific"];
 var BEAUTIFY_LAYOUTS = ["auto", "bullets", "table"];
@@ -7186,6 +7229,55 @@ function normalizeColumnsBlock(raw, options) {
     built.push({ blocks });
   }
   return { type: "columns", columns: built };
+}
+function normalizeBind(value) {
+  const path = firstText2(value);
+  return /^\/[A-Za-z0-9_./-]{1,160}$/.test(path) ? path : "";
+}
+function sanitizeData(value, depth = 0) {
+  if (depth > 4) return null;
+  if (value == null || typeof value === "boolean" || typeof value === "number") return value;
+  if (typeof value === "string") return value.slice(0, 2e3);
+  if (Array.isArray(value)) return value.slice(0, MAX_DATA_KEYS).map((item) => sanitizeData(item, depth + 1));
+  if (typeof value !== "object") return null;
+  const out = {};
+  for (const [key, item] of Object.entries(value).slice(0, MAX_DATA_KEYS)) {
+    if (!/^[A-Za-z0-9_-]{1,40}$/.test(key)) continue;
+    out[key] = sanitizeData(item, depth + 1);
+  }
+  return out;
+}
+function normalizeFormField(item, index) {
+  if (!item || typeof item !== "object") return null;
+  const kind = String(item.kind || item.type || "text").toLowerCase();
+  const allowed = ["text", "textarea", "select", "multiselect", "slider", "date", "stepper", "checkbox"];
+  if (!allowed.includes(kind)) return null;
+  const label = firstText2(item.label, item.title).slice(0, 100);
+  if (!label) return null;
+  const bind = normalizeBind(item.bind || item.path);
+  const options = arrayOf2(item.options).map((option) => {
+    if (typeof option === "string") return { value: option.slice(0, 120), label: option.slice(0, 120) };
+    if (!option || typeof option !== "object") return null;
+    const value = firstText2(option.value, option.id).slice(0, 120);
+    return value ? { value, label: firstText2(option.label, option.name, value).slice(0, 120) } : null;
+  }).filter(Boolean).slice(0, 20);
+  const initial = kind === "checkbox" ? item.value === true : firstText2(item.value).slice(0, 1200);
+  return {
+    id: firstText2(item.id, "f" + index).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 24) || "f" + index,
+    kind,
+    label,
+    bind,
+    placeholder: firstText2(item.placeholder).slice(0, 160),
+    options,
+    value: initial,
+    min: kind === "slider" || kind === "stepper" ? numberValue(item.min, 0) : void 0,
+    max: kind === "slider" || kind === "stepper" ? numberValue(item.max, 100) : void 0,
+    step: kind === "slider" || kind === "stepper" ? Math.max(1e-4, numberValue(item.step, 1)) : void 0
+  };
+}
+function numberValue(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 function isNoteAsset(src) {
   return /^\/pappers-hall\/note-asset\/[a-f0-9]{16,40}\.(?:png|jpg|jpeg|webp|gif)$/i.test(String(src || ""));
@@ -7237,13 +7329,22 @@ function normalizeChartBlock(raw) {
     rows.push(...labels.map((label, index) => ({ label, value: values[index] })));
   }
   const data = rows.filter((item) => Number.isFinite(item.value));
-  if (data.length === 0) return null;
+  const series = arrayOf2(raw.series).map((item) => {
+    if (!item || typeof item !== "object") return null;
+    const name = firstText2(item.name, item.label).slice(0, 60);
+    const values2 = arrayOf2(item.values).map((value) => Number(value)).filter(Number.isFinite).slice(0, MAX_CHART_POINTS);
+    return name && values2.length > 0 ? { name, values: values2 } : null;
+  }).filter(Boolean).slice(0, 4);
+  if (data.length === 0 && series.length === 0) return null;
   return {
     type: "chart",
     variant,
     title: firstText2(raw.title).slice(0, 120),
     unit: firstText2(raw.unit).slice(0, 24),
-    data
+    stacked: raw.stacked === true,
+    data,
+    series,
+    labels
   };
 }
 function normalizeDiagramBlock(raw) {
@@ -7393,6 +7494,64 @@ function normalizeBlock(raw, options) {
     }).filter(Boolean).slice(0, 15);
     return items2.length > 0 ? { type: "steps", items: items2 } : null;
   }
+  if (type === "computed" || type === "calculations") {
+    const items2 = arrayOf2(raw.items || raw.values).map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const label = firstText2(item.label, item.title).slice(0, 100);
+      const op = ["sum", "avg", "count", "min", "max"].includes(String(item.op || item.operation || "").toLowerCase()) ? String(item.op || item.operation).toLowerCase() : "";
+      const paths = arrayOf2(item.paths || item.sources).map((value) => normalizeBind(value)).filter(Boolean).slice(0, 12);
+      if (!label || !op || paths.length === 0) return null;
+      return { label, op, paths, unit: firstText2(item.unit).slice(0, 24) };
+    }).filter(Boolean).slice(0, MAX_COMPUTED);
+    return items2.length > 0 ? { type: "computed", title: firstText2(raw.title).slice(0, 120), items: items2 } : null;
+  }
+  if (type === "form" || type === "fields") {
+    const fields = arrayOf2(raw.fields || raw.items).map((item, index) => normalizeFormField(item, index)).filter(Boolean).slice(0, MAX_FIELDS);
+    const prefix = "/form/" + hashText(firstText2(raw.title, raw.id, "form")).slice(0, 8);
+    for (const field of fields) if (!field.bind) field.bind = prefix + "/" + field.id;
+    return fields.length > 0 ? { type: "form", title: firstText2(raw.title).slice(0, 120), fields } : null;
+  }
+  if (type === "grid") {
+    if (options && options.depth > 0) return null;
+    const columns = Math.max(1, Math.min(4, Math.round(numberValue(raw.columns, 2))));
+    const blocks = normalizeBlocks(arrayOf2(raw.blocks || raw.items).slice(0, MAX_GRID_BLOCKS), {
+      allowedFigures: options ? options.allowedFigures : void 0,
+      depth: (options && options.depth ? options.depth : 0) + 1
+    });
+    return blocks.length > 0 ? { type: "grid", columns, blocks } : null;
+  }
+  if (type === "data-table" || type === "datatable") {
+    const columns = arrayOf2(raw.columns).map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const key = firstText2(item.key, item.id).slice(0, 40);
+      const label = firstText2(item.label, item.title, key).slice(0, 100);
+      if (!key || !label) return null;
+      return { key, label, align: ["left", "center", "right"].includes(String(item.align || "")) ? String(item.align) : "", width: firstText2(item.width).slice(0, 16) };
+    }).filter(Boolean).slice(0, 8);
+    const rows = arrayOf2(raw.rows || raw.items).map((row) => {
+      if (Array.isArray(row)) return row.slice(0, 8).map((cell) => String(cell == null ? "" : cell).slice(0, 400));
+      if (!row || typeof row !== "object") return null;
+      return columns.map((column) => String(row[column.key] == null ? "" : row[column.key]).slice(0, 400));
+    }).filter((row) => row && row.length > 0).slice(0, MAX_DATA_ROWS);
+    if (columns.length === 0 || rows.length === 0) return null;
+    return { type: "data-table", title: firstText2(raw.title).slice(0, 140), columns, rows, rowsPath: normalizeBind(raw.rowsPath), sortable: raw.sortable === true, caption: firstText2(raw.caption).slice(0, 200) };
+  }
+  if (type === "comparison-table" || type === "comparison") {
+    const columns = arrayOf2(raw.columns || raw.sides).map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const title2 = firstText2(item.title, item.label).slice(0, 120);
+      if (!title2) return null;
+      const items2 = arrayOf2(item.items || item.points || item.rows).map((point) => firstText2(point && typeof point === "object" ? point.text : point).slice(0, 500)).filter(Boolean).slice(0, 12);
+      return { title: title2, items: items2 };
+    }).filter(Boolean).slice(0, 4);
+    return columns.length >= 2 ? { type: "comparison-table", title: firstText2(raw.title).slice(0, 140), columns, caption: firstText2(raw.caption).slice(0, 300) } : null;
+  }
+  if (type === "media" || type === "video" || type === "audio") {
+    const kind = type === "video" ? "video" : type === "audio" ? "audio" : String(raw.kind || "video").toLowerCase() === "audio" ? "audio" : "video";
+    const src = firstText2(raw.src, raw.url);
+    if (!/^https?:\/\//i.test(src) && !isNoteAsset(src)) return null;
+    return { type: "media", kind, src: src.slice(0, 1200), poster: firstText2(raw.poster).slice(0, 1200), title: firstText2(raw.title).slice(0, 140), caption: firstText2(raw.caption).slice(0, 500) };
+  }
   if (type === "markdown" || type === "md" || type === "richtext") {
     const text2 = firstText2(raw.text, raw.markdown);
     return text2 ? { type: "markdown", text: text2.slice(0, MAX_MARKDOWN) } : null;
@@ -7407,7 +7566,7 @@ function normalizeBlock(raw, options) {
       return { title: title2, text: text2, eyebrow: firstText2(item.eyebrow, item.kicker).slice(0, 60), ...tone ? { tone } : {} };
     }).filter(Boolean).slice(0, MAX_CARDS);
     if (items2.length === 0) return null;
-    const layout = ["grid", "list"].includes(String(raw.layout || "").toLowerCase()) ? String(raw.layout).toLowerCase() : "grid";
+    const layout = ["grid", "list", "hero", "compact"].includes(String(raw.layout || "").toLowerCase()) ? String(raw.layout).toLowerCase() : "grid";
     return { type: "cards", layout, items: items2 };
   }
   if (type === "chart" || type === "plot") {
@@ -7430,7 +7589,7 @@ function normalizeBlock(raw, options) {
       return { id: firstText2(item.id, "t" + index).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 24), label: firstText2(item.label, item.title, "Tab " + (index + 1)).slice(0, 60), blocks };
     }).filter(Boolean).slice(0, MAX_TABS);
     if (tabs.length < 2) return null;
-    return { type: "tabs", tabs };
+    return { type: "tabs", bind: normalizeBind(raw.bind), tabs };
   }
   if (type === "disclosure" || type === "details" || type === "accordion") {
     if (options && options.depth > 0) return null;
@@ -7439,7 +7598,7 @@ function normalizeBlock(raw, options) {
       depth: (options && options.depth ? options.depth : 0) + 1
     });
     if (blocks.length === 0) return null;
-    return { type: "disclosure", title: firstText2(raw.title, raw.label).slice(0, 160), open: raw.open === true, blocks };
+    return { type: "disclosure", title: firstText2(raw.title, raw.label).slice(0, 160), bind: normalizeBind(raw.bind), open: raw.open === true, blocks };
   }
   if (type === "tasks" || type === "checklist" || type === "todo") {
     const items2 = arrayOf2(raw.items || raw.tasks).map((item) => {
@@ -7449,7 +7608,7 @@ function normalizeBlock(raw, options) {
       return text2 ? { text: text2, done: item.done === true } : null;
     }).filter(Boolean).slice(0, MAX_TASKS);
     if (items2.length === 0) return null;
-    return { type: "tasks", title: firstText2(raw.title).slice(0, 120), items: items2 };
+    return { type: "tasks", title: firstText2(raw.title).slice(0, 120), bind: normalizeBind(raw.bind), items: items2 };
   }
   if (type === "status" || type === "badges") {
     const items2 = arrayOf2(raw.items).map((item) => {
@@ -7497,9 +7656,18 @@ function normalizeBlock(raw, options) {
     const items2 = arrayOf2(raw.items || raw.actions).map((item) => {
       if (!item || typeof item !== "object") return null;
       const label = firstText2(item.label, item.title).slice(0, 100);
+      if (!label) return null;
+      const figureId = firstText2(item.figureId).slice(0, 40);
+      const paperId = firstText2(item.paperId).slice(0, 40);
+      if (figureId && paperId) {
+        return { kind: "figure", label, figureId, paperId, page: Math.max(1, Math.round(Number(item.page) || 1)), note: firstText2(item.note).slice(0, 200) };
+      }
       const url = firstText2(item.url, item.href);
-      if (!label || !/^https?:\/\//i.test(url)) return null;
-      return { label, url: url.slice(0, 1e3), note: firstText2(item.note).slice(0, 200) };
+      if (!/^https?:\/\//i.test(url)) {
+        if (String(item.kind || "").toLowerCase() === "copy") return { kind: "copy", label, value: firstText2(item.value).slice(0, 2e3), note: firstText2(item.note).slice(0, 200) };
+        return null;
+      }
+      return { kind: "url", label, url: url.slice(0, 1e3), note: firstText2(item.note).slice(0, 200) };
     }).filter(Boolean).slice(0, 6);
     return items2.length > 0 ? { type: "actions", items: items2 } : null;
   }
@@ -7529,6 +7697,29 @@ function normalizeSectionStyle(value, blocks) {
   if (style === "figure") return hasFigureBlock(blocks) ? "figure" : "accent";
   if (SECTION_STYLES.includes(style)) return style;
   return hasFigureBlock(blocks) ? "figure" : "plain";
+}
+function getDataPath(data, path) {
+  const parts = String(path || "").split("/").filter(Boolean);
+  let current = data;
+  for (const part of parts) {
+    if (current == null || typeof current !== "object") return void 0;
+    current = current[part];
+  }
+  return current;
+}
+function setDataPath(data, path, value) {
+  const parts = String(path || "").split("/").filter(Boolean);
+  if (parts.length === 0) return data;
+  const root = data && typeof data === "object" ? { ...data } : {};
+  let current = root;
+  for (let index = 0; index < parts.length - 1; index += 1) {
+    const key = parts[index];
+    const child = current[key];
+    current[key] = child && typeof child === "object" && !Array.isArray(child) ? { ...child } : {};
+    current = current[key];
+  }
+  current[parts[parts.length - 1]] = value;
+  return root;
 }
 function normalizeContentJson(raw) {
   let value = raw;
@@ -7569,6 +7760,7 @@ function normalizeContentJson(raw) {
     layout: BEAUTIFY_LAYOUTS.includes(value.layout) ? value.layout : "auto",
     createdAt: firstText2(value.createdAt),
     engine: value.engine && typeof value.engine === "object" ? value.engine : null,
+    data: value.data && typeof value.data === "object" ? sanitizeData(value.data) : {},
     sections
   };
 }
@@ -11028,11 +11220,199 @@ function NestedBlocks(props) {
   return import_react13.default.createElement(
     import_react13.default.Fragment,
     null,
-    list.map((block, index) => import_react13.default.createElement(Block, { key: index, block, t: props.t, onOpenFigure: props.onOpenFigure }))
+    list.map((block, index) => import_react13.default.createElement(Block, { key: index, block, t: props.t, onOpenFigure: props.onOpenFigure, data: props.data, onChangeData: props.onChangeData, onAction: props.onAction }))
   );
 }
 function MarkdownBlock(props) {
   return import_react13.default.createElement("div", { className: "ph-n-doc__md" }, import_react13.default.createElement(Markdown, { text: props.block.text, keyPrefix: "note-md" }));
+}
+function FormBlock(props) {
+  const fields = props.block.fields || [];
+  const data = props.data || {};
+  const [local, setLocal] = import_react13.default.useState({});
+  const valueOf = (field) => {
+    if (field.bind) {
+      const bound = getDataPath(data, field.bind);
+      if (bound !== void 0) return bound;
+    }
+    if (Object.prototype.hasOwnProperty.call(local, field.id)) return local[field.id];
+    return field.value;
+  };
+  const change = (field, value) => {
+    if (field.bind && typeof props.onChangeData === "function") props.onChangeData(field.bind, value);
+    setLocal((current) => ({ ...current, [field.id]: value }));
+  };
+  const control = (field) => {
+    const value = valueOf(field);
+    if (field.kind === "textarea") {
+      return import_react13.default.createElement("textarea", { rows: 3, value: String(value == null ? "" : value), placeholder: field.placeholder || "", onChange: (event) => change(field, event.target.value) });
+    }
+    if (field.kind === "select") {
+      return import_react13.default.createElement(
+        "select",
+        { value: String(value == null ? "" : value), onChange: (event) => change(field, event.target.value) },
+        import_react13.default.createElement("option", { value: "" }, "\u2014"),
+        (field.options || []).map((option) => import_react13.default.createElement("option", { key: option.value, value: option.value }, option.label))
+      );
+    }
+    if (field.kind === "multiselect") {
+      const selected = Array.isArray(value) ? value : [];
+      return import_react13.default.createElement(
+        "select",
+        { multiple: true, value: selected, onChange: (event) => change(field, [...event.target.selectedOptions].map((option) => option.value)) },
+        (field.options || []).map((option) => import_react13.default.createElement("option", { key: option.value, value: option.value }, option.label))
+      );
+    }
+    if (field.kind === "slider") {
+      const min = Number.isFinite(Number(field.min)) ? Number(field.min) : 0;
+      const max = Number.isFinite(Number(field.max)) ? Number(field.max) : 100;
+      return import_react13.default.createElement(
+        "div",
+        { className: "ph-n-doc__field-slider" },
+        import_react13.default.createElement("input", { type: "range", min, max, step: field.step || 1, value: Number(value) || min, onChange: (event) => change(field, Number(event.target.value)) }),
+        import_react13.default.createElement("output", null, String(value == null ? min : value))
+      );
+    }
+    if (field.kind === "stepper") {
+      const min = Number.isFinite(Number(field.min)) ? Number(field.min) : 0;
+      const max = Number.isFinite(Number(field.max)) ? Number(field.max) : 100;
+      const step = field.step || 1;
+      const numeric = Number(value) || min;
+      return import_react13.default.createElement(
+        "div",
+        { className: "ph-n-doc__field-stepper" },
+        import_react13.default.createElement("button", { type: "button", onClick: () => change(field, Math.max(min, numeric - step)) }, "\u2212"),
+        import_react13.default.createElement("input", { type: "number", min, max, step, value: numeric, onChange: (event) => change(field, Number(event.target.value)) }),
+        import_react13.default.createElement("button", { type: "button", onClick: () => change(field, Math.min(max, numeric + step)) }, "+")
+      );
+    }
+    if (field.kind === "date") return import_react13.default.createElement("input", { type: "date", value: String(value == null ? "" : value), onChange: (event) => change(field, event.target.value) });
+    if (field.kind === "checkbox") return import_react13.default.createElement("input", { type: "checkbox", checked: value === true, onChange: (event) => change(field, event.target.checked) });
+    return import_react13.default.createElement("input", { type: "text", value: String(value == null ? "" : value), placeholder: field.placeholder || "", onChange: (event) => change(field, event.target.value) });
+  };
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__form" },
+    props.block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__form-title" }, props.block.title) : null,
+    fields.map((field) => import_react13.default.createElement(
+      "label",
+      { key: field.id, className: "ph-n-doc__field" + (field.kind === "checkbox" ? " ph-n-doc__field--check" : "") },
+      import_react13.default.createElement("span", { className: "ph-n-doc__field-label" }, field.label),
+      control(field),
+      field.bind ? import_react13.default.createElement("span", { className: "ph-n-doc__field-bind" }, field.bind) : null
+    ))
+  );
+}
+function computedValues(item, data) {
+  const numbers = [];
+  for (const path of item.paths || []) {
+    const value = getDataPath(data || {}, path);
+    if (Array.isArray(value)) {
+      for (const entry of value) if (Number.isFinite(Number(entry))) numbers.push(Number(entry));
+      else if (Number.isFinite(Number(value))) numbers.push(Number(value));
+    }
+  }
+  const op = item.op;
+  if (op === "count") return numbers.length;
+  if (numbers.length === 0) return null;
+  if (op === "sum") return numbers.reduce((sum, value) => sum + value, 0);
+  if (op === "avg") return numbers.reduce((sum, value) => sum + value, 0) / numbers.length;
+  if (op === "min") return Math.min(...numbers);
+  if (op === "max") return Math.max(...numbers);
+  return null;
+}
+function ComputedBlock(props) {
+  const items2 = props.block.items || [];
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__stats ph-n-doc__computed" },
+    props.block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__form-title" }, props.block.title) : null,
+    items2.map((item, index) => {
+      const value = computedValues(item, props.data);
+      return import_react13.default.createElement(
+        "div",
+        { key: index, className: "ph-n-doc__stat" },
+        import_react13.default.createElement("div", { className: "ph-n-doc__stat-value" }, value === null ? "\u2014" : String(Math.round(value * 100) / 100)),
+        import_react13.default.createElement("div", { className: "ph-n-doc__stat-label" }, item.label + (item.unit ? " \xB7 " + item.unit : ""))
+      );
+    })
+  );
+}
+function GridBlock(props) {
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__grid", style: { "--ph-grid-cols": String(props.block.columns || 2) } },
+    (props.block.blocks || []).map((block, index) => import_react13.default.createElement(Block, { key: index, block, t: props.t, onOpenFigure: props.onOpenFigure, data: props.data, onChangeData: props.onChangeData, onAction: props.onAction }))
+  );
+}
+function DataTableBlock(props) {
+  const block = props.block;
+  const [sort, setSort] = import_react13.default.useState({ key: "", dir: 1 });
+  const columns = block.columns || [];
+  const boundRows = block.rowsPath ? getDataPath(props.data || {}, block.rowsPath) : void 0;
+  const rows = Array.isArray(boundRows) ? boundRows.map((row) => Array.isArray(row) ? row : columns.map((column) => row && typeof row === "object" ? row[column.key] : "")) : block.rows || [];
+  const view = rows.map((row, index) => ({ row, index }));
+  if (sort.key && block.sortable) {
+    const columnIndex = columns.findIndex((column) => column.key === sort.key);
+    if (columnIndex >= 0) view.sort((left, right) => String(left.row[columnIndex] || "").localeCompare(String(right.row[columnIndex] || ""), "zh-Hans-CN", { numeric: true }) * sort.dir);
+  }
+  const toggle = (column) => {
+    if (!block.sortable) return;
+    setSort((current) => current.key === column.key ? { key: column.key, dir: -current.dir } : { key: column.key, dir: 1 });
+  };
+  const headCells = columns.map((column) => import_react13.default.createElement("th", {
+    key: column.key,
+    style: column.align ? { textAlign: column.align } : void 0,
+    onClick: () => toggle(column),
+    className: block.sortable ? "is-sortable" : ""
+  }, column.label + (sort.key === column.key ? sort.dir > 0 ? " \u2191" : " \u2193" : "")));
+  const bodyRows = view.map(({ row, index }) => import_react13.default.createElement("tr", { key: index }, columns.map((column, cellIndex) => import_react13.default.createElement("td", {
+    key: column.key,
+    style: column.align ? { textAlign: column.align } : void 0
+  }, row[cellIndex] || ""))));
+  const table = import_react13.default.createElement(
+    "table",
+    { className: "ph-n-doc__table" },
+    block.caption ? import_react13.default.createElement("caption", { className: "ph-n-doc__table-caption" }, block.caption) : null,
+    import_react13.default.createElement("thead", null, import_react13.default.createElement("tr", null, headCells)),
+    import_react13.default.createElement("tbody", null, bodyRows)
+  );
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__datatable" },
+    block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__datatable-title" }, block.title) : null,
+    import_react13.default.createElement("div", { className: "ph-n-doc__tablewrap" }, table)
+  );
+}
+function ComparisonTableBlock(props) {
+  const columns = props.block.columns || [];
+  const max = Math.max(0, ...columns.map((column) => (column.items || []).length));
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__comparisontable" },
+    props.block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__datatable-title" }, props.block.title) : null,
+    import_react13.default.createElement(
+      "div",
+      { className: "ph-n-doc__tablewrap" },
+      import_react13.default.createElement(
+        "table",
+        { className: "ph-n-doc__table" },
+        props.block.caption ? import_react13.default.createElement("caption", { className: "ph-n-doc__table-caption" }, props.block.caption) : null,
+        import_react13.default.createElement("thead", null, import_react13.default.createElement("tr", null, columns.map((column, index) => import_react13.default.createElement("th", { key: index }, column.title)))),
+        import_react13.default.createElement("tbody", null, Array.from({ length: max }, (_, rowIndex) => import_react13.default.createElement("tr", { key: rowIndex }, columns.map((column, columnIndex) => import_react13.default.createElement("td", { key: columnIndex }, (column.items || [])[rowIndex] || "")))))
+      )
+    )
+  );
+}
+function MediaBlock(props) {
+  const block = props.block;
+  const media = block.kind === "audio" ? import_react13.default.createElement("audio", { controls: true, src: block.src, preload: "metadata" }) : import_react13.default.createElement("video", { controls: true, src: block.src, poster: block.poster || void 0, preload: "metadata", playsInline: true });
+  return import_react13.default.createElement(
+    "figure",
+    { className: "ph-n-doc__media" },
+    media,
+    block.title || block.caption ? import_react13.default.createElement("figcaption", null, block.title ? import_react13.default.createElement("strong", null, block.title) : null, block.caption || "") : null
+  );
 }
 function CardsBlock(props) {
   const block = props.block;
@@ -11048,8 +11428,70 @@ function CardsBlock(props) {
     ))
   );
 }
+function MultiSeriesChart(props) {
+  const block = props.block;
+  const series = (block.series || []).filter((entry) => entry && entry.values && entry.values.length > 0);
+  const count = Math.max(0, ...series.map((entry) => entry.values.length));
+  if (series.length === 0 || count === 0) return null;
+  const labels = Array.from({ length: count }, (_, index) => (block.labels || [])[index] || String(index + 1));
+  const width = 640;
+  const height = 250;
+  const pad = { top: 22, right: 16, bottom: 42, left: 42 };
+  const plotW = width - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+  const stacked = block.stacked === true && block.variant === "bar";
+  const totals = Array.from({ length: count }, (_, index) => series.reduce((sum, entry) => sum + Math.max(0, Number(entry.values[index]) || 0), 0));
+  const max = Math.max(1, stacked ? Math.max(...totals) : Math.max(...series.flatMap((entry) => entry.values.map((value) => Math.max(0, Number(value) || 0)))));
+  const slot = plotW / count;
+  const groupBar = Math.min(22, slot * 0.7 / series.length);
+  const y = (value) => pad.top + plotH - Math.max(0, Number(value) || 0) / max * plotH;
+  const bars = [];
+  const lines = [];
+  if (block.variant === "line") {
+    series.forEach((entry, seriesIndex) => {
+      const points = Array.from({ length: count }, (_, index) => pad.left + slot * index + slot / 2 + "," + y(entry.values[index])).join(" ");
+      lines.push(import_react13.default.createElement("polyline", { key: "line" + seriesIndex, points, fill: "none", stroke: "var(--ph-chart-" + seriesIndex % 6 + ")", strokeWidth: 2.4, strokeLinejoin: "round", strokeLinecap: "round" }));
+      for (let index = 0; index < count; index += 1) lines.push(import_react13.default.createElement("circle", { key: "dot" + seriesIndex + "-" + index, cx: pad.left + slot * index + slot / 2, cy: y(entry.values[index]), r: 2.8, fill: "var(--ph-chart-" + seriesIndex % 6 + ")" }));
+    });
+  } else {
+    for (let index = 0; index < count; index += 1) {
+      let baseline = pad.top + plotH;
+      series.forEach((entry, seriesIndex) => {
+        const value = Math.max(0, Number(entry.values[index]) || 0);
+        const barHeight = value / max * plotH;
+        const x = stacked ? pad.left + slot * index + slot * 0.25 : pad.left + slot * index + slot / 2 - series.length * groupBar / 2 + seriesIndex * groupBar;
+        const barWidth = stacked ? slot * 0.5 : Math.max(4, groupBar - 2);
+        const top = stacked ? baseline - barHeight : y(value);
+        bars.push(import_react13.default.createElement("rect", { key: "bar" + seriesIndex + "-" + index, x, y: top, width: barWidth, height: Math.max(1, barHeight), rx: 2, fill: "var(--ph-chart-" + seriesIndex % 6 + ")" }));
+        if (stacked) baseline -= barHeight;
+      });
+    }
+  }
+  const xLabels = labels.map((label, index) => import_react13.default.createElement("text", { key: index, x: pad.left + slot * index + slot / 2, y: height - 16, textAnchor: "middle", className: "ph-n-doc__chart-label" }, String(label).slice(0, 8)));
+  const legend = series.map((entry, index) => import_react13.default.createElement(
+    "div",
+    { key: index, className: "ph-n-doc__chart-legend-row" },
+    import_react13.default.createElement("span", { className: "ph-n-doc__chart-dot", style: { background: "var(--ph-chart-" + index % 6 + ")" } }),
+    import_react13.default.createElement("span", { className: "ph-n-doc__chart-legend-label" }, entry.name)
+  ));
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__chart" },
+    block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__chart-title" }, block.title) : null,
+    import_react13.default.createElement(
+      "svg",
+      { viewBox: "0 0 640 250", role: "img", "aria-label": block.title || "chart" },
+      import_react13.default.createElement("line", { x1: pad.left, y1: pad.top + plotH, x2: width - pad.right, y2: pad.top + plotH, stroke: "var(--ph-line)", strokeWidth: 1 }),
+      bars,
+      lines,
+      xLabels
+    ),
+    import_react13.default.createElement("div", { className: "ph-n-doc__chart-legend" }, legend)
+  );
+}
 function ChartBlock(props) {
   const block = props.block;
+  if (Array.isArray(block.series) && block.series.length > 0) return import_react13.default.createElement(MultiSeriesChart, { block });
   const data = (block.data || []).filter((item) => Number.isFinite(Number(item.value))).slice(0, 12);
   if (data.length === 0) return null;
   const values = data.map((item) => Number(item.value));
@@ -11163,42 +11605,75 @@ function ChartBlock(props) {
 }
 function GalleryBlock(props) {
   const items2 = props.block.items || [];
+  const [preview, setPreview] = import_react13.default.useState(null);
   return import_react13.default.createElement(
-    "div",
-    { className: "ph-n-doc__gallery" },
-    props.block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__gallery-title" }, props.block.title) : null,
+    import_react13.default.Fragment,
+    null,
     import_react13.default.createElement(
       "div",
-      { className: "ph-n-doc__gallery-grid" },
-      items2.map((item, index) => {
-        const src = item.kind === "figure" ? item.imageUrl || "/pappers-hall/figure/" + item.figureId + ".png" : item.src;
-        const caption = item.caption || item.alt || "";
-        const img = import_react13.default.createElement("img", { src, alt: caption, loading: "lazy", decoding: "async" });
-        const media = item.kind === "figure" && typeof props.onOpenFigure === "function" ? import_react13.default.createElement("button", {
-          type: "button",
-          className: "ph-n-doc__gallery-media",
-          title: props.t("notes.figure.open"),
-          onClick: () => props.onOpenFigure(item.paperId, item.page, item.figureId)
-        }, img) : import_react13.default.createElement("div", { className: "ph-n-doc__gallery-media" }, img);
-        return import_react13.default.createElement(
-          "figure",
-          { key: index, className: "ph-n-doc__gallery-item" },
-          media,
-          caption ? import_react13.default.createElement("figcaption", null, caption) : null,
-          item.kind === "image" && (item.credit || item.sourceUrl) ? import_react13.default.createElement(
-            "div",
-            { className: "ph-n-doc__gallery-credit" },
-            item.credit ? import_react13.default.createElement("span", null, item.credit + (item.license ? " \xB7 " + item.license : "")) : null,
-            item.sourceUrl ? import_react13.default.createElement("a", { href: item.sourceUrl, target: "_blank", rel: "noreferrer noopener" }, props.t("notes.block.source")) : null
-          ) : null
-        );
-      })
-    )
+      { className: "ph-n-doc__gallery" },
+      props.block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__gallery-title" }, props.block.title) : null,
+      import_react13.default.createElement(
+        "div",
+        { className: "ph-n-doc__gallery-grid" },
+        items2.map((item, index) => {
+          const src = item.kind === "figure" ? item.imageUrl || "/pappers-hall/figure/" + item.figureId + ".png" : item.src;
+          const caption = item.caption || item.alt || "";
+          return import_react13.default.createElement(
+            "figure",
+            { key: index, className: "ph-n-doc__gallery-item" },
+            import_react13.default.createElement(
+              "button",
+              { type: "button", className: "ph-n-doc__gallery-media", title: props.t("notes.gallery.preview"), onClick: () => setPreview(item) },
+              import_react13.default.createElement("img", { src, alt: caption, loading: "lazy", decoding: "async" })
+            ),
+            caption ? import_react13.default.createElement("figcaption", null, caption) : null,
+            item.kind === "image" && (item.credit || item.sourceUrl) ? import_react13.default.createElement(
+              "div",
+              { className: "ph-n-doc__gallery-credit" },
+              item.credit ? import_react13.default.createElement("span", null, item.credit + (item.license ? " \xB7 " + item.license : "")) : null,
+              item.sourceUrl ? import_react13.default.createElement("a", { href: item.sourceUrl, target: "_blank", rel: "noreferrer noopener" }, props.t("notes.block.source")) : null
+            ) : null
+          );
+        })
+      )
+    ),
+    preview ? import_react13.default.createElement(
+      "div",
+      { className: "ph-n-doc__lightbox", role: "dialog", "aria-modal": "true", onClick: () => setPreview(null) },
+      import_react13.default.createElement(
+        "div",
+        { className: "ph-n-doc__lightbox-body", onClick: (event) => event.stopPropagation() },
+        import_react13.default.createElement("img", { src: preview.kind === "figure" ? preview.imageUrl || "/pappers-hall/figure/" + preview.figureId + ".png" : preview.src, alt: preview.caption || preview.alt || "" }),
+        import_react13.default.createElement(
+          "div",
+          { className: "ph-n-doc__lightbox-meta" },
+          import_react13.default.createElement("span", null, preview.caption || preview.alt || ""),
+          preview.credit ? import_react13.default.createElement("span", null, preview.credit + (preview.license ? " \xB7 " + preview.license : "")) : null
+        ),
+        import_react13.default.createElement(
+          "div",
+          { className: "ph-n-doc__lightbox-actions" },
+          preview.kind === "figure" && typeof props.onOpenFigure === "function" ? import_react13.default.createElement("button", { type: "button", onClick: () => {
+            props.onOpenFigure(preview.paperId, preview.page, preview.figureId);
+            setPreview(null);
+          } }, props.t("notes.figure.open")) : null,
+          preview.sourceUrl ? import_react13.default.createElement("a", { href: preview.sourceUrl, target: "_blank", rel: "noreferrer noopener" }, props.t("notes.block.source")) : null,
+          import_react13.default.createElement("button", { type: "button", onClick: () => setPreview(null) }, props.t("notes.gallery.close"))
+        )
+      )
+    ) : null
   );
 }
 function TabsBlock(props) {
   const tabs = props.block.tabs || [];
-  const [active, setActive] = import_react13.default.useState(0);
+  const bound = props.block.bind ? getDataPath(props.data || {}, props.block.bind) : void 0;
+  const [localActive, setLocalActive] = import_react13.default.useState(0);
+  const active = typeof bound === "string" ? Math.max(0, tabs.findIndex((tab) => tab.id === bound)) : localActive;
+  const setActive = (index) => {
+    if (props.block.bind && typeof props.onChangeData === "function") props.onChangeData(props.block.bind, tabs[index] ? tabs[index].id : "");
+    else setLocalActive(index);
+  };
   const current = tabs[Math.min(active, tabs.length - 1)];
   return import_react13.default.createElement(
     "div",
@@ -11238,7 +11713,14 @@ function DisclosureBlock(props) {
 }
 function TasksBlock(props) {
   const items2 = props.block.items || [];
-  const [done, setDone] = import_react13.default.useState(() => items2.map((item) => item.done === true));
+  const bound = props.block.bind ? getDataPath(props.data || {}, props.block.bind) : void 0;
+  const [local, setLocal] = import_react13.default.useState(() => items2.map((item) => item.done === true));
+  const done = Array.isArray(bound) ? items2.map((_, index) => bound[index] === true) : local;
+  const toggle = (index) => {
+    const next = done.map((value, itemIndex) => itemIndex === index ? !value : value);
+    if (props.block.bind && typeof props.onChangeData === "function") props.onChangeData(props.block.bind, next);
+    else setLocal(next);
+  };
   return import_react13.default.createElement(
     "div",
     { className: "ph-n-doc__tasks" },
@@ -11246,11 +11728,7 @@ function TasksBlock(props) {
     items2.map((item, index) => import_react13.default.createElement(
       "label",
       { key: index, className: "ph-n-doc__task" + (done[index] ? " is-done" : "") },
-      import_react13.default.createElement("input", {
-        type: "checkbox",
-        checked: Boolean(done[index]),
-        onChange: () => setDone((current) => current.map((value, itemIndex) => itemIndex === index ? !value : value))
-      }),
+      import_react13.default.createElement("input", { type: "checkbox", checked: Boolean(done[index]), onChange: () => toggle(index) }),
       import_react13.default.createElement("span", null, item.text)
     ))
   );
@@ -11615,12 +12093,18 @@ function Block(props) {
     );
   }
   if (block.type === "markdown") return import_react13.default.createElement(MarkdownBlock, { block });
+  if (block.type === "form") return import_react13.default.createElement(FormBlock, { block, data: props.data, onChangeData: props.onChangeData });
+  if (block.type === "computed") return import_react13.default.createElement(ComputedBlock, { block, data: props.data });
+  if (block.type === "grid") return import_react13.default.createElement(GridBlock, { block, t, data: props.data, onChangeData: props.onChangeData, onAction: props.onAction, onOpenFigure: props.onOpenFigure });
+  if (block.type === "data-table") return import_react13.default.createElement(DataTableBlock, { block, data: props.data });
+  if (block.type === "comparison-table") return import_react13.default.createElement(ComparisonTableBlock, { block });
+  if (block.type === "media") return import_react13.default.createElement(MediaBlock, { block });
   if (block.type === "cards") return import_react13.default.createElement(CardsBlock, { block });
   if (block.type === "chart") return import_react13.default.createElement(ChartBlock, { block });
   if (block.type === "gallery") return import_react13.default.createElement(GalleryBlock, { block, t, onOpenFigure: props.onOpenFigure });
-  if (block.type === "tabs") return import_react13.default.createElement(TabsBlock, { block, t, onOpenFigure: props.onOpenFigure });
+  if (block.type === "tabs") return import_react13.default.createElement(TabsBlock, { block, t, onOpenFigure: props.onOpenFigure, data: props.data, onChangeData: props.onChangeData });
   if (block.type === "disclosure") return import_react13.default.createElement(DisclosureBlock, { block, t, onOpenFigure: props.onOpenFigure });
-  if (block.type === "tasks") return import_react13.default.createElement(TasksBlock, { block });
+  if (block.type === "tasks") return import_react13.default.createElement(TasksBlock, { block, data: props.data, onChangeData: props.onChangeData });
   if (block.type === "status") return import_react13.default.createElement(StatusBlock, { block });
   if (block.type === "progress") return import_react13.default.createElement(ProgressBlock, { block });
   if (block.type === "alert") return import_react13.default.createElement(AlertBlock, { block });
@@ -11630,7 +12114,19 @@ function Block(props) {
     return import_react13.default.createElement(
       "div",
       { className: "ph-n-doc__actions" },
-      (block.items || []).map((item, index) => import_react13.default.createElement("a", { key: index, className: "ph-n-doc__action", href: item.url, target: "_blank", rel: "noreferrer noopener" }, item.label, item.note ? import_react13.default.createElement("span", null, item.note) : null))
+      (block.items || []).map((item, index) => import_react13.default.createElement(
+        "button",
+        {
+          key: index,
+          type: "button",
+          className: "ph-n-doc__action",
+          onClick: () => {
+            if (typeof props.onAction === "function") props.onAction(item);
+          }
+        },
+        item.label,
+        item.note ? import_react13.default.createElement("span", null, item.note) : null
+      ))
     );
   }
   if (block.type === "diagram") return import_react13.default.createElement(DiagramBlock, { block });
@@ -11640,7 +12136,7 @@ function Block(props) {
   return null;
 }
 function isWideBlock(block) {
-  return Boolean(block && ["table", "figure", "columns", "web-image", "timeline", "compare", "sources", "chart", "gallery", "tabs", "diagram", "cards", "quotes"].includes(block.type));
+  return Boolean(block && ["table", "figure", "columns", "web-image", "timeline", "compare", "sources", "chart", "gallery", "tabs", "diagram", "cards", "quotes", "form", "grid", "data-table", "comparison-table", "media"].includes(block.type));
 }
 function headingLabel(row) {
   return row.heading || row.section.heading || "";
@@ -11695,7 +12191,7 @@ function NoteCards(props) {
           (block, index) => import_react13.default.createElement(
             "div",
             { key: index, className: "ph-n-doc__block" + (isWideBlock(block) ? " ph-n-doc__block--wide" : "") },
-            import_react13.default.createElement(Block, { t, block, onOpenFigure: props.onOpenFigure })
+            import_react13.default.createElement(Block, { t, block, onOpenFigure: props.onOpenFigure, data: props.data, onChangeData: props.onChangeData, onAction: props.onAction })
           )
         )
       ) : import_react13.default.createElement(
@@ -12350,6 +12846,8 @@ function NoteEditor(props) {
   const onSavedRef = import_react15.default.useRef(props.onSaved);
   onSavedRef.current = props.onSaved;
   const contentJsonRef = import_react15.default.useRef(note ? note.contentJson : null);
+  const contentSaveTimerRef = import_react15.default.useRef(null);
+  const contentSaveSeqRef = import_react15.default.useRef(0);
   const incompleteRef = import_react15.default.useRef(incompleteIds);
   const autoEnabledRef = import_react15.default.useRef(false);
   const autoDirectionRef = import_react15.default.useRef(DEFAULT_AUTOFIX_DIRECTION);
@@ -12603,6 +13101,45 @@ function NoteEditor(props) {
       throw error;
     });
   }
+  function patchContentData(path, value) {
+    const current = contentJsonRef.current;
+    if (!current || typeof path !== "string" || path === "") return;
+    const next = { ...current, data: setDataPath(current.data || {}, path, value) };
+    contentJsonRef.current = next;
+    setContentJson(next);
+    const seq2 = contentSaveSeqRef.current += 1;
+    if (contentSaveTimerRef.current) clearTimeout(contentSaveTimerRef.current);
+    contentSaveTimerRef.current = setTimeout(() => {
+      contentSaveTimerRef.current = null;
+      if (!mountedRef.current || seq2 !== contentSaveSeqRef.current) return;
+      saveContentJson(next, { switchView: false }).catch((error) => {
+        if (props.notify) props.notify("error", t("notes.beautify.failed", { message: String(error && error.message || error) }));
+      });
+    }, 700);
+  }
+  function runNoteAction(action) {
+    if (!action || typeof action !== "object") return;
+    if (action.kind === "figure") {
+      if (props.onOpenPaper) props.onOpenPaper(action.paperId, Number(action.page) || 1);
+      return;
+    }
+    if (action.kind === "url" && /^https?:\/\//i.test(String(action.url || ""))) {
+      window.open(action.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (action.kind === "copy") {
+      const text2 = String(action.value || action.label || "");
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        navigator.clipboard.writeText(text2).then(() => {
+          if (props.notify) props.notify("success", t("notes.action.copied"));
+        }).catch(() => {
+        });
+      }
+    }
+  }
+  import_react15.default.useEffect(() => () => {
+    if (contentSaveTimerRef.current) clearTimeout(contentSaveTimerRef.current);
+  }, []);
   const persistCards = import_react15.default.useCallback(
     (nextContentJson) => {
       const flushFirst = dirtyRef.current ? flush() : Promise.resolve(null);
@@ -12643,6 +13180,7 @@ function NoteEditor(props) {
     { id: "gallery", icon: "image", label: t("notes.directive.insertGallery"), run: () => insertDirective("{{gallery: Figure 1, Figure 2}}") },
     { id: "tasks", icon: "check", label: t("notes.directive.insertTasks"), run: () => insertDirective("{{tasks: \u9605\u8BFB\u4E0E\u5B9E\u9A8C\u6E05\u5355}}") },
     { id: "quotes", icon: "quote", label: t("notes.directive.insertQuotes"), run: () => insertDirective("{{quotes: \u5173\u952E\u5F15\u6587\u4E0E\u51FA\u5904}}") },
+    { id: "form", icon: "note", label: t("notes.directive.insertForm"), run: () => insertDirective("{{form: \u5BA1\u9605\u8868\u5355}}") },
     directiveCount > 0 ? { id: "run", icon: "sparkle", label: t("notes.directive.run", { count: directiveCount }), run: runDirectives } : null
   ].filter(Boolean);
   function insertDirective(snippet) {
@@ -13355,7 +13893,10 @@ function NoteEditor(props) {
           onToggleIncomplete: toggleIncomplete,
           onOpenFigure: (paperId, page2) => {
             if (props.onOpenPaper) props.onOpenPaper(paperId, page2 || 1);
-          }
+          },
+          data: contentJson && contentJson.data ? contentJson.data : {},
+          onChangeData: patchContentData,
+          onAction: runNoteAction
         })
       ) : import_react15.default.createElement("textarea", {
         ref: textareaRef,
@@ -30464,6 +31005,7 @@ var ZH = {
   "notes.directive.insertWebImage": "\u63D2\u5165\u8054\u7F51\u56FE\u7247",
   "notes.directive.insertWebSource": "\u63D2\u5165\u7F51\u7EDC\u6765\u6E90",
   "notes.directive.insertStats": "\u63D2\u5165\u5173\u952E\u6570\u5B57",
+  "notes.directive.insertForm": "\u63D2\u5165\u8868\u5355\u6307\u4EE4",
   "notes.directive.insertArchitecture": "\u63D2\u5165\u67B6\u6784\u56FE\u6307\u4EE4",
   "notes.directive.insertMindmap": "\u63D2\u5165\u601D\u7EF4\u5BFC\u56FE\u6307\u4EE4",
   "notes.directive.insertChart": "\u63D2\u5165\u56FE\u8868\u6307\u4EE4",
@@ -30477,6 +31019,9 @@ var ZH = {
   "notes.directive.empty": "\u8FD8\u6CA1\u6709\u6307\u4EE4",
   "notes.directive.unavailable": "\u7B14\u8BB0 Agent \u4E0D\u53EF\u7528\uFF1A{reason}",
   "notes.directive.failed": "\u6267\u884C\u6307\u4EE4\u5931\u8D25\uFF1A{message}",
+  "notes.action.copied": "\u5DF2\u590D\u5236",
+  "notes.gallery.preview": "\u9884\u89C8\u56FE\u7247",
+  "notes.gallery.close": "\u5173\u95ED",
   "notes.block.source": "\u6765\u6E90",
   "notes.block.sources": "\u53C2\u8003\u6765\u6E90",
   "notes.figure.label": "\u56FE {label}",
@@ -31737,6 +32282,7 @@ var EN = {
   "notes.directive.insertWebImage": "Insert web image",
   "notes.directive.insertWebSource": "Insert web source",
   "notes.directive.insertStats": "Insert key numbers",
+  "notes.directive.insertForm": "Insert form",
   "notes.directive.insertArchitecture": "Insert architecture diagram",
   "notes.directive.insertMindmap": "Insert mind map",
   "notes.directive.insertChart": "Insert chart",
@@ -31750,6 +32296,9 @@ var EN = {
   "notes.directive.empty": "No directives yet",
   "notes.directive.unavailable": "Note agent unavailable: {reason}",
   "notes.directive.failed": "Directive run failed: {message}",
+  "notes.action.copied": "Copied",
+  "notes.gallery.preview": "Preview image",
+  "notes.gallery.close": "Close",
   "notes.block.source": "source",
   "notes.block.sources": "Sources",
   "notes.figure.label": "Fig. {label}",

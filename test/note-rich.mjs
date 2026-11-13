@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** Unit checks for the P0/P1 note block vocabulary and diagram directives. */
 import assert from 'node:assert/strict'
-import { extractDirectives, normalizeBlock, normalizeContentJson, sectionizeMarkdown } from '../client/src/core/notes-model.js'
+import { extractDirectives, getDataPath, normalizeBlock, normalizeContentJson, sectionizeMarkdown, setDataPath } from '../client/src/core/notes-model.js'
 import { normalizeAgentBlock } from '../host/note-agent.js'
 
 let pass = 0
@@ -108,5 +108,68 @@ check('contentJson survives a full rich section', () => {
   const parsed = normalizeContentJson(document)
   assert.equal(parsed.sections[0].blocks.length, 4)
   assert.equal(parsed.sections[0].blocks[2].layout, 'architecture')
+})
+check('form fields bind to a data path', () => {
+  for (const block of both({ type: 'form', fields: [{ id: 'status', kind: 'select', label: 'Status', bind: '/review/status', options: ['draft', 'done'], value: 'draft' }] })) {
+    assert.equal(block.type, 'form')
+    assert.equal(block.fields[0].bind, '/review/status')
+    assert.equal(block.fields[0].options.length, 2)
+  }
+})
+check('data path get/set is immutable', () => {
+  const before = { review: { status: 'draft' } }
+  const after = setDataPath(before, '/review/status', 'done')
+  assert.equal(getDataPath(after, '/review/status'), 'done')
+  assert.equal(before.review.status, 'draft')
+  assert.deepEqual(getDataPath(after, '/missing/key'), undefined)
+})
+check('grid nests blocks with 1–4 columns', () => {
+  for (const block of both({ type: 'grid', columns: 3, blocks: [{ type: 'paragraph', text: 'a' }, { type: 'paragraph', text: 'b' }] })) {
+    assert.equal(block.columns, 3)
+    assert.equal(block.blocks.length, 2)
+  }
+})
+check('data-table keeps column definitions and rows', () => {
+  for (const block of both({ type: 'data-table', sortable: true, columns: [{ key: 'name', label: 'Name' }, { key: 'score', label: 'Score', align: 'right' }], rows: [{ name: 'A', score: 1 }, { name: 'B', score: 2 }] })) {
+    assert.equal(block.type, 'data-table')
+    assert.equal(block.columns.length, 2)
+    assert.equal(block.rows[1][1], '2')
+    assert.equal(block.sortable, true)
+  }
+})
+check('comparison-table keeps 2+ columns', () => {
+  for (const block of both({ type: 'comparison-table', columns: [{ title: 'A', items: ['x'] }, { title: 'B', items: ['y'] }] })) assert.equal(block.columns.length, 2)
+})
+check('media rejects unsafe/plain URLs', () => {
+  assert.equal(normalizeBlock({ type: 'video', src: 'javascript:alert(1)' }), null)
+  for (const block of both({ type: 'video', src: 'https://example.com/demo.mp4', title: 'Demo' })) assert.equal(block.kind, 'video')
+})
+check('chart keeps multi-series', () => {
+  for (const block of both({ type: 'chart', variant: 'line', labels: ['A', 'B'], series: [{ name: 'P', values: [1, 2] }, { name: 'R', values: [3, 4] }] })) {
+    assert.equal(block.series.length, 2)
+    assert.equal(block.series[0].values[1], 2)
+  }
+})
+check('actions support figure and copy callbacks', () => {
+  for (const block of both({ type: 'actions', items: [{ label: 'Open', figureId: 'fg-aaaaaaaaaaaa', paperId: 'ph-aaaaaaaaaaaa', page: 2 }, { label: 'Copy', kind: 'copy', value: 'abc' }] })) {
+    assert.equal(block.items[0].kind, 'figure')
+    assert.equal(block.items[1].kind, 'copy')
+  }
+})
+check('forms auto-bind fields when the model omits bind', () => {
+  for (const block of both({ type: 'form', title: 'Review', fields: [{ id: 'score', kind: 'stepper', label: 'Score', min: 0, max: 5, step: 1 }] })) {
+    assert.match(block.fields[0].bind, /^\/form\/[a-f0-9]{8}\/score$/)
+  }
+})
+check('computed aggregates validate operations and paths', () => {
+  for (const block of both({ type: 'computed', items: [{ label: 'Total', op: 'sum', paths: ['/form/a'] }, { label: 'Count', op: 'count', paths: ['/form/a', '/form/b'], unit: '项' }] })) {
+    assert.equal(block.items.length, 2)
+    assert.equal(block.items[0].op, 'sum')
+    assert.equal(block.items[1].unit, '项')
+  }
+  assert.equal(normalizeBlock({ type: 'computed', items: [{ label: 'X', op: 'eval', paths: ['/x'] }] }), null)
+})
+check('data-table can bind its rows path', () => {
+  for (const block of both({ type: 'data-table', rowsPath: '/rows', columns: [{ key: 'name', label: 'Name' }], rows: [['A']] })) assert.equal(block.rowsPath, '/rows')
 })
 console.log(`${process.exitCode ? 'FAIL' : 'PASS'} — ${pass} rich-note checks`)

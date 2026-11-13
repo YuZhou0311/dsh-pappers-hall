@@ -41,6 +41,7 @@ import {
   saveDraft,
   saveIncompleteSections,
   sectionizeMarkdown,
+  setDataPath,
   writeFlag,
 } from '../../core/notes-model.js'
 import { NoteCards } from './cards.jsx'
@@ -190,6 +191,8 @@ export function NoteEditor(props) {
   onSavedRef.current = props.onSaved
   // v2: auto-beautify pipeline refs (single concurrency, non-blocking).
   const contentJsonRef = React.useRef(note ? note.contentJson : null)
+  const contentSaveTimerRef = React.useRef(null)
+  const contentSaveSeqRef = React.useRef(0)
   const incompleteRef = React.useRef(incompleteIds)
   const autoEnabledRef = React.useRef(false)
   const autoDirectionRef = React.useRef(DEFAULT_AUTOFIX_DIRECTION)
@@ -482,6 +485,47 @@ export function NoteEditor(props) {
       })
   }
 
+  // Bound form fields and interactive state live in contentJson.data. Debounce
+  // the write so typing in a text field does not create a revision per key.
+  function patchContentData(path, value) {
+    const current = contentJsonRef.current
+    if (!current || typeof path !== 'string' || path === '') return
+    const next = { ...current, data: setDataPath(current.data || {}, path, value) }
+    contentJsonRef.current = next
+    setContentJson(next)
+    const seq = (contentSaveSeqRef.current += 1)
+    if (contentSaveTimerRef.current) clearTimeout(contentSaveTimerRef.current)
+    contentSaveTimerRef.current = setTimeout(() => {
+      contentSaveTimerRef.current = null
+      if (!mountedRef.current || seq !== contentSaveSeqRef.current) return
+      saveContentJson(next, { switchView: false }).catch((error) => {
+        if (props.notify) props.notify('error', t('notes.beautify.failed', { message: String((error && error.message) || error) }))
+      })
+    }, 700)
+  }
+
+  function runNoteAction(action) {
+    if (!action || typeof action !== 'object') return
+    if (action.kind === 'figure') {
+      if (props.onOpenPaper) props.onOpenPaper(action.paperId, Number(action.page) || 1)
+      return
+    }
+    if (action.kind === 'url' && /^https?:\/\//i.test(String(action.url || ''))) {
+      window.open(action.url, '_blank', 'noopener,noreferrer')
+      return
+    }
+    if (action.kind === 'copy') {
+      const text = String(action.value || action.label || '')
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(text).then(() => { if (props.notify) props.notify('success', t('notes.action.copied')) }).catch(() => {})
+      }
+    }
+  }
+
+  React.useEffect(() => () => {
+    if (contentSaveTimerRef.current) clearTimeout(contentSaveTimerRef.current)
+  }, [])
+
   const persistCards = React.useCallback(
     (nextContentJson) => {
       const flushFirst = dirtyRef.current ? flush() : Promise.resolve(null)
@@ -525,6 +569,7 @@ export function NoteEditor(props) {
     { id: 'gallery', icon: 'image', label: t('notes.directive.insertGallery'), run: () => insertDirective('{{gallery: Figure 1, Figure 2}}') },
     { id: 'tasks', icon: 'check', label: t('notes.directive.insertTasks'), run: () => insertDirective('{{tasks: 阅读与实验清单}}') },
     { id: 'quotes', icon: 'quote', label: t('notes.directive.insertQuotes'), run: () => insertDirective('{{quotes: 关键引文与出处}}') },
+    { id: 'form', icon: 'note', label: t('notes.directive.insertForm'), run: () => insertDirective('{{form: 审阅表单}}') },
     directiveCount > 0 ? { id: 'run', icon: 'sparkle', label: t('notes.directive.run', { count: directiveCount }), run: runDirectives } : null,
   ].filter(Boolean)
 
@@ -1335,6 +1380,9 @@ export function NoteEditor(props) {
               onOpenFigure: (paperId, page) => {
                 if (props.onOpenPaper) props.onOpenPaper(paperId, page || 1)
               },
+              data: contentJson && contentJson.data ? contentJson.data : {},
+              onChangeData: patchContentData,
+              onAction: runNoteAction,
             }),
           )
         : React.createElement('textarea', {

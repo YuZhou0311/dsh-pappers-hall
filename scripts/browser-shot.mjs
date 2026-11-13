@@ -411,6 +411,34 @@ async function main() {
       })()`)
       console.log('notes opened:', opened, JSON.stringify(notes).slice(0, 500))
       await shot('13-notes')
+      if (want('notes-lightbox') || want('all')) {
+        const opened = await evaluate(`(() => { const media = document.querySelector('.ph-n-doc__gallery-media'); if (!media) return false; media.click(); return true })()`)
+        await sleep(500)
+        console.log('lightbox opened:', opened, await evaluate(`Boolean(document.querySelector('.ph-n-doc__lightbox'))`))
+        await shot('13f-notes-lightbox')
+        await evaluate(`(() => { const close = document.querySelector('.ph-n-doc__lightbox-actions button:last-child'); if (close) close.click(); return Boolean(close) })()`)
+      }
+      if (want('notes-form') || want('all')) {
+        const typed = await evaluate(`(() => {
+          const text = document.querySelector('.ph-n-doc__field input[type="text"]')
+          const select = document.querySelector('.ph-n-doc__field select')
+          if (text) {
+            const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+            setter.call(text, '验收文本')
+            text.dispatchEvent(new Event('input', { bubbles: true }))
+            text.dispatchEvent(new Event('change', { bubbles: true }))
+          }
+          if (select) {
+            const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
+            setter.call(select, [...select.options].at(-1).value)
+            select.dispatchEvent(new Event('change', { bubbles: true }))
+          }
+          return Boolean(text || select)
+        })()`)
+        await sleep(1600)
+        console.log('notes form changed:', typed)
+        await shot('13e-notes-form')
+      }
       if (want('notes-scroll') || want('all')) {
         for (const [name, ratio] of [['13b-notes-middle', 0.42], ['13c-notes-lower', 0.7], ['13d-notes-bottom', 1]]) {
           await evaluate(`(() => { const el = document.querySelector('.ph-n-editor__cards'); if (el) el.scrollTop = el.scrollHeight * ${ratio}; return Boolean(el) })()`)

@@ -22,6 +22,7 @@
 import React from 'react'
 import { Icon } from '../../core/icons.jsx'
 import { Markdown } from '../reader/markdown.jsx'
+import { getDataPath } from '../../core/notes-model.js'
 
 /** Build the reader URL handler once. */
 function figureClick(props, block) {
@@ -104,13 +105,216 @@ function NestedBlocks(props) {
   return React.createElement(
     React.Fragment,
     null,
-    list.map((block, index) => React.createElement(Block, { key: index, block, t: props.t, onOpenFigure: props.onOpenFigure })),
+    list.map((block, index) => React.createElement(Block, { key: index, block, t: props.t, onOpenFigure: props.onOpenFigure, data: props.data, onChangeData: props.onChangeData, onAction: props.onAction })),
   )
 }
 
 /** Markdown block: render the model's rich text, never raw HTML. */
 function MarkdownBlock(props) {
   return React.createElement('div', { className: 'ph-n-doc__md' }, React.createElement(Markdown, { text: props.block.text, keyPrefix: 'note-md' }))
+}
+
+/** Text/number/select/date/checkbox form bound to contentJson.data. */
+function FormBlock(props) {
+  const fields = props.block.fields || []
+  const data = props.data || {}
+  const [local, setLocal] = React.useState({})
+  const valueOf = (field) => {
+    if (field.bind) {
+      const bound = getDataPath(data, field.bind)
+      if (bound !== undefined) return bound
+    }
+    if (Object.prototype.hasOwnProperty.call(local, field.id)) return local[field.id]
+    return field.value
+  }
+  const change = (field, value) => {
+    if (field.bind && typeof props.onChangeData === 'function') props.onChangeData(field.bind, value)
+    setLocal((current) => ({ ...current, [field.id]: value }))
+  }
+  const control = (field) => {
+    const value = valueOf(field)
+    if (field.kind === 'textarea') {
+      return React.createElement('textarea', { rows: 3, value: String(value == null ? '' : value), placeholder: field.placeholder || '', onChange: (event) => change(field, event.target.value) })
+    }
+    if (field.kind === 'select') {
+      return React.createElement(
+        'select',
+        { value: String(value == null ? '' : value), onChange: (event) => change(field, event.target.value) },
+        React.createElement('option', { value: '' }, '—'),
+        (field.options || []).map((option) => React.createElement('option', { key: option.value, value: option.value }, option.label)),
+      )
+    }
+    if (field.kind === 'multiselect') {
+      const selected = Array.isArray(value) ? value : []
+      return React.createElement(
+        'select',
+        { multiple: true, value: selected, onChange: (event) => change(field, [...event.target.selectedOptions].map((option) => option.value)) },
+        (field.options || []).map((option) => React.createElement('option', { key: option.value, value: option.value }, option.label)),
+      )
+    }
+    if (field.kind === 'slider') {
+      const min = Number.isFinite(Number(field.min)) ? Number(field.min) : 0
+      const max = Number.isFinite(Number(field.max)) ? Number(field.max) : 100
+      return React.createElement(
+        'div',
+        { className: 'ph-n-doc__field-slider' },
+        React.createElement('input', { type: 'range', min, max, step: field.step || 1, value: Number(value) || min, onChange: (event) => change(field, Number(event.target.value)) }),
+        React.createElement('output', null, String(value == null ? min : value)),
+      )
+    }
+    if (field.kind === 'stepper') {
+      const min = Number.isFinite(Number(field.min)) ? Number(field.min) : 0
+      const max = Number.isFinite(Number(field.max)) ? Number(field.max) : 100
+      const step = field.step || 1
+      const numeric = Number(value) || min
+      return React.createElement(
+        'div',
+        { className: 'ph-n-doc__field-stepper' },
+        React.createElement('button', { type: 'button', onClick: () => change(field, Math.max(min, numeric - step)) }, '−'),
+        React.createElement('input', { type: 'number', min, max, step, value: numeric, onChange: (event) => change(field, Number(event.target.value)) }),
+        React.createElement('button', { type: 'button', onClick: () => change(field, Math.min(max, numeric + step)) }, '+'),
+      )
+    }
+    if (field.kind === 'date') return React.createElement('input', { type: 'date', value: String(value == null ? '' : value), onChange: (event) => change(field, event.target.value) })
+    if (field.kind === 'checkbox') return React.createElement('input', { type: 'checkbox', checked: value === true, onChange: (event) => change(field, event.target.checked) })
+    return React.createElement('input', { type: 'text', value: String(value == null ? '' : value), placeholder: field.placeholder || '', onChange: (event) => change(field, event.target.value) })
+  }
+  return React.createElement(
+    'div',
+    { className: 'ph-n-doc__form' },
+    props.block.title ? React.createElement('div', { className: 'ph-n-doc__form-title' }, props.block.title) : null,
+    fields.map((field) => React.createElement(
+      'label',
+      { key: field.id, className: 'ph-n-doc__field' + (field.kind === 'checkbox' ? ' ph-n-doc__field--check' : '') },
+      React.createElement('span', { className: 'ph-n-doc__field-label' }, field.label),
+      control(field),
+      field.bind ? React.createElement('span', { className: 'ph-n-doc__field-bind' }, field.bind) : null,
+    )),
+  )
+}
+
+/** Safe aggregate functions over bound data paths (no eval). */
+function computedValues(item, data) {
+  const numbers = []
+  for (const path of item.paths || []) {
+    const value = getDataPath(data || {}, path)
+    if (Array.isArray(value)) for (const entry of value) if (Number.isFinite(Number(entry))) numbers.push(Number(entry))
+    else if (Number.isFinite(Number(value))) numbers.push(Number(value))
+  }
+  const op = item.op
+  if (op === 'count') return numbers.length
+  if (numbers.length === 0) return null
+  if (op === 'sum') return numbers.reduce((sum, value) => sum + value, 0)
+  if (op === 'avg') return numbers.reduce((sum, value) => sum + value, 0) / numbers.length
+  if (op === 'min') return Math.min(...numbers)
+  if (op === 'max') return Math.max(...numbers)
+  return null
+}
+
+function ComputedBlock(props) {
+  const items = props.block.items || []
+  return React.createElement(
+    'div',
+    { className: 'ph-n-doc__stats ph-n-doc__computed' },
+    props.block.title ? React.createElement('div', { className: 'ph-n-doc__form-title' }, props.block.title) : null,
+    items.map((item, index) => {
+      const value = computedValues(item, props.data)
+      return React.createElement(
+        'div',
+        { key: index, className: 'ph-n-doc__stat' },
+        React.createElement('div', { className: 'ph-n-doc__stat-value' }, value === null ? '—' : String(Math.round(value * 100) / 100)),
+        React.createElement('div', { className: 'ph-n-doc__stat-label' }, item.label + (item.unit ? ' · ' + item.unit : '')),
+      )
+    }),
+  )
+}
+
+/** Responsive nested block grid (1–4 columns). */
+function GridBlock(props) {
+  return React.createElement(
+    'div',
+    { className: 'ph-n-doc__grid', style: { '--ph-grid-cols': String(props.block.columns || 2) } },
+    (props.block.blocks || []).map((block, index) => React.createElement(Block, { key: index, block, t: props.t, onOpenFigure: props.onOpenFigure, data: props.data, onChangeData: props.onChangeData, onAction: props.onAction })),
+  )
+}
+
+/** Sortable data table with column definitions. */
+function DataTableBlock(props) {
+  const block = props.block
+  const [sort, setSort] = React.useState({ key: '', dir: 1 })
+  const columns = block.columns || []
+  const boundRows = block.rowsPath ? getDataPath(props.data || {}, block.rowsPath) : undefined
+  const rows = Array.isArray(boundRows)
+    ? boundRows.map((row) => Array.isArray(row) ? row : columns.map((column) => row && typeof row === 'object' ? row[column.key] : ''))
+    : (block.rows || [])
+  const view = rows.map((row, index) => ({ row, index }))
+  if (sort.key && block.sortable) {
+    const columnIndex = columns.findIndex((column) => column.key === sort.key)
+    if (columnIndex >= 0) view.sort((left, right) => String(left.row[columnIndex] || '').localeCompare(String(right.row[columnIndex] || ''), 'zh-Hans-CN', { numeric: true }) * sort.dir)
+  }
+  const toggle = (column) => {
+    if (!block.sortable) return
+    setSort((current) => current.key === column.key ? { key: column.key, dir: -current.dir } : { key: column.key, dir: 1 })
+  }
+  const headCells = columns.map((column) => React.createElement('th', {
+    key: column.key,
+    style: column.align ? { textAlign: column.align } : undefined,
+    onClick: () => toggle(column),
+    className: block.sortable ? 'is-sortable' : '',
+  }, column.label + (sort.key === column.key ? (sort.dir > 0 ? ' ↑' : ' ↓') : '')))
+  const bodyRows = view.map(({ row, index }) => React.createElement('tr', { key: index }, columns.map((column, cellIndex) => React.createElement('td', {
+    key: column.key,
+    style: column.align ? { textAlign: column.align } : undefined,
+  }, row[cellIndex] || ''))))
+  const table = React.createElement(
+    'table',
+    { className: 'ph-n-doc__table' },
+    block.caption ? React.createElement('caption', { className: 'ph-n-doc__table-caption' }, block.caption) : null,
+    React.createElement('thead', null, React.createElement('tr', null, headCells)),
+    React.createElement('tbody', null, bodyRows),
+  )
+  return React.createElement(
+    'div',
+    { className: 'ph-n-doc__datatable' },
+    block.title ? React.createElement('div', { className: 'ph-n-doc__datatable-title' }, block.title) : null,
+    React.createElement('div', { className: 'ph-n-doc__tablewrap' }, table),
+  )
+}
+
+/** Multi-column comparison table. */
+function ComparisonTableBlock(props) {
+  const columns = props.block.columns || []
+  const max = Math.max(0, ...columns.map((column) => (column.items || []).length))
+  return React.createElement(
+    'div',
+    { className: 'ph-n-doc__comparisontable' },
+    props.block.title ? React.createElement('div', { className: 'ph-n-doc__datatable-title' }, props.block.title) : null,
+    React.createElement(
+      'div',
+      { className: 'ph-n-doc__tablewrap' },
+      React.createElement(
+        'table',
+        { className: 'ph-n-doc__table' },
+        props.block.caption ? React.createElement('caption', { className: 'ph-n-doc__table-caption' }, props.block.caption) : null,
+        React.createElement('thead', null, React.createElement('tr', null, columns.map((column, index) => React.createElement('th', { key: index }, column.title)))),
+        React.createElement('tbody', null, Array.from({ length: max }, (_, rowIndex) => React.createElement('tr', { key: rowIndex }, columns.map((column, columnIndex) => React.createElement('td', { key: columnIndex }, (column.items || [])[rowIndex] || ''))))),
+      ),
+    ),
+  )
+}
+
+/** Video/audio media block with a safe URL. */
+function MediaBlock(props) {
+  const block = props.block
+  const media = block.kind === 'audio'
+    ? React.createElement('audio', { controls: true, src: block.src, preload: 'metadata' })
+    : React.createElement('video', { controls: true, src: block.src, poster: block.poster || undefined, preload: 'metadata', playsInline: true })
+  return React.createElement(
+    'figure',
+    { className: 'ph-n-doc__media' },
+    media,
+    block.title || block.caption ? React.createElement('figcaption', null, block.title ? React.createElement('strong', null, block.title) : null, block.caption || '') : null,
+  )
 }
 
 /** Small grid/list of content cards. */
@@ -129,9 +333,75 @@ function CardsBlock(props) {
   )
 }
 
+/** Multi-series / stacked SVG chart. */
+function MultiSeriesChart(props) {
+  const block = props.block
+  const series = (block.series || []).filter((entry) => entry && entry.values && entry.values.length > 0)
+  const count = Math.max(0, ...series.map((entry) => entry.values.length))
+  if (series.length === 0 || count === 0) return null
+  const labels = Array.from({ length: count }, (_, index) => (block.labels || [])[index] || String(index + 1))
+  const width = 640
+  const height = 250
+  const pad = { top: 22, right: 16, bottom: 42, left: 42 }
+  const plotW = width - pad.left - pad.right
+  const plotH = height - pad.top - pad.bottom
+  const stacked = block.stacked === true && block.variant === 'bar'
+  const totals = Array.from({ length: count }, (_, index) => series.reduce((sum, entry) => sum + Math.max(0, Number(entry.values[index]) || 0), 0))
+  const max = Math.max(1, stacked ? Math.max(...totals) : Math.max(...series.flatMap((entry) => entry.values.map((value) => Math.max(0, Number(value) || 0)))))
+  const slot = plotW / count
+  const groupBar = Math.min(22, (slot * 0.7) / series.length)
+  const y = (value) => pad.top + plotH - (Math.max(0, Number(value) || 0) / max) * plotH
+  const bars = []
+  const lines = []
+  if (block.variant === 'line') {
+    series.forEach((entry, seriesIndex) => {
+      const points = Array.from({ length: count }, (_, index) => pad.left + slot * index + slot / 2 + ',' + y(entry.values[index])).join(' ')
+      lines.push(React.createElement('polyline', { key: 'line' + seriesIndex, points, fill: 'none', stroke: 'var(--ph-chart-' + (seriesIndex % 6) + ')', strokeWidth: 2.4, strokeLinejoin: 'round', strokeLinecap: 'round' }))
+      for (let index = 0; index < count; index += 1) lines.push(React.createElement('circle', { key: 'dot' + seriesIndex + '-' + index, cx: pad.left + slot * index + slot / 2, cy: y(entry.values[index]), r: 2.8, fill: 'var(--ph-chart-' + (seriesIndex % 6) + ')' }))
+    })
+  } else {
+    for (let index = 0; index < count; index += 1) {
+      let baseline = pad.top + plotH
+      series.forEach((entry, seriesIndex) => {
+        const value = Math.max(0, Number(entry.values[index]) || 0)
+        const barHeight = (value / max) * plotH
+        const x = stacked
+          ? pad.left + slot * index + slot * 0.25
+          : pad.left + slot * index + slot / 2 - (series.length * groupBar) / 2 + seriesIndex * groupBar
+        const barWidth = stacked ? slot * 0.5 : Math.max(4, groupBar - 2)
+        const top = stacked ? baseline - barHeight : y(value)
+        bars.push(React.createElement('rect', { key: 'bar' + seriesIndex + '-' + index, x, y: top, width: barWidth, height: Math.max(1, barHeight), rx: 2, fill: 'var(--ph-chart-' + (seriesIndex % 6) + ')' }))
+        if (stacked) baseline -= barHeight
+      })
+    }
+  }
+  const xLabels = labels.map((label, index) => React.createElement('text', { key: index, x: pad.left + slot * index + slot / 2, y: height - 16, textAnchor: 'middle', className: 'ph-n-doc__chart-label' }, String(label).slice(0, 8)))
+  const legend = series.map((entry, index) => React.createElement(
+    'div',
+    { key: index, className: 'ph-n-doc__chart-legend-row' },
+    React.createElement('span', { className: 'ph-n-doc__chart-dot', style: { background: 'var(--ph-chart-' + (index % 6) + ')' } }),
+    React.createElement('span', { className: 'ph-n-doc__chart-legend-label' }, entry.name),
+  ))
+  return React.createElement(
+    'div',
+    { className: 'ph-n-doc__chart' },
+    block.title ? React.createElement('div', { className: 'ph-n-doc__chart-title' }, block.title) : null,
+    React.createElement(
+      'svg',
+      { viewBox: '0 0 640 250', role: 'img', 'aria-label': block.title || 'chart' },
+      React.createElement('line', { x1: pad.left, y1: pad.top + plotH, x2: width - pad.right, y2: pad.top + plotH, stroke: 'var(--ph-line)', strokeWidth: 1 }),
+      bars,
+      lines,
+      xLabels,
+    ),
+    React.createElement('div', { className: 'ph-n-doc__chart-legend' }, legend),
+  )
+}
+
 /** Dependency-free SVG chart (bar / line / donut). */
 function ChartBlock(props) {
   const block = props.block
+  if (Array.isArray(block.series) && block.series.length > 0) return React.createElement(MultiSeriesChart, { block })
   const data = (block.data || []).filter((item) => Number.isFinite(Number(item.value))).slice(0, 12)
   if (data.length === 0) return null
   const values = data.map((item) => Number(item.value))
@@ -248,51 +518,83 @@ function ChartBlock(props) {
   )
 }
 
-/** Image gallery with real paper figures and cached web images. */
+/** Image gallery with a local lightbox and real paper figures/cached web images. */
 function GalleryBlock(props) {
   const items = props.block.items || []
+  const [preview, setPreview] = React.useState(null)
   return React.createElement(
-    'div',
-    { className: 'ph-n-doc__gallery' },
-    props.block.title ? React.createElement('div', { className: 'ph-n-doc__gallery-title' }, props.block.title) : null,
+    React.Fragment,
+    null,
     React.createElement(
       'div',
-      { className: 'ph-n-doc__gallery-grid' },
-      items.map((item, index) => {
-        const src = item.kind === 'figure' ? (item.imageUrl || '/pappers-hall/figure/' + item.figureId + '.png') : item.src
-        const caption = item.caption || item.alt || ''
-        const img = React.createElement('img', { src, alt: caption, loading: 'lazy', decoding: 'async' })
-        const media = item.kind === 'figure' && typeof props.onOpenFigure === 'function'
-          ? React.createElement('button', {
-              type: 'button',
-              className: 'ph-n-doc__gallery-media',
-              title: props.t('notes.figure.open'),
-              onClick: () => props.onOpenFigure(item.paperId, item.page, item.figureId),
-            }, img)
-          : React.createElement('div', { className: 'ph-n-doc__gallery-media' }, img)
-        return React.createElement(
-          'figure',
-          { key: index, className: 'ph-n-doc__gallery-item' },
-          media,
-          caption ? React.createElement('figcaption', null, caption) : null,
-          item.kind === 'image' && (item.credit || item.sourceUrl)
-            ? React.createElement(
-                'div',
-                { className: 'ph-n-doc__gallery-credit' },
-                item.credit ? React.createElement('span', null, item.credit + (item.license ? ' · ' + item.license : '')) : null,
-                item.sourceUrl ? React.createElement('a', { href: item.sourceUrl, target: '_blank', rel: 'noreferrer noopener' }, props.t('notes.block.source')) : null,
-              )
-            : null,
-        )
-      }),
+      { className: 'ph-n-doc__gallery' },
+      props.block.title ? React.createElement('div', { className: 'ph-n-doc__gallery-title' }, props.block.title) : null,
+      React.createElement(
+        'div',
+        { className: 'ph-n-doc__gallery-grid' },
+        items.map((item, index) => {
+          const src = item.kind === 'figure' ? (item.imageUrl || '/pappers-hall/figure/' + item.figureId + '.png') : item.src
+          const caption = item.caption || item.alt || ''
+          return React.createElement(
+            'figure',
+            { key: index, className: 'ph-n-doc__gallery-item' },
+            React.createElement(
+              'button',
+              { type: 'button', className: 'ph-n-doc__gallery-media', title: props.t('notes.gallery.preview'), onClick: () => setPreview(item) },
+              React.createElement('img', { src, alt: caption, loading: 'lazy', decoding: 'async' }),
+            ),
+            caption ? React.createElement('figcaption', null, caption) : null,
+            item.kind === 'image' && (item.credit || item.sourceUrl)
+              ? React.createElement(
+                  'div',
+                  { className: 'ph-n-doc__gallery-credit' },
+                  item.credit ? React.createElement('span', null, item.credit + (item.license ? ' · ' + item.license : '')) : null,
+                  item.sourceUrl ? React.createElement('a', { href: item.sourceUrl, target: '_blank', rel: 'noreferrer noopener' }, props.t('notes.block.source')) : null,
+                )
+              : null,
+          )
+        }),
+      ),
     ),
+    preview
+      ? React.createElement(
+          'div',
+          { className: 'ph-n-doc__lightbox', role: 'dialog', 'aria-modal': 'true', onClick: () => setPreview(null) },
+          React.createElement(
+            'div',
+            { className: 'ph-n-doc__lightbox-body', onClick: (event) => event.stopPropagation() },
+            React.createElement('img', { src: preview.kind === 'figure' ? (preview.imageUrl || '/pappers-hall/figure/' + preview.figureId + '.png') : preview.src, alt: preview.caption || preview.alt || '' }),
+            React.createElement(
+              'div',
+              { className: 'ph-n-doc__lightbox-meta' },
+              React.createElement('span', null, preview.caption || preview.alt || ''),
+              preview.credit ? React.createElement('span', null, preview.credit + (preview.license ? ' · ' + preview.license : '')) : null,
+            ),
+            React.createElement(
+              'div',
+              { className: 'ph-n-doc__lightbox-actions' },
+              preview.kind === 'figure' && typeof props.onOpenFigure === 'function'
+                ? React.createElement('button', { type: 'button', onClick: () => { props.onOpenFigure(preview.paperId, preview.page, preview.figureId); setPreview(null) } }, props.t('notes.figure.open'))
+                : null,
+              preview.sourceUrl ? React.createElement('a', { href: preview.sourceUrl, target: '_blank', rel: 'noreferrer noopener' }, props.t('notes.block.source')) : null,
+              React.createElement('button', { type: 'button', onClick: () => setPreview(null) }, props.t('notes.gallery.close')),
+            ),
+          ),
+        )
+      : null,
   )
 }
 
 /** Tabs over nested block lists. */
 function TabsBlock(props) {
   const tabs = props.block.tabs || []
-  const [active, setActive] = React.useState(0)
+  const bound = props.block.bind ? getDataPath(props.data || {}, props.block.bind) : undefined
+  const [localActive, setLocalActive] = React.useState(0)
+  const active = typeof bound === 'string' ? Math.max(0, tabs.findIndex((tab) => tab.id === bound)) : localActive
+  const setActive = (index) => {
+    if (props.block.bind && typeof props.onChangeData === 'function') props.onChangeData(props.block.bind, tabs[index] ? tabs[index].id : '')
+    else setLocalActive(index)
+  }
   const current = tabs[Math.min(active, tabs.length - 1)]
   return React.createElement(
     'div',
@@ -333,10 +635,17 @@ function DisclosureBlock(props) {
   )
 }
 
-/** Interactive reading/experiment checklist (local UI state). */
+/** Interactive reading/experiment checklist; persists to contentJson.data when bound. */
 function TasksBlock(props) {
   const items = props.block.items || []
-  const [done, setDone] = React.useState(() => items.map((item) => item.done === true))
+  const bound = props.block.bind ? getDataPath(props.data || {}, props.block.bind) : undefined
+  const [local, setLocal] = React.useState(() => items.map((item) => item.done === true))
+  const done = Array.isArray(bound) ? items.map((_, index) => bound[index] === true) : local
+  const toggle = (index) => {
+    const next = done.map((value, itemIndex) => (itemIndex === index ? !value : value))
+    if (props.block.bind && typeof props.onChangeData === 'function') props.onChangeData(props.block.bind, next)
+    else setLocal(next)
+  }
   return React.createElement(
     'div',
     { className: 'ph-n-doc__tasks' },
@@ -344,11 +653,7 @@ function TasksBlock(props) {
     items.map((item, index) => React.createElement(
       'label',
       { key: index, className: 'ph-n-doc__task' + (done[index] ? ' is-done' : '') },
-      React.createElement('input', {
-        type: 'checkbox',
-        checked: Boolean(done[index]),
-        onChange: () => setDone((current) => current.map((value, itemIndex) => (itemIndex === index ? !value : value))),
-      }),
+      React.createElement('input', { type: 'checkbox', checked: Boolean(done[index]), onChange: () => toggle(index) }),
       React.createElement('span', null, item.text),
     )),
   )
@@ -727,12 +1032,18 @@ function Block(props) {
     )
   }
   if (block.type === 'markdown') return React.createElement(MarkdownBlock, { block })
+  if (block.type === 'form') return React.createElement(FormBlock, { block, data: props.data, onChangeData: props.onChangeData })
+  if (block.type === 'computed') return React.createElement(ComputedBlock, { block, data: props.data })
+  if (block.type === 'grid') return React.createElement(GridBlock, { block, t, data: props.data, onChangeData: props.onChangeData, onAction: props.onAction, onOpenFigure: props.onOpenFigure })
+  if (block.type === 'data-table') return React.createElement(DataTableBlock, { block, data: props.data })
+  if (block.type === 'comparison-table') return React.createElement(ComparisonTableBlock, { block })
+  if (block.type === 'media') return React.createElement(MediaBlock, { block })
   if (block.type === 'cards') return React.createElement(CardsBlock, { block })
   if (block.type === 'chart') return React.createElement(ChartBlock, { block })
   if (block.type === 'gallery') return React.createElement(GalleryBlock, { block, t, onOpenFigure: props.onOpenFigure })
-  if (block.type === 'tabs') return React.createElement(TabsBlock, { block, t, onOpenFigure: props.onOpenFigure })
+  if (block.type === 'tabs') return React.createElement(TabsBlock, { block, t, onOpenFigure: props.onOpenFigure, data: props.data, onChangeData: props.onChangeData })
   if (block.type === 'disclosure') return React.createElement(DisclosureBlock, { block, t, onOpenFigure: props.onOpenFigure })
-  if (block.type === 'tasks') return React.createElement(TasksBlock, { block })
+  if (block.type === 'tasks') return React.createElement(TasksBlock, { block, data: props.data, onChangeData: props.onChangeData })
   if (block.type === 'status') return React.createElement(StatusBlock, { block })
   if (block.type === 'progress') return React.createElement(ProgressBlock, { block })
   if (block.type === 'alert') return React.createElement(AlertBlock, { block })
@@ -742,7 +1053,19 @@ function Block(props) {
     return React.createElement(
       'div',
       { className: 'ph-n-doc__actions' },
-      (block.items || []).map((item, index) => React.createElement('a', { key: index, className: 'ph-n-doc__action', href: item.url, target: '_blank', rel: 'noreferrer noopener' }, item.label, item.note ? React.createElement('span', null, item.note) : null)),
+      (block.items || []).map((item, index) => React.createElement(
+        'button',
+        {
+          key: index,
+          type: 'button',
+          className: 'ph-n-doc__action',
+          onClick: () => {
+            if (typeof props.onAction === 'function') props.onAction(item)
+          },
+        },
+        item.label,
+        item.note ? React.createElement('span', null, item.note) : null,
+      )),
     )
   }
   if (block.type === 'diagram') return React.createElement(DiagramBlock, { block })
@@ -754,7 +1077,7 @@ function Block(props) {
 
 /** Wide blocks must not be split/flowed by the two-column section layout. */
 function isWideBlock(block) {
-  return Boolean(block && ['table', 'figure', 'columns', 'web-image', 'timeline', 'compare', 'sources', 'chart', 'gallery', 'tabs', 'diagram', 'cards', 'quotes'].includes(block.type))
+  return Boolean(block && ['table', 'figure', 'columns', 'web-image', 'timeline', 'compare', 'sources', 'chart', 'gallery', 'tabs', 'diagram', 'cards', 'quotes', 'form', 'grid', 'data-table', 'comparison-table', 'media'].includes(block.type))
 }
 
 /** Section heading label: the stored heading, the Markdown heading, or neutral. */
@@ -798,6 +1121,9 @@ function SectionBadges(props) {
  * @param {Array<string>} [props.incompleteIds]
  * @param {Function} [props.onToggleIncomplete] section id toggle
  * @param {Function} [props.onOpenFigure] `(paperId, page, figureId)` open the reader
+ * @param {object} [props.data] contentJson.data for bound form fields
+ * @param {Function} [props.onChangeData] `(path, value)` persist a bound field
+ * @param {Function} [props.onAction] `(action)` run an actions block callback
  */
 export function NoteCards(props) {
   const t = props.t
@@ -829,7 +1155,7 @@ export function NoteCards(props) {
               React.createElement(
                 'div',
                 { key: index, className: 'ph-n-doc__block' + (isWideBlock(block) ? ' ph-n-doc__block--wide' : '') },
-                React.createElement(Block, { t: t, block: block, onOpenFigure: props.onOpenFigure }),
+                React.createElement(Block, { t: t, block: block, onOpenFigure: props.onOpenFigure, data: props.data, onChangeData: props.onChangeData, onAction: props.onAction }),
               ),
             ),
           )

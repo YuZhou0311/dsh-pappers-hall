@@ -152,15 +152,17 @@ export function ReaderToolbar(props) {
         'div',
         { className: 'ph-r-toolbar__actions' },
         React.createElement(Btn, { size: 'sm', variant: 'soft', icon: 'quote', onClick: props.onCite, title: rt('reader.cite') }, rt('reader.cite')),
-        React.createElement(Btn, {
-          size: 'sm',
-          variant: linkedToNote ? 'soft' : 'primary',
-          icon: linkedToNote ? 'checkCircle' : 'link',
-          onClick: props.onLinkNote,
-          disabled: linkedToNote || !paper,
-          className: 'ph-r-toolbar__notelink',
-          title: !noteContext ? rt('reader.linkNote.noNote') : linkedToNote ? rt('reader.linkNote.linked') : rt('reader.linkNote.hint'),
-        }, linkedToNote ? rt('reader.linkNote.linkedShort') : rt('reader.linkNote.short')),
+        noteContext
+          ? React.createElement(Btn, {
+              size: 'sm',
+              variant: linkedToNote ? 'soft' : 'primary',
+              icon: linkedToNote ? 'checkCircle' : 'link',
+              onClick: props.onLinkNote,
+              disabled: linkedToNote || !paper,
+              className: 'ph-r-toolbar__notelink',
+              title: linkedToNote ? rt('reader.linkNote.linked') : rt('reader.linkNote.hint'),
+            }, linkedToNote ? rt('reader.linkNote.linkedShort') : rt('reader.linkNote.short'))
+          : null,
         React.createElement(
           'a',
           {

@@ -11114,6 +11114,9 @@ function setNoteContext(context, noteId) {
   }
   publish2(context);
 }
+function clearNoteContext(noteId) {
+  setNoteContext(null, noteId);
+}
 
 // src/surfaces/notes/cards.jsx
 var import_react13 = __toESM(require("react"), 1);
@@ -13397,7 +13400,7 @@ function NoteEditor(props) {
       insertFigure: insertFigureToNote,
       linkPaper: linkPaperToCurrent
     });
-    return void 0;
+    return () => clearNoteContext(note.id);
   }, [note && note.id, title2, linkPaperToCurrent]);
   function runNoteAction(action) {
     if (!action || typeof action !== "object") return;
@@ -22359,15 +22362,15 @@ function ReaderToolbar(props) {
         "div",
         { className: "ph-r-toolbar__actions" },
         import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite") }, rt("reader.cite")),
-        import_react29.default.createElement(Btn, {
+        noteContext ? import_react29.default.createElement(Btn, {
           size: "sm",
           variant: linkedToNote ? "soft" : "primary",
           icon: linkedToNote ? "checkCircle" : "link",
           onClick: props.onLinkNote,
           disabled: linkedToNote || !paper,
           className: "ph-r-toolbar__notelink",
-          title: !noteContext ? rt("reader.linkNote.noNote") : linkedToNote ? rt("reader.linkNote.linked") : rt("reader.linkNote.hint")
-        }, linkedToNote ? rt("reader.linkNote.linkedShort") : rt("reader.linkNote.short")),
+          title: linkedToNote ? rt("reader.linkNote.linked") : rt("reader.linkNote.hint")
+        }, linkedToNote ? rt("reader.linkNote.linkedShort") : rt("reader.linkNote.short")) : null,
         import_react29.default.createElement(
           "a",
           {
@@ -27980,6 +27983,18 @@ function opId3() {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
   return "drawer-" + random;
 }
+function previewFromLastRoute() {
+  try {
+    if (typeof sessionStorage === "undefined") return null;
+    const raw = sessionStorage.getItem("pappers-hall:navigation-route");
+    if (!raw) return null;
+    const route = JSON.parse(raw);
+    if (!route || route.view !== "reader" || !route.paperId) return null;
+    return { kind: "paper", paper: { id: String(route.paperId) }, page: Math.max(1, Number(route.page) || 1) };
+  } catch {
+    return null;
+  }
+}
 function relative(t, value) {
   if (!value) return "";
   const time = Date.parse(String(value));
@@ -28118,7 +28133,7 @@ function DrawerBody(props) {
   const [revision2, setRevision] = import_react42.default.useState(0);
   const [filters, setFilters] = import_react42.default.useState({ quick: "all", collectionId: "", tag: "", color: "", kind: "", paperId: "" });
   const [selected, setSelected] = import_react42.default.useState([]);
-  const [preview, setPreview] = import_react42.default.useState(null);
+  const [preview, setPreview] = import_react42.default.useState(() => previewFromLastRoute());
   const [previewNote, setPreviewNote] = import_react42.default.useState({ status: "idle", note: null, error: null });
   const releasePreviewStyles = import_react42.default.useMemo(() => ensureNotesStyles(), []);
   import_react42.default.useEffect(() => () => releasePreviewStyles(), [releasePreviewStyles]);
@@ -29076,16 +29091,32 @@ function HeaderDrawerButton(props) {
   const t = props.t;
   const sessionId = props.sessionId;
   const [failed, setFailed] = import_react44.default.useState(false);
+  const openDrawerRef = import_react44.default.useRef(props.openDrawer);
+  openDrawerRef.current = props.openDrawer;
+  const autoOpenedRef = import_react44.default.useRef(false);
   import_react44.default.useEffect(() => {
-    if (!sessionId || !props.openDrawer) return void 0;
-    const timer2 = setTimeout(() => {
+    if (!sessionId || autoOpenedRef.current) return void 0;
+    autoOpenedRef.current = true;
+    let cancelled = false;
+    let attempts = 0;
+    let timer2 = null;
+    const tryOpen = () => {
+      if (cancelled || attempts >= 12) return;
+      attempts += 1;
+      let opened = false;
       try {
-        props.openDrawer();
+        opened = Boolean(openDrawerRef.current && openDrawerRef.current());
       } catch {
+        opened = false;
       }
-    }, 450);
-    return () => clearTimeout(timer2);
-  }, [sessionId, props.openDrawer]);
+      if (!opened) timer2 = setTimeout(tryOpen, 500);
+    };
+    timer2 = setTimeout(tryOpen, 500);
+    return () => {
+      cancelled = true;
+      if (timer2) clearTimeout(timer2);
+    };
+  }, [sessionId]);
   if (!sessionId) return null;
   return h(
     "span",

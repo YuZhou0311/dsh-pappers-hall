@@ -10,16 +10,28 @@ export function HeaderDrawerButton(props) {
   const t = props.t
   const sessionId = props.sessionId
   const [failed, setFailed] = React.useState(false)
+  const openDrawerRef = React.useRef(props.openDrawer)
+  openDrawerRef.current = props.openDrawer
+  const autoOpenedRef = React.useRef(false)
   // The conversation drawer is the default reading surface in a chat. Open it
-  // whenever a conversation header mounts so returning from notes/papers does
-  // not leave the user in a bare chat with a hidden sidebar.
+  // when a conversation header mounts, retrying until the host right sidebar is
+  // ready. The ref guard prevents header re-renders from resetting the timer.
   React.useEffect(() => {
-    if (!sessionId || !props.openDrawer) return undefined
-    const timer = setTimeout(() => {
-      try { props.openDrawer() } catch { /* host sidebar may not be ready yet */ }
-    }, 450)
-    return () => clearTimeout(timer)
-  }, [sessionId, props.openDrawer])
+    if (!sessionId || autoOpenedRef.current) return undefined
+    autoOpenedRef.current = true
+    let cancelled = false
+    let attempts = 0
+    let timer = null
+    const tryOpen = () => {
+      if (cancelled || attempts >= 12) return
+      attempts += 1
+      let opened = false
+      try { opened = Boolean(openDrawerRef.current && openDrawerRef.current()) } catch { opened = false }
+      if (!opened) timer = setTimeout(tryOpen, 500)
+    }
+    timer = setTimeout(tryOpen, 500)
+    return () => { cancelled = true; if (timer) clearTimeout(timer) }
+  }, [sessionId])
   if (!sessionId) return null
   return h(
     'span',

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.24.18
+
+- “关联到此笔记” now appears only while a note is actively open beside a paper; it is hidden in the standalone reader where it had no valid target.
+- The conversation drawer retries opening until the host right sidebar is ready, and restores the last paper/page as its initial preview.
+- Added a live page hand-off from the reader to the Paper Center route so switching to a conversation and back keeps the page.
+
 ## 0.24.17
 
 - Persist the last paper-center route and reader page across panel remounts; returning from a conversation resumes the paper/page instead of the library home.

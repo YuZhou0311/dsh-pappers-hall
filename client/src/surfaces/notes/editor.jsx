@@ -20,7 +20,7 @@
  */
 import React from 'react'
 import { downloadText } from '../../core/files.js'
-import { getNoteContext, setNoteContext } from '../../core/note-context.js'
+import { clearNoteContext, getNoteContext, setNoteContext } from '../../core/note-context.js'
 import { Icon } from '../../core/icons.jsx'
 import { Badge, Button, EmptyState, IconButton, Spinner } from '../../core/primitives.jsx'
 import {
@@ -581,7 +581,7 @@ export function NoteEditor(props) {
       insertFigure: insertFigureToNote,
       linkPaper: linkPaperToCurrent,
     })
-    return undefined
+    return () => clearNoteContext(note.id)
   }, [note && note.id, title, linkPaperToCurrent])
 
   function runNoteAction(action) {

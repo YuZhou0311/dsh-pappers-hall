@@ -33,6 +33,20 @@ function opId() {
   const random = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).slice(2)
   return 'drawer-' + random
 }
+/** Last Paper Center reader route, used to keep the paper beside the chat. */
+function previewFromLastRoute() {
+  try {
+    if (typeof sessionStorage === 'undefined') return null
+    const raw = sessionStorage.getItem('pappers-hall:navigation-route')
+    if (!raw) return null
+    const route = JSON.parse(raw)
+    if (!route || route.view !== 'reader' || !route.paperId) return null
+    return { kind: 'paper', paper: { id: String(route.paperId) }, page: Math.max(1, Number(route.page) || 1) }
+  } catch {
+    return null
+  }
+}
+
 function relative(t, value) {
   if (!value) return ''
   const time = Date.parse(String(value))
@@ -170,7 +184,7 @@ export function DrawerBody(props) {
   const [revision, setRevision] = React.useState(0)
   const [filters, setFilters] = React.useState({ quick: 'all', collectionId: '', tag: '', color: '', kind: '', paperId: '' })
   const [selected, setSelected] = React.useState([])
-  const [preview, setPreview] = React.useState(null)
+  const [preview, setPreview] = React.useState(() => previewFromLastRoute())
   const [previewNote, setPreviewNote] = React.useState({ status: 'idle', note: null, error: null })
   const releasePreviewStyles = React.useMemo(() => ensureNotesStyles(), [])
   React.useEffect(() => () => releasePreviewStyles(), [releasePreviewStyles])

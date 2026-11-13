@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.24.3
+
+- Added a note-canvas budget to the note Agent: diagrams are limited to fit a card (9 architecture/flow nodes, 12 mind-map nodes, 5 levels), with explicit split/summarize guidance.
+- Host tools now reject oversized diagram payloads with a corrective tool error instead of letting them exceed the note boundaries.
+- Agent-verified 14 modules: split into 5-node + 9-node diagrams instead of one oversized graph.
+
 ## 0.24.2
 
 - Large diagrams now render as a readable card preview with a top-right “展开” dialog that uses natural SVG width and scrolling.

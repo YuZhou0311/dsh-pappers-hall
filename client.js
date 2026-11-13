@@ -12013,7 +12013,7 @@ function DiagramBlock(props) {
   }
   const { rows } = layoutLayered(nodes, edges);
   const columns = rows;
-  const width = Math.max(840, columns.length * 190);
+  const width = Math.max(760, columns.length * 150);
   const maxRows = Math.max(1, ...columns.map((column) => column.length));
   const height = Math.max(210, maxRows * 78 + 52);
   const positions = /* @__PURE__ */ new Map();

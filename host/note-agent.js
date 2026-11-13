@@ -753,6 +753,56 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
     }))
   }
 
+  /**
+   * A note diagram is read inside a ~640 px card. Reject agent-authored diagrams
+   * that would force a tiny, boundary-breaking preview; the tool error tells the
+   * model to split or summarise instead.
+   */
+  function diagramBudgetIssue(raw) {
+    if (!raw || typeof raw !== 'object') return ''
+    const type = String(raw.type || '').toLowerCase()
+    if (!['diagram', 'architecture', 'flowchart', 'mindmap', 'mind-map'].includes(type)) return ''
+    const layout = type === 'mindmap' || type === 'mind-map'
+      ? 'mindmap'
+      : type === 'flowchart' ? 'flow' : 'architecture'
+    const nodes = Array.isArray(raw.nodes) ? raw.nodes : []
+    const edges = Array.isArray(raw.edges) ? raw.edges : []
+    const nodeLimit = layout === 'mindmap' ? 12 : 9
+    const edgeLimit = layout === 'mindmap' ? 16 : 12
+    if (nodes.length > nodeLimit) return `diagram has ${nodes.length} nodes; a note diagram fits at most ${nodeLimit} (${layout}). Split it into smaller diagrams or use a table/bullets.`
+    if (edges.length > edgeLimit) return `diagram has ${edges.length} edges; a note diagram fits at most ${edgeLimit}. Split it into smaller diagrams.`
+    const ids = new Set()
+    for (const node of nodes) {
+      if (!node || typeof node !== 'object') continue
+      const id = pickString(node.id ?? node.key, 40)
+      if (id) ids.add(id)
+      if (pickString(node.label ?? node.title, 100).length > 40) return 'diagram node labels must stay short (<= 40 chars) so the card remains readable.'
+    }
+    const adjacency = new Map()
+    for (const edge of edges) {
+      if (!edge || typeof edge !== 'object') continue
+      const from = pickString(edge.from ?? edge.source, 40)
+      const to = pickString(edge.to ?? edge.target, 40)
+      if (!from || !to || !ids.has(from) || !ids.has(to)) continue
+      if (!adjacency.has(from)) adjacency.set(from, [])
+      adjacency.get(from).push(to)
+    }
+    const depthOf = (id, visiting = new Set()) => {
+      if (visiting.has(id)) return 1
+      visiting.add(id)
+      const children = adjacency.get(id) || []
+      let depth = 0
+      for (const child of children) depth = Math.max(depth, 1 + depthOf(child, new Set(visiting)))
+      return depth
+    }
+    let depth = 0
+    for (const id of ids) depth = Math.max(depth, depthOf(id))
+    const depthLimit = layout === 'mindmap' ? 3 : 5
+    if (depth > depthLimit) return `diagram is ${depth} levels deep; keep note diagrams to ${depthLimit} levels or split them.`
+    if (layout === 'mindmap' && nodes.length <= 4) return ''
+    return ''
+  }
+
   function toolsFor(draft, candidates, dataLayout, mode) {
     const candidateMap = new Map(candidates.map((candidate) => [candidate.figureId, candidate]))
     const jsonOutput = { schema: { type: 'object', additionalProperties: true }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] }
@@ -824,6 +874,10 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
       }, async (args) => {
         const section = draft.sections.find((entry) => entry.id === args.sectionId)
         if (!section) throw Object.assign(new Error('unknown sectionId ' + String(args.sectionId)), { code: 'invalid' })
+        for (const rawBlock of Array.isArray(args.blocks) ? args.blocks : []) {
+          const issue = diagramBudgetIssue(rawBlock)
+          if (issue) throw Object.assign(new Error(issue), { code: 'invalid' })
+        }
         const blocks = normalizeBlocks(args.blocks, candidateMap)
         if (blocks.length === 0) throw Object.assign(new Error('blocks must contain at least one valid block'), { code: 'invalid' })
         draft.updated.set(section.id, { id: section.id, sourceHash: section.hash, heading: pickString(args.heading, 240) || section.heading, style: pickStyle(args.style), blocks })
@@ -894,7 +948,10 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
           const payload = args.block && typeof args.block === 'object' ? args.block : {}
           const mapped = args.action === 'architecture' || args.action === 'flowchart' ? 'diagram' : args.action === 'mindmap' ? 'mindmap' : args.action === 'comparison-table' ? 'comparison-table' : args.action
           const layout = args.action === 'architecture' ? 'architecture' : args.action === 'flowchart' ? 'flow' : args.action === 'mindmap' ? 'mindmap' : payload.layout
-          block = normalizeAgentBlock({ ...payload, type: mapped, ...(layout ? { layout } : {}), ...(args.title && !payload.title ? { title: args.title } : {}), ...(args.text && !payload.text ? { text: args.text } : {}) }, candidateMap)
+          const candidateRaw = { ...payload, type: mapped, ...(layout ? { layout } : {}) }
+          const issue = diagramBudgetIssue(candidateRaw)
+          if (issue) throw Object.assign(new Error(issue), { code: 'invalid' })
+          block = normalizeAgentBlock({ ...candidateRaw, ...(args.title && !payload.title ? { title: args.title } : {}), ...(args.text && !payload.text ? { text: args.text } : {}) }, candidateMap)
         }
         if (!block) throw Object.assign(new Error('the requested block is empty or invalid'), { code: 'invalid' })
         const existing = draft.updated.get(section.id) || { id: section.id, sourceHash: section.hash, heading: section.heading, style: 'plain', blocks: [] }
@@ -993,6 +1050,7 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
                 'Use note_set_section for each target section. Block vocabulary: heading, paragraph, markdown, bullets, quote, callout, stats, table, data-table, comparison-table, cards, chart, gallery, figure, web-image, sources, timeline, compare, steps, tabs, disclosure, tasks, status, progress, alert, empty, divider, quotes, actions, form, grid, media, diagram. Use rich blocks only where they make the content clearer; vary sections but do not turn every section into cards.',
                 'For an architecture diagram, flow chart or mind map, insert a diagram block with layout architecture|flow|mindmap, 2–24 nodes with stable ids/labels, and edges from→to. Never draw ASCII art, Mermaid syntax or raw SVG. A mind map may use nodes with parent instead of edges. Example payload for a three-box architecture: {layout:"architecture",nodes:[{id:"ui",label:"UI"},{id:"api",label:"API"},{id:"db",label:"DB"}],edges:[{from:"ui",to:"api"},{from:"api",to:"db"}]}.',
                 'A natural-language request such as “这里做个架构图”, “这里放个思维图”, “这里放个表单/输入框”, “这里做个可排序数据表” or “这里放个视频” is an action, not prose: use the matching diagram/form/data-table/media block in that section. At most 4 paper figures.',
+                'NOTE CANVAS BUDGET: a note is read in a narrow card, not a slide. Keep a diagram to 3–7 nodes (max 9 architecture/flow, max 12 mind map), 4–5 levels, short labels (<= 16 Chinese characters or <= 40 ASCII). Keep charts to <= 8 points and <= 3 series, tables to <= 6 columns, galleries to <= 4 images. If the idea is too large, split it into two small diagrams or use a compact table/bullets; do not force an oversized diagram into the note.',
                 'When you finish all sections and directives, call note_finish. Do not answer with a JSON document or Markdown; the tools are the output.',
               ]
             agentCtx.effect(() => systemPrompt.section({

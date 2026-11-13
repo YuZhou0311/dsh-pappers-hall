@@ -902,7 +902,7 @@ function DiagramBlock(props) {
   // vertically inside a column. This keeps a chain like A->B->C compact instead
   // of turning it into a very tall single-file strip.
   const columns = rows
-  const width = Math.max(840, columns.length * 190)
+  const width = Math.max(760, columns.length * 150)
   const maxRows = Math.max(1, ...columns.map((column) => column.length))
   const height = Math.max(210, maxRows * 78 + 52)
   const positions = new Map()

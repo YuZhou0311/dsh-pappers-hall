@@ -498,6 +498,7 @@ export function PaperLinkDialog(props) {
   const [folders, setFolders] = React.useState([])
   const [folderId, setFolderId] = React.useState('')
   const [annotatedOnly, setAnnotatedOnly] = React.useState(false)
+  const [linkFilter, setLinkFilter] = React.useState('all')
   const [busy, setBusy] = React.useState(false)
   const debounced = React.useRef('')
 
@@ -574,6 +575,11 @@ export function PaperLinkDialog(props) {
   }
 
   const titleOf = (paper) => (paper && (paper.titleZh || paper.displayTitle || paper.title)) || t('common.untitled')
+  const visibleItems = state.items.filter((paper) => {
+    if (linkFilter === 'linked') return selected.has(paper.id)
+    if (linkFilter === 'unlinked') return !selected.has(paper.id)
+    return true
+  })
 
   return React.createElement(
     Modal,
@@ -614,6 +620,13 @@ export function PaperLinkDialog(props) {
         React.createElement('input', { type: 'checkbox', checked: annotatedOnly, onChange: (event) => setAnnotatedOnly(event.target.checked) }),
         t('notes.papers.annotatedOnly'),
       ),
+      React.createElement(
+        'select',
+        { className: 'ph-select ph-select--inline', value: linkFilter, 'aria-label': t('notes.papers.filterLabel'), onChange: (event) => setLinkFilter(event.target.value) },
+        React.createElement('option', { value: 'all' }, t('notes.papers.filter.all')),
+        React.createElement('option', { value: 'linked' }, t('notes.papers.filter.linked')),
+        React.createElement('option', { value: 'unlinked' }, t('notes.papers.filter.unlinked')),
+      ),
     ),
     React.createElement(
       'div',
@@ -624,13 +637,13 @@ export function PaperLinkDialog(props) {
       state.status === 'error'
         ? React.createElement('div', { className: 'ph-n-error' }, React.createElement(Icon, { name: 'warning', size: 14 }), React.createElement('span', null, state.error))
         : null,
-      state.status === 'ready' && state.items.length === 0
+      state.status === 'ready' && visibleItems.length === 0
         ? React.createElement(EmptyState, { compact: true, icon: 'search', title: t('notes.papers.noMatch') })
         : null,
       React.createElement(
         'div',
         { className: 'ph-n-paperpick__list' },
-        state.items.map((paper) =>
+        visibleItems.map((paper) =>
           React.createElement(
             'label',
             { key: paper.id, className: 'ph-n-paperpick__row' },

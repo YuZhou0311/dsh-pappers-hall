@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.24.22
+
+- Linking a paper from the note side panel refreshes the open note live (no reopen needed).
+- The link-paper dialog can filter All / Linked / Unlinked papers.
+- Removed the duplicate top-toolbar Notes button from the reader; the side Notes tab remains.
+
 ## 0.24.21
 
 - Persist the open paper/page inside the note-writing side panel as well as the inline note editor.

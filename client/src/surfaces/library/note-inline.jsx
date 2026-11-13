@@ -41,6 +41,13 @@ export function NoteInline(props) {
       .catch((error) => { if (alive) setState({ status: 'error', note: null, folders: [], error: String((error && error.message) || error) }) })
     return () => { alive = false }
   }, [service, props.noteId, reload])
+  React.useEffect(() => {
+    const onLinked = (event) => {
+      if (event && event.detail && String(event.detail.noteId) === String(props.noteId)) setReload((value) => value + 1)
+    }
+    window.addEventListener('pappers-hall:note-linked', onLinked)
+    return () => window.removeEventListener('pappers-hall:note-linked', onLinked)
+  }, [props.noteId])
   if (!props.noteId) return null
   return h(
     'div',

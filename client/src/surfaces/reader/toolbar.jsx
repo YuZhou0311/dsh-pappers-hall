@@ -169,18 +169,6 @@ export function ReaderToolbar(props) {
           {
             size: 'sm',
             variant: 'soft',
-            icon: 'note',
-            onClick: props.onToggleNotes,
-            title: rt('reader.notes.tab'),
-            active: props.sideOpen && props.sideTab === 'notes',
-          },
-          rt('reader.notes.tab'),
-        ),
-        React.createElement(
-          Btn,
-          {
-            size: 'sm',
-            variant: 'soft',
             icon: 'sparkles',
             onClick: props.onToggleAi,
             title: rt('reader.ai'),

@@ -12831,6 +12831,7 @@ function PaperLinkDialog(props) {
   const [folders, setFolders] = import_react14.default.useState([]);
   const [folderId, setFolderId] = import_react14.default.useState("");
   const [annotatedOnly, setAnnotatedOnly] = import_react14.default.useState(false);
+  const [linkFilter, setLinkFilter] = import_react14.default.useState("all");
   const [busy2, setBusy] = import_react14.default.useState(false);
   const debounced = import_react14.default.useRef("");
   import_react14.default.useEffect(() => {
@@ -12898,6 +12899,11 @@ function PaperLinkDialog(props) {
     chain.then(() => props.onClose && props.onClose()).catch(() => setBusy(false));
   };
   const titleOf = (paper) => paper && (paper.titleZh || paper.displayTitle || paper.title) || t("common.untitled");
+  const visibleItems = state.items.filter((paper) => {
+    if (linkFilter === "linked") return selected.has(paper.id);
+    if (linkFilter === "unlinked") return !selected.has(paper.id);
+    return true;
+  });
   return import_react14.default.createElement(
     Modal,
     {
@@ -12936,6 +12942,13 @@ function PaperLinkDialog(props) {
         { className: "ph-n-paperpick__annot" },
         import_react14.default.createElement("input", { type: "checkbox", checked: annotatedOnly, onChange: (event) => setAnnotatedOnly(event.target.checked) }),
         t("notes.papers.annotatedOnly")
+      ),
+      import_react14.default.createElement(
+        "select",
+        { className: "ph-select ph-select--inline", value: linkFilter, "aria-label": t("notes.papers.filterLabel"), onChange: (event) => setLinkFilter(event.target.value) },
+        import_react14.default.createElement("option", { value: "all" }, t("notes.papers.filter.all")),
+        import_react14.default.createElement("option", { value: "linked" }, t("notes.papers.filter.linked")),
+        import_react14.default.createElement("option", { value: "unlinked" }, t("notes.papers.filter.unlinked"))
       )
     ),
     import_react14.default.createElement(
@@ -12943,11 +12956,11 @@ function PaperLinkDialog(props) {
       { className: "ph-n-paperpick" },
       state.status === "loading" ? import_react14.default.createElement("div", { className: "ph-n-progress" }, import_react14.default.createElement(Spinner), import_react14.default.createElement("span", null, t("common.loading"))) : null,
       state.status === "error" ? import_react14.default.createElement("div", { className: "ph-n-error" }, import_react14.default.createElement(Icon, { name: "warning", size: 14 }), import_react14.default.createElement("span", null, state.error)) : null,
-      state.status === "ready" && state.items.length === 0 ? import_react14.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch") }) : null,
+      state.status === "ready" && visibleItems.length === 0 ? import_react14.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch") }) : null,
       import_react14.default.createElement(
         "div",
         { className: "ph-n-paperpick__list" },
-        state.items.map(
+        visibleItems.map(
           (paper) => import_react14.default.createElement(
             "label",
             { key: paper.id, className: "ph-n-paperpick__row" },
@@ -14360,6 +14373,13 @@ function NoteInline(props) {
       alive = false;
     };
   }, [service, props.noteId, reload]);
+  import_react16.default.useEffect(() => {
+    const onLinked = (event) => {
+      if (event && event.detail && String(event.detail.noteId) === String(props.noteId)) setReload((value) => value + 1);
+    };
+    window.addEventListener("pappers-hall:note-linked", onLinked);
+    return () => window.removeEventListener("pappers-hall:note-linked", onLinked);
+  }, [props.noteId]);
   if (!props.noteId) return null;
   return h(
     "div",
@@ -22379,18 +22399,6 @@ function ReaderToolbar(props) {
           {
             size: "sm",
             variant: "soft",
-            icon: "note",
-            onClick: props.onToggleNotes,
-            title: rt("reader.notes.tab"),
-            active: props.sideOpen && props.sideTab === "notes"
-          },
-          rt("reader.notes.tab")
-        ),
-        import_react29.default.createElement(
-          Btn,
-          {
-            size: "sm",
-            variant: "soft",
             icon: "sparkles",
             onClick: props.onToggleAi,
             title: rt("reader.ai"),
@@ -25009,6 +25017,10 @@ function PaperPanel(props) {
       const note = data && (data.note || data);
       if (note && Array.isArray(note.paperIds)) setLinkedPaperIds(note.paperIds);
       else setLinkedPaperIds((previous) => previous.indexOf(open.id) >= 0 ? previous : previous.concat([open.id]));
+      try {
+        window.dispatchEvent(new CustomEvent("pappers-hall:note-linked", { detail: { noteId: props.noteId, paperId: open.id } }));
+      } catch {
+      }
     }).catch(() => {
     }).then(() => setBusy(""));
   };
@@ -31624,6 +31636,10 @@ var ZH = {
   "notes.papers.boundToCurrentHint": "\u7B14\u8BB0\u4E0E\u5F53\u524D\u9605\u8BFB\u7684\u8BBA\u6587\u7ED1\u5B9A",
   "notes.papers.dialogTitle": "\u5173\u8054\u8BBA\u6587\uFF080..N\uFF09",
   "notes.papers.dialogDesc": "\u52FE\u9009\u8981\u5173\u8054\u7684\u8BBA\u6587\uFF1B\u53D6\u6D88\u52FE\u9009\u5373\u89E3\u9664\u5173\u8054\u3002\u7B14\u8BB0\u53EF\u4EE5\u4E0D\u5173\u8054\u4EFB\u4F55\u8BBA\u6587\u3002",
+  "notes.papers.filter.all": "\u5168\u90E8\u8BBA\u6587",
+  "notes.papers.filter.linked": "\u5DF2\u5173\u8054\u8BBA\u6587",
+  "notes.papers.filter.unlinked": "\u672A\u5173\u8054\u8BBA\u6587",
+  "notes.papers.filterLabel": "\u6309\u5173\u8054\u72B6\u6001\u7B5B\u9009",
   "notes.papers.annotatedOnly": "\u4EC5\u6709\u6279\u6CE8",
   "notes.papers.search": "\u641C\u7D22\u8BBA\u6587\u2026",
   "notes.papers.save": "\u4FDD\u5B58\u5173\u8054",
@@ -32912,6 +32928,10 @@ var EN = {
   "notes.papers.boundToCurrentHint": "The note is bound to the paper being read",
   "notes.papers.dialogTitle": "Link papers (0..N)",
   "notes.papers.dialogDesc": "Tick the papers to link; untick to unlink. A note may link no paper at all.",
+  "notes.papers.filter.all": "All papers",
+  "notes.papers.filter.linked": "Linked papers",
+  "notes.papers.filter.unlinked": "Unlinked papers",
+  "notes.papers.filterLabel": "Filter by link status",
   "notes.papers.annotatedOnly": "Annotated only",
   "notes.papers.search": "Search papers\u2026",
   "notes.papers.save": "Save links",

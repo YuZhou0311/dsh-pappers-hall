@@ -290,6 +290,9 @@ export function PaperPanel(props) {
         const note = data && (data.note || data)
         if (note && Array.isArray(note.paperIds)) setLinkedPaperIds(note.paperIds)
         else setLinkedPaperIds((previous) => previous.indexOf(open.id) >= 0 ? previous : previous.concat([open.id]))
+        try {
+          window.dispatchEvent(new CustomEvent('pappers-hall:note-linked', { detail: { noteId: props.noteId, paperId: open.id } }))
+        } catch { /* event is best effort */ }
       })
       .catch(() => {})
       .then(() => setBusy(''))

@@ -181,7 +181,7 @@ export function isSectionLikelyIncomplete(section) {
 
 /** Sections overlapping the `[start, end)` textarea selection. */
 /** Inline directive kinds the note Agent understands. */
-export const DIRECTIVE_KINDS = ['figure', 'table', 'web-image', 'web', 'stats', 'callout', 'timeline', 'compare', 'steps', 'markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'empty', 'quotes', 'actions', 'form', 'grid', 'computed', 'data-table', 'comparison-table', 'media', 'video', 'audio', 'diagram', 'architecture', 'flowchart', 'mindmap']
+export const DIRECTIVE_KINDS = ['figure', 'table', 'web-image', 'web', 'stats', 'callout', 'timeline', 'compare', 'steps', 'markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'empty', 'quotes', 'actions', 'form', 'grid', 'computed', 'avatar', 'calendar', 'data-table', 'comparison-table', 'media', 'video', 'audio', 'diagram', 'architecture', 'flowchart', 'mindmap']
 
 /**
  * Find `{{kind: argument}}` directives in the user's Markdown and attach each
@@ -194,7 +194,7 @@ export const DIRECTIVE_KINDS = ['figure', 'table', 'web-image', 'web', 'stats', 
 export function extractDirectives(contentMd, sections) {
   const source = String(contentMd == null ? '' : contentMd)
   const list = Array.isArray(sections) ? sections : sectionizeMarkdown(source)
-  const pattern = /\{\{\s*(figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:\s*([\s\S]*?)\}\}/gi
+  const pattern = /\{\{\s*(figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|avatar|calendar|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:\s*([\s\S]*?)\}\}/gi
   const out = []
   let match
   while ((match = pattern.exec(source)) !== null) {
@@ -214,7 +214,7 @@ export function extractDirectives(contentMd, sections) {
 
 /** Count inline directives without building the full list. */
 export function countDirectives(contentMd) {
-  return (String(contentMd == null ? '' : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:/gi) || []).length
+  return (String(contentMd == null ? '' : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|avatar|calendar|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:/gi) || []).length
 }
 
 export function sectionsForSelection(sections, start, end) {
@@ -598,6 +598,22 @@ export function normalizeBlock(raw, options) {
       return ''
     }).filter(Boolean).slice(0, 15)
     return items.length > 0 ? { type: 'steps', items } : null
+  }
+  if (type === 'avatar') {
+    const name = firstText(raw.name, raw.title).slice(0, 100)
+    if (!name) return null
+    const src = firstText(raw.src, raw.imageUrl)
+    return { type: 'avatar', name, role: firstText(raw.role, raw.subtitle).slice(0, 120), ...(isNoteAsset(src) || /^https?:\/\//i.test(src) ? { src: src.slice(0, 1200) } : {}) }
+  }
+  if (type === 'calendar' || type === 'events') {
+    const events = arrayOf(raw.events || raw.items).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const title = firstText(item.title, item.label).slice(0, 160)
+      const date = firstText(item.date, item.when, item.day).slice(0, 80)
+      if (!title) return null
+      return { date, title, text: firstText(item.text, item.desc).slice(0, 500) }
+    }).filter(Boolean).slice(0, 20)
+    return events.length > 0 ? { type: 'calendar', title: firstText(raw.title).slice(0, 120), events } : null
   }
   if (type === 'computed' || type === 'calculations') {
     const items = arrayOf(raw.items || raw.values).map((item) => {

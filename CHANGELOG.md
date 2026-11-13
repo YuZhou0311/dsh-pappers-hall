@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.24.1
+
+- Added Avatar and Calendar event blocks to complete the safe P2 note vocabulary.
+- Verified form auto-binding, persisted data, multi-series charts, sortable tables, comparison tables and the gallery lightbox in the Web UI.
+
 ## 0.24.0
 
 - Added `contentJson.data` bindings and debounced persistence for interactive note blocks.

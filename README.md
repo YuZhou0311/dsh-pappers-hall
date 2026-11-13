@@ -16,7 +16,7 @@ The plugin is a normal DSH bundle: enabling it adds Host services/tools and Clie
 - **Agent tools** — 14 consolidated research tools, plus a separate isolated note Agent used only while editing notes.
 - **Richer note blocks** — Markdown, cards, bar/line/donut charts, image galleries, tabs, disclosures, task checklists, status/progress, alerts, quotes, action links, timelines and architecture/flow/mind-map diagrams.
 - **Diagram directives** — `{{architecture: ...}}`, `{{mindmap: ...}}`, `{{chart: ...}}` and similar natural-language requests are rendered as validated SVG blocks, never ASCII art.
-- **Dynamic blocks** — bound forms (text/select/slider/date/stepper), computed aggregates, sortable data tables, comparison tables, grids, multi-series charts, persisted checklists/tab state, gallery lightbox and action callbacks. Interactive state lives in `contentJson.data` and is saved with a debounce.
+- **Dynamic blocks** — bound forms (text/select/slider/date/stepper), computed aggregates, sortable data tables, comparison tables, grids, multi-series charts, persisted checklists/tab state, gallery lightbox, action callbacks, and safe avatar/calendar cards. Interactive state lives in `contentJson.data` and is saved with a debounce.
 
 ## Inline directives and the note Agent
 
@@ -77,7 +77,7 @@ dsh plugin --profile desktop add dsh-pappers-hall
 
 ```sh
 npm pack
-dsh plugin --profile desktop add ./dsh-pappers-hall-0.24.0.tgz
+dsh plugin --profile desktop add ./dsh-pappers-hall-0.24.1.tgz
 ```
 
 The package is a bundle: `package.json` declares `dsh.bundle.patch`, `dsh.client`, display metadata and exported resources. The patch inserts the `pappers-hall` Host row; the Client half is loaded from the exported `./client` subpath.

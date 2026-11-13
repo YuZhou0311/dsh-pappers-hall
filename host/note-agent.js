@@ -39,7 +39,7 @@ const MAX_GRID_BLOCKS = 12
 const MAX_DATA_ROWS = 100
 const MAX_MARKDOWN = 6000
 const MAX_WEB_IMAGE_BYTES = 6 * 1024 * 1024
-const DIRECTIVE_PATTERN = /\{\{\s*(figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:\s*([\s\S]*?)\}\}/gi
+const DIRECTIVE_PATTERN = /\{\{\s*(figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|avatar|calendar|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:\s*([\s\S]*?)\}\}/gi
 const STYLE_VALUES = new Set(['plain', 'accent', 'columns', 'figure'])
 
 function text(value) {
@@ -417,6 +417,21 @@ export function normalizeAgentBlock(raw, candidates = new Map(), depth = 0) {
     const right = strings(raw.right ?? raw.rightItems, 8, 400)
     if (left.length === 0 && right.length === 0) return null
     return { type: 'compare', leftTitle: pickString(raw.leftTitle, 120), rightTitle: pickString(raw.rightTitle, 120), left, right }
+  }
+  if (type === 'avatar') {
+    const name = pickString(raw.name ?? raw.title, 100)
+    if (!name) return null
+    const src = pickUrl(raw.src ?? raw.imageUrl)
+    return { type: 'avatar', name, role: pickString(raw.role ?? raw.subtitle, 120), ...(/^https?:\/\//i.test(src) || /^\/pappers-hall\/note-asset\//i.test(src) ? { src } : {}) }
+  }
+  if (type === 'calendar' || type === 'events') {
+    const events = (Array.isArray(raw.events) ? raw.events : []).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const title = pickString(item.title ?? item.label, 160)
+      if (!title) return null
+      return { date: pickString(item.date ?? item.when ?? item.day, 80), title, text: pickString(item.text ?? item.desc, 500) }
+    }).filter(Boolean).slice(0, 20)
+    return events.length > 0 ? { type: 'calendar', title: pickString(raw.title, 120), events } : null
   }
   if (type === 'computed' || type === 'calculations') {
     const items = (Array.isArray(raw.items) ? raw.items : []).map((item) => {
@@ -818,7 +833,7 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
         type: 'object',
         properties: {
           sectionId: { type: 'string', description: 'Section id from note_read.' },
-          action: { type: 'string', enum: ['figure', 'table', 'web_image', 'source', 'callout', 'stats', 'timeline', 'compare', 'steps', 'markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'quotes', 'actions', 'form', 'grid', 'computed', 'data-table', 'comparison-table', 'media', 'video', 'audio', 'diagram', 'architecture', 'flowchart', 'mindmap'], description: 'Block to add.' },
+          action: { type: 'string', enum: ['figure', 'table', 'web_image', 'source', 'callout', 'stats', 'timeline', 'compare', 'steps', 'markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'quotes', 'actions', 'form', 'grid', 'computed', 'avatar', 'calendar', 'data-table', 'comparison-table', 'media', 'video', 'audio', 'diagram', 'architecture', 'flowchart', 'mindmap'], description: 'Block to add.' },
           figureId: { type: 'string', description: 'figure action: exact id from note_read.figureCandidates.' },
           caption: { type: 'string', description: 'Optional caption/alt text.' },
           headers: { type: 'array', items: { type: 'string' }, description: 'table action: header cells.' },
@@ -875,7 +890,7 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
           block = normalizeAgentBlock({ type: 'compare', leftTitle: args.leftTitle, rightTitle: args.rightTitle, left: args.left, right: args.right }, candidateMap)
         } else if (args.action === 'steps') {
           block = normalizeAgentBlock({ type: 'steps', items: args.items }, candidateMap)
-        } else if (['markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'quotes', 'actions', 'form', 'grid', 'computed', 'data-table', 'comparison-table', 'media', 'video', 'audio', 'diagram', 'architecture', 'flowchart', 'mindmap'].includes(args.action)) {
+        } else if (['markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'quotes', 'actions', 'form', 'grid', 'computed', 'avatar', 'calendar', 'data-table', 'comparison-table', 'media', 'video', 'audio', 'diagram', 'architecture', 'flowchart', 'mindmap'].includes(args.action)) {
           const payload = args.block && typeof args.block === 'object' ? args.block : {}
           const mapped = args.action === 'architecture' || args.action === 'flowchart' ? 'diagram' : args.action === 'mindmap' ? 'mindmap' : args.action === 'comparison-table' ? 'comparison-table' : args.action
           const layout = args.action === 'architecture' ? 'architecture' : args.action === 'flowchart' ? 'flow' : args.action === 'mindmap' ? 'mindmap' : payload.layout
@@ -973,7 +988,7 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
                 'You are Pappers-Hall\'s dedicated note beautification agent. You have exactly five note tools; every action must be a tool call.',
                 'Your job: turn the user\'s note Markdown into a varied, readable content_json layout, and execute the inline directives the user wrote in the note.',
                 'Hard rules: never change the user\'s Markdown; never invent facts, numbers, citations, figures or URLs; preserve every number, unit, qualifier and proper noun; only use figures from note_read.figureCandidates; only add web images through note_insert(web_image) and web facts through note_web_search.',
-                'Inline directives in the note use double-brace markers (open marker, a kind, a colon, the argument, close marker). Supported kinds: figure, table, web-image, web, stats, callout, timeline, compare, steps, markdown, cards, chart, gallery, tabs, disclosure, tasks, status, progress, alert, divider, empty, quotes, actions, form, grid, computed, data-table, comparison-table, media, video, audio, diagram, architecture, flowchart, mindmap. Resolve each directive using note_insert on its section.',
+                'Inline directives in the note use double-brace markers (open marker, a kind, a colon, the argument, close marker). Supported kinds: figure, table, web-image, web, stats, callout, timeline, compare, steps, markdown, cards, chart, gallery, tabs, disclosure, tasks, status, progress, alert, divider, empty, quotes, actions, form, grid, computed, avatar, calendar, data-table, comparison-table, media, video, audio, diagram, architecture, flowchart, mindmap. Resolve each directive using note_insert on its section.',
                 'Natural-language action lines also count: when the user writes something imperative such as “这里加一张论文图”, “加一个统计表”, “找一张联网图片”, “补一个来源”, treat it as an action request for the containing section and use note_insert. Do not merely copy the instruction into a paragraph; the block is the result. Structural/editorial instructions should change only the layout.',
                 'Use note_set_section for each target section. Block vocabulary: heading, paragraph, markdown, bullets, quote, callout, stats, table, data-table, comparison-table, cards, chart, gallery, figure, web-image, sources, timeline, compare, steps, tabs, disclosure, tasks, status, progress, alert, empty, divider, quotes, actions, form, grid, media, diagram. Use rich blocks only where they make the content clearer; vary sections but do not turn every section into cards.',
                 'For an architecture diagram, flow chart or mind map, insert a diagram block with layout architecture|flow|mindmap, 2–24 nodes with stable ids/labels, and edges from→to. Never draw ASCII art, Mermaid syntax or raw SVG. A mind map may use nodes with parent instead of edges. Example payload for a three-box architecture: {layout:"architecture",nodes:[{id:"ui",label:"UI"},{id:"api",label:"API"},{id:"db",label:"DB"}],edges:[{from:"ui",to:"api"},{from:"api",to:"db"}]}.',

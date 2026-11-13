@@ -172,4 +172,9 @@ check('computed aggregates validate operations and paths', () => {
 check('data-table can bind its rows path', () => {
   for (const block of both({ type: 'data-table', rowsPath: '/rows', columns: [{ key: 'name', label: 'Name' }], rows: [['A']] })) assert.equal(block.rowsPath, '/rows')
 })
+check('avatar and calendar are safe P2 blocks', () => {
+  for (const block of both({ type: 'avatar', name: 'Ada', role: 'Reviewer' })) assert.equal(block.type, 'avatar')
+  for (const block of both({ type: 'calendar', events: [{ date: '2026-11-13', title: 'Review', text: 'Submit comments' }] })) assert.equal(block.events.length, 1)
+  assert.equal(normalizeBlock({ type: 'avatar' }), null)
+})
 console.log(`${process.exitCode ? 'FAIL' : 'PASS'} — ${pass} rich-note checks`)

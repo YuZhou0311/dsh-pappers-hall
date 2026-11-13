@@ -4707,6 +4707,17 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-n-doc__cards--hero .ph-n-doc__card:first-child .ph-n-doc__card-title { font-size: var(--ph-fs-15); }
 .ph-n-doc__computed { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); padding: 10px 12px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); }
 .ph-n-doc__computed .ph-n-doc__form-title { grid-column: 1 / -1; margin-bottom: 2px; }
+.ph-n-doc__avatar { display: flex; align-items: center; gap: 9px; margin: 10px 0 14px; padding: 9px 11px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); }
+.ph-n-doc__avatar img, .ph-n-doc__avatar-fallback { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex: none; }
+.ph-n-doc__avatar-fallback { display: grid; place-items: center; background: color-mix(in srgb, var(--ph-accent) 16%, var(--ph-surface-2)); color: var(--ph-accent-text); font-size: 17px; font-weight: 600; }
+.ph-n-doc__avatar strong { display: block; font-size: var(--ph-fs-13); color: var(--ph-ink); }
+.ph-n-doc__avatar span span, .ph-n-doc__avatar > div > span { display: block; margin-top: 2px; font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+.ph-n-doc__calendar { display: flex; flex-direction: column; gap: 7px; margin: 10px 0 14px; padding: 10px 12px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); }
+.ph-n-doc__calendar-event { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; padding: 5px 0; border-bottom: 1px solid var(--ph-line-soft); font-size: var(--ph-fs-12); }
+.ph-n-doc__calendar-event:last-child { border-bottom: 0; }
+.ph-n-doc__calendar-date { min-width: 72px; color: var(--ph-accent-text); font-size: var(--ph-fs-11); font-weight: 600; }
+.ph-n-doc__calendar-event strong { color: var(--ph-ink); }
+.ph-n-doc__calendar-event span:last-child { color: var(--ph-ink-3); }
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -7161,7 +7172,7 @@ function isSectionLikelyIncomplete(section) {
   return /(?:TODO|待补充|待补|待完善|待续|未完|继续补充|…|\.\.\.)[。.!！?？；;\s]*$/.test(text2.slice(-48));
 }
 function countDirectives(contentMd) {
-  return (String(contentMd == null ? "" : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:/gi) || []).length;
+  return (String(contentMd == null ? "" : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|form|grid|computed|avatar|calendar|data-table|comparison-table|media|video|audio|diagram|architecture|flowchart|mindmap)\s*:/gi) || []).length;
 }
 function sectionsForSelection(sections, start, end) {
   const list = arrayOf2(sections);
@@ -7493,6 +7504,22 @@ function normalizeBlock(raw, options) {
       return "";
     }).filter(Boolean).slice(0, 15);
     return items2.length > 0 ? { type: "steps", items: items2 } : null;
+  }
+  if (type === "avatar") {
+    const name = firstText2(raw.name, raw.title).slice(0, 100);
+    if (!name) return null;
+    const src = firstText2(raw.src, raw.imageUrl);
+    return { type: "avatar", name, role: firstText2(raw.role, raw.subtitle).slice(0, 120), ...isNoteAsset(src) || /^https?:\/\//i.test(src) ? { src: src.slice(0, 1200) } : {} };
+  }
+  if (type === "calendar" || type === "events") {
+    const events = arrayOf2(raw.events || raw.items).map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const title2 = firstText2(item.title, item.label).slice(0, 160);
+      const date = firstText2(item.date, item.when, item.day).slice(0, 80);
+      if (!title2) return null;
+      return { date, title: title2, text: firstText2(item.text, item.desc).slice(0, 500) };
+    }).filter(Boolean).slice(0, 20);
+    return events.length > 0 ? { type: "calendar", title: firstText2(raw.title).slice(0, 120), events } : null;
   }
   if (type === "computed" || type === "calculations") {
     const items2 = arrayOf2(raw.items || raw.values).map((item) => {
@@ -11303,6 +11330,29 @@ function FormBlock(props) {
     ))
   );
 }
+function AvatarBlock(props) {
+  const block = props.block;
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__avatar" },
+    block.src ? import_react13.default.createElement("img", { src: block.src, alt: block.name }) : import_react13.default.createElement("span", { className: "ph-n-doc__avatar-fallback" }, block.name.slice(0, 1)),
+    import_react13.default.createElement("div", null, import_react13.default.createElement("strong", null, block.name), block.role ? import_react13.default.createElement("span", null, block.role) : null)
+  );
+}
+function CalendarBlock(props) {
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__calendar" },
+    props.block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__form-title" }, props.block.title) : null,
+    (props.block.events || []).map((event, index) => import_react13.default.createElement(
+      "div",
+      { key: index, className: "ph-n-doc__calendar-event" },
+      event.date ? import_react13.default.createElement("span", { className: "ph-n-doc__calendar-date" }, event.date) : null,
+      import_react13.default.createElement("strong", null, event.title),
+      event.text ? import_react13.default.createElement("span", null, event.text) : null
+    ))
+  );
+}
 function computedValues(item, data) {
   const numbers = [];
   for (const path of item.paths || []) {
@@ -12095,6 +12145,8 @@ function Block(props) {
   if (block.type === "markdown") return import_react13.default.createElement(MarkdownBlock, { block });
   if (block.type === "form") return import_react13.default.createElement(FormBlock, { block, data: props.data, onChangeData: props.onChangeData });
   if (block.type === "computed") return import_react13.default.createElement(ComputedBlock, { block, data: props.data });
+  if (block.type === "avatar") return import_react13.default.createElement(AvatarBlock, { block });
+  if (block.type === "calendar") return import_react13.default.createElement(CalendarBlock, { block });
   if (block.type === "grid") return import_react13.default.createElement(GridBlock, { block, t, data: props.data, onChangeData: props.onChangeData, onAction: props.onAction, onOpenFigure: props.onOpenFigure });
   if (block.type === "data-table") return import_react13.default.createElement(DataTableBlock, { block, data: props.data });
   if (block.type === "comparison-table") return import_react13.default.createElement(ComparisonTableBlock, { block });

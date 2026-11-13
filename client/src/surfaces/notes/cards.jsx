@@ -193,6 +193,31 @@ function FormBlock(props) {
   )
 }
 
+function AvatarBlock(props) {
+  const block = props.block
+  return React.createElement(
+    'div',
+    { className: 'ph-n-doc__avatar' },
+    block.src ? React.createElement('img', { src: block.src, alt: block.name }) : React.createElement('span', { className: 'ph-n-doc__avatar-fallback' }, block.name.slice(0, 1)),
+    React.createElement('div', null, React.createElement('strong', null, block.name), block.role ? React.createElement('span', null, block.role) : null),
+  )
+}
+
+function CalendarBlock(props) {
+  return React.createElement(
+    'div',
+    { className: 'ph-n-doc__calendar' },
+    props.block.title ? React.createElement('div', { className: 'ph-n-doc__form-title' }, props.block.title) : null,
+    (props.block.events || []).map((event, index) => React.createElement(
+      'div',
+      { key: index, className: 'ph-n-doc__calendar-event' },
+      event.date ? React.createElement('span', { className: 'ph-n-doc__calendar-date' }, event.date) : null,
+      React.createElement('strong', null, event.title),
+      event.text ? React.createElement('span', null, event.text) : null,
+    )),
+  )
+}
+
 /** Safe aggregate functions over bound data paths (no eval). */
 function computedValues(item, data) {
   const numbers = []
@@ -1034,6 +1059,8 @@ function Block(props) {
   if (block.type === 'markdown') return React.createElement(MarkdownBlock, { block })
   if (block.type === 'form') return React.createElement(FormBlock, { block, data: props.data, onChangeData: props.onChangeData })
   if (block.type === 'computed') return React.createElement(ComputedBlock, { block, data: props.data })
+  if (block.type === 'avatar') return React.createElement(AvatarBlock, { block })
+  if (block.type === 'calendar') return React.createElement(CalendarBlock, { block })
   if (block.type === 'grid') return React.createElement(GridBlock, { block, t, data: props.data, onChangeData: props.onChangeData, onAction: props.onAction, onOpenFigure: props.onOpenFigure })
   if (block.type === 'data-table') return React.createElement(DataTableBlock, { block, data: props.data })
   if (block.type === 'comparison-table') return React.createElement(ComparisonTableBlock, { block })

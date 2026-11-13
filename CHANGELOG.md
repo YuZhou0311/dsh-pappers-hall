@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Reworked the Chinese and English READMEs around the research workbench workflow, with clearer preview installation, optional capabilities and model data flows.
+- Added Chinese and English hero artwork, a polygonal scholar-whale brand kit, launch artwork, sharing materials and four actual Chrome light-mode product screenshots.
+- Moved the previous technical README into `docs/DEVELOPMENT.md` and added reusable press copy and asset provenance.
+
 ## 0.24.25
 
 - The reading sidebar no longer auto-opens in a normal browser (screenshot/web use); automatic opening is limited to the desktop Electron shell and once per session.

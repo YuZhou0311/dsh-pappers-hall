@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Pappers-Hall · 科研工作台展示卡片</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 1440px; height: 1080px; overflow: hidden; background: #f5f8ff; color: #132b56; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .card { position: relative; width: 1440px; height: 1080px; background: radial-gradient(ellipse at 85% 8%, #e5ecff 0, transparent 45%), linear-gradient(160deg, #fff 8%, #f3f6ff 100%); }
+    header { position: absolute; top: 40px; left: 80px; right: 80px; }
+    .eyebrow { display: flex; align-items: center; gap: 18px; color: #4d6bfe; font-size: 15px; font-weight: 700; letter-spacing: 3px; }
+    .eyebrow span { color: #62728d; font-size: 11px; letter-spacing: 1.5px; border: 1px solid #cbd5eb; padding: 5px 9px; border-radius: 5px; }
+    h1 { margin: 16px 0 10px; font-size: 48px; line-height: 1.15; font-weight: 700; letter-spacing: -1.5px; }
+    header p { margin: 0; font-size: 18px; letter-spacing: 1px; color: #66758e; }
+    .mascot { position: absolute; right: 95px; top: 15px; width: 190px; height: 190px; object-fit: contain; }
+    .product { position: absolute; left: 80px; top: 208px; width: 1280px; height: 800px; border-radius: 14px; box-shadow: 0 15px 38px #243e7020; outline: 1px solid #d9e1ed; }
+    footer { position: absolute; left: 80px; right: 80px; top: 1035px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #62728d; }
+    footer strong { color: #132b56; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <header>
+      <div class="eyebrow">PAPPERS-HALL <span>PRE-RELEASE</span></div>
+      <h1>原文在旁，思考不断。</h1>
+      <p>原文精读 × 结构化笔记 × 来源引用</p>
+    </header>
+    <img class="mascot" src="../assets/brand/scholar-whale.png" alt="学士帽小鲸鱼">
+    <img class="product" src="../assets/screenshots/notes-workbench-light.png" alt="Chrome 浅色实景：结构化笔记与原始论文并排阅读">
+    <footer><span><strong>你的 AI 科研工作台</strong> · DeepSeek Harness 社区插件 · 开发中</span><span>github.com/YuZhou0311/dsh-pappers-hall</span></footer>
+  </main>
+</body>
+</html>

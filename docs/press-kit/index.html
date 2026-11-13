@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Pappers-Hall · 品牌与宣传素材</title>
+  <style>
+    :root { color-scheme: light; --ink:#132b56; --blue:#4d6bfe; --muted:#66758e; --line:#dfe6f2; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:#f8faff; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; line-height:1.7; }
+    a { color:inherit; text-decoration:none; }
+    a:focus-visible, button:focus-visible { outline:3px solid var(--blue); outline-offset:5px; }
+    .wrap { max-width:1240px; margin:auto; padding:0 40px; }
+    nav { display:flex; justify-content:space-between; align-items:center; min-height:92px; gap:24px; border-bottom:1px solid var(--line); }
+    .wordmark { font-size:18px; letter-spacing:3px; font-weight:750; }
+    .nav-links { display:flex; flex-wrap:wrap; gap:24px; font-size:13px; color:var(--muted); }
+    .intro { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; padding:48px 0 28px; }
+    .eyebrow { font-size:11px; font-weight:700; letter-spacing:2.2px; color:var(--blue); text-transform:uppercase; }
+    h1 { font-size:clamp(27px,3.2vw,42px); line-height:1.3; letter-spacing:-1.2px; margin:10px 0 12px; }
+    h1 span { display:inline-block; }
+    .intro p { margin:0; color:var(--muted); font-size:14px; }
+    .pill { display:inline-block; flex-shrink:0; border:1px solid #cbd6f2; border-radius:100px; padding:7px 14px; font-size:11px; letter-spacing:1px; }
+    .hero { display:block; width:100%; border:1px solid var(--line); border-radius:18px; }
+    .hero-caption { margin:12px 0 0; display:flex; justify-content:space-between; color:var(--muted); font-size:12px; }
+    section { padding:64px 0 0; }
+    .section-head { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:24px; }
+    h2 { font-size:26px; line-height:1.35; margin:8px 0 0; letter-spacing:-.5px; }
+    .section-head p { margin:0; max-width:440px; color:var(--muted); font-size:13px; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+    figure { margin:0; background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+    figure img { display:block; width:100%; height:auto; }
+    figcaption { padding:20px 24px 22px; }
+    figcaption strong { display:block; font-size:17px; margin-bottom:4px; }
+    figcaption p { margin:0; color:var(--muted); font-size:13px; }
+    .asset-link { display:inline-block; margin-top:14px; color:var(--blue); font-size:12px; font-weight:600; }
+    .campaign { display:grid; grid-template-columns: .75fr 1.25fr; gap:24px; align-items:start; }
+    .stack { display:grid; gap:24px; }
+    .identity { display:grid; grid-template-columns:240px 1fr; align-items:center; gap:40px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:36px 0; }
+    .identity img { width:220px; }
+    .identity h2 { margin-top:8px; }
+    .identity p { color:var(--muted); font-size:14px; max-width:620px; }
+    .swatches { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+    .swatch { padding:4px 10px; border-radius:7px; font-size:11px; font-family:ui-monospace,monospace; }
+    .resources { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+    .resource { display:block; border:1px solid var(--line); border-radius:12px; background:#fff; padding:22px; }
+    .resource b { display:block; font-size:16px; margin:8px 0; }
+    .resource p { margin:0; color:var(--muted); font-size:13px; }
+    footer { padding:48px 0 36px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; gap:20px; }
+    @media(max-width:700px) {
+      .wrap { padding:0 20px; } nav { align-items:flex-start; flex-direction:column; gap:12px; padding:23px 0; } .nav-links { gap:18px; }
+      .intro { flex-direction:column; align-items:flex-start; padding-top:30px; gap:16px; } .section-head { flex-direction:column; align-items:flex-start; gap:12px; }
+      .grid,.campaign,.resources { grid-template-columns:1fr; } section { padding-top:44px; } .hero { border-radius:10px; }
+      .hero-caption { flex-direction:column; gap:4px; } .identity { grid-template-columns:1fr; gap:8px; } .identity img { width:170px; }
+      footer { flex-direction:column; } figcaption { padding:18px; }
+    }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav><a class="wordmark" href="../../README.md">PAPPERS-HALL</a><div class="nav-links"><a href="#product">产品实景</a><a href="#campaign">宣传物料</a><a href="#identity">品牌形象</a><a href="#resources">文案与说明</a></div></nav>
+    <header class="intro"><div><div class="eyebrow">Brand &amp; Press Kit / 2026.11</div><h1><span>把论文读进去，</span><span>把知识留下来。</span></h1><p>DeepSeek Harness 里的 AI 科研工作台 · 品牌视觉与真实产品场景</p></div><span class="pill">开发中 · PRE-RELEASE</span></header>
+    <a href="../assets/brand/readme-hero.png" target="_blank" rel="noopener"><img class="hero" src="../assets/brand/readme-hero.png" alt="戴学士帽的多边形蓝鲸与论文、笔记组成 Pappers-Hall 品牌主视觉"></a>
+    <div class="hero-caption"><span>README 主视觉 · 1920 × 819 PNG</span><span><a href="../assets/brand/readme-hero.png" download>中文原图 ↗</a> · <a href="../assets/brand/readme-hero-en.png" download>English hero ↗</a></span></div>
+
+    <section id="product">
+      <div class="section-head"><div><div class="eyebrow">01 / The research workbench</div><h2>研究的每一步，都接得起来。</h2></div><p>四张 Chrome 浅色模式实拍，完整保留产品视口。点击图片查看 2880 × 1800 原图。</p></div>
+      <div class="grid">
+        <figure><a href="../assets/screenshots/library-light.png" target="_blank" rel="noopener"><img src="../assets/screenshots/library-light.png" alt="论文资料库与元信息详情" loading="lazy"></a><figcaption><strong>01 / 收集材料</strong><p>文件夹、标签与阅读状态，让文献积累有条理。</p><a class="asset-link" href="../assets/screenshots/library-light.png" download>下载论文库截图 ↗</a></figcaption></figure>
+        <figure><a href="../assets/screenshots/reader-figures-light.png" target="_blank" rel="noopener"><img src="../assets/screenshots/reader-figures-light.png" alt="论文原始页面与图表目录" loading="lazy"></a><figcaption><strong>02 / 深入阅读</strong><p>原文、图表与批注，留在同一个阅读现场。</p><a class="asset-link" href="../assets/screenshots/reader-figures-light.png" download>下载原文图表截图 ↗</a></figcaption></figure>
+        <figure><a href="../assets/screenshots/notes-workbench-light.png" target="_blank" rel="noopener"><img src="../assets/screenshots/notes-workbench-light.png" alt="结构化笔记与关联论文并排" loading="lazy"></a><figcaption><strong>03 / 沉淀理解</strong><p>原文在旁，边读边写，把观点变成自己的知识。</p><a class="asset-link" href="../assets/screenshots/notes-workbench-light.png" download>下载并排笔记截图 ↗</a></figcaption></figure>
+        <figure><a href="../assets/screenshots/conversation-light.png" target="_blank" rel="noopener"><img src="../assets/screenshots/conversation-light.png" alt="材料引用加入尚未发送的研究提问草稿" loading="lazy"></a><figcaption><strong>04 / 继续研究</strong><p>把来源带进对话。画面为加入材料后的未发送草稿。</p><a class="asset-link" href="../assets/screenshots/conversation-light.png" download>下载来源对话截图 ↗</a></figcaption></figure>
+      </div>
+    </section>
+
+    <section id="campaign">
+      <div class="section-head"><div><div class="eyebrow">02 / Share the idea</div><h2>一套可以直接分享的视觉。</h2></div><p>竖版海报、横版封面与实景卡片，保持同一形象、配色与预发布口径。</p></div>
+      <div class="campaign">
+        <figure><a href="../assets/social/launch-poster.png" target="_blank" rel="noopener"><img src="../assets/social/launch-poster.png" alt="Pappers-Hall 竖版发布海报" loading="lazy"></a><figcaption><strong>竖版发布海报</strong><p>1086 × 1448 · 3:4</p><a class="asset-link" href="../assets/social/launch-poster.png" download>下载海报 ↗</a></figcaption></figure>
+        <div class="stack">
+          <figure><a href="../assets/social/social-preview.png" target="_blank" rel="noopener"><img src="../assets/social/social-preview.png" alt="让研究连成一线的横版分享封面" loading="lazy"></a><figcaption><strong>横版分享封面</strong><p>1774 × 887 · 2:1</p><a class="asset-link" href="../assets/social/social-preview.png" download>下载分享封面 ↗</a></figcaption></figure>
+          <figure><a href="../assets/social/workbench-card.png" target="_blank" rel="noopener"><img src="../assets/social/workbench-card.png" alt="并排阅读与笔记科研工作台展示卡片" loading="lazy"></a><figcaption><strong>科研工作台实景卡片</strong><p>2880 × 2160 · 4:3 · 真实界面排版</p><a class="asset-link" href="../assets/social/workbench-card.png" download>下载实景卡片 ↗</a></figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="identity"><div class="identity"><a href="../assets/brand/scholar-whale.png" download><img src="../assets/brand/scholar-whale.png" alt="透明背景的学士帽蓝色小鲸鱼"></a><div><div class="eyebrow">03 / The scholar whale</div><h2>认真研究，也保留一点好奇。</h2><p>简约的多边形蓝鲸，戴着深蓝学士帽与金色流苏。品牌插画由 Codex 图片生成工具制作，透明形象可用于角标、头像与演示页。</p><a class="asset-link" href="../assets/brand/scholar-whale.png" download>下载透明 PNG · 1254 × 1254 ↗</a><div class="swatches"><span class="swatch" style="background:#4d6bfe;color:#fff">#4D6BFE</span><span class="swatch" style="background:#132b56;color:#fff">#132B56</span><span class="swatch" style="background:#eaf0ff;color:#132b56">#F5F8FF</span><span class="swatch" style="background:#f4bd56;color:#132b56">#F4BD56</span></div></div></div></section>
+
+    <section id="resources"><div class="section-head"><div><div class="eyebrow">04 / Ready to use</div><h2>文案、规范与制作记录。</h2></div></div><div class="resources"><a class="resource" href="COPY.zh.md"><span class="eyebrow">Copy</span><b>发布文案 ↗</b><p>一句话介绍、社区短帖、项目长文与四张截图配文。</p></a><a class="resource" href="README.md"><span class="eyebrow">Assets</span><b>素材使用说明 ↗</b><p>尺寸、用途、配色与预发布信息。</p></a><a class="resource" href="SOURCES.md"><span class="eyebrow">Provenance</span><b>来源与生成记录 ↗</b><p>设计参考、截图说明、论文来源与完整提示词。</p></a></div></section>
+    <footer><span>Pappers-Hall · 独立 DSH 社区项目 · 开发中 / 预发布</span><a href="https://github.com/YuZhou0311/dsh-pappers-hall">github.com/YuZhou0311/dsh-pappers-hall ↗</a></footer>
+  </div>
+</body>
+</html>

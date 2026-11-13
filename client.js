@@ -18395,7 +18395,10 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
 @media (max-width: 1240px) {
   .ph-r-toolbar__actions .ph-r-btn__label { display: none; }
   .ph-r-toolbar__actions .ph-r-btn--sm { width: 28px; padding: 0; gap: 0; justify-content: center; }
-  .ph-r-toolbar__actions a.ph-r-btn--sm { width: 28px; padding: 0; justify-content: center; }
+  .ph-r-toolbar__actions a.ph-r-btn--sm { width: 28px; padding: 0; gap: 0; justify-content: center; }
+  /* Keep the note-link action readable when the toolbar collapses to icons. */
+  .ph-r-toolbar__actions .ph-r-btn.ph-r-toolbar__notelink { width: auto; min-width: 0; padding: 0 9px; gap: 5px; }
+  .ph-r-toolbar__actions .ph-r-btn.ph-r-toolbar__notelink .ph-r-btn__label { display: inline; }
 }
 @media (max-width: 860px) {
   .ph-r-toolbar__back .ph-r-btn__label { display: none; }
@@ -22308,10 +22311,11 @@ function ReaderToolbar(props) {
         import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite") }, rt("reader.cite")),
         import_react29.default.createElement(Btn, {
           size: "sm",
-          variant: "soft",
+          variant: linkedToNote ? "soft" : "primary",
           icon: linkedToNote ? "checkCircle" : "link",
           onClick: props.onLinkNote,
-          disabled: !noteContext || linkedToNote || !paper,
+          disabled: linkedToNote || !paper,
+          className: "ph-r-toolbar__notelink",
           title: !noteContext ? rt("reader.linkNote.noNote") : linkedToNote ? rt("reader.linkNote.linked") : rt("reader.linkNote.hint")
         }, linkedToNote ? rt("reader.linkNote.linkedShort") : rt("reader.linkNote.short")),
         import_react29.default.createElement(
@@ -23213,7 +23217,11 @@ function ReaderShellInner(props) {
     return subscribeNoteContext(sync);
   }, []);
   const linkCurrentPaper = import_react31.default.useCallback(() => {
-    if (!noteContext || typeof noteContext.linkPaper !== "function" || !paperId) return;
+    if (!noteContext || typeof noteContext.linkPaper !== "function") {
+      notify2("warning", rt("reader.linkNote.noNote"));
+      return;
+    }
+    if (!paperId || typeof noteContext.linkPaper !== "function") return;
     Promise.resolve(noteContext.linkPaper(paperId)).then((fresh) => {
       if (fresh) {
         setNoteContextState((current2) => current2 ? { ...current2, paperIds: Array.isArray(fresh.paperIds) ? fresh.paperIds : current2.paperIds } : current2);

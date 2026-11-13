@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.24.10
+
+- Made “关联到此笔记” a primary, always-visible reader action; its label no longer collapses when the toolbar switches to icon-only mode.
+- Clicking it without an open note now explains what to do instead of silently doing nothing.
+
 ## 0.24.9
 
 - Audited all 95 figure/table crops across 7 papers.

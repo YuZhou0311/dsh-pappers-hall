@@ -2323,7 +2323,10 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
 @media (max-width: 1240px) {
   .ph-r-toolbar__actions .ph-r-btn__label { display: none; }
   .ph-r-toolbar__actions .ph-r-btn--sm { width: 28px; padding: 0; gap: 0; justify-content: center; }
-  .ph-r-toolbar__actions a.ph-r-btn--sm { width: 28px; padding: 0; justify-content: center; }
+  .ph-r-toolbar__actions a.ph-r-btn--sm { width: 28px; padding: 0; gap: 0; justify-content: center; }
+  /* Keep the note-link action readable when the toolbar collapses to icons. */
+  .ph-r-toolbar__actions .ph-r-btn.ph-r-toolbar__notelink { width: auto; min-width: 0; padding: 0 9px; gap: 5px; }
+  .ph-r-toolbar__actions .ph-r-btn.ph-r-toolbar__notelink .ph-r-btn__label { display: inline; }
 }
 @media (max-width: 860px) {
   .ph-r-toolbar__back .ph-r-btn__label { display: none; }

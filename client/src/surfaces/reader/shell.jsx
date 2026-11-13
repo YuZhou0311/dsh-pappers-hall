@@ -807,7 +807,11 @@ function ReaderShellInner(props) {
   }, [])
 
   const linkCurrentPaper = React.useCallback(() => {
-    if (!noteContext || typeof noteContext.linkPaper !== 'function' || !paperId) return
+    if (!noteContext || typeof noteContext.linkPaper !== 'function') {
+      notify('warning', rt('reader.linkNote.noNote'))
+      return
+    }
+    if (!paperId || typeof noteContext.linkPaper !== 'function') return
     Promise.resolve(noteContext.linkPaper(paperId))
       .then((fresh) => {
         if (fresh) {

@@ -66,4 +66,54 @@ check('table caption block keeps all wrapped caption lines', () => {
   const [candidate] = detectFigureCandidates([page(lines, blocks)])
   assert.match(candidate.caption, /keep its explanation/)
 })
+check('table crop spans a column whose cells read as prose', () => {
+  // A "Key literature"-style column: long citation lines fail the cell test, so
+  // only its short header is accepted; the grid must still reach the column.
+  const lines = [caption('Table 1. Models.', 55, 300)]
+  const blocks = [
+    captionBlock('Table 1. Models.', 55, 300, 236, 20),
+    ...tableGrid(340),
+    block('Key literature', 300, 340, 60, 10),
+    block('de Wit and van Diepen (2008)\nDrewniak et al. (2013)\nEPIC v0810 - Izaurralde et al. (2006)\nGEPIC v0810 - Liu et al. (2007)', 300, 352, 200, 60),
+  ]
+  const [candidate] = detectFigureCandidates([page(lines, blocks)])
+  assert.ok(candidate.bbox.x + candidate.bbox.w >= 500, JSON.stringify(candidate.bbox))
+})
+check('table that arrives as one prose-looking block is cropped to that block', () => {
+  // Prompt templates: one block, every line too long to look like a table cell.
+  const lines = [caption('Table 2. A prompt on the ALFWorld clean task.', 90, 300)]
+  const blocks = [
+    captionBlock('Table 2. A prompt on the ALFWorld clean task.', 90, 300, 220, 20),
+    block('You are in the middle of a room. Looking quickly around you, you see a cabinet 13, a cabinet 12.\n> think: To solve the task, I need to find and take a lettuce, then clean it.\n> go to fridge 1\nThe fridge 1 is closed.', 114, 330, 350, 220),
+  ]
+  const [candidate] = detectFigureCandidates([page(lines, blocks)])
+  assert.ok(candidate.bbox.x <= 112, JSON.stringify(candidate.bbox))
+  assert.ok(candidate.bbox.x + candidate.bbox.w >= 462, JSON.stringify(candidate.bbox))
+})
+check('numbered section heading in the next column is not a table cell', () => {
+  // A heading right of the grid used to stretch a left-column table across the
+  // page gutter and swallow the neighbouring column.
+  const lines = [caption('Table 4. Pass@1 accuracy.', 55, 300)]
+  const blocks = [
+    ...tableGrid(100),
+    captionBlock('Table 4. Pass@1 accuracy.', 55, 300, 236, 20),
+    block('6. Conclusion', 320, 120, 90, 10),
+  ]
+  const [candidate] = detectFigureCandidates([page(lines, blocks)])
+  assert.ok(candidate.bbox.x + candidate.bbox.w <= 300, JSON.stringify(candidate.bbox))
+})
+check('figure crop spans both panels when the caption is narrower', () => {
+  // Diagram on the left, pseudocode panel on the right, caption below both.
+  const lines = [caption('Figure 2. (a) Diagram of the method. (b) The algorithm.', 150, 500, 300)]
+  const blocks = [
+    block('External feedback', 124, 200, 60, 10),
+    block('Actor (LM)', 229, 300, 40, 10),
+    block('Algorithm 1 Reinforcement via self-reflection', 314, 200, 180, 20),
+    block('Initialize Actor, Evaluator, Self-Reflection\nfor each trial do\n  generate trajectory', 324, 230, 180, 180),
+    captionBlock('Figure 2. (a) Diagram of the method. (b) The algorithm.', 150, 500, 300, 20),
+  ]
+  const [candidate] = detectFigureCandidates([page(lines, blocks)])
+  assert.ok(candidate.bbox.x <= 125, JSON.stringify(candidate.bbox))
+  assert.ok(candidate.bbox.x + candidate.bbox.w >= 503, JSON.stringify(candidate.bbox))
+})
 console.log(`${process.exitCode ? 'FAIL' : 'PASS'} — ${pass} figure-crop checks`)

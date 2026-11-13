@@ -2330,27 +2330,6 @@ button.ph-iconbtn { font: inherit; }
 .ph-annotgroup__head:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .ph-annotgroup__title { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ph-side-annotfilters { display: flex; gap: 4px; padding: 2px 2px 6px; flex-wrap: wrap; }
-.ph-side-figgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 4px 2px; }
-.ph-side-fig {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0;
-  border: 1px solid var(--ph-line-soft);
-  border-radius: var(--ph-r-sm);
-  background: var(--ph-surface-1);
-  overflow: hidden;
-  cursor: pointer;
-  text-align: left;
-  color: inherit;
-  font: inherit;
-  transition: border-color var(--ph-fast) var(--ph-ease), transform var(--ph-fast) var(--ph-ease), box-shadow var(--ph-fast) var(--ph-ease);
-}
-.ph-side-fig:hover { border-color: var(--ph-accent-line); transform: translateY(-1px); box-shadow: var(--ph-shadow-1); }
-.ph-side-fig__img { aspect-ratio: 4 / 3; background: var(--ph-surface-3); display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--ph-ink-3); }
-.ph-side-fig__img img { width: 100%; height: 100%; object-fit: cover; }
-.ph-side-fig__caption { font-size: var(--ph-fs-11); line-height: 1.4; padding: 4px 6px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-side-fig .ph-caption { padding: 0 6px 5px; font-size: var(--ph-fs-11); }
 .ph-side-collections { display: flex; flex-direction: column; gap: 1px; }
 .ph-side-collection {
   display: flex;
@@ -2372,7 +2351,6 @@ button.ph-iconbtn { font: inherit; }
 .ph-side-skeleton { display: flex; flex-direction: column; gap: 7px; padding: 4px; }
 .ph-side-skeleton__row { display: flex; gap: 7px; align-items: center; }
 .ph-side-skeleton__main { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-.ph-side-figskeleton { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 
 /* ---- composer dock + reference cards ---------------------------------- */
 .ph-dock {
@@ -3153,7 +3131,6 @@ body.ph-dnd-dragging [data-ph-drag] { opacity: 0.55; }
   .ph-gridcard:hover,
   .ph-figcard:hover,
   .ph-tagchip:hover,
-  .ph-side-fig:hover,
   .ph-refcard:hover { transform: none; }
   .ph-rowitem:nth-child(n) { animation: none; }
   .ph-switch__dot { transition: none; }

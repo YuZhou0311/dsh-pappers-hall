@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.24.25
+
+- The reading sidebar no longer auto-opens in a normal browser (screenshot/web use); automatic opening is limited to the desktop Electron shell and once per session.
+
+## 0.24.27
+
+- A figure that spans both page columns is no longer cropped to its (narrower) caption: the crop grows across the panels the caption already reaches, so diagram-plus-pseudocode figures stop losing their outer edges.
+- Added `scripts/audit-figure-crops.mjs`, which re-runs the production detection path over the stored library and reports crops that changed, slice a text column or swallow a neighbouring caption (report in `reports/figure-crops.json`).
+- Figure-crop regression tests now cover the four repaired mechanisms: prose-like columns, single-block tables, numbered section headings and two-column figures.
+- The one-time table-crop repair marker moved to v19 so libraries repaired under v18 pick up the wider figure crops.
+
+## 0.24.26
+
+- Table crops no longer slice a column whose cells hold long text (citation lists, prompt templates): the grid now extends across any block it already reaches instead of stopping at the last column that looked like a cell.
+- A table that arrives as one prose-looking block (prompt templates, wide reference tables) is cropped to that block instead of the caption column, so it is no longer cut in half.
+- Numbered section headings (“6. Conclusion”) are no longer counted as table cells, which used to stretch a left-column table into the neighbouring column.
+- The one-time table-crop repair marker moved to v18, so existing libraries are re-cropped in place on the next mount (figure ids, annotations and note references stay valid).
+
+## 0.24.25
+
+- Figures on the reader page are now drag sources: drag a figure box straight into the conversation (session row or composer) or into an open note, with the real figure as the drag ghost.
+- Removed the conversation sidebar's 图片 tab and its figure wall; figures are picked from the paper itself (page boxes or the reader's 图表 panel).
+- The reader's figure highlight and the page drag boxes now share one bbox normaliser, so PDF-point and 0–1 boxes land on the same rectangle.
+- Conversations no longer open the paper drawer by themselves: the drawer appears only from its header button or an explicit “打开论文抽屉” action, not on plugin startup or header mount.
+- Fixed the conversation being clipped under the drawer: the plugin stopped reporting `layout.openRightbar(false, …)`. That report reserves no grid track, so the frame hung the panel over the centre; `ui-sidebar-right` now keeps its normal track and the centre makes room.
+
 ## 0.24.24
 
 - Conversation-sidebar figures, annotations/passages and notes are draggable into the chat composer; material drops insert a Pappers-Hall reference bundle.

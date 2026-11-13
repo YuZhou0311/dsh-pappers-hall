@@ -317,6 +317,27 @@ async function main() {
       console.log('reader state:', JSON.stringify(reader).slice(0, 1500))
       writeFileSync(join(OUT, 'reader-text.txt'), reader.snippet ?? '')
       await captureButtons('reader')
+      if (STEPS.includes('reader-figure-page-drag')) {
+        // Figures on the page are drag sources; the payload must be a figure
+        // material so a drop on a session row or the composer can reference it.
+        const regions = await evaluate(`(() => {
+          const nodes = [...document.querySelectorAll('.ph-r-figdrag')]
+          return { count: nodes.length, ids: nodes.slice(0, 5).map((node) => node.getAttribute('data-ph-figure-drag')), draggable: nodes.every((node) => node.draggable) }
+        })()`)
+        console.log('page figure regions:', JSON.stringify(regions))
+        const payload = await evaluate(`(() => {
+          const node = document.querySelector('.ph-r-figdrag')
+          if (!node) return { found: false }
+          const data = new DataTransfer()
+          node.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: data }))
+          const raw = data.getData('application/x-pappers-hall-material')
+          node.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: data }))
+          return { found: true, types: [...data.types], payload: raw.slice(0, 240) }
+        })()`)
+        console.log('page figure drag payload:', JSON.stringify(payload))
+        if (payload.found && !String(payload.payload || '').includes('figure')) throw new Error('page figure drag published no figure material')
+        await shot('03g-reader-figure-page-drag')
+      }
       if (STEPS.includes('reader-figures')) {
         const tab = await evaluate(`(() => {
           const button = [...document.querySelectorAll('.ph-r-side__tabs button, .ph-r-side__tabs [role="tab"]')].find((item) => (item.textContent || '').trim().startsWith('图表'))
@@ -390,15 +411,14 @@ async function main() {
       console.log('drawer state:', JSON.stringify(drawerState.hasDrawer))
       await captureButtons('drawer')
       if (STEPS.includes('drawer-drag-to-chat')) {
-        const figTab = await evaluate(`(() => {
-          const target = [...document.querySelectorAll('.ph-sidebar__tabs button')].find((button) => (button.textContent || '').includes('图片'))
-          if (!target) return false
-          target.click()
-          return true
-        })()`)
-        await sleep(900)
+        // The drawer no longer has a 图片 tab: figures enter the chat from the
+        // paper itself, so this step guards the removal and drags a paper row.
+        const sidebarTabs = await evaluate(`(() => [...document.querySelectorAll('.ph-sidebar__tabs button')].map((button) => (button.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean))()`)
+        console.log('sidebar tabs:', JSON.stringify(sidebarTabs))
+        if (sidebarTabs.some((label) => label.includes('图片'))) throw new Error('the drawer still exposes a 图片 tab')
+        await sleep(300)
         const dragged = await evaluate(`(() => {
-          const source = document.querySelector('.ph-side-fig, .ph-r-figcard, .ph-side-row--paper .ph-side-row__main')
+          const source = document.querySelector('.ph-r-figcard, .ph-side-row--paper .ph-side-row__main')
           const inputs = [...document.querySelectorAll('textarea, [contenteditable="true"]')].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 120 && r.height > 20 })
           const input = inputs[inputs.length - 1]
           if (!source || !input) return { source: Boolean(source), input: inputs.length }
@@ -409,7 +429,7 @@ async function main() {
           source.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }))
           return { source: true, input: inputs.length, types: [...dt.types], text: (dt.getData('text/plain') || '').slice(0, 120) }
         })()`)
-        console.log('drawer drag to composer:', JSON.stringify(dragged), 'tab:', figTab)
+        console.log('drawer drag to composer:', JSON.stringify(dragged))
         await sleep(2200)
         const composer = await evaluate(`(() => { const inputs = [...document.querySelectorAll('textarea, [contenteditable="true"]')].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 120 && r.height > 20 }); return (inputs[inputs.length - 1]?.value || inputs[inputs.length - 1]?.innerText || '').slice(0, 400) })()`)
         console.log('composer after drawer drag:', JSON.stringify(composer))

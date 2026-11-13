@@ -181,7 +181,6 @@ export function DrawerBody(props) {
   const [debounced, setDebounced] = React.useState('')
   const [feed, setFeed] = React.useState({ status: 'loading', data: null, error: null })
   const [annotations, setAnnotations] = React.useState({ status: 'loading', items: [], error: null, hasMore: false })
-  const [figures, setFigures] = React.useState({ status: 'loading', items: [], error: null })
   const [notes, setNotes] = React.useState({ status: 'idle', items: [], error: null })
   const [noteTotal, setNoteTotal] = React.useState(0)
   const [revision, setRevision] = React.useState(0)
@@ -363,72 +362,6 @@ export function DrawerBody(props) {
   }, [tab, debounced, filters.color, filters.kind, filters.paperId, filters.folderId, filters.tags, revision])
 
   React.useEffect(() => {
-    if (tab !== 'figures') return undefined
-    let alive = true
-    setFigures((previous) => ({ status: previous.items.length > 0 ? 'refreshing' : 'loading', items: previous.items, error: null }))
-    const scopedFolderId = filters.folderId || ''
-    const scopedTags = Array.isArray(filters.tags) ? filters.tags.slice() : []
-    const hasFolderScope = Boolean(scopedFolderId || scopedTags.length > 0)
-    const loadAllowed = async () => {
-      if (!hasFolderScope) return null
-      const value = await defaultApi('library.list', {
-        state: 'active',
-        limit: 500,
-        ...(scopedFolderId ? { folderId: scopedFolderId } : {}),
-        ...(scopedTags.length > 0 ? { tags: scopedTags } : {}),
-      })
-      return new Set((Array.isArray(value && value.items) ? value.items : []).map((paper) => paper && paper.id).filter(Boolean))
-    }
-    const keep = (allowed) => (entry) => {
-      if (filters.paperId && entry.paperId !== filters.paperId) return false
-      if (allowed !== null && allowed !== undefined && !allowed.has(entry.paperId)) return false
-      return true
-    }
-    const normalize = (entry) => ({
-      figure: { id: entry.id, paperId: entry.paperId, page: entry.page, label: entry.label, caption: entry.caption, imageUrl: entry.imageUrl },
-      paper: { id: entry.paperId, titleZh: entry.paperTitle, title: entry.paperTitle },
-      page: entry.page,
-    })
-    const load = async () => {
-      let allowed = null
-      try { allowed = await loadAllowed() } catch (error) { allowed = new Set() }
-      if (!alive) return
-      if (!debounced) {
-        const recent = ((feed.data && feed.data.recentFigures) || []).filter(keep(allowed))
-        if (recent.length > 0) { setFigures({ status: 'ready', items: recent.map(normalize), error: null }); return }
-        try {
-          const value = await defaultApi('discover.feed', { limit: 8 })
-          if (!alive) return
-          const items = ((value && value.recentFigures) || []).filter(keep(allowed)).map(normalize)
-          setFigures({ status: 'ready', items: items, error: null, filtered: hasFolderScope })
-          return
-        } catch (error) {
-          try {
-            const value = await defaultApi('search.query', { q: ' ', scope: 'figures', limit: 24 })
-            if (!alive) return
-            const items = (Array.isArray(value && value.items) ? value.items : []).filter((hit) => (allowed === null ? true : allowed.has(hit.paperId)))
-            setFigures({ status: 'ready', items: items, error: null, filtered: hasFolderScope })
-            return
-          } catch (fallbackError) {
-            if (alive) setFigures({ status: 'error', items: [], error: fallbackError })
-            return
-          }
-        }
-      }
-      try {
-        const value = await defaultApi('search.query', { q: debounced, scope: 'figures', limit: 24 })
-        if (!alive) return
-        const items = (Array.isArray(value && value.items) ? value.items : []).filter((hit) => (allowed === null ? true : allowed.has(hit.paperId)))
-        setFigures({ status: 'ready', items: items, error: null, filtered: hasFolderScope })
-      } catch (error) {
-        if (alive) setFigures({ status: 'error', items: [], error: error })
-      }
-    }
-    load()
-    return () => { alive = false }
-  }, [tab, debounced, filters.paperId, filters.folderId, filters.tags, revision, feed.data])
-
-  React.useEffect(() => {
     if (tab !== 'notes') return undefined
     let alive = true
     setNotes({ status: 'loading', items: [], error: null })
@@ -533,13 +466,12 @@ export function DrawerBody(props) {
   const counts = {
     papers: stats.papers != null ? stats.papers : (feed.data && feed.data.unread ? feed.data.unread.length : 0),
     annotations: stats.annotations != null ? stats.annotations : annotations.items.length || recentAnnotations.length,
-    figures: stats.figures != null ? stats.figures : figures.items.length || recentFigures.length,
+    figures: stats.figures != null ? stats.figures : recentFigures.length,
     notes: noteTotal || (stats.noteDocs != null ? Number(stats.noteDocs) || 0 : 0) || notes.items.length || recentAnnotations.filter((item) => item && item.kind === 'note').length,
   }
   const tabs = [
     { id: 'papers', label: t('drawer.tab.papers'), count: counts.papers },
     { id: 'annotations', label: t('drawer.tab.annotations'), count: counts.annotations },
-    { id: 'figures', label: t('drawer.tab.figures'), count: counts.figures },
     { id: 'notes', label: t('drawer.tab.notes'), count: counts.notes },
   ]
   const groups = feed.data
@@ -628,24 +560,6 @@ export function DrawerBody(props) {
                 collapsed[paperId] ? null : group.items.map((item) => h(AnnotationRow, { key: item.id, t: t, item: item, onOpen: (entry) => openItem({ paperId: entry.paperId, page: entry.page }, entry.page, entry.id), onCite: cite, onCopy: (entry) => copyText(entry.quote || entry.comment || '').then((ok) => push(ok ? 'success' : 'warning', ok ? t('common.copied') : t('common.unavailable'))) })),
               )),
             )
-    body = h('div', null, filterBar, body)
-  } else if (tab === 'figures') {
-    body = figures.status === 'loading' && figures.items.length === 0
-      ? h('div', { className: 'ph-side-figskeleton' }, [0, 1, 2, 3].map((i) => h('div', { key: i, className: 'ph-skeleton', style: { aspectRatio: '4/3', borderRadius: 8 } })))
-      : figures.status === 'error'
-        ? h(EmptyState, { compact: true, tone: 'error', icon: 'warning', title: t('drawer.loadFailed', { message: describeError(t, figures.error) }) })
-        : figures.items.length === 0
-          ? h(EmptyState, { compact: true, icon: 'image', title: t('drawer.hint.figures') })
-          : h('div', { className: 'ph-side-figgrid' }, figures.items.map((entry) => {
-              const figure = entry.figure || entry
-              const paper = entry.paper || {}
-              const imageUrl = figure.imageUrl || (figure.id ? '/pappers-hall/figure/' + figure.id + '.png?width=480' : '')
-              return h('button', Object.assign({ key: figure.id || Math.random(), type: 'button', className: 'ph-side-fig', title: t('drawer.dragHint'), onClick: () => openItem({ paperId: figure.paperId || paper.id, page: figure.page || entry.page }, figure.page || entry.page) }, dragProps(t, [{ kind: 'figure', id: figure.id, paperId: figure.paperId || paper.id, page: figure.page || entry.page, title: figure.label || t('drawer.tab.figures') }], { source: 'sidebar' })),
-                h('span', { className: 'ph-side-fig__img' }, imageUrl ? h('img', { src: imageUrl, alt: '', loading: 'lazy', onError: (e) => { e.currentTarget.style.display = 'none' } }) : h(Icon, { name: 'figure', size: 20 })),
-                h('span', { className: 'ph-side-fig__caption' }, firstText(figure.caption, paper.titleZh, paper.title, t('drawer.tab.figures'))),
-                h('span', { className: 'ph-caption' }, t('figure.search.pageFigure', { page: Number(figure.page || entry.page) || 1, label: figure.label || '?' })),
-              )
-            }))
     body = h('div', null, filterBar, body)
   } else {
     body = notes.status === 'loading'

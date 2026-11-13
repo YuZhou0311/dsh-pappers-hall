@@ -1895,6 +1895,42 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   .ph-ai-md, .ph-ai-md pre, .ph-ai-md__tablewrap { scroll-behavior: auto; }
 }
 
+/* Draggable figure boxes (figures dropped straight into chat or a note) */
+.ph-r-figdrags { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.ph-r-figdrag {
+  position: absolute;
+  pointer-events: auto;
+  cursor: grab;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+.ph-r-figdrag:hover {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 58%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent);
+}
+.ph-r-figdrag:active { cursor: grabbing; }
+.ph-r-figdrag__chip {
+  position: absolute;
+  left: 0;
+  top: -22px;
+  display: none;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  white-space: nowrap;
+  background: color-mix(in srgb, #000 62%, transparent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+.ph-r-figdrag:hover .ph-r-figdrag__chip { display: inline-flex; }
+
 /* v0.15 temporary figure highlight */
 .ph-r-fighl {
   position: absolute; z-index: 6; pointer-events: none;

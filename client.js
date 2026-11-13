@@ -2423,27 +2423,6 @@ button.ph-iconbtn { font: inherit; }
 .ph-annotgroup__head:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .ph-annotgroup__title { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ph-side-annotfilters { display: flex; gap: 4px; padding: 2px 2px 6px; flex-wrap: wrap; }
-.ph-side-figgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 4px 2px; }
-.ph-side-fig {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0;
-  border: 1px solid var(--ph-line-soft);
-  border-radius: var(--ph-r-sm);
-  background: var(--ph-surface-1);
-  overflow: hidden;
-  cursor: pointer;
-  text-align: left;
-  color: inherit;
-  font: inherit;
-  transition: border-color var(--ph-fast) var(--ph-ease), transform var(--ph-fast) var(--ph-ease), box-shadow var(--ph-fast) var(--ph-ease);
-}
-.ph-side-fig:hover { border-color: var(--ph-accent-line); transform: translateY(-1px); box-shadow: var(--ph-shadow-1); }
-.ph-side-fig__img { aspect-ratio: 4 / 3; background: var(--ph-surface-3); display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--ph-ink-3); }
-.ph-side-fig__img img { width: 100%; height: 100%; object-fit: cover; }
-.ph-side-fig__caption { font-size: var(--ph-fs-11); line-height: 1.4; padding: 4px 6px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.ph-side-fig .ph-caption { padding: 0 6px 5px; font-size: var(--ph-fs-11); }
 .ph-side-collections { display: flex; flex-direction: column; gap: 1px; }
 .ph-side-collection {
   display: flex;
@@ -2465,7 +2444,6 @@ button.ph-iconbtn { font: inherit; }
 .ph-side-skeleton { display: flex; flex-direction: column; gap: 7px; padding: 4px; }
 .ph-side-skeleton__row { display: flex; gap: 7px; align-items: center; }
 .ph-side-skeleton__main { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-.ph-side-figskeleton { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 
 /* ---- composer dock + reference cards ---------------------------------- */
 .ph-dock {
@@ -3246,7 +3224,6 @@ body.ph-dnd-dragging [data-ph-drag] { opacity: 0.55; }
   .ph-gridcard:hover,
   .ph-figcard:hover,
   .ph-tagchip:hover,
-  .ph-side-fig:hover,
   .ph-refcard:hover { transform: none; }
   .ph-rowitem:nth-child(n) { animation: none; }
   .ph-switch__dot { transition: none; }
@@ -18040,6 +18017,42 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
   .ph-ai-md, .ph-ai-md pre, .ph-ai-md__tablewrap { scroll-behavior: auto; }
 }
 
+/* Draggable figure boxes (figures dropped straight into chat or a note) */
+.ph-r-figdrags { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.ph-r-figdrag {
+  position: absolute;
+  pointer-events: auto;
+  cursor: grab;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+.ph-r-figdrag:hover {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 58%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent);
+}
+.ph-r-figdrag:active { cursor: grabbing; }
+.ph-r-figdrag__chip {
+  position: absolute;
+  left: 0;
+  top: -22px;
+  display: none;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  white-space: nowrap;
+  background: color-mix(in srgb, #000 62%, transparent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+.ph-r-figdrag:hover .ph-r-figdrag__chip { display: inline-flex; }
+
 /* v0.15 temporary figure highlight */
 .ph-r-fighl {
   position: absolute; z-index: 6; pointer-events: none;
@@ -21707,6 +21720,7 @@ function PageViewImpl(props) {
       import_react28.default.createElement("span", null, t("reader.page.imageFailed")),
       import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
     ) : null,
+    interactive ? import_react28.default.createElement(FigureDragRegions, { t, figures: props.figures, paperId, page: page2 }) : null,
     import_react28.default.createElement(PageTextLayer, {
       key: "text-" + page2,
       page: page2,
@@ -21892,7 +21906,7 @@ function PageViewImpl(props) {
   );
 }
 var PageView = import_react28.default.memo(PageViewImpl, (previous, next) => {
-  return previous.paperId === next.paperId && previous.pageInfo === next.pageInfo && previous.width === next.width && previous.height === next.height && previous.active === next.active && previous.mode === next.mode && previous.reducedMotion === next.reducedMotion && previous.pageDataEntry === next.pageDataEntry && previous.layerEntry === next.layerEntry && previous.activeAnnotationId === next.activeAnnotationId && previous.selection === next.selection && previous.selectionResult === next.selectionResult && previous.popover === next.popover && previous.noteDraft === next.noteDraft && previous.search === next.search && previous.t === next.t && sameAnnotations(previous.annotations, next.annotations);
+  return previous.paperId === next.paperId && previous.pageInfo === next.pageInfo && previous.width === next.width && previous.height === next.height && previous.active === next.active && previous.mode === next.mode && previous.reducedMotion === next.reducedMotion && previous.pageDataEntry === next.pageDataEntry && previous.layerEntry === next.layerEntry && previous.activeAnnotationId === next.activeAnnotationId && previous.selection === next.selection && previous.selectionResult === next.selectionResult && previous.popover === next.popover && previous.noteDraft === next.noteDraft && previous.search === next.search && previous.figures === next.figures && previous.t === next.t && sameAnnotations(previous.annotations, next.annotations);
 });
 function ColorPenRow(props) {
   return import_react28.default.createElement(
@@ -21985,6 +21999,108 @@ function SelectionResultCard(props) {
     ) : null
   );
 }
+function figureRectStyle(bbox) {
+  if (!bbox) return null;
+  let x = Number(bbox.x);
+  let y = Number(bbox.y);
+  let w = Number(bbox.w);
+  let h3 = Number(bbox.h);
+  if (![x, y, w, h3].every((value) => Number.isFinite(value))) return null;
+  const pageWidth = Number(bbox.pageWidth);
+  const pageHeight = Number(bbox.pageHeight);
+  if (Number.isFinite(pageWidth) && pageWidth > 0 && Number.isFinite(pageHeight) && pageHeight > 0 && (x > 1 || y > 1 || w > 1 || h3 > 1)) {
+    x /= pageWidth;
+    y /= pageHeight;
+    w /= pageWidth;
+    h3 /= pageHeight;
+  }
+  return {
+    left: (clamp(x, 0, 1) * 100).toFixed(3) + "%",
+    top: (clamp(y, 0, 1) * 100).toFixed(3) + "%",
+    width: (clamp(w, 1e-3, 1) * 100).toFixed(3) + "%",
+    height: (clamp(h3, 1e-3, 1) * 100).toFixed(3) + "%"
+  };
+}
+var dragGhosts = /* @__PURE__ */ new Map();
+function dragGhostFor(figure, id) {
+  if (typeof document === "undefined" || !id) return null;
+  const cached = dragGhosts.get(id);
+  if (cached) return cached;
+  const url = figure && figure.imageUrl || "/pappers-hall/figure/" + id + ".png?width=320";
+  const img = document.createElement("img");
+  img.src = url;
+  img.alt = "";
+  img.setAttribute("aria-hidden", "true");
+  img.style.cssText = "position:fixed;left:-10000px;top:-10000px;width:140px;height:auto;pointer-events:none;";
+  document.body.appendChild(img);
+  dragGhosts.set(id, img);
+  if (dragGhosts.size > 40) {
+    const oldest = dragGhosts.keys().next().value;
+    const node = dragGhosts.get(oldest);
+    if (node && node.parentNode) node.parentNode.removeChild(node);
+    dragGhosts.delete(oldest);
+  }
+  return img;
+}
+function FigureDragRegions(props) {
+  const t = props.t;
+  const regions = [];
+  for (const figure of arrayOf3(props.figures)) {
+    const id = figure && (figure.id || figure.figureId);
+    const style = figureRectStyle(figure && figure.bbox);
+    if (!id || !style) continue;
+    const label = firstText3(figure.label);
+    const page2 = Math.round(num(figure.page, props.page));
+    const material = {
+      kind: "figure",
+      id,
+      figureId: id,
+      paperId: figure.paperId || props.paperId,
+      page: page2 > 0 ? page2 : props.page,
+      label,
+      title: label,
+      caption: firstText3(figure.caption)
+    };
+    const baseDrag = dragProps(t, [material], { source: "page" });
+    const regionDrag = Object.assign({}, baseDrag, {
+      onDragStart: (event) => {
+        const ghost = dragGhostFor(figure, String(id));
+        if (ghost) {
+          try {
+            event.dataTransfer.setDragImage(ghost, 24, 24);
+          } catch (error) {
+          }
+        }
+        baseDrag.onDragStart(event);
+      }
+    });
+    regions.push(import_react28.default.createElement(
+      "div",
+      Object.assign(
+        {
+          key: "figdrag-" + id,
+          className: "ph-r-figdrag",
+          style,
+          title: t("reader.figure.dragHint"),
+          role: "img",
+          "aria-label": label ? t("reader.figure.dragLabel", { label }) : t("reader.figure.dragHint"),
+          "data-ph-figure-drag": String(id),
+          // A native material drag must never race the geometric text selection.
+          onMouseDown: (event) => event.stopPropagation(),
+          onClick: (event) => event.stopPropagation()
+        },
+        regionDrag
+      ),
+      import_react28.default.createElement(
+        "span",
+        { className: "ph-r-figdrag__chip", "aria-hidden": "true" },
+        label ? t("reader.figure.dragChip", { label }) : t("reader.figure.dragChipNoLabel")
+      )
+    ));
+  }
+  if (regions.length === 0) return null;
+  return import_react28.default.createElement("div", { className: "ph-r-figdrags" }, regions);
+}
 function FigureHighlightOverlay(props) {
   const t = props.t;
   const focus = props.figureFocus;
@@ -21999,26 +22115,8 @@ function FigureHighlightOverlay(props) {
   if (!focus || !focus.bbox) return null;
   if (expired) return null;
   if (props.page != null && Number(focus.page) !== Number(props.page)) return null;
-  const bbox = focus.bbox || {};
-  let x = Number(bbox.x);
-  let y = Number(bbox.y);
-  let w = Number(bbox.w);
-  let h3 = Number(bbox.h);
-  if (![x, y, w, h3].every((value) => Number.isFinite(value))) return null;
-  const pageWidth = Number(bbox.pageWidth);
-  const pageHeight = Number(bbox.pageHeight);
-  if (Number.isFinite(pageWidth) && pageWidth > 0 && Number.isFinite(pageHeight) && pageHeight > 0 && (x > 1 || y > 1 || w > 1 || h3 > 1)) {
-    x /= pageWidth;
-    y /= pageHeight;
-    w /= pageWidth;
-    h3 /= pageHeight;
-  }
-  const style = {
-    left: (Math.max(0, Math.min(1, x)) * 100).toFixed(3) + "%",
-    top: (Math.max(0, Math.min(1, y)) * 100).toFixed(3) + "%",
-    width: (Math.max(1e-3, Math.min(1, w)) * 100).toFixed(3) + "%",
-    height: (Math.max(1e-3, Math.min(1, h3)) * 100).toFixed(3) + "%"
-  };
+  const style = figureRectStyle(focus.bbox);
+  if (!style) return null;
   const label = focus.figureLabel ? t("reader.figure.highlightLabel", { label: focus.figureLabel }) : t("reader.figure.highlight");
   return import_react28.default.createElement(
     "div",
@@ -22167,6 +22265,16 @@ function PageCanvas(props) {
     }
   }, [props.ensureLayer, props.ensurePage, props.dataVersion, visibleRange]);
   const annotationsByPage = useAnnotationsByPage(props.annotations);
+  const figuresByPage = import_react28.default.useMemo(() => {
+    const map = /* @__PURE__ */ new Map();
+    for (const figure of arrayOf3(props.figures)) {
+      const figurePage = Math.round(num(figure && figure.page, 0));
+      if (!(figurePage > 0)) continue;
+      if (!map.has(figurePage)) map.set(figurePage, []);
+      map.get(figurePage).push(figure);
+    }
+    return map;
+  }, [props.figures]);
   const children = [];
   for (let index = 0; index < layout.length; index += 1) {
     const item = layout[index];
@@ -22207,6 +22315,7 @@ function PageCanvas(props) {
         noteDraft: props.noteDraft,
         search: props.search,
         figureFocus: props.figureFocus,
+        figures: figuresByPage.get(descriptor.page) || EMPTY_LIST,
         reducedMotion: props.reducedMotion,
         onSelection: props.actions.onSelection,
         onSelectionAction: props.actions.onSelectionAction,
@@ -22834,6 +22943,7 @@ function ReaderShellInner(props) {
     return Math.max(1, count);
   }, [pages, paper]);
   const [figureFocus, setFigureFocus] = import_react31.default.useState(null);
+  const [paperFigures, setPaperFigures] = import_react31.default.useState({ paperId: "", items: [] });
   const [noteContext, setNoteContextState] = import_react31.default.useState(() => getNoteContext());
   const figureFocusTimer = import_react31.default.useRef(null);
   const [page2, setPage] = import_react31.default.useState(() => {
@@ -24381,6 +24491,20 @@ function ReaderShellInner(props) {
   }, [paperId, page2]);
   const markedRef = import_react31.default.useRef("");
   import_react31.default.useEffect(() => {
+    if (openState.status !== "ready" || !paperId) return void 0;
+    let alive = true;
+    Promise.resolve(apiCall("figures.list", { paperId })).then((result) => {
+      if (!alive) return;
+      const items2 = Array.isArray(result) ? result : Array.isArray(result && result.items) ? result.items : [];
+      setPaperFigures({ paperId, items: items2 });
+    }).catch(() => {
+      if (alive) setPaperFigures({ paperId, items: [] });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [apiCall, openState.status, paperId]);
+  import_react31.default.useEffect(() => {
     if (openState.status !== "ready" || !paperId || markedRef.current === paperId) return;
     markedRef.current = paperId;
     try {
@@ -24665,6 +24789,7 @@ function ReaderShellInner(props) {
         jump,
         focus: search.focus,
         figureFocus,
+        figures: paperFigures.paperId === paperId ? paperFigures.items : null,
         mode: tool,
         annotations,
         activeAnnotationId,
@@ -28182,7 +28307,6 @@ function DrawerBody(props) {
   const [debounced, setDebounced] = import_react42.default.useState("");
   const [feed, setFeed] = import_react42.default.useState({ status: "loading", data: null, error: null });
   const [annotations, setAnnotations] = import_react42.default.useState({ status: "loading", items: [], error: null, hasMore: false });
-  const [figures, setFigures] = import_react42.default.useState({ status: "loading", items: [], error: null });
   const [notes, setNotes] = import_react42.default.useState({ status: "idle", items: [], error: null });
   const [noteTotal, setNoteTotal] = import_react42.default.useState(0);
   const [revision2, setRevision] = import_react42.default.useState(0);
@@ -28362,80 +28486,6 @@ function DrawerBody(props) {
     };
   }, [tab, debounced, filters.color, filters.kind, filters.paperId, filters.folderId, filters.tags, revision2]);
   import_react42.default.useEffect(() => {
-    if (tab !== "figures") return void 0;
-    let alive = true;
-    setFigures((previous) => ({ status: previous.items.length > 0 ? "refreshing" : "loading", items: previous.items, error: null }));
-    const scopedFolderId = filters.folderId || "";
-    const scopedTags = Array.isArray(filters.tags) ? filters.tags.slice() : [];
-    const hasFolderScope = Boolean(scopedFolderId || scopedTags.length > 0);
-    const loadAllowed = async () => {
-      if (!hasFolderScope) return null;
-      const value = await defaultApi("library.list", {
-        state: "active",
-        limit: 500,
-        ...scopedFolderId ? { folderId: scopedFolderId } : {},
-        ...scopedTags.length > 0 ? { tags: scopedTags } : {}
-      });
-      return new Set((Array.isArray(value && value.items) ? value.items : []).map((paper) => paper && paper.id).filter(Boolean));
-    };
-    const keep = (allowed) => (entry) => {
-      if (filters.paperId && entry.paperId !== filters.paperId) return false;
-      if (allowed !== null && allowed !== void 0 && !allowed.has(entry.paperId)) return false;
-      return true;
-    };
-    const normalize = (entry) => ({
-      figure: { id: entry.id, paperId: entry.paperId, page: entry.page, label: entry.label, caption: entry.caption, imageUrl: entry.imageUrl },
-      paper: { id: entry.paperId, titleZh: entry.paperTitle, title: entry.paperTitle },
-      page: entry.page
-    });
-    const load = async () => {
-      let allowed = null;
-      try {
-        allowed = await loadAllowed();
-      } catch (error) {
-        allowed = /* @__PURE__ */ new Set();
-      }
-      if (!alive) return;
-      if (!debounced) {
-        const recent = (feed.data && feed.data.recentFigures || []).filter(keep(allowed));
-        if (recent.length > 0) {
-          setFigures({ status: "ready", items: recent.map(normalize), error: null });
-          return;
-        }
-        try {
-          const value = await defaultApi("discover.feed", { limit: 8 });
-          if (!alive) return;
-          const items2 = (value && value.recentFigures || []).filter(keep(allowed)).map(normalize);
-          setFigures({ status: "ready", items: items2, error: null, filtered: hasFolderScope });
-          return;
-        } catch (error) {
-          try {
-            const value = await defaultApi("search.query", { q: " ", scope: "figures", limit: 24 });
-            if (!alive) return;
-            const items2 = (Array.isArray(value && value.items) ? value.items : []).filter((hit) => allowed === null ? true : allowed.has(hit.paperId));
-            setFigures({ status: "ready", items: items2, error: null, filtered: hasFolderScope });
-            return;
-          } catch (fallbackError) {
-            if (alive) setFigures({ status: "error", items: [], error: fallbackError });
-            return;
-          }
-        }
-      }
-      try {
-        const value = await defaultApi("search.query", { q: debounced, scope: "figures", limit: 24 });
-        if (!alive) return;
-        const items2 = (Array.isArray(value && value.items) ? value.items : []).filter((hit) => allowed === null ? true : allowed.has(hit.paperId));
-        setFigures({ status: "ready", items: items2, error: null, filtered: hasFolderScope });
-      } catch (error) {
-        if (alive) setFigures({ status: "error", items: [], error });
-      }
-    };
-    load();
-    return () => {
-      alive = false;
-    };
-  }, [tab, debounced, filters.paperId, filters.folderId, filters.tags, revision2, feed.data]);
-  import_react42.default.useEffect(() => {
     if (tab !== "notes") return void 0;
     let alive = true;
     setNotes({ status: "loading", items: [], error: null });
@@ -28524,13 +28574,12 @@ function DrawerBody(props) {
   const counts = {
     papers: stats.papers != null ? stats.papers : feed.data && feed.data.unread ? feed.data.unread.length : 0,
     annotations: stats.annotations != null ? stats.annotations : annotations.items.length || recentAnnotations.length,
-    figures: stats.figures != null ? stats.figures : figures.items.length || recentFigures.length,
+    figures: stats.figures != null ? stats.figures : recentFigures.length,
     notes: noteTotal || (stats.noteDocs != null ? Number(stats.noteDocs) || 0 : 0) || notes.items.length || recentAnnotations.filter((item) => item && item.kind === "note").length
   };
   const tabs = [
     { id: "papers", label: t("drawer.tab.papers"), count: counts.papers },
     { id: "annotations", label: t("drawer.tab.annotations"), count: counts.annotations },
-    { id: "figures", label: t("drawer.tab.figures"), count: counts.figures },
     { id: "notes", label: t("drawer.tab.notes"), count: counts.notes }
   ];
   const groups = feed.data ? [
@@ -28622,22 +28671,6 @@ function DrawerBody(props) {
         collapsed[paperId] ? null : group.items.map((item) => h(AnnotationRow, { key: item.id, t, item, onOpen: (entry) => openItem({ paperId: entry.paperId, page: entry.page }, entry.page, entry.id), onCite: cite, onCopy: (entry) => copyText(entry.quote || entry.comment || "").then((ok) => push(ok ? "success" : "warning", ok ? t("common.copied") : t("common.unavailable"))) }))
       ))
     );
-    body = h("div", null, filterBar, body);
-  } else if (tab === "figures") {
-    body = figures.status === "loading" && figures.items.length === 0 ? h("div", { className: "ph-side-figskeleton" }, [0, 1, 2, 3].map((i) => h("div", { key: i, className: "ph-skeleton", style: { aspectRatio: "4/3", borderRadius: 8 } }))) : figures.status === "error" ? h(EmptyState, { compact: true, tone: "error", icon: "warning", title: t("drawer.loadFailed", { message: describeError(t, figures.error) }) }) : figures.items.length === 0 ? h(EmptyState, { compact: true, icon: "image", title: t("drawer.hint.figures") }) : h("div", { className: "ph-side-figgrid" }, figures.items.map((entry) => {
-      const figure = entry.figure || entry;
-      const paper = entry.paper || {};
-      const imageUrl = figure.imageUrl || (figure.id ? "/pappers-hall/figure/" + figure.id + ".png?width=480" : "");
-      return h(
-        "button",
-        Object.assign({ key: figure.id || Math.random(), type: "button", className: "ph-side-fig", title: t("drawer.dragHint"), onClick: () => openItem({ paperId: figure.paperId || paper.id, page: figure.page || entry.page }, figure.page || entry.page) }, dragProps(t, [{ kind: "figure", id: figure.id, paperId: figure.paperId || paper.id, page: figure.page || entry.page, title: figure.label || t("drawer.tab.figures") }], { source: "sidebar" })),
-        h("span", { className: "ph-side-fig__img" }, imageUrl ? h("img", { src: imageUrl, alt: "", loading: "lazy", onError: (e) => {
-          e.currentTarget.style.display = "none";
-        } }) : h(Icon, { name: "figure", size: 20 })),
-        h("span", { className: "ph-side-fig__caption" }, firstText(figure.caption, paper.titleZh, paper.title, t("drawer.tab.figures"))),
-        h("span", { className: "ph-caption" }, t("figure.search.pageFigure", { page: Number(figure.page || entry.page) || 1, label: figure.label || "?" }))
-      );
-    }));
     body = h("div", null, filterBar, body);
   } else {
     body = notes.status === "loading" ? h("div", { className: "ph-side-skeleton" }, [0, 1, 2].map((i) => h("div", { key: i, className: "ph-side-skeleton__row" }, h("span", { className: "ph-skeleton", style: { width: 3, height: 40 } }), h("div", { className: "ph-side-skeleton__main" }, h("span", { className: "ph-skeleton", style: { width: "80%" } }))))) : notes.status === "error" ? h(EmptyState, { compact: true, tone: "error", icon: "warning", title: t("drawer.loadFailed", { message: describeError(t, notes.error) }) }) : notes.items.length === 0 ? h(EmptyState, { compact: true, icon: "note", title: t("drawer.hint.notes"), action: h(Button, { size: "sm", variant: "secondary", icon: "note", onClick: () => openNotesLibrary() }, t("notes.library.open")) }) : h("div", { className: "ph-side-notes" }, notes.items.map((note, index) => {
@@ -29152,32 +29185,6 @@ function HeaderDrawerButton(props) {
   const t = props.t;
   const sessionId = props.sessionId;
   const [failed, setFailed] = import_react44.default.useState(false);
-  const openDrawerRef = import_react44.default.useRef(props.openDrawer);
-  openDrawerRef.current = props.openDrawer;
-  const autoOpenedRef = import_react44.default.useRef(false);
-  import_react44.default.useEffect(() => {
-    if (!sessionId || autoOpenedRef.current) return void 0;
-    autoOpenedRef.current = true;
-    let cancelled = false;
-    let attempts = 0;
-    let timer2 = null;
-    const tryOpen = () => {
-      if (cancelled || attempts >= 12) return;
-      attempts += 1;
-      let opened = false;
-      try {
-        opened = Boolean(openDrawerRef.current && openDrawerRef.current());
-      } catch {
-        opened = false;
-      }
-      if (!opened) timer2 = setTimeout(tryOpen, 500);
-    };
-    timer2 = setTimeout(tryOpen, 500);
-    return () => {
-      cancelled = true;
-      if (timer2) clearTimeout(timer2);
-    };
-  }, [sessionId]);
   if (!sessionId) return null;
   return h(
     "span",
@@ -30616,6 +30623,10 @@ var ZH = {
   "reader.figure.cite": "\u5F15\u7528",
   "reader.figure.none": "\u8FD9\u7BC7\u8BBA\u6587\u8FD8\u6CA1\u6709\u8BC6\u522B\u51FA\u56FE\u8868\u3002",
   "reader.figure.partial": "\u56FE\u8868\u8BC6\u522B\u53EF\u80FD\u4E0D\u5B8C\u6574\uFF08\u8BE5\u8BBA\u6587\u5904\u7406\u72B6\u6001\uFF1A{state}\uFF09\u3002",
+  "reader.figure.dragHint": "\u62D6\u5230\u5BF9\u8BDD\u6216\u7B14\u8BB0\u91CC\u5F15\u7528\u8FD9\u5F20\u56FE",
+  "reader.figure.dragChip": "\u56FE {label} \xB7 \u53EF\u62D6\u52A8",
+  "reader.figure.dragChipNoLabel": "\u56FE\u8868 \xB7 \u53EF\u62D6\u52A8",
+  "reader.figure.dragLabel": "\u56FE {label}\uFF0C\u53EF\u62D6\u5230\u5BF9\u8BDD\u6216\u7B14\u8BB0",
   "reader.export": "\u5BFC\u51FA\u5F15\u7528",
   "reader.export.done": "\u5DF2\u4E0B\u8F7D {filename}",
   "reader.export.failed": "\u5BFC\u51FA\u5931\u8D25\uFF1A{message}",
@@ -30658,7 +30669,6 @@ var ZH = {
   "drawer.search.placeholder": "\u5728\u6211\u7684\u8BBA\u6587\u4E2D\u67E5\u627E",
   "drawer.tab.papers": "\u8BBA\u6587",
   "drawer.tab.notes": "\u7B14\u8BB0",
-  "drawer.tab.figures": "\u56FE\u7247",
   "drawer.onlyRead": "\u53EA\u770B\u5DF2\u8BFB",
   "composer.papers": "\u8BBA\u6587",
   "drawer.openNote": "\u6253\u5F00\u7B14\u8BB0",
@@ -30670,7 +30680,6 @@ var ZH = {
   "drawer.empty": "\u8F93\u5165\u5173\u952E\u8BCD\u641C\u7D22\uFF0C\u6216\u5148\u6253\u5F00\u8BBA\u6587\u4E2D\u5FC3\u5BFC\u5165\u8BBA\u6587\u3002",
   "drawer.noResult": "\u6CA1\u6709\u5339\u914D\u7ED3\u679C\u3002",
   "drawer.hint.notes": "\u8F93\u5165\u5173\u952E\u8BCD\u641C\u7D22\u7B14\u8BB0\u3002",
-  "drawer.hint.figures": "\u8F93\u5165\u5173\u952E\u8BCD\u641C\u7D22\u56FE\u8868\u3002",
   "drawer.loadFailed": "\u52A0\u8F7D\u5931\u8D25\uFF1A{message}",
   "drawer.offline": "Pappers-Hall \u672A\u8FD0\u884C\u6216\u5DF2\u505C\u7528",
   "drawer.notesCount": "{count} \u6761\u7B14\u8BB0",
@@ -31909,6 +31918,10 @@ var EN = {
   "reader.figure.cite": "Reference",
   "reader.figure.none": "No figures detected for this paper yet.",
   "reader.figure.partial": "Figure detection may be incomplete (paper state: {state}).",
+  "reader.figure.dragHint": "Drag this figure into the conversation or a note",
+  "reader.figure.dragChip": "Fig. {label} \xB7 drag to reference",
+  "reader.figure.dragChipNoLabel": "Figure \xB7 drag to reference",
+  "reader.figure.dragLabel": "Fig. {label}, draggable into the conversation or a note",
   "reader.export": "Export citation",
   "reader.export.done": "Downloaded {filename}",
   "reader.export.failed": "Export failed: {message}",
@@ -31951,7 +31964,6 @@ var EN = {
   "drawer.search.placeholder": "Find in my papers",
   "drawer.tab.papers": "Papers",
   "drawer.tab.notes": "Notes",
-  "drawer.tab.figures": "Figures",
   "drawer.onlyRead": "Read only",
   "composer.papers": "Papers",
   "drawer.openNote": "Open note",
@@ -31963,7 +31975,6 @@ var EN = {
   "drawer.empty": "Search by keyword, or open Paper Center to import papers first.",
   "drawer.noResult": "No matches.",
   "drawer.hint.notes": "Search notes by keyword.",
-  "drawer.hint.figures": "Search figures by keyword.",
   "drawer.loadFailed": "Could not load: {message}",
   "drawer.offline": "Pappers-Hall is not running or is disabled",
   "drawer.notesCount": "{count} notes",
@@ -33630,8 +33641,6 @@ function openPaperDrawer(ctx) {
   const right = typeof ctx.get === "function" ? ctx.get("sidebarRight") : void 0;
   if (!right || typeof right.openTab !== "function") return false;
   try {
-    const layout = typeof ctx.get === "function" ? ctx.get("layout") : void 0;
-    if (layout && typeof layout.openRightbar === "function") layout.openRightbar(false, false);
     right.openTab(DRAWER_KIND);
     return true;
   } catch {
@@ -33752,27 +33761,6 @@ function apply(ctx) {
       }
     });
   }
-  ctx.effect(() => {
-    let attempts = 0;
-    let timer2 = null;
-    let cancelled = false;
-    const tryOpen = () => {
-      if (cancelled || attempts >= 20) return;
-      attempts += 1;
-      let opened = false;
-      try {
-        opened = openPaperDrawer(ctx);
-      } catch {
-        opened = false;
-      }
-      if (!opened) timer2 = setTimeout(tryOpen, 600);
-    };
-    timer2 = setTimeout(tryOpen, 700);
-    return () => {
-      cancelled = true;
-      if (timer2) clearTimeout(timer2);
-    };
-  }, "pappers-hall: auto-open reading sidebar");
   ctx.effect(() => registerConversationIntegration(ctx, { t, api }), "pappers-hall: conversation integration");
 }
 return module.exports;}});

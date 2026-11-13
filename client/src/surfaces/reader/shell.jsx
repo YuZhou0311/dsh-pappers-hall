@@ -345,6 +345,9 @@ function ReaderShellInner(props) {
 
   /* ------------------------------ navigation ----------------------------- */
   const [figureFocus, setFigureFocus] = React.useState(null)
+  // Figure geometry for the open paper: the page boxes are drag sources, so the
+  // canvas needs it before the side-panel figure list is ever opened.
+  const [paperFigures, setPaperFigures] = React.useState({ paperId: '', items: [] })
   const [noteContext, setNoteContextState] = React.useState(() => getNoteContext())
   const figureFocusTimer = React.useRef(null)
   const [page, setPage] = React.useState(() => {
@@ -2114,6 +2117,19 @@ function ReaderShellInner(props) {
   // Best-effort read marker.
   const markedRef = React.useRef('')
   React.useEffect(() => {
+    if (openState.status !== 'ready' || !paperId) return undefined
+    let alive = true
+    Promise.resolve(apiCall('figures.list', { paperId }))
+      .then((result) => {
+        if (!alive) return
+        const items = Array.isArray(result) ? result : Array.isArray(result && result.items) ? result.items : []
+        setPaperFigures({ paperId, items })
+      })
+      .catch(() => { if (alive) setPaperFigures({ paperId, items: [] }) })
+    return () => { alive = false }
+  }, [apiCall, openState.status, paperId])
+
+  React.useEffect(() => {
     if (openState.status !== 'ready' || !paperId || markedRef.current === paperId) return
     markedRef.current = paperId
     try {
@@ -2413,6 +2429,7 @@ function ReaderShellInner(props) {
         jump,
         focus: search.focus,
         figureFocus: figureFocus,
+        figures: paperFigures.paperId === paperId ? paperFigures.items : null,
         mode: tool,
         annotations,
         activeAnnotationId,

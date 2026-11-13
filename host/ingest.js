@@ -862,7 +862,7 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
       api.updateProgress(job, index + 1, paperIds.length, 'papers')
     }
     if (job.payload?.force === true) {
-      try { store.writeSetting('figure-crop:table-side:v17', 'done') } catch {}
+      try { store.writeSetting('figure-crop:table-side:v19', 'done') } catch {}
     }
     return { results }
   }
@@ -875,7 +875,7 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
    */
   function scheduleFigureRepair() {
     try {
-      if (store.readSetting('figure-crop:table-side:v17') === 'done') return undefined
+      if (store.readSetting('figure-crop:table-side:v19') === 'done') return undefined
     } catch {}
     let rows
     try {
@@ -893,15 +893,15 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
       return undefined
     }
     if (rows.length === 0) {
-      try { store.writeSetting('figure-crop:table-side:v17', 'done') } catch {}
+      try { store.writeSetting('figure-crop:table-side:v19', 'done') } catch {}
       return undefined
     }
-    const idempotencyKey = 'figure-repair:table-side:v17'
+    const idempotencyKey = 'figure-repair:table-side:v19'
     const existing = store.db.prepare('SELECT * FROM jobs WHERE idempotency_key = ?').get(idempotencyKey)
     if (existing !== undefined) {
       if (['queued', 'running', 'retry_wait', 'paused'].includes(existing.state)) return existing.id
       if (existing.state === 'succeeded') {
-        try { store.writeSetting('figure-crop:table-side:v17', 'done') } catch {}
+        try { store.writeSetting('figure-crop:table-side:v19', 'done') } catch {}
         return undefined
       }
       try {
@@ -1196,6 +1196,10 @@ function looksLikeTableBlock(block, pageWidth) {
   // Section headings ("A", "A.1", "ADDITIONAL RESULTS") can sit directly above
   // a table and must not become the crop's first row.
   if ((block.lines ?? []).length === 1 && (/^[A-Z](?:\.\d+)*$/.test(body) || (/^[A-Z0-9 .:&()\-]+$/.test(body) && /[A-Z]{3,}/.test(body) && /\s/.test(body)))) return false
+  // Numbered section headings ("6. Conclusion", "5.2 Programming") are single
+  // short lines that pass the width test but belong to the body column, not to
+  // the grid; accepting them stretches a left-column table into the next column.
+  if ((block.lines ?? []).length === 1 && /^\d+(?:\.\d+)*\.?\s+[A-Za-z\u4e00-\u9fff]/.test(body)) return false
   const width = Number(block.bbox.w) || 0
   const lineCount = Math.max(1, (block.lines ?? []).length)
   const average = body.length / lineCount
@@ -1272,9 +1276,10 @@ function tableCropFromSides(page, sides, captionLine, pageWidth, pageHeight, pre
   else if (hasAbove && hasBelow) chosen = above.gap <= below.gap + 4 ? above : below
   else chosen = hasAbove ? above : hasBelow ? below : null
   if (chosen === null) return null
-  // A narrow caption can sit over only the first columns of a wider table.
-  // Take every table cell on the selected side whose row band belongs to this
-  // grid; this also keeps side-by-side tables apart through `peerRight`.
+  // A narrow caption can sit over only the first columns of a wider table, and
+  // a full-width table's right-hand columns are laid out as the page's second
+  // column. Take every table cell on the selected side whose row band belongs
+  // to this grid; `peerRight` keeps side-by-side tables apart.
   const clusterTop = Math.min(...chosen.cells.map((block) => block.bbox.y)) - 4
   const clusterBottom = Math.max(...chosen.cells.map((block) => block.bbox.y + block.bbox.h)) + 4
   const withinSide = chosen === sides.above
@@ -1298,16 +1303,45 @@ function tableCropFromSides(page, sides, captionLine, pageWidth, pageHeight, pre
   }
   const firstGridRow = rowGroups.find((row) => row.cells.length >= 2) || null
   const cells = firstGridRow === null ? chosenCells : chosenCells.filter((cell) => cell.bbox.y >= firstGridRow.y - 2)
-  const left = Math.min(...cells.map((block) => block.bbox.x)) - 4
-  const right = Math.max(...cells.map((block) => block.bbox.x + block.bbox.w)) + 4
+  let left = Math.min(...cells.map((block) => block.bbox.x)) - 4
+  let right = Math.max(...cells.map((block) => block.bbox.x + block.bbox.w)) + 4
+  // A grid column whose cells hold long text (citation lists, prompt templates)
+  // reads as prose and fails looksLikeTableBlock, so the accepted cells stop at
+  // the column before it and the crop slices that column. Extend across any
+  // block that already starts inside the grid and continues past its edge; the
+  // peer-caption guard above still keeps side-by-side tables apart.
+  const inGridBand = (block) => {
+    const b = block.bbox
+    const overlap = Math.min(clusterBottom, b.y + b.h) - Math.max(clusterTop, b.y)
+    return overlap >= Math.min(24, b.h * 0.5)
+  }
+  const onChosenSide = (block) => withinSide
+    ? block.bbox.y + block.bbox.h <= captionLine.yMin + 3
+    : block.bbox.y >= captionLine.yMax - 3
+  for (let pass = 0; pass < 8; pass += 1) {
+    let grown = false
+    for (const block of page.blocks ?? []) {
+      const b = block?.bbox
+      if (!b || !inGridBand(block) || !onChosenSide(block)) continue
+      if (CAPTION_PATTERN.test(rawBlockText(block))) continue
+      if (sides.peerRight < pageWidth && b.x + b.w > sides.peerRight + 2) continue
+      // Only blocks the grid already reaches: a neighbour across a gutter stays out.
+      if (b.x > right || b.x + b.w < left) continue
+      if (b.x + b.w > right) { right = b.x + b.w; grown = true }
+      if (b.x < left) { left = b.x; grown = true }
+    }
+    if (!grown) break
+  }
   const top = Math.min(...cells.map((block) => block.bbox.y)) - 4
   const bottom = chosen === above
     ? captionLine.yMin - 3
     : Math.max(...cells.map((block) => block.bbox.y + block.bbox.h)) + 4
+  const clampedLeft = clampPoint(left, 0, pageWidth)
+  const clampedRight = clampPoint(right, clampedLeft + 40, pageWidth)
   return {
-    x: clampPoint(left, 0, pageWidth),
+    x: clampedLeft,
     y: clampPoint(top, 0, pageHeight),
-    w: clampPoint(right - left, 40, pageWidth),
+    w: clampPoint(clampedRight - clampedLeft, 40, pageWidth),
     h: clampPoint(bottom - top, 40, pageHeight),
   }
 }
@@ -1315,6 +1349,41 @@ function tableCropFromSides(page, sides, captionLine, pageWidth, pageHeight, pre
 /** Convenience wrapper used by tests and one-off callers. */
 function tableCropFromBlocks(page, captionLine, pageWidth, pageHeight) {
   return tableCropFromSides(page, tableSideCandidates(page, captionLine, pageWidth, pageHeight), captionLine, pageWidth, pageHeight)
+}
+
+/**
+ * Table with no individually detectable cells. Prompt templates and wide
+ * reference tables arrive as one block whose long lines read as prose, so
+ * `looksLikeTableBlock` rejects every cell and the caption-column fallback
+ * slices the grid. Use the block that continues the caption instead.
+ */
+function tableBlockFallbackBbox(page, captionLine, pageWidth, pageHeight) {
+  const blocks = Array.isArray(page?.blocks) ? page.blocks : []
+  const captionWidth = captionLine.xMax - captionLine.xMin
+  let best = null
+  for (const block of blocks) {
+    const b = block?.bbox
+    if (!b || b.w < 40 || b.h < 40) continue
+    const body = rawBlockText(block)
+    if (body === '' || CAPTION_PATTERN.test(body)) continue
+    if (b.w <= captionWidth + 8) continue
+    if (b.x >= captionLine.xMax || b.x + b.w <= captionLine.xMin) continue
+    const belowGap = b.y - captionLine.yMax
+    const aboveGap = captionLine.yMin - (b.y + b.h)
+    const gap = belowGap >= -3 ? belowGap : aboveGap >= -3 ? aboveGap : Infinity
+    if (!(gap <= 48)) continue
+    if (best === null || gap < best.gap - 2) best = { b, gap }
+  }
+  if (best === null) return null
+  const b = best.b
+  const top = Math.max(0, b.y - 4)
+  const bottom = Math.min(pageHeight, b.y + b.h + 4)
+  return {
+    x: clampPoint(b.x - 4, 0, pageWidth),
+    y: clampPoint(top, 0, pageHeight),
+    w: clampPoint(b.w + 8, 40, pageWidth),
+    h: clampPoint(bottom - top, 40, pageHeight),
+  }
 }
 
 /** Infer whether this page puts table captions above or below their grids. */
@@ -1523,6 +1592,10 @@ export function detectFigureCandidates(layoutPages) {
           bbox = tableCropFromSides(page, sides, line, pageWidth, pageHeight, tablePageStyle)
         }
         if (bbox === null) {
+          // The grid arrived as one prose-looking block: crop that block.
+          bbox = tableBlockFallbackBbox(page, line, pageWidth, pageHeight)
+        }
+        if (bbox === null) {
           // Fallback: conventional caption-above-table crop.
           const nextCaptionTop = findNextCaptionTop(lines, index + 1)
           const bottom = Math.min(nextCaptionTop ?? pageHeight - pageHeight * 0.03, line.yMax + pageHeight * 0.5)
@@ -1570,12 +1643,30 @@ export function detectFigureCandidates(layoutPages) {
         const wide = figureSpansPage(page, line, pageWidth, pageHeight)
         const captionWidth = line.xMax - line.xMin
         const expandColumn = !wide && line.xMin < pageWidth * 0.12 && captionWidth < pageWidth * 0.32
-        let x = wide ? pageWidth * 0.04 : expandColumn ? Math.min(Math.max(0, line.xMin - 4), columnLeft(line, pageWidth)) : Math.max(0, line.xMin - 4)
-        let width = wide ? pageWidth * 0.92 : expandColumn ? Math.max(40, columnWidth(line, pageWidth)) : Math.max(40, captionWidth + 8)
+        const x = wide ? pageWidth * 0.04 : expandColumn ? Math.min(Math.max(0, line.xMin - 4), columnLeft(line, pageWidth)) : Math.max(0, line.xMin - 4)
+        const width = wide ? pageWidth * 0.92 : expandColumn ? Math.max(40, columnWidth(line, pageWidth)) : Math.max(40, captionWidth + 8)
+        // A figure can span both page columns while its caption is narrower (a
+        // diagram on the left, a pseudocode panel on the right). Grow across the
+        // blocks in the figure band that the caption-derived range already
+        // touches; a neighbour behind a column gutter stays out.
+        let leftEdge = x
+        let rightEdge = x + width
+        for (let pass = 0; pass < 6; pass += 1) {
+          let grown = false
+          for (const block of page.blocks ?? []) {
+            const b = block?.bbox
+            if (!b) continue
+            if (b.y + b.h <= top + 2 || b.y >= line.yMin - 2) continue
+            if (b.x > rightEdge || b.x + b.w < leftEdge) continue
+            if (b.x < leftEdge) { leftEdge = b.x; grown = true }
+            if (b.x + b.w > rightEdge) { rightEdge = b.x + b.w; grown = true }
+          }
+          if (!grown) break
+        }
         bbox = {
-          x: clampPoint(x, 0, pageWidth),
+          x: clampPoint(leftEdge, 0, pageWidth),
           y: clampPoint(top, 0, pageHeight),
-          w: clampPoint(width, 40, pageWidth),
+          w: clampPoint(rightEdge - leftEdge, 40, pageWidth),
           h: clampPoint(line.yMin - top - 2, 40, pageHeight),
         }
       }

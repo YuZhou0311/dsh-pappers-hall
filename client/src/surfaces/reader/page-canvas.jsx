@@ -22,6 +22,7 @@ import {
   NoteComposer,
 } from './annotation-layer.jsx'
 import { PageTextLayer, selectableWords } from './text-layer.jsx'
+import { dragProps } from '../../core/dnd.js'
 import {
   Btn,
   Icon,
@@ -713,6 +714,7 @@ function PageViewImpl(props) {
           React.createElement(Btn, { size: 'sm', variant: 'soft', icon: 'refresh', onClick: retryImage }, t('reader.page.imageRetry')),
         )
       : null,
+    interactive ? React.createElement(FigureDragRegions, { t: t, figures: props.figures, paperId: paperId, page: page }) : null,
     React.createElement(PageTextLayer, {
       key: 'text-' + page,
       page,
@@ -944,6 +946,7 @@ const PageView = React.memo(PageViewImpl, (previous, next) => {
     previous.popover === next.popover &&
     previous.noteDraft === next.noteDraft &&
     previous.search === next.search &&
+    previous.figures === next.figures &&
     previous.t === next.t &&
     sameAnnotations(previous.annotations, next.annotations)
   )
@@ -1081,6 +1084,123 @@ export function SelectionResultCard(props) {
 }
 
 /**
+ * Normalise a `figures.list` bbox to a page-relative box. Figures usually carry
+ * PDF points plus pageWidth/pageHeight; older callers pass 0–1 values already.
+ */
+function figureRectStyle(bbox) {
+  if (!bbox) return null
+  let x = Number(bbox.x)
+  let y = Number(bbox.y)
+  let w = Number(bbox.w)
+  let h = Number(bbox.h)
+  if (![x, y, w, h].every((value) => Number.isFinite(value))) return null
+  const pageWidth = Number(bbox.pageWidth)
+  const pageHeight = Number(bbox.pageHeight)
+  if (Number.isFinite(pageWidth) && pageWidth > 0 && Number.isFinite(pageHeight) && pageHeight > 0 && (x > 1 || y > 1 || w > 1 || h > 1)) {
+    x /= pageWidth
+    y /= pageHeight
+    w /= pageWidth
+    h /= pageHeight
+  }
+  return {
+    left: (clamp(x, 0, 1) * 100).toFixed(3) + '%',
+    top: (clamp(y, 0, 1) * 100).toFixed(3) + '%',
+    width: (clamp(w, 0.001, 1) * 100).toFixed(3) + '%',
+    height: (clamp(h, 0.001, 1) * 100).toFixed(3) + '%',
+  }
+}
+
+/**
+ * Drag ghosts for on-page figures. A transparent hit box makes a blank native
+ * drag image, so a small offscreen <img> of the real figure is snapshotted
+ * instead. Cached per figure id and capped; the nodes live outside the page.
+ */
+const dragGhosts = new Map()
+function dragGhostFor(figure, id) {
+  if (typeof document === 'undefined' || !id) return null
+  const cached = dragGhosts.get(id)
+  if (cached) return cached
+  const url = (figure && figure.imageUrl) || '/pappers-hall/figure/' + id + '.png?width=320'
+  const img = document.createElement('img')
+  img.src = url
+  img.alt = ''
+  img.setAttribute('aria-hidden', 'true')
+  img.style.cssText = 'position:fixed;left:-10000px;top:-10000px;width:140px;height:auto;pointer-events:none;'
+  document.body.appendChild(img)
+  dragGhosts.set(id, img)
+  if (dragGhosts.size > 40) {
+    const oldest = dragGhosts.keys().next().value
+    const node = dragGhosts.get(oldest)
+    if (node && node.parentNode) node.parentNode.removeChild(node)
+    dragGhosts.delete(oldest)
+  }
+  return img
+}
+
+/**
+ * The real figure box on the page doubles as a draggable material source, so a
+ * figure can be dragged straight into the conversation or an open note instead
+ * of going through a side-panel figure list. Regions only exist in select mode:
+ * area/note tools need the raw page surface.
+ */
+export function FigureDragRegions(props) {
+  const t = props.t
+  const regions = []
+  for (const figure of arrayOf(props.figures)) {
+    const id = figure && (figure.id || figure.figureId)
+    const style = figureRectStyle(figure && figure.bbox)
+    if (!id || !style) continue
+    const label = firstText(figure.label)
+    const page = Math.round(num(figure.page, props.page))
+    const material = {
+      kind: 'figure',
+      id,
+      figureId: id,
+      paperId: figure.paperId || props.paperId,
+      page: page > 0 ? page : props.page,
+      label,
+      title: label,
+      caption: firstText(figure.caption),
+    }
+    const baseDrag = dragProps(t, [material], { source: 'page' })
+    const regionDrag = Object.assign({}, baseDrag, {
+      onDragStart: (event) => {
+        const ghost = dragGhostFor(figure, String(id))
+        if (ghost) {
+          try { event.dataTransfer.setDragImage(ghost, 24, 24) } catch (error) { /* engines without a drag image */ }
+        }
+        baseDrag.onDragStart(event)
+      },
+    })
+    regions.push(React.createElement(
+      'div',
+      Object.assign(
+        {
+          key: 'figdrag-' + id,
+          className: 'ph-r-figdrag',
+          style,
+          title: t('reader.figure.dragHint'),
+          role: 'img',
+          'aria-label': label ? t('reader.figure.dragLabel', { label }) : t('reader.figure.dragHint'),
+          'data-ph-figure-drag': String(id),
+          // A native material drag must never race the geometric text selection.
+          onMouseDown: (event) => event.stopPropagation(),
+          onClick: (event) => event.stopPropagation(),
+        },
+        regionDrag,
+      ),
+      React.createElement(
+        'span',
+        { className: 'ph-r-figdrag__chip', 'aria-hidden': 'true' },
+        label ? t('reader.figure.dragChip', { label }) : t('reader.figure.dragChipNoLabel'),
+      ),
+    ))
+  }
+  if (regions.length === 0) return null
+  return React.createElement('div', { className: 'ph-r-figdrags' }, regions)
+}
+
+/**
  * Temporary figure highlight (v0.15). `figureFocus.bbox` is normalised to the
  * rendered page (x/y/w/h 0–1, from figures.list pageWidth/pageHeight), so the
  * dashed box scales with zoom without recomputing pixel geometry.
@@ -1102,29 +1222,11 @@ export function FigureHighlightOverlay(props) {
   if (!focus || !focus.bbox) return null
   if (expired) return null
   if (props.page != null && Number(focus.page) !== Number(props.page)) return null
-  const bbox = focus.bbox || {}
-  let x = Number(bbox.x)
-  let y = Number(bbox.y)
-  let w = Number(bbox.w)
-  let h = Number(bbox.h)
-  if (![x, y, w, h].every((value) => Number.isFinite(value))) return null
   // v0.15 fix: figures.list returns PDF-point bboxes (with pageWidth/pageHeight);
-  // harness/older callers may pass already-normalised 0-1 values. Normalise here
-  // so the highlight lands on the real figure instead of clamping to 100%.
-  const pageWidth = Number(bbox.pageWidth)
-  const pageHeight = Number(bbox.pageHeight)
-  if (Number.isFinite(pageWidth) && pageWidth > 0 && Number.isFinite(pageHeight) && pageHeight > 0 && (x > 1 || y > 1 || w > 1 || h > 1)) {
-    x /= pageWidth
-    y /= pageHeight
-    w /= pageWidth
-    h /= pageHeight
-  }
-  const style = {
-    left: (Math.max(0, Math.min(1, x)) * 100).toFixed(3) + '%',
-    top: (Math.max(0, Math.min(1, y)) * 100).toFixed(3) + '%',
-    width: (Math.max(0.001, Math.min(1, w)) * 100).toFixed(3) + '%',
-    height: (Math.max(0.001, Math.min(1, h)) * 100).toFixed(3) + '%',
-  }
+  // harness/older callers may pass already-normalised 0-1 values, so the shared
+  // helper normalises here and the highlight lands on the real figure box.
+  const style = figureRectStyle(focus.bbox)
+  if (!style) return null
   const label = focus.figureLabel ? t('reader.figure.highlightLabel', { label: focus.figureLabel }) : t('reader.figure.highlight')
   return React.createElement(
     'div',
@@ -1147,6 +1249,7 @@ export function FigureHighlightOverlay(props) {
  * @param {number} props.jump `{page, seq}` — every change scrolls to that page
  * @param {object|null} props.focus `{page, rect, seq}` — scroll to a search hit
  * @param {object|null} props.figureFocus `{figureId, page, bbox, figureLabel, seq}` — temporary figure box
+ * @param {Array} props.figures `figures.list` rows for this paper; each renders a draggable box on its page
  * @param {Array} props.annotations normalised annotations (all pages)
  * @param {string|null} props.activeAnnotationId
  * @param {object|null} props.selection
@@ -1336,6 +1439,17 @@ export function PageCanvas(props) {
 
   const annotationsByPage = useAnnotationsByPage(props.annotations)
 
+  const figuresByPage = React.useMemo(() => {
+    const map = new Map()
+    for (const figure of arrayOf(props.figures)) {
+      const figurePage = Math.round(num(figure && figure.page, 0))
+      if (!(figurePage > 0)) continue
+      if (!map.has(figurePage)) map.set(figurePage, [])
+      map.get(figurePage).push(figure)
+    }
+    return map
+  }, [props.figures])
+
   const children = []
   for (let index = 0; index < layout.length; index += 1) {
     const item = layout[index]
@@ -1376,6 +1490,7 @@ export function PageCanvas(props) {
         noteDraft: props.noteDraft,
         search: props.search,
         figureFocus: props.figureFocus,
+        figures: figuresByPage.get(descriptor.page) || EMPTY_LIST,
         reducedMotion: props.reducedMotion,
         onSelection: props.actions.onSelection,
         onSelectionAction: props.actions.onSelectionAction,

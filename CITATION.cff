@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If Pappers-Hall supports your research workflow, please cite this software and the specific version you used."
+type: software
+title: "Pappers-Hall: an AI Research Workbench for DeepSeek Harness"
+authors:
+  - name: "Pappers-Hall contributors"
+abstract: "A DeepSeek Harness community plugin that connects paper management, PDF reading, annotations, linked notes and source-aware research conversations. Under active development; preview releases are experimental."
+repository-code: "https://github.com/YuZhou0311/dsh-pappers-hall"
+url: "https://github.com/YuZhou0311/dsh-pappers-hall"
+license: MIT
+keywords:
+  - research workbench
+  - paper management
+  - PDF annotation
+  - research notes
+  - AI agents
+  - DeepSeek Harness

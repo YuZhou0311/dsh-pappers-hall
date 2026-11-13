@@ -230,7 +230,9 @@ Pappers-Hall 是 DSH 社区插件，需要兼容的 DeepSeek Harness 宿主。AI
 
 欢迎带着真实阅读场景来试用：哪一步打断了思路、哪一张图裁切不完整、哪一种笔记表达还不够顺手，都可以成为下一次改进的起点。
 
-**[提交问题或建议](https://github.com/YuZhou0311/dsh-pappers-hall/issues) · [查看版本变化](CHANGELOG.md) · [参与贡献](CONTRIBUTING.md) · [安全反馈](SECURITY.md)**
+**[提交问题或建议](https://github.com/YuZhou0311/dsh-pappers-hall/issues) · [使用交流](https://github.com/YuZhou0311/dsh-pappers-hall/discussions) · [查看版本变化](CHANGELOG.md) · [参与贡献](CONTRIBUTING.md) · [安全反馈](SECURITY.md)**
+
+如果它帮助了你的研究，可以 Star 关注后续进展，也欢迎分享给有相似工作流的朋友。研究中使用本项目时，可通过 [引用信息](CITATION.cff) 注明所用版本。
 
 品牌主视觉、透明小鲸鱼、宣传海报、分享封面、原始截图与发布文案收录于 **[宣传素材包](docs/press-kit/README.md)**。
 

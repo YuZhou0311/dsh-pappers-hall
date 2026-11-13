@@ -1,0 +1,43 @@
+name: "问题反馈 / Bug report"
+description: "报告论文阅读、笔记、引用或安装问题 / Report a reproducible problem."
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pappers-Hall 正在开发中。请描述真实使用场景，帮助我们复现。
+        Pappers-Hall is a pre-release. A reproducible example helps us investigate.
+        请勿上传模型密钥、访问令牌或未获授权的论文与笔记。Please remove secrets and private material.
+  - type: input
+    id: version
+    attributes:
+      label: "插件与 DSH 版本 / Plugin and DSH versions"
+      placeholder: "Pappers-Hall 0.x.x · DSH 0.x.x"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: "使用环境 / Environment"
+      placeholder: "macOS / Windows / Linux · DSH Desktop or Chrome · Node version"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "复现步骤 / Steps to reproduce"
+      description: "从打开插件开始，写出能重现问题的最短步骤。 / Describe the shortest reproducible sequence."
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: "预期与实际结果 / Expected and actual behavior"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: "截图或日志 / Screenshots or logs"
+      description: "可选；先移除令牌、私密资料与个人路径。 / Optional; redact tokens, private material and personal paths."

@@ -1,0 +1,25 @@
+name: "功能建议 / Feature request"
+description: "分享科研工作流中的具体需求 / Suggest an improvement to your research workflow."
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: "你正在完成什么研究任务？ / What are you trying to do?"
+      description: "说明阅读、整理、写作或研究对话中的具体场景。 / Describe a concrete reading, writing or research task."
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: "目前哪里不顺手？ / What is difficult today?"
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: "希望如何改进？ / Suggested improvement"
+      description: "可以附示例或替代方案。 / Examples or alternatives are welcome."
+    validations:
+      required: true

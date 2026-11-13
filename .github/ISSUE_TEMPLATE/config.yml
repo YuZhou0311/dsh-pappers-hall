@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "使用交流 / Questions and workflows"
+    url: https://github.com/YuZhou0311/dsh-pappers-hall/discussions
+    about: "交流安装、使用方法与科研工作流 / Ask questions and share research workflows."
+  - name: "安装与预发布下载 / Installation and preview downloads"
+    url: https://github.com/YuZhou0311/dsh-pappers-hall/releases
+    about: "下载预发布包，先阅读对应版本说明 / Download a preview and read its release notes."
+  - name: "安全问题 / Security reports"
+    url: https://github.com/YuZhou0311/dsh-pappers-hall/blob/main/SECURITY.md
+    about: "查看安全反馈说明，不要在公开 Issue 中粘贴密钥 / Read the security policy; do not post credentials in public issues."

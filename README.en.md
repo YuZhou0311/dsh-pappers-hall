@@ -205,7 +205,9 @@ Stability and compatibility are still being refined during the preview. Scanned 
 
 Bring a real reading workflow, report a missing capability, or share a reproducible problem.
 
-**[Issues](https://github.com/YuZhou0311/dsh-pappers-hall/issues) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Press kit](docs/press-kit/README.md)**
+**[Issues](https://github.com/YuZhou0311/dsh-pappers-hall/issues) · [Discussions](https://github.com/YuZhou0311/dsh-pappers-hall/discussions) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Press kit](docs/press-kit/README.md)**
+
+If Pappers-Hall helps your research, star the repository to follow its progress or share it with others who have similar workflows. For research attribution, use the [citation metadata](CITATION.cff) and include the version you used.
 
 Thanks to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) for its plugin platform. README presentation references: [dsh-media-desk](https://github.com/woniuniuniu/dsh-media-desk), [DS Bot](https://github.com/Fei2411/DS-Bot), and [Huashu Design](https://github.com/alchaincyf/huashu-design). Illustrations were generated for this project; [source and asset notes](docs/press-kit/SOURCES.md) accompany the kit.
 

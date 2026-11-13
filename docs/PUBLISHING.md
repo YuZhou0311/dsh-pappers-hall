@@ -33,30 +33,45 @@ npm run verify
 
 `npm run verify` validates the public manifest, locale metadata, icon size, detail files, patch contents, built Client bundle and the exact `npm pack` file list. It writes `reports/release-check.{json,md}`.
 
-## Before the first publish
+## Repository presentation
 
-1. Create the public GitHub repository `YuZhou0311/dsh-pappers-hall` and push `main` plus tag `v0.24.18`. `repository`, `homepage`, and `bugs` are already set.
-2. Confirm `dsh.engines` still matches the tested DSH release. Current tested range: `>=0.2.2-rc.2 <0.3.0`.
-3. Bump `version` and `CHANGELOG.md`; keep the package version and lockfile in sync.
-4. Run the browser acceptance checklist in `reports/` against a disposable data directory. Do not test destructive actions against a real library.
-5. Pack and inspect the tarball:
+- Keep the About description bilingual and identify Pappers-Hall as a **research workbench** and a **pre-release community plugin**.
+- Keep `dsh-plugin` and `deepseek-harness` in Topics. Add relevant paper, PDF, note-taking and research topics within GitHub's 20-topic limit.
+- Use the [Releases list](https://github.com/YuZhou0311/dsh-pappers-hall/releases) as the download entry point; `/releases/latest` does not reliably lead visitors to preview builds.
+- Use [the GitHub social-preview upload image](assets/social/github-social-preview.jpg), an opaque 2:1 JPEG under 1 MB. The generated PNG master stays in the [press kit](press-kit/README.md).
+- Repository discovery and public social sharing require a public repository. Review the contents, commit history, Actions logs and release assets before changing visibility; publishing a pre-release does not itself make a private repository public.
+- Use Issues for reproducible problems and feature requests, and Discussions for questions and workflows. Bilingual forms are in `.github/ISSUE_TEMPLATE/`.
+- `CITATION.cff` supplies the **Cite this repository** entry. Users should specify the version they actually used.
+- `.github/release.yml` groups generated release notes by `enhancement`, `bug` and `documentation`, then includes other changes. It formats notes; it does not publish builds automatically.
+
+## Preview release procedure
+
+1. Confirm `engines.dsh` matches the tested host. The declared range is `>=0.2.2-rc.2 <0.3.0`; the verified host is `0.2.2-rc.2`.
+2. Update `version`, the lockfile and `CHANGELOG.md` together. Run the preflight above and the relevant browser acceptance checks against a disposable data directory.
+3. Build and inspect the package, then generate its checksum:
+
    ```sh
+   release_version="$(node -p "require('./package.json').version")"
    npm pack
-   tar -tzf dsh-pappers-hall-0.24.18.tgz | sort
+   tar -tzf "dsh-pappers-hall-${release_version}.tgz" | sort
+   shasum -a 256 "dsh-pappers-hall-${release_version}.tgz" > "dsh-pappers-hall-${release_version}.tgz.sha256"
    ```
-6. Install the tarball into a disposable profile:
+
+4. Install that exact tarball in a disposable profile and verify startup, the library, reader, notes, references and uninstall cleanup:
+
    ```sh
-   dsh plugin --profile pappers-smoke add ./dsh-pappers-hall-0.24.18.tgz
+   dsh plugin --profile pappers-smoke add "./dsh-pappers-hall-${release_version}.tgz"
    dsh --profile pappers-smoke --dump-config
    ```
-   Verify the bundle row, title/description/icon/detail, a new conversation, the paper center, and uninstall cleanup.
-7. Push and publish:
-   ```sh
-   git push -u origin main
-   git push origin v0.24.18
-   npm publish --access public
-   ```
-8. Create a GitHub release with the tarball, add the `dsh-plugin` topic, and link the DSH compatibility range in the release notes.
+
+5. Commit the release changes, tag that tested commit, and push the commit and tag. Never move an existing release tag to different code.
+6. Draft a GitHub release for that tag, attach the `.tgz` and `.sha256`, and include both Chinese and English notes: a short product introduction, actual changes in this build, the install command, host requirements and known limitations. Generated PR summaries can help, but direct commits also need a manual summary.
+7. Select **Pre-release** throughout the preview period. Check that attachment names, version numbers and checksums match before publishing. Keep a stable-release label separate from development previews.
+8. Update README installation examples only to packages that are actually available. Campaign screenshots may follow the development branch; say so when they show features newer than the downloadable package.
+
+GitHub tarball distribution does not publish to npm. If npm distribution is introduced later, use an explicit preview dist-tag such as `next`, and announce the new installation channel separately.
+
+GitHub references: [social preview](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/customizing-your-repositorys-social-media-preview), [topics](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/classifying-your-repository-with-topics), [release-note categories](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes).
 
 ## Do not claim
 

@@ -21,6 +21,7 @@ Pappers-Hall 是 DeepSeek Harness 里的 AI 科研工作台。本套物料以戴
 | [透明学士帽小鲸鱼](../assets/brand/scholar-whale.png) | 1254 × 1254，RGBA | 头像、角标、演示页、品牌署名 |
 | [竖版发布海报](../assets/social/launch-poster.png) | 1086 × 1448，3:4 | 社区分享、社交图文、项目发布 |
 | [横版分享封面](../assets/social/social-preview.png) | 1774 × 887，2:1 | 仓库 Social preview、文章封面、分享卡片 |
+| [GitHub Social preview 上传版](../assets/social/github-social-preview.jpg) | 1774 × 887，约 271 KiB | 同一封面的 JPEG 压缩版，符合 GitHub 小于 1 MB 的要求 |
 | [科研工作台实景卡片](../assets/social/workbench-card.png) | 2880 × 2160，4:3 | 功能介绍、社区帖子、演示配图 |
 | [实景卡片排版源文件](feature-card.html) | 1440 × 1080 CSS 画布 | 在 Chrome 中打开，替换截图或文案后重新导出 |
 
@@ -68,4 +69,4 @@ Pappers-Hall 是 DeepSeek Harness 里的 AI 科研工作台。本套物料以戴
 - 状态：**持续开发中，GitHub 预发布**。
 - 身份：DSH 社区插件，独立社区项目。
 
-若需将分享封面设为仓库 Social preview，可在 GitHub 仓库设置中上传对应 PNG。
+仓库 Social preview 请使用上方的 JPEG 上传版，原始 PNG 作为设计母版保留。GitHub 要求上传图片小于 1 MB；见 [官方说明](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/customizing-your-repositorys-social-media-preview)。

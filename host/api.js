@@ -194,6 +194,10 @@ export function createApi({ store, search, ingest, queue, settings, models, ocr,
     ['notes.delete', (params) => dispatchNoteDelete(params, store, notes)],
     // ---- v0.17 notes workbench ---------------------------------------
     ['notes.list', (params) => notes.list(params)],
+    ['notes.agent.directions', async (params) => {
+      if (noteAgent === undefined || typeof noteAgent.directions !== 'function') throw new DomainError('unavailable', 'note agent is not available in this Host')
+      return noteAgent.directions(params ?? {})
+    }],
     ['notes.agent.run', async (params) => {
       if (noteAgent === undefined || typeof noteAgent.run !== 'function') throw new DomainError('unavailable', 'note agent is not available in this Host')
       return noteAgent.run(params ?? {})

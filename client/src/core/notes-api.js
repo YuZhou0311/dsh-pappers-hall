@@ -373,7 +373,7 @@ export function createNotesService(api) {
      * @param {string} [options.direction] current default direction
      * @param {string} [options.sessionId]
      */
-    suggestDirections(options) {
+    suggestDirectionsLegacy(options) {
       const opts = options || {}
       const sections = arrayOf(opts.sections).slice(0, 8)
       const figureCandidates = arrayOf(opts.figureCandidates)
@@ -677,6 +677,33 @@ export function createNotesService(api) {
           calls,
         }
       })
+    },
+
+    /**
+     * Ask the Host note Agent for three differentiated micro-directions. The
+     * Agent returns them through its own tool; the obsolete client-side JSON
+     * prompt remains only as `suggestDirectionsLegacy`.
+     */
+    suggestDirections(options) {
+      const opts = options || {}
+      const noteId = String(opts.noteId || (opts.note && opts.note.id) || '')
+      if (noteId === '') return this.suggestDirectionsLegacy(options)
+      return aiCall('notes.agent.directions', {
+        noteId,
+        direction: opts.direction || 'plain',
+        sessionId: opts.sessionId || undefined,
+        minChars: Number(opts.minChars) || 0,
+      }).then((result) => ({
+        directions: Array.isArray(result && result.directions) ? result.directions : [],
+        recommended: String((result && result.recommended) || ''),
+        provider: String((result && result.provider) || ''),
+        model: String((result && result.model) || ''),
+        elapsedMs: Number(result && result.elapsedMs) || 0,
+        cached: false,
+        degraded: false,
+        reason: '',
+        toolCalls: Array.isArray(result && result.toolCalls) ? result.toolCalls : [],
+      }))
     },
 
     /**

@@ -414,10 +414,54 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
     }))
   }
 
-  function toolsFor(draft, candidates, dataLayout) {
+  function toolsFor(draft, candidates, dataLayout, mode) {
     const candidateMap = new Map(candidates.map((candidate) => [candidate.figureId, candidate]))
     const jsonOutput = { schema: { type: 'object', additionalProperties: true }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] }
     const tool = (name, description, parameters, execute) => ({ name, description, parameters, output: jsonOutput, execute })
+    if (mode === 'directions') {
+      return [
+        tool('note_read', 'Read the current note metadata and section previews before choosing directions.', { type: 'object', properties: {}, additionalProperties: false }, async () => ({
+          noteId: draft.noteId,
+          title: draft.title,
+          sections: draft.sections.slice(0, 8).map((section) => ({ id: section.id, heading: section.heading, text: String(section.text || '').slice(0, 220) })),
+          figureCandidates: candidates.map((candidate) => ({ figureId: candidate.figureId, label: candidate.label, page: candidate.page })),
+          currentDirection: draft.currentDirection,
+        })),
+        tool('note_suggest_directions', 'Return exactly three differentiated micro-directions for the unfinished note sections. Do not lay out the note, edit it, or call web tools.', {
+          type: 'object',
+          properties: {
+            directions: { type: 'array', items: { type: 'object', additionalProperties: true }, description: 'Exactly 3 objects: {id,direction,layout,useFigures,label,reason}.' },
+            recommended: { type: 'string', description: 'One of the returned ids.' },
+          },
+          required: ['directions'],
+          additionalProperties: false,
+        }, async (args) => {
+          const allowed = new Set(['plain', 'vivid', 'scientific'])
+          const layouts = new Set(['auto', 'bullets', 'table'])
+          const directions = (Array.isArray(args.directions) ? args.directions : []).slice(0, 3).map((item, index) => {
+            const direction = allowed.has(String(item?.direction)) ? String(item.direction) : 'plain'
+            const layout = layouts.has(String(item?.layout)) ? String(item.layout) : 'auto'
+            return {
+              id: String(item?.id || 'd' + (index + 1)),
+              direction,
+              layout,
+              useFigures: item?.useFigures === true && candidates.length > 0,
+              label: pickString(item?.label, 40),
+              reason: pickString(item?.reason, 120),
+            }
+          })
+          if (directions.length !== 3) throw Object.assign(new Error('exactly three directions are required'), { code: 'shape' })
+          draft.directions = directions
+          draft.recommended = directions.some((entry) => entry.id === args.recommended) ? args.recommended : directions[0].id
+          return { status: 'ok', directions, recommended: draft.recommended }
+        }),
+        tool('note_finish', 'Finish the direction suggestion. Call after note_suggest_directions.', { type: 'object', properties: {}, additionalProperties: false }, async () => {
+          draft.finished = true
+          return { status: 'ok', directions: Array.isArray(draft.directions) ? draft.directions.length : 0 }
+        }),
+      ]
+    }
+
     return [
       tool('note_read', 'Read the current note and its sections, inline directives, existing nice layout and real figure candidates. Call this first.', { type: 'object', properties: {}, additionalProperties: false }, async () => ({
         noteId: draft.noteId,
@@ -558,6 +602,9 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
       updated: new Map(),
       baseSections,
       finished: false,
+      directions: null,
+      recommended: '',
+      currentDirection: String(params.direction || 'plain'),
       figureCount: 0,
       webSources: [],
     }
@@ -587,10 +634,12 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
         setup: (agentCtx) => {
           const systemPrompt = agentCtx.get?.('systemPrompt')
           if (systemPrompt && typeof systemPrompt.section === 'function') {
-            agentCtx.effect(() => systemPrompt.section({
-              name: 'pappers-hall-note-agent',
-              order: 950,
-              text: [
+            const promptLines = params.mode === 'directions'
+              ? [
+                'You are Pappers-Hall\'s note direction adviser. You have exactly two note tools; every answer must be a tool call.',
+                'Read the note with note_read, then call note_suggest_directions exactly once with three differentiated, practical micro-directions. Choose direction plain|vivid|scientific and layout auto|bullets|table; useFigures only when real candidates exist. Labels <= 10 characters, reasons <= 24 characters. Call note_finish. Do not lay out or edit the note.',
+              ]
+              : [
                 'You are Pappers-Hall\'s dedicated note beautification agent. You have exactly five note tools; every action must be a tool call.',
                 'Your job: turn the user\'s note Markdown into a varied, readable content_json layout, and execute the inline directives the user wrote in the note.',
                 'Hard rules: never change the user\'s Markdown; never invent facts, numbers, citations, figures or URLs; preserve every number, unit, qualifier and proper noun; only use figures from note_read.figureCandidates; only add web images through note_insert(web_image) and web facts through note_web_search.',
@@ -598,10 +647,14 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
                 'Natural-language action lines also count: when the user writes something imperative such as “这里加一张论文图”, “加一个统计表”, “找一张联网图片”, “补一个来源”, treat it as an action request for the containing section and use note_insert. Do not merely copy the instruction into a paragraph; the block is the result. Structural/editorial instructions should change only the layout.',
                 'Use note_set_section for each target section. Prefer paragraph/bullets/quotes; use stats/tables/timeline/compare/callout only when the content truly calls for them. Vary section styles but do not overdo accent cards. At most 4 paper figures.',
                 'When you finish all sections and directives, call note_finish. Do not answer with a JSON document or Markdown; the tools are the output.',
-              ].join('\n'),
+              ]
+            agentCtx.effect(() => systemPrompt.section({
+              name: 'pappers-hall-note-agent',
+              order: 950,
+              text: promptLines.join('\n'),
             }), 'pappers-hall: note agent prompt')
           }
-          const toolDefs = toolsFor(draft, candidates, layout)
+          const toolDefs = toolsFor(draft, candidates, layout, params.mode === 'directions' ? 'directions' : 'layout')
           const noteToolNames = new Set(toolDefs.map((definition) => definition.name))
           let globalNames = []
           try {
@@ -619,7 +672,15 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
           }
         },
       })
-      const userText = [
+      const userText = params.mode === 'directions'
+        ? [
+          'NOTE TITLE: ' + (note.title || '(untitled)'),
+          'UNFINISHED/TARGET SECTIONS: ' + JSON.stringify(targetSections.slice(0, 8).map((section) => ({ id: section.id, heading: section.heading, excerpt: String(section.text || '').slice(0, 220) }))),
+          'REAL FIGURE CANDIDATES: ' + JSON.stringify(candidates.slice(0, 6).map((candidate) => ({ figureId: candidate.figureId, label: candidate.label, page: candidate.page }))),
+          'CURRENT DEFAULT DIRECTION: ' + String(params.direction || 'plain'),
+          'Use note_read, then note_suggest_directions with exactly three options, then note_finish.',
+        ].join('\n')
+        : [
         'NOTE TITLE: ' + (note.title || '(untitled)'),
         'TARGET SECTION IDS: ' + JSON.stringify(targetSections.map((section) => section.id)),
         'SECTIONS (JSON): ' + JSON.stringify(targetSections.map(sectionForAgent)),
@@ -644,6 +705,27 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
           if (block.type === 'tool-call') toolCalls.push({ name: block.name, arguments: String(block.arguments || '').slice(0, 500) })
           if (message.role === 'assistant' && block.type === 'text') assistantText.push(String(block.text || ''))
           if (block.type === 'tool-result' && block.isError) assistantText.push('tool error: ' + String(block.content?.[0]?.text || ''))
+        }
+      }
+      if (params.mode === 'directions') {
+        if (!Array.isArray(draft.directions) || draft.directions.length !== 3) {
+          const error = new Error('the note Agent did not return three directions')
+          error.code = 'shape'
+          error.detail = { toolCalls: toolCalls.map((call) => call.name), assistant: assistantText.join('\n').slice(0, 1000) }
+          throw error
+        }
+        return {
+          status: 'ok',
+          directions: draft.directions,
+          recommended: draft.recommended || draft.directions[0].id,
+          provider: route.provider,
+          model: route.model,
+          elapsedMs: Date.now() - startedAt,
+          cached: false,
+          calls: toolCalls.length,
+          toolCalls: toolCalls.map((call) => call.name),
+          finished: draft.finished,
+          sessionId,
         }
       }
       if (draft.updated.size === 0) {
@@ -722,6 +804,9 @@ export function createNoteAgent({ ctx, notes, store, ai, layout, logger, web, co
 
   return {
     run,
+    directions(params = {}) {
+      return run(Object.assign({}, params || {}, { mode: 'directions' }))
+    },
     available() {
       const route = modelRoute()
       return { status: route.status, reason: route.reason, provider: route.provider, model: route.model }

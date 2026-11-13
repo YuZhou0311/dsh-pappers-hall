@@ -779,6 +779,7 @@ export function NoteEditor(props) {
     }
     loadFigureCandidates(current)
       .then((candidates) => Promise.resolve(service.suggestDirections({
+        noteId: noteRef.current && noteRef.current.id,
         title: localRef.current.title,
         sections: plan.eligible,
         figureCandidates: candidates,

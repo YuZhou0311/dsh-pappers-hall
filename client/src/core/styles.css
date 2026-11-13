@@ -4643,3 +4643,19 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-n-doc__diagram-dialog-canvas { overflow: auto; max-height: calc(90vh - 110px); }
 .ph-n-doc__diagram-dialog-canvas svg { display: block; width: auto; height: auto; }
 .ph-n-editor__content[data-ph-drop] { outline: 2px dashed var(--ph-accent); outline-offset: -3px; }
+/* Inline conversation-sidebar preview: reading and note surfaces replace the
+   feed inside the existing right sidebar instead of navigating away. */
+.ph-sidebar--preview { padding: 0; overflow: hidden; }
+.ph-side-preview__head { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--ph-line-soft); flex: none; min-width: 0; }
+.ph-side-preview__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--ph-fw-semi); font-size: var(--ph-fs-12); }
+.ph-side-preview__body { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+.ph-side-preview__body > .ph-r-reader { flex: 1 1 auto; width: 100%; height: 100%; }
+.ph-side-preview__body > .ph-n-editor { flex: 1 1 auto; width: 100%; min-width: 0; overflow: auto; }
+.ph-side-preview__loading { display: flex; align-items: center; gap: 8px; padding: 18px; color: var(--ph-ink-3); font-size: var(--ph-fs-12); }
+.ph-side-note-preview { flex: 1; min-height: 0; overflow: auto; padding: 14px 14px 28px; background: var(--ph-bg); }
+.ph-side-note-preview__title { margin: 0 0 8px; font-size: var(--ph-fs-18, 18px); line-height: 1.3; }
+.ph-side-note-preview__papers { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.ph-side-note-preview__paper { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 3px 7px; border: 1px solid var(--ph-line-soft); border-radius: 999px; background: var(--ph-bg-2, transparent); color: var(--ph-ink-2); font-size: var(--ph-fs-11); cursor: pointer; }
+.ph-side-note-preview__paper:hover { color: var(--ph-ink); border-color: var(--ph-line); }
+.ph-side-note-preview .ph-n-doc { padding: 0; }
+.ph-side-note-preview .ph-n-doc__sec { margin-top: 14px; }

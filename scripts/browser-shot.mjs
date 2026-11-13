@@ -362,6 +362,50 @@ async function main() {
       writeFileSync(join(OUT, 'drawer-text.txt'), drawerState.snippet ?? '')
       console.log('drawer state:', JSON.stringify(drawerState.hasDrawer))
       await captureButtons('drawer')
+      if (STEPS.includes('drawer-preview')) {
+        const opened = await evaluate(`(() => {
+          const row = document.querySelector('.ph-side-row--paper .ph-side-row__main')
+          if (!row) return false
+          row.click()
+          return true
+        })()`)
+        console.log('sidebar paper preview click:', opened)
+        await sleep(2400)
+        await shot('05b-drawer-paper-preview')
+        const paperPreview = await evaluate(`(() => ({
+          reader: Boolean(document.querySelector('.ph-side-preview__body .ph-r-reader')),
+          title: (document.querySelector('.ph-side-preview__title')?.textContent || '').trim(),
+          center: [...document.querySelectorAll('.ph-side-preview__head button')].some((button) => (button.textContent || '').includes('在论文中心查看')),
+          translation: (document.querySelector('.ph-r-side__tabs')?.innerText || ''),
+        }))()`)
+        console.log('sidebar paper preview:', JSON.stringify(paperPreview))
+        const back = await evaluate(`(() => { const b = document.querySelector('.ph-side-preview__head button'); if (!b) return false; b.click(); return true })()`)
+        console.log('sidebar preview back:', back)
+        await sleep(800)
+        const noteTab = await evaluate(`(() => {
+          const target = [...document.querySelectorAll('.ph-sidebar__tabs button')].find((button) => (button.textContent || '').includes('笔记'))
+          if (!target) return false
+          target.click()
+          return true
+        })()`)
+        console.log('sidebar notes tab:', noteTab)
+        await sleep(900)
+        const noteOpened = await evaluate(`(() => {
+          const row = document.querySelector('.ph-side-note')
+          if (!row) return false
+          row.click()
+          return true
+        })()`)
+        console.log('sidebar note preview click:', noteOpened)
+        await sleep(1400)
+        await shot('05c-drawer-note-preview')
+        const notePreview = await evaluate(`(() => ({
+          editor: Boolean(document.querySelector('.ph-side-preview__body .ph-n-editor')),
+          title: (document.querySelector('.ph-side-preview__title')?.textContent || '').trim(),
+          center: [...document.querySelectorAll('.ph-side-preview__head button')].some((button) => (button.textContent || '').includes('在论文中心查看')),
+        }))()`)
+        console.log('sidebar note preview:', JSON.stringify(notePreview))
+      }
     }
 
     if (want('dock') || want('all')) {

@@ -11,7 +11,7 @@
 import React from 'react'
 import { h } from '../core/dom.js'
 import { Icon } from '../core/icons.jsx'
-import { Badge, Button, Check, EmptyState, IconButton, SearchInput, TabStrip, ToastStack, useToasts } from '../core/primitives.jsx'
+import { Badge, Button, Check, EmptyState, IconButton, SearchInput, Spinner, TabStrip, ToastStack, useToasts } from '../core/primitives.jsx'
 import { describeError, isOffline } from '../core/api.js'
 import { defaultApi } from '../core/api.js'
 import { pendingStore } from '../core/pending.js'
@@ -24,6 +24,10 @@ import { paperTitle, metaLine, firstText } from '../core/texts.js'
 import { copyText } from '../core/files.js'
 import { translationStore, providerLabel } from '../core/translation.js'
 import { FolderPicker } from './library/folders.jsx'
+import { ReaderShell } from './reader/shell.jsx'
+import { NoteCards } from './notes/cards.jsx'
+import { ensureNotesStyles } from './notes/styles.js'
+import { matchSectionCards } from '../core/notes-model.js'
 
 function opId() {
   const random = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).slice(2)
@@ -91,11 +95,11 @@ function PaperRow(props) {
       'div',
       Object.assign({
         className: 'ph-side-row__main',
-        onClick: () => props.onSelect(paper),
+        onClick: () => props.onPreview(paper),
         role: 'button',
         tabIndex: 0,
         'aria-pressed': selected ? 'true' : 'false',
-        onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); props.onSelect(paper) } },
+        onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); props.onPreview(paper) } },
       }, drag),
       h('div', { className: 'ph-side-row__title' }, paperTitle(t, paper)),
       paper.title && paper.title !== paperTitle(t, paper) ? h('div', { className: 'ph-side-row__original' }, paper.title) : null,
@@ -113,7 +117,7 @@ function PaperRow(props) {
     h(
       'div',
       { className: 'ph-side-row__actions' },
-      h(IconButton, { icon: 'external', title: t('drawer.action.open'), onClick: () => props.onOpen(paper, 1) }),
+      h(IconButton, { icon: 'book', title: t('drawer.action.readHere'), onClick: () => props.onPreview(paper) }),
       h(IconButton, { icon: 'quote', title: t('drawer.action.cite'), onClick: () => props.onCite([{ kind: 'paper', id: paper.id, title: paperTitle(t, paper) }]) }),
       h(IconButton, { icon: 'panelRight', title: t('drawer.action.details'), onClick: () => props.onDetails(paper) }),
     ),
@@ -163,10 +167,35 @@ export function DrawerBody(props) {
   const [figures, setFigures] = React.useState({ status: 'loading', items: [], error: null })
   const [notes, setNotes] = React.useState({ status: 'idle', items: [], error: null })
   const [noteTotal, setNoteTotal] = React.useState(0)
+  const [revision, setRevision] = React.useState(0)
   const [filters, setFilters] = React.useState({ quick: 'all', collectionId: '', tag: '', color: '', kind: '', paperId: '' })
   const [selected, setSelected] = React.useState([])
+  const [preview, setPreview] = React.useState(null)
+  const [previewNote, setPreviewNote] = React.useState({ status: 'idle', note: null, error: null })
+  const releasePreviewStyles = React.useMemo(() => ensureNotesStyles(), [])
+  React.useEffect(() => () => releasePreviewStyles(), [releasePreviewStyles])
   const [collapsed, setCollapsed] = React.useState({})
-  const [revision, setRevision] = React.useState(0)
+  React.useEffect(() => {
+    if (!preview || preview.kind !== 'note') {
+      setPreviewNote({ status: 'idle', note: null, error: null })
+      return undefined
+    }
+    let alive = true
+    const noteId = preview.note && (preview.note.id || preview.note.noteId)
+    if (!noteId) {
+      setPreviewNote({ status: 'error', note: null, error: new Error('note id is missing') })
+      return undefined
+    }
+    setPreviewNote({ status: 'loading', note: null, error: null })
+    Promise.resolve(defaultApi('notes.get', { id: noteId }))
+      .then((data) => {
+        const note = data && (data.note || data)
+        if (!note || !note.id) throw new Error('notes.get returned no note')
+        if (alive) setPreviewNote({ status: 'ready', note, error: null })
+      })
+      .catch((error) => { if (alive) setPreviewNote({ status: 'error', note: null, error }) })
+    return () => { alive = false }
+  }, [preview])
   const scrollPositions = React.useRef({})
   const scrollRef = React.useRef(null)
   const searchRef = React.useRef(null)
@@ -436,6 +465,12 @@ export function DrawerBody(props) {
     if (openLibrary) openLibrary()
   }, [openLibrary])
 
+  const openPreview = React.useCallback((item) => {
+    if (!item) return
+    if (item.kind === 'note' || String(item.id || '').startsWith('note-')) setPreview({ kind: 'note', note: item.note || item })
+    else setPreview({ kind: 'paper', paper: item, page: 1 })
+  }, [])
+
   const cite = React.useCallback((materials) => {
     const list = (Array.isArray(materials) ? materials : [materials]).filter(Boolean)
     if (list.length === 0) return
@@ -538,7 +573,7 @@ export function DrawerBody(props) {
             h('span', { className: 'ph-side-group__title' }, group.label, h('span', { className: 'ph-caption' }, String(group.items.length))),
             h('button', { type: 'button', className: 'ph-linkbtn', onClick: () => openLibraryView(group.view) }, t('drawer.group.viewAll') + ' →'),
           ),
-          group.items.slice(0, 6).map((paper, index) => h(PaperRow, { key: group.id + ':' + paper.id, t: t, paper: paper, index: index, selected: selectedKeys.has('paper:' + paper.id), onSelect: () => toggleSelect({ kind: 'paper', id: paper.id }), onOpen: (p, page) => openItem(p, page), onCite: cite, onDetails: openLibraryPaper })),
+          group.items.slice(0, 6).map((paper, index) => h(PaperRow, { key: group.id + ':' + paper.id, t: t, paper: paper, index: index, selected: selectedKeys.has('paper:' + paper.id), onSelect: () => toggleSelect({ kind: 'paper', id: paper.id }), onPreview: openPreview, onOpen: (p, page) => openItem(p, page), onCite: cite, onDetails: openLibraryPaper })),
         )),
         collections.length > 0 ? h('section', { className: 'ph-side-group' },
           h('div', { className: 'ph-side-group__head' }, h('span', { className: 'ph-side-group__title' }, t('drawer.group.collections')), h('button', { type: 'button', className: 'ph-linkbtn', onClick: () => openLibraryView('all') }, t('drawer.group.viewAll') + ' →')),
@@ -609,8 +644,8 @@ export function DrawerBody(props) {
                 className: 'ph-side-note' + (selectedNote ? ' ph-side-note--selected' : ''),
                 role: 'button',
                 tabIndex: 0,
-                onClick: () => toggleSelect({ kind: 'note', id: note.id, title: note.title || t('notes.untitled') }),
-                onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleSelect({ kind: 'note', id: note.id, title: note.title || t('notes.untitled') }) } },
+                onClick: () => openPreview({ kind: 'note', note: note }),
+                onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPreview({ kind: 'note', note: note }) } },
                 title: note.title || t('notes.untitled'),
               },
                 h('span', { className: 'ph-side-row__check', onClick: (event) => event.stopPropagation() }, h(Check, { checked: selectedNote, onChange: () => toggleSelect({ kind: 'note', id: note.id, title: note.title || t('notes.untitled') }) })),
@@ -627,6 +662,68 @@ export function DrawerBody(props) {
                 }),
               )
             }))
+  }
+
+  if (preview !== null) {
+    const previewTitle = preview.kind === 'paper'
+      ? paperTitle(t, preview.paper || {})
+      : firstText(preview.note && preview.note.title, t('notes.untitled'))
+    const jumpCenter = () => {
+      const target = preview
+      setPreview(null)
+      if (target.kind === 'paper') openItem(target.paper, target.page || 1)
+      else openNotesLibrary(target.note && target.note.id)
+    }
+    let previewBody = null
+    if (preview.kind === 'paper') {
+      previewBody = h(ReaderShell, {
+        t: t,
+        api: defaultApi,
+        page: preview.page || 1,
+        initialPage: preview.page || 1,
+        paperId: preview.paper && preview.paper.id,
+        paper: preview.paper,
+        sessionId: sessionId,
+        onBack: jumpCenter,
+        onOpenPaper: (paperId, page) => { if (paperId) setPreview({ kind: 'paper', paper: { id: paperId }, page: page || 1 }) },
+        onOpenSettings: () => bus.emit('open-settings'),
+      })
+    } else if (previewNote.status === 'ready') {
+      const note = previewNote.note
+      const rows = matchSectionCards(note.contentMd || '', note.contentJson).sections
+      const noteData = note.contentJson && note.contentJson.data ? note.contentJson.data : {}
+      previewBody = h(
+        'article',
+        { className: 'ph-side-note-preview' },
+        h('h2', { className: 'ph-side-note-preview__title' }, firstText(note.title, t('notes.untitled'))),
+        note.paperLinks && note.paperLinks.length > 0
+          ? h('div', { className: 'ph-side-note-preview__papers' }, note.paperLinks.map((link) => h('button', { key: link.paperId, type: 'button', className: 'ph-side-note-preview__paper', onClick: () => setPreview({ kind: 'paper', paper: { id: link.paperId, title: link.title, titleZh: link.titleZh }, page: 1 }) }, h(Icon, { name: 'book', size: 11 }), firstText(link.titleZh, link.title, link.paperId))))
+          : null,
+        h(NoteCards, {
+          t: t,
+          rows: rows,
+          data: noteData,
+          onOpenFigure: (paperId, page) => { if (paperId) setPreview({ kind: 'paper', paper: { id: paperId }, page: page || 1 }) },
+        }),
+      )
+    } else if (previewNote.status === 'error') {
+      previewBody = h(EmptyState, { compact: true, tone: 'error', icon: 'warning', title: t('drawer.preview.failed'), desc: describeError(t, previewNote.error) })
+    } else {
+      previewBody = h('div', { className: 'ph-side-preview__loading' }, h(Spinner, { size: 14 }), t('drawer.preview.loading'))
+    }
+    return h(
+      'div',
+      { className: 'ph-sidebar ph-sidebar--preview' },
+      h(
+        'div',
+        { className: 'ph-side-preview__head' },
+        h(IconButton, { icon: 'arrowLeft', title: t('drawer.preview.back'), onClick: () => setPreview(null) }),
+        h('span', { className: 'ph-side-preview__title', title: previewTitle }, previewTitle),
+        h(Button, { size: 'sm', variant: 'secondary', icon: 'external', onClick: jumpCenter }, t('drawer.preview.openCenter')),
+        h(IconButton, { icon: 'close', title: t('drawer.preview.close'), onClick: () => setPreview(null) }),
+      ),
+      h('div', { className: 'ph-side-preview__body' }, previewBody),
+    )
   }
 
   return h(

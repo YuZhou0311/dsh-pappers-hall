@@ -4736,6 +4736,22 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-n-doc__diagram-dialog-canvas { overflow: auto; max-height: calc(90vh - 110px); }
 .ph-n-doc__diagram-dialog-canvas svg { display: block; width: auto; height: auto; }
 .ph-n-editor__content[data-ph-drop] { outline: 2px dashed var(--ph-accent); outline-offset: -3px; }
+/* Inline conversation-sidebar preview: reading and note surfaces replace the
+   feed inside the existing right sidebar instead of navigating away. */
+.ph-sidebar--preview { padding: 0; overflow: hidden; }
+.ph-side-preview__head { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--ph-line-soft); flex: none; min-width: 0; }
+.ph-side-preview__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--ph-fw-semi); font-size: var(--ph-fs-12); }
+.ph-side-preview__body { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+.ph-side-preview__body > .ph-r-reader { flex: 1 1 auto; width: 100%; height: 100%; }
+.ph-side-preview__body > .ph-n-editor { flex: 1 1 auto; width: 100%; min-width: 0; overflow: auto; }
+.ph-side-preview__loading { display: flex; align-items: center; gap: 8px; padding: 18px; color: var(--ph-ink-3); font-size: var(--ph-fs-12); }
+.ph-side-note-preview { flex: 1; min-height: 0; overflow: auto; padding: 14px 14px 28px; background: var(--ph-bg); }
+.ph-side-note-preview__title { margin: 0 0 8px; font-size: var(--ph-fs-18, 18px); line-height: 1.3; }
+.ph-side-note-preview__papers { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.ph-side-note-preview__paper { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 3px 7px; border: 1px solid var(--ph-line-soft); border-radius: 999px; background: var(--ph-bg-2, transparent); color: var(--ph-ink-2); font-size: var(--ph-fs-11); cursor: pointer; }
+.ph-side-note-preview__paper:hover { color: var(--ph-ink); border-color: var(--ph-line); }
+.ph-side-note-preview .ph-n-doc { padding: 0; }
+.ph-side-note-preview .ph-n-doc__sec { margin-top: 14px; }
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -27986,14 +28002,14 @@ function PaperRow(props) {
       "div",
       Object.assign({
         className: "ph-side-row__main",
-        onClick: () => props.onSelect(paper),
+        onClick: () => props.onPreview(paper),
         role: "button",
         tabIndex: 0,
         "aria-pressed": selected ? "true" : "false",
         onKeyDown: (event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            props.onSelect(paper);
+            props.onPreview(paper);
           }
         }
       }, drag),
@@ -28013,7 +28029,7 @@ function PaperRow(props) {
     h(
       "div",
       { className: "ph-side-row__actions" },
-      h(IconButton, { icon: "external", title: t("drawer.action.open"), onClick: () => props.onOpen(paper, 1) }),
+      h(IconButton, { icon: "book", title: t("drawer.action.readHere"), onClick: () => props.onPreview(paper) }),
       h(IconButton, { icon: "quote", title: t("drawer.action.cite"), onClick: () => props.onCite([{ kind: "paper", id: paper.id, title: paperTitle(t, paper) }]) }),
       h(IconButton, { icon: "panelRight", title: t("drawer.action.details"), onClick: () => props.onDetails(paper) })
     )
@@ -28061,10 +28077,37 @@ function DrawerBody(props) {
   const [figures, setFigures] = import_react42.default.useState({ status: "loading", items: [], error: null });
   const [notes, setNotes] = import_react42.default.useState({ status: "idle", items: [], error: null });
   const [noteTotal, setNoteTotal] = import_react42.default.useState(0);
+  const [revision2, setRevision] = import_react42.default.useState(0);
   const [filters, setFilters] = import_react42.default.useState({ quick: "all", collectionId: "", tag: "", color: "", kind: "", paperId: "" });
   const [selected, setSelected] = import_react42.default.useState([]);
+  const [preview, setPreview] = import_react42.default.useState(null);
+  const [previewNote, setPreviewNote] = import_react42.default.useState({ status: "idle", note: null, error: null });
+  const releasePreviewStyles = import_react42.default.useMemo(() => ensureNotesStyles(), []);
+  import_react42.default.useEffect(() => () => releasePreviewStyles(), [releasePreviewStyles]);
   const [collapsed, setCollapsed] = import_react42.default.useState({});
-  const [revision2, setRevision] = import_react42.default.useState(0);
+  import_react42.default.useEffect(() => {
+    if (!preview || preview.kind !== "note") {
+      setPreviewNote({ status: "idle", note: null, error: null });
+      return void 0;
+    }
+    let alive = true;
+    const noteId = preview.note && (preview.note.id || preview.note.noteId);
+    if (!noteId) {
+      setPreviewNote({ status: "error", note: null, error: new Error("note id is missing") });
+      return void 0;
+    }
+    setPreviewNote({ status: "loading", note: null, error: null });
+    Promise.resolve(defaultApi("notes.get", { id: noteId })).then((data) => {
+      const note = data && (data.note || data);
+      if (!note || !note.id) throw new Error("notes.get returned no note");
+      if (alive) setPreviewNote({ status: "ready", note, error: null });
+    }).catch((error) => {
+      if (alive) setPreviewNote({ status: "error", note: null, error });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [preview]);
   const scrollPositions = import_react42.default.useRef({});
   const scrollRef = import_react42.default.useRef(null);
   const searchRef = import_react42.default.useRef(null);
@@ -28333,6 +28376,11 @@ function DrawerBody(props) {
     navigation.openPaper({ paperId, page: page2 || target.page || 1, annotationId: annotationId || (target.kind === "annotation" ? target.id : null), source: "sidebar" });
     if (openLibrary) openLibrary();
   }, [openLibrary]);
+  const openPreview = import_react42.default.useCallback((item) => {
+    if (!item) return;
+    if (item.kind === "note" || String(item.id || "").startsWith("note-")) setPreview({ kind: "note", note: item.note || item });
+    else setPreview({ kind: "paper", paper: item, page: 1 });
+  }, []);
   const cite = import_react42.default.useCallback((materials) => {
     const list = (Array.isArray(materials) ? materials : [materials]).filter(Boolean);
     if (list.length === 0) return;
@@ -28423,7 +28471,7 @@ function DrawerBody(props) {
             h("span", { className: "ph-side-group__title" }, group.label, h("span", { className: "ph-caption" }, String(group.items.length))),
             h("button", { type: "button", className: "ph-linkbtn", onClick: () => openLibraryView(group.view) }, t("drawer.group.viewAll") + " \u2192")
           ),
-          group.items.slice(0, 6).map((paper, index) => h(PaperRow, { key: group.id + ":" + paper.id, t, paper, index, selected: selectedKeys.has("paper:" + paper.id), onSelect: () => toggleSelect({ kind: "paper", id: paper.id }), onOpen: (p, page2) => openItem(p, page2), onCite: cite, onDetails: openLibraryPaper }))
+          group.items.slice(0, 6).map((paper, index) => h(PaperRow, { key: group.id + ":" + paper.id, t, paper, index, selected: selectedKeys.has("paper:" + paper.id), onSelect: () => toggleSelect({ kind: "paper", id: paper.id }), onPreview: openPreview, onOpen: (p, page2) => openItem(p, page2), onCite: cite, onDetails: openLibraryPaper }))
         )),
         collections.length > 0 ? h(
           "section",
@@ -28493,11 +28541,11 @@ function DrawerBody(props) {
           className: "ph-side-note" + (selectedNote ? " ph-side-note--selected" : ""),
           role: "button",
           tabIndex: 0,
-          onClick: () => toggleSelect({ kind: "note", id: note.id, title: note.title || t("notes.untitled") }),
+          onClick: () => openPreview({ kind: "note", note }),
           onKeyDown: (event) => {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
-              toggleSelect({ kind: "note", id: note.id, title: note.title || t("notes.untitled") });
+              openPreview({ kind: "note", note });
             }
           },
           title: note.title || t("notes.untitled")
@@ -28521,6 +28569,67 @@ function DrawerBody(props) {
         })
       );
     }));
+  }
+  if (preview !== null) {
+    const previewTitle = preview.kind === "paper" ? paperTitle(t, preview.paper || {}) : firstText(preview.note && preview.note.title, t("notes.untitled"));
+    const jumpCenter = () => {
+      const target = preview;
+      setPreview(null);
+      if (target.kind === "paper") openItem(target.paper, target.page || 1);
+      else openNotesLibrary(target.note && target.note.id);
+    };
+    let previewBody = null;
+    if (preview.kind === "paper") {
+      previewBody = h(ReaderShell, {
+        t,
+        api: defaultApi,
+        page: preview.page || 1,
+        initialPage: preview.page || 1,
+        paperId: preview.paper && preview.paper.id,
+        paper: preview.paper,
+        sessionId,
+        onBack: jumpCenter,
+        onOpenPaper: (paperId, page2) => {
+          if (paperId) setPreview({ kind: "paper", paper: { id: paperId }, page: page2 || 1 });
+        },
+        onOpenSettings: () => bus.emit("open-settings")
+      });
+    } else if (previewNote.status === "ready") {
+      const note = previewNote.note;
+      const rows = matchSectionCards(note.contentMd || "", note.contentJson).sections;
+      const noteData = note.contentJson && note.contentJson.data ? note.contentJson.data : {};
+      previewBody = h(
+        "article",
+        { className: "ph-side-note-preview" },
+        h("h2", { className: "ph-side-note-preview__title" }, firstText(note.title, t("notes.untitled"))),
+        note.paperLinks && note.paperLinks.length > 0 ? h("div", { className: "ph-side-note-preview__papers" }, note.paperLinks.map((link) => h("button", { key: link.paperId, type: "button", className: "ph-side-note-preview__paper", onClick: () => setPreview({ kind: "paper", paper: { id: link.paperId, title: link.title, titleZh: link.titleZh }, page: 1 }) }, h(Icon, { name: "book", size: 11 }), firstText(link.titleZh, link.title, link.paperId)))) : null,
+        h(NoteCards, {
+          t,
+          rows,
+          data: noteData,
+          onOpenFigure: (paperId, page2) => {
+            if (paperId) setPreview({ kind: "paper", paper: { id: paperId }, page: page2 || 1 });
+          }
+        })
+      );
+    } else if (previewNote.status === "error") {
+      previewBody = h(EmptyState, { compact: true, tone: "error", icon: "warning", title: t("drawer.preview.failed"), desc: describeError(t, previewNote.error) });
+    } else {
+      previewBody = h("div", { className: "ph-side-preview__loading" }, h(Spinner, { size: 14 }), t("drawer.preview.loading"));
+    }
+    return h(
+      "div",
+      { className: "ph-sidebar ph-sidebar--preview" },
+      h(
+        "div",
+        { className: "ph-side-preview__head" },
+        h(IconButton, { icon: "arrowLeft", title: t("drawer.preview.back"), onClick: () => setPreview(null) }),
+        h("span", { className: "ph-side-preview__title", title: previewTitle }, previewTitle),
+        h(Button, { size: "sm", variant: "secondary", icon: "external", onClick: jumpCenter }, t("drawer.preview.openCenter")),
+        h(IconButton, { icon: "close", title: t("drawer.preview.close"), onClick: () => setPreview(null) })
+      ),
+      h("div", { className: "ph-side-preview__body" }, previewBody)
+    );
   }
   return h(
     "div",
@@ -28929,6 +29038,21 @@ function HeaderDrawerButton(props) {
   const t = props.t;
   const sessionId = props.sessionId;
   const [failed, setFailed] = import_react44.default.useState(false);
+  import_react44.default.useEffect(() => {
+    if (!sessionId || !props.openDrawer) return void 0;
+    try {
+      if (window.sessionStorage.getItem("ph-drawer-autopen") === "1") return void 0;
+      window.sessionStorage.setItem("ph-drawer-autopen", "1");
+    } catch {
+    }
+    const timer2 = setTimeout(() => {
+      try {
+        props.openDrawer();
+      } catch {
+      }
+    }, 450);
+    return () => clearTimeout(timer2);
+  }, [sessionId, props.openDrawer]);
   if (!sessionId) return null;
   return h(
     "span",
@@ -30952,6 +31076,12 @@ var ZH = {
   "drawer.time.days": "{count} \u5929\u524D",
   "drawer.action.open": "\u6253\u5F00\u9605\u8BFB\u5668",
   "drawer.action.cite": "\u5F15\u7528\u5230\u5BF9\u8BDD",
+  "drawer.action.readHere": "\u5728\u4FA7\u8FB9\u9605\u8BFB",
+  "drawer.preview.back": "\u8FD4\u56DE",
+  "drawer.preview.close": "\u5173\u95ED\u9884\u89C8",
+  "drawer.preview.openCenter": "\u5728\u8BBA\u6587\u4E2D\u5FC3\u67E5\u770B",
+  "drawer.preview.loading": "\u8BBA\u6587/\u7B14\u8BB0\u9884\u89C8\u52A0\u8F7D\u4E2D\u2026",
+  "drawer.preview.failed": "\u9884\u89C8\u52A0\u8F7D\u5931\u8D25",
   "drawer.action.details": "\u5728\u8BBA\u6587\u4E2D\u5FC3\u67E5\u770B",
   "drawer.action.copy": "\u590D\u5236",
   "drawer.page": "\u7B2C {page} \u9875",
@@ -32234,6 +32364,12 @@ var EN = {
   "drawer.time.days": "{count} d ago",
   "drawer.action.open": "Open reader",
   "drawer.action.cite": "Cite into conversation",
+  "drawer.action.readHere": "Read here",
+  "drawer.preview.back": "Back",
+  "drawer.preview.close": "Close preview",
+  "drawer.preview.openCenter": "Open in paper center",
+  "drawer.preview.loading": "Loading preview\u2026",
+  "drawer.preview.failed": "Could not load preview",
   "drawer.action.details": "Open in paper center",
   "drawer.action.copy": "Copy",
   "drawer.page": "Page {page}",

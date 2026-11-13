@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.24.16
+
+- Conversation-sidebar paper cards now open the paper reader inline: translation, annotations, AI and figure tools stay in the right sidebar.
+- Clicking a note in the sidebar opens a clean read-only note preview; previews have an explicit jump to the paper center.
+- The conversation drawer auto-opens once per browser session so the reading sidebar is not silently hidden on a fresh conversation.
+
 ## 0.24.10
 
 - Made “关联到此笔记” a primary, always-visible reader action; its label no longer collapses when the toolbar switches to icon-only mode.

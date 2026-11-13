@@ -20,6 +20,7 @@
  */
 import React from 'react'
 import { downloadText } from '../../core/files.js'
+import { getNoteContext, setNoteContext } from '../../core/note-context.js'
 import { Icon } from '../../core/icons.jsx'
 import { Badge, Button, EmptyState, IconButton, Spinner } from '../../core/primitives.jsx'
 import {
@@ -503,6 +504,85 @@ export function NoteEditor(props) {
       })
     }, 700)
   }
+
+  /** Append a new Markdown section plus a matching contentJson card. */
+  function appendNoteSection(heading, blocks, markdown) {
+    const current = noteRef.current
+    if (!current) return Promise.reject(new Error('no note'))
+    const base = String(localRef.current.content || '').replace(/\s+$/, '')
+    const next = base + (base === '' ? '' : '\n\n') + '## ' + heading + '\n\n' + String(markdown || '').trim() + '\n'
+    applyLocal({ content: next })
+    return Promise.resolve(flush()).then(() => {
+      const sections = sectionizeMarkdown(next)
+      const section = sections[sections.length - 1]
+      if (!section) throw new Error('sectionize failed')
+      let stored = contentJsonRef.current
+      try { stored = stored && typeof stored === 'object' ? JSON.parse(JSON.stringify(stored)) : null } catch { stored = null }
+      const document = stored && Array.isArray(stored.sections) ? stored : { version: 2, direction: '', layout: 'auto', createdAt: new Date().toISOString(), sections: [] }
+      document.sections = document.sections.filter((entry) => entry && entry.id !== section.id)
+      document.sections.push({
+        id: section.id,
+        sourceHash: section.hash,
+        heading: section.heading || heading,
+        style: blocks.some((block) => block.type === 'figure') ? 'figure' : 'plain',
+        blocks,
+      })
+      return saveContentJson(document, { switchView: true })
+    })
+  }
+
+  function insertQuoteToNote(payload) {
+    const quote = String((payload && payload.quote) || '').trim()
+    if (quote === '') return Promise.reject(new Error('empty quote'))
+    const title = String((payload && payload.paperTitle) || '').trim()
+    const page = Number(payload && payload.page) || 0
+    const attribution = '— ' + (title || '论文') + (page > 0 ? ', p.' + page : '')
+    const quoted = quote.split(/\r?\n/).map((line) => '> ' + line).join('\n') + '\n>\n> ' + attribution
+    return appendNoteSection('引用', [{ type: 'quote', text: quote + '\n\n' + attribution }], quoted)
+  }
+
+  function insertFigureToNote(figure) {
+    if (!figure || !figure.figureId || !figure.paperId) return Promise.reject(new Error('invalid figure'))
+    const label = String(figure.label || 'Figure')
+    const block = {
+      type: 'figure',
+      figureId: String(figure.figureId),
+      paperId: String(figure.paperId),
+      label,
+      caption: String(figure.caption || ''),
+      page: Math.max(1, Number(figure.page) || 1),
+      imageUrl: String(figure.imageUrl || ('/pappers-hall/figure/' + figure.figureId + '.png')),
+    }
+    const source = '> 引自 ' + (figure.paperTitle || '论文') + (figure.page ? ', p.' + figure.page : '') + ' · ' + label
+    return appendNoteSection('附图', [block], source)
+  }
+
+  const linkPaperToCurrent = React.useCallback((paperId) => {
+    const current = noteRef.current
+    if (!current || !paperId) return Promise.resolve(null)
+    return Promise.resolve(service.link(current.id, [paperId])).then((fresh) => {
+      if (fresh) {
+        noteRef.current = fresh
+        if (onSavedRef.current) onSavedRef.current(fresh)
+        const active = getNoteContext()
+        if (active && active.noteId === current.id) setNoteContext({ ...active, paperIds: Array.isArray(fresh.paperIds) ? fresh.paperIds : active.paperIds })
+      }
+      return fresh
+    })
+  }, [service])
+
+  React.useEffect(() => {
+    if (!note || !note.id) return undefined
+    setNoteContext({
+      noteId: note.id,
+      title: localRef.current.title,
+      paperIds: Array.isArray(note.paperIds) ? note.paperIds : [],
+      insertQuote: insertQuoteToNote,
+      insertFigure: insertFigureToNote,
+      linkPaper: linkPaperToCurrent,
+    })
+    return undefined
+  }, [note && note.id, title, linkPaperToCurrent])
 
   function runNoteAction(action) {
     if (!action || typeof action !== 'object') return
@@ -1367,7 +1447,29 @@ export function NoteEditor(props) {
     /* content --------------------------------------------------------------- */
     React.createElement(
       'div',
-      { className: 'ph-n-editor__content' },
+      {
+        className: 'ph-n-editor__content',
+        onDragOver: (event) => {
+          if (event.dataTransfer && Array.from(event.dataTransfer.types || []).includes('application/x-pappers-hall-material')) {
+            event.preventDefault()
+            event.dataTransfer.dropEffect = 'copy'
+          }
+        },
+        onDrop: (event) => {
+          const raw = event.dataTransfer && event.dataTransfer.getData('application/x-pappers-hall-material')
+          if (!raw) return
+          event.preventDefault()
+          let materials = []
+          try { materials = JSON.parse(raw).materials || [] } catch { materials = [] }
+          const figure = materials.find((item) => item && item.kind === 'figure' && item.paperId && item.figureId)
+          if (!figure) return
+          insertFigureToNote(figure).then(() => {
+            if (props.notify) props.notify('success', t('notes.figure.dropped'))
+          }).catch((error) => {
+            if (props.notify) props.notify('error', t('notes.figure.dropFailed', { message: String((error && error.message) || error) }))
+          })
+        },
+      },
       viewMode === 'cards' && contentJson
         ? React.createElement(
             'div',

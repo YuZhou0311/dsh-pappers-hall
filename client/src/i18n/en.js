@@ -1264,6 +1264,8 @@ export const EN = {
   "notes.directive.empty": "No directives yet",
   "notes.directive.unavailable": "Note agent unavailable: {reason}",
   "notes.directive.failed": "Directive run failed: {message}",
+  "notes.figure.dropped": "Figure inserted into the note",
+  "notes.figure.dropFailed": "Insert failed: {message}",
   "notes.action.copied": "Copied",
   "notes.diagram.expand": "Expand",
   "notes.diagram.collapse": "Collapse",

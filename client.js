@@ -57,8 +57,8 @@ __export(index_exports, {
   sectionizeMarkdown: () => sectionizeMarkdown
 });
 module.exports = __toCommonJS(index_exports);
-var import_react48 = __toESM(require("react"), 1);
-var import_react49 = require("react");
+var import_react49 = __toESM(require("react"), 1);
+var import_react50 = require("react");
 
 // src/core/constants.js
 var NS = "pappers-hall";
@@ -4735,6 +4735,7 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-n-doc__diagram-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: var(--ph-fs-13); font-weight: 600; }
 .ph-n-doc__diagram-dialog-canvas { overflow: auto; max-height: calc(90vh - 110px); }
 .ph-n-doc__diagram-dialog-canvas svg { display: block; width: auto; height: auto; }
+.ph-n-editor__content[data-ph-drop] { outline: 2px dashed var(--ph-accent); outline-offset: -3px; }
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -4902,10 +4903,10 @@ function normalizeMaterials(materials, fallback) {
 }
 function createStore() {
   let state = { bundles: [], revision: 0 };
-  const listeners5 = /* @__PURE__ */ new Set();
-  function publish2(bundles) {
+  const listeners6 = /* @__PURE__ */ new Set();
+  function publish3(bundles) {
     state = { bundles, revision: state.revision + 1 };
-    listeners5.forEach((listener) => {
+    listeners6.forEach((listener) => {
       try {
         listener();
       } catch (error) {
@@ -4929,16 +4930,16 @@ function createStore() {
       if (next !== bundle) changed = true;
       bundles.push(next || bundle);
     });
-    if (changed) publish2(bundles);
+    if (changed) publish3(bundles);
   }
   return {
     getSnapshot() {
       return state;
     },
     subscribe(listener) {
-      listeners5.add(listener);
+      listeners6.add(listener);
       return () => {
-        listeners5.delete(listener);
+        listeners6.delete(listener);
       };
     },
     /**
@@ -4964,9 +4965,9 @@ function createStore() {
       };
       const existing = state.bundles.find((bundle) => bundle.bundleId === bundleId);
       if (existing) {
-        publish2(state.bundles.map((bundle) => bundle.bundleId === bundleId ? Object.assign({}, entry, { added: bundle.added }) : bundle));
+        publish3(state.bundles.map((bundle) => bundle.bundleId === bundleId ? Object.assign({}, entry, { added: bundle.added }) : bundle));
       } else {
-        publish2([entry].concat(state.bundles));
+        publish3([entry].concat(state.bundles));
       }
       return entry;
     },
@@ -4975,7 +4976,7 @@ function createStore() {
       return this.add(result, fallbackMaterials);
     },
     remove(bundleId) {
-      publish2(state.bundles.filter((bundle) => bundle.bundleId !== bundleId));
+      publish3(state.bundles.filter((bundle) => bundle.bundleId !== bundleId));
     },
     removeMaterial(bundleId, index) {
       update(bundleId, (bundle) => {
@@ -4987,7 +4988,7 @@ function createStore() {
       update(bundleId, (bundle) => bundle.added ? bundle : Object.assign({}, bundle, { added: true }));
     },
     clear() {
-      publish2([]);
+      publish3([]);
     }
   };
 }
@@ -5325,10 +5326,10 @@ function opId(prefix) {
 }
 var SORT_PARAMS = { recent: "recent", added: "added", title: "title", year: "year", authors: "authors", citations: "citations", impactFactor: "impactFactor" };
 var READING_VIEWS = { toRead: "to-read", reading: "reading", read: "read" };
-function sortForView(view, current) {
+function sortForView(view, current2) {
   if (view === "recentAdded") return "added";
   if (view === "recentRead") return "recent";
-  return current || "recent";
+  return current2 || "recent";
 }
 function toggleId(selection, id) {
   return selection.indexOf(id) >= 0 ? selection.filter((value) => value !== id) : selection.concat([id]);
@@ -5368,13 +5369,13 @@ function createLibraryController({ api }) {
     folders: { status: "idle", items: [], total: 0, error: null },
     revision: 0
   };
-  const listeners5 = /* @__PURE__ */ new Set();
+  const listeners6 = /* @__PURE__ */ new Set();
   let listSeq = 0;
   let lastSideRetryAt = 0;
   let detailSeq = 0;
-  function publish2(patch) {
+  function publish3(patch) {
     state = Object.assign({}, state, patch, { revision: state.revision + 1 });
-    listeners5.forEach((listener) => {
+    listeners6.forEach((listener) => {
       try {
         listener();
       } catch (error) {
@@ -5465,10 +5466,10 @@ function createLibraryController({ api }) {
   async function refreshFolders() {
     try {
       const value = await api("library.folders.tree", {});
-      publish2({ folders: { status: "ready", items: listOf(value && value.items), total: Number(value && value.total) || 0, error: null } });
+      publish3({ folders: { status: "ready", items: listOf(value && value.items), total: Number(value && value.total) || 0, error: null } });
     } catch (error) {
       const fallback = listOf(state.collections).map((collection) => ({ id: collection.id, name: collection.name, color: collection.color, kind: collection.kind === "field" ? "field" : "folder", count: collection.count || 0, children: [] }));
-      publish2({ folders: { status: "degraded", items: fallback, total: fallback.length, error } });
+      publish3({ folders: { status: "degraded", items: fallback, total: fallback.length, error } });
     }
   }
   async function createFolder(parentId, name, color) {
@@ -5487,7 +5488,7 @@ function createLibraryController({ api }) {
     const result = await api("library.collections.delete", { id: String(id), operationId: opId("folder") });
     undo.push({ label: "\u5220\u9664\u6587\u4EF6\u5939" });
     const filters = state.filters.folderId === id ? Object.assign({}, state.filters, { folderId: null }) : state.filters;
-    publish2({ filters });
+    publish3({ filters });
     await refreshFolders();
     return result;
   }
@@ -5505,24 +5506,24 @@ function createLibraryController({ api }) {
     if (list.length === 0) return { results: [] };
     const result = await api("library.setFavorite", { ids: list, favorite: favorite !== false, operationId: opId("favorite") });
     undo.push({ label: favorite === false ? "\u53D6\u6D88\u6536\u85CF" : "\u6536\u85CF" });
-    publish2({ items: state.items.map((paper) => list.indexOf(paper.id) >= 0 ? Object.assign({}, paper, { favorite: favorite !== false }) : paper) });
-    if (state.details.paperId && list.indexOf(String(state.details.paperId)) >= 0 && state.details.data) publish2({ details: Object.assign({}, state.details, { data: Object.assign({}, state.details.data, { favorite: favorite !== false }) }) });
+    publish3({ items: state.items.map((paper) => list.indexOf(paper.id) >= 0 ? Object.assign({}, paper, { favorite: favorite !== false }) : paper) });
+    if (state.details.paperId && list.indexOf(String(state.details.paperId)) >= 0 && state.details.data) publish3({ details: Object.assign({}, state.details, { data: Object.assign({}, state.details.data, { favorite: favorite !== false }) }) });
     if (state.filters.view === "favorite" || state.filters.favorite) refresh();
     return result;
   }
   function setFolderFilter(folderId) {
     const filters = Object.assign({}, state.filters, { folderId: folderId || null, view: folderId ? "all" : state.filters.view, favorite: folderId ? false : state.filters.favorite });
-    publish2({ filters, selection: [], details: EMPTY_DETAILS });
+    publish3({ filters, selection: [], details: EMPTY_DETAILS });
     refresh();
   }
   function setFavoriteFilter(favorite) {
     const filters = Object.assign({}, state.filters, { favorite: Boolean(favorite), folderId: favorite ? null : state.filters.folderId, view: favorite ? "favorite" : "all" });
-    publish2({ filters, selection: [] });
+    publish3({ filters, selection: [] });
     refresh();
   }
   async function refresh() {
     const seq2 = ++listSeq;
-    if (state.status !== "ready" || state.items.length === 0) publish2({ status: "loading", error: null });
+    if (state.status !== "ready" || state.items.length === 0) publish3({ status: "loading", error: null });
     const params = listParams(state.filters, 0);
     const query = state.filters.query;
     const semanticFilters = {};
@@ -5541,7 +5542,7 @@ function createLibraryController({ api }) {
     if (seq2 !== listSeq) return;
     if (listResult.status === "rejected") {
       const error = listResult.reason;
-      publish2({ status: "error", error, offline: Boolean(error && error.code === "not_running") });
+      publish3({ status: "error", error, offline: Boolean(error && error.code === "not_running") });
       return;
     }
     let data = listResult.value || {};
@@ -5577,7 +5578,7 @@ function createLibraryController({ api }) {
     const folders = foldersFrom(collectionsResult, collections, items2);
     const tags = tagsFrom(tagsResult, items2);
     const status = statusResult.status === "fulfilled" ? statusResult.value : state.statusData;
-    publish2({
+    publish3({
       status: "ready",
       error: null,
       offline: false,
@@ -5596,9 +5597,9 @@ function createLibraryController({ api }) {
     try {
       const status = await api("status", {});
       if (!status) return;
-      publish2({ statusData: status, counts: status.counts || state.counts });
+      publish3({ statusData: status, counts: status.counts || state.counts });
     } catch (error) {
-      if (error && error.code === "not_running") publish2({ offline: true });
+      if (error && error.code === "not_running") publish3({ offline: true });
     }
     if (!state.collectionsAvailable || !state.tagsAvailable) {
       const now = Date.now();
@@ -5611,26 +5612,26 @@ function createLibraryController({ api }) {
   }
   async function loadMore() {
     if (state.loadingMore || state.items.length >= state.total) return;
-    publish2({ loadingMore: true });
+    publish3({ loadingMore: true });
     try {
       const data = await api("library.list", listParams(state.filters, state.items.length));
       const more = applyTagFilter(listOf(data && data.items), state.filters.tags);
       const seen = new Set(state.items.map((paper) => paper.id));
-      publish2({
+      publish3({
         items: state.items.concat(more.filter((paper) => !seen.has(paper.id))),
         total: Number(data && data.total) || state.total,
         loadingMore: false
       });
     } catch (error) {
-      publish2({ loadingMore: false });
+      publish3({ loadingMore: false });
       throw error;
     }
   }
   function setFilters(patch, options) {
     const opts = options || {};
     const filters = Object.assign({}, state.filters, patch);
-    if (opts.resetSelection !== false) publish2({ filters, selection: [], anchorIndex: -1, details: EMPTY_DETAILS });
-    else publish2({ filters });
+    if (opts.resetSelection !== false) publish3({ filters, selection: [], anchorIndex: -1, details: EMPTY_DETAILS });
+    else publish3({ filters });
     persistUi();
     return refresh();
   }
@@ -5639,12 +5640,12 @@ function createLibraryController({ api }) {
     const next = allowed.indexOf(view) >= 0 ? view : "all";
     if (next === "duplicates") {
       const filters2 = { view: next, collectionId: null, collectionKind: null, field: null, tags: [], query: "", sort: state.filters.sort, reading: null };
-      publish2({ filters: filters2, selection: [], anchorIndex: -1, details: EMPTY_DETAILS });
+      publish3({ filters: filters2, selection: [], anchorIndex: -1, details: EMPTY_DETAILS });
       loadDuplicates();
       return;
     }
     const filters = { view: next, collectionId: null, collectionKind: null, field: null, folderId: null, favorite: next === "favorite", tags: [], query: state.filters.query, sort: sortForView(next, state.filters.sort), reading: READING_VIEWS[next] || null };
-    publish2({ filters, selection: [], anchorIndex: -1, details: EMPTY_DETAILS });
+    publish3({ filters, selection: [], anchorIndex: -1, details: EMPTY_DETAILS });
     refresh();
   }
   function setQuery(query) {
@@ -5671,11 +5672,11 @@ function createLibraryController({ api }) {
     return setFilters(patch);
   }
   function setViewMode(mode) {
-    publish2({ viewMode: mode === "grid" ? "grid" : "table" });
+    publish3({ viewMode: mode === "grid" ? "grid" : "table" });
     persistUi();
   }
   function setSelection(selection) {
-    publish2({ selection: Array.isArray(selection) ? selection : [] });
+    publish3({ selection: Array.isArray(selection) ? selection : [] });
   }
   function toggleSelect(id, index, event) {
     const modifiers = event && typeof event === "object" ? event : {};
@@ -5692,13 +5693,13 @@ function createLibraryController({ api }) {
     } else {
       selection = selection.length === 1 && selection[0] === id ? [] : [id];
     }
-    publish2({ selection, anchorIndex: typeof index === "number" ? index : state.anchorIndex });
+    publish3({ selection, anchorIndex: typeof index === "number" ? index : state.anchorIndex });
   }
   function selectAll() {
-    publish2({ selection: state.items.map((paper) => paper.id) });
+    publish3({ selection: state.items.map((paper) => paper.id) });
   }
   function clearSelection() {
-    publish2({ selection: [], anchorIndex: -1 });
+    publish3({ selection: [], anchorIndex: -1 });
   }
   function selectedPapers() {
     const wanted = new Set(state.selection);
@@ -5713,12 +5714,12 @@ function createLibraryController({ api }) {
     const tab = opts.tab || (state.details.paperId === paperId ? state.details.tab : "info");
     if (!paperId) {
       detailSeq += 1;
-      publish2({ details: EMPTY_DETAILS });
+      publish3({ details: EMPTY_DETAILS });
       return;
     }
     const seq2 = ++detailSeq;
     const same = state.details.paperId === paperId && state.details.data;
-    publish2({
+    publish3({
       details: Object.assign({}, state.details, {
         paperId,
         tab,
@@ -5735,11 +5736,11 @@ function createLibraryController({ api }) {
     ]);
     if (seq2 !== detailSeq) return;
     if (detailResult.status === "rejected") {
-      publish2({ details: Object.assign({}, state.details, { status: "error", error: detailResult.reason }) });
+      publish3({ details: Object.assign({}, state.details, { status: "error", error: detailResult.reason }) });
       return;
     }
     const detail = detailResult.value || null;
-    publish2({
+    publish3({
       details: Object.assign({}, state.details, {
         paperId,
         status: "ready",
@@ -5753,14 +5754,14 @@ function createLibraryController({ api }) {
   }
   function closeDetails() {
     detailSeq += 1;
-    publish2({ details: EMPTY_DETAILS });
+    publish3({ details: EMPTY_DETAILS });
   }
   function setDetailTab(tab) {
-    publish2({ details: Object.assign({}, state.details, { tab }) });
+    publish3({ details: Object.assign({}, state.details, { tab }) });
   }
   function setDetailData(paper) {
     if (!paper || !paper.id) return;
-    publish2({
+    publish3({
       items: state.items.map((item) => item.id === paper.id ? Object.assign({}, item, paper) : item),
       details: Object.assign({}, state.details, { data: paper, notes: listOf(paper.notes) })
     });
@@ -5768,11 +5769,11 @@ function createLibraryController({ api }) {
   function patchPaperLocally(id, patch) {
     const items2 = state.items.map((paper) => paper.id === id ? Object.assign({}, paper, patch) : paper);
     const details = state.details.data && state.details.data.id === id ? Object.assign({}, state.details, { data: Object.assign({}, state.details.data, patch) }) : state.details;
-    publish2({ items: items2, details });
+    publish3({ items: items2, details });
   }
   async function updatePaper(id, patch) {
-    const revision = state.details.data && state.details.data.id === id ? state.details.data.revision : void 0;
-    const result = await api("library.update", { id, patch, expectedRevision: revision, operationId: opId("update") });
+    const revision2 = state.details.data && state.details.data.id === id ? state.details.data.revision : void 0;
+    const result = await api("library.update", { id, patch, expectedRevision: revision2, operationId: opId("update") });
     if (result && result.paper) setDetailData(result.paper);
     else patchPaperLocally(id, patch);
     undo.push({ label: "\u8BBA\u6587\u4FE1\u606F\u66F4\u65B0" });
@@ -5787,9 +5788,9 @@ function createLibraryController({ api }) {
   async function refreshTagList() {
     try {
       const result = await api("tags.list", {});
-      publish2({ tags: listOf(result && result.items), tagsAvailable: true });
+      publish3({ tags: listOf(result && result.items), tagsAvailable: true });
     } catch (error) {
-      publish2({ tags: derivedTags(state.items), tagsAvailable: false });
+      publish3({ tags: derivedTags(state.items), tagsAvailable: false });
     }
   }
   async function addTag(id, tag) {
@@ -5824,9 +5825,9 @@ function createLibraryController({ api }) {
   async function refreshCollections() {
     try {
       const value = await api("library.collections.list", {});
-      publish2({ collections: listOf(value && value.items), collectionsAvailable: true });
+      publish3({ collections: listOf(value && value.items), collectionsAvailable: true });
     } catch (error) {
-      publish2({ collections: derivedCollections(state.items), collectionsAvailable: false });
+      publish3({ collections: derivedCollections(state.items), collectionsAvailable: false });
     }
   }
   async function assignCollection(collectionId, paperIds, add) {
@@ -5853,7 +5854,7 @@ function createLibraryController({ api }) {
   async function deleteCollection(id) {
     const result = await api("library.collections.delete", { id, operationId: opId("collection") });
     const filters = state.filters.collectionId === id ? Object.assign({}, state.filters, { collectionId: null, collectionKind: null }) : state.filters;
-    publish2({ filters });
+    publish3({ filters });
     await refreshCollections();
     return result;
   }
@@ -5861,7 +5862,7 @@ function createLibraryController({ api }) {
     const ids = state.selection.slice();
     if (ids.length === 0) throw new Error("no selection");
     await api("library.delete", { ids, operationId: opId("delete") });
-    publish2({ selection: [] });
+    publish3({ selection: [] });
     await refresh();
     return ids.length;
   }
@@ -5869,7 +5870,7 @@ function createLibraryController({ api }) {
     const ids = state.selection.slice();
     if (ids.length === 0) throw new Error("no selection");
     await api("library.restore", { ids, operationId: opId("restore") });
-    publish2({ selection: [] });
+    publish3({ selection: [] });
     await refresh();
     return ids.length;
   }
@@ -5877,7 +5878,7 @@ function createLibraryController({ api }) {
     const ids = state.selection.slice();
     if (ids.length === 0) throw new Error("no selection");
     await api("library.purge", { ids, operationId: opId("purge") });
-    publish2({ selection: [] });
+    publish3({ selection: [] });
     await refresh();
     return ids.length;
   }
@@ -5903,38 +5904,38 @@ function createLibraryController({ api }) {
     const ui = Object.assign({}, state.ui, patch);
     ui.leftWidth = Math.min(320, Math.max(180, Number(ui.leftWidth) || DEFAULT_UI.leftWidth));
     ui.rightWidth = Math.min(480, Math.max(280, Number(ui.rightWidth) || DEFAULT_UI.rightWidth));
-    publish2({ ui });
+    publish3({ ui });
     persistUi();
   }
   function toggleLeft() {
     const next = Object.assign({}, state.ui, { leftCollapsed: !state.ui.leftCollapsed });
-    publish2({ ui: next, mobileLeftOpen: next.leftCollapsed ? false : state.mobileLeftOpen });
+    publish3({ ui: next, mobileLeftOpen: next.leftCollapsed ? false : state.mobileLeftOpen });
     persistUi();
   }
   function toggleRight() {
     const next = Object.assign({}, state.ui, { rightCollapsed: !state.ui.rightCollapsed });
-    publish2({ ui: next });
+    publish3({ ui: next });
     persistUi();
   }
   function toggleMobileLeft() {
-    publish2({ mobileLeftOpen: !state.mobileLeftOpen, ui: Object.assign({}, state.ui, { leftCollapsed: false }) });
+    publish3({ mobileLeftOpen: !state.mobileLeftOpen, ui: Object.assign({}, state.ui, { leftCollapsed: false }) });
   }
   function setMobileLeftOpen(open) {
-    publish2({ mobileLeftOpen: Boolean(open) });
+    publish3({ mobileLeftOpen: Boolean(open) });
   }
   function openContextMenu(menu) {
-    publish2({ contextMenu: menu || null });
+    publish3({ contextMenu: menu || null });
   }
   function closeContextMenu() {
-    if (state.contextMenu) publish2({ contextMenu: null });
+    if (state.contextMenu) publish3({ contextMenu: null });
   }
   async function loadDuplicates() {
-    publish2({ duplicates: { status: "loading", groups: [], error: null } });
+    publish3({ duplicates: { status: "loading", groups: [], error: null } });
     try {
       const value = await api("library.duplicates", {});
-      publish2({ duplicates: { status: "ready", groups: listOf(value && value.groups), error: null } });
+      publish3({ duplicates: { status: "ready", groups: listOf(value && value.groups), error: null } });
     } catch (error) {
-      publish2({ duplicates: { status: "error", groups: [], error } });
+      publish3({ duplicates: { status: "error", groups: [], error } });
     }
   }
   async function mergeDuplicates(primaryId, duplicateIds, label) {
@@ -5948,15 +5949,15 @@ function createLibraryController({ api }) {
   async function refreshMetrics(paperIds) {
     const ids = listOf(paperIds).map(String).filter(Boolean);
     const result = await api("metrics.refresh", { paperIds: ids, allowNetwork: true });
-    const current = state.details.paperId;
-    if (current && ids.indexOf(String(current)) >= 0) await selectPaper(String(current), { tab: state.details.tab });
+    const current2 = state.details.paperId;
+    if (current2 && ids.indexOf(String(current2)) >= 0) await selectPaper(String(current2), { tab: state.details.tab });
     if (state.filters.sort === "citations" || state.filters.sort === "impactFactor") refresh();
     return result;
   }
   async function updateMetrics(paperId, fields) {
     const result = await api("metrics.update", { paperId: String(paperId), fields: fields || {} });
-    const current = state.details.paperId;
-    if (current === String(paperId)) await selectPaper(String(paperId), { tab: state.details.tab });
+    const current2 = state.details.paperId;
+    if (current2 === String(paperId)) await selectPaper(String(paperId), { tab: state.details.tab });
     return result;
   }
   async function setReading(paperId, readingStatus, progress) {
@@ -5994,9 +5995,9 @@ function createLibraryController({ api }) {
       return state;
     },
     subscribe(listener) {
-      listeners5.add(listener);
+      listeners6.add(listener);
       return () => {
-        listeners5.delete(listener);
+        listeners6.delete(listener);
       };
     },
     refresh,
@@ -6440,7 +6441,7 @@ function PanelIcon(props) {
 }
 
 // src/surfaces/center.jsx
-var import_react40 = __toESM(require("react"), 1);
+var import_react41 = __toESM(require("react"), 1);
 
 // src/core/bus.js
 var handlers = /* @__PURE__ */ new Map();
@@ -6579,10 +6580,10 @@ function providerLabel(t, provider) {
 // src/core/navigation.js
 function createStore2() {
   let state = { route: { view: "library" }, intent: null, seq: 0 };
-  const listeners5 = /* @__PURE__ */ new Set();
-  function publish2(next) {
+  const listeners6 = /* @__PURE__ */ new Set();
+  function publish3(next) {
     state = next;
-    listeners5.forEach((listener) => {
+    listeners6.forEach((listener) => {
       try {
         listener();
       } catch (error) {
@@ -6607,9 +6608,9 @@ function createStore2() {
       return state;
     },
     subscribe(listener) {
-      listeners5.add(listener);
+      listeners6.add(listener);
       return () => {
-        listeners5.delete(listener);
+        listeners6.delete(listener);
       };
     },
     /** Open the reader on one paper (or jump to a page when already there). */
@@ -6619,7 +6620,7 @@ function createStore2() {
       const page2 = Number.isFinite(Number(payload.page)) ? Number(payload.page) : 1;
       const nextSeq = state.seq + 1;
       const returnTo = payload.returnTo === "notes" ? "notes" : null;
-      publish2({
+      publish3({
         route: {
           view: "reader",
           paperId,
@@ -6636,17 +6637,17 @@ function createStore2() {
     /** Jump within the open reader, opening it when another paper is targeted. */
     jumpTo(payload = {}) {
       const paperId = payload.paperId ? String(payload.paperId) : "";
-      const current = state.route;
-      if (!paperId || current.view !== "reader" || current.paperId !== paperId) {
+      const current2 = state.route;
+      if (!paperId || current2.view !== "reader" || current2.paperId !== paperId) {
         this.openPaper(payload);
         return;
       }
       const nextSeq = state.seq + 1;
-      const page2 = Number.isFinite(Number(payload.page)) ? Number(payload.page) : current.page;
-      publish2({
-        route: Object.assign({}, current, {
+      const page2 = Number.isFinite(Number(payload.page)) ? Number(payload.page) : current2.page;
+      publish3({
+        route: Object.assign({}, current2, {
           page: page2,
-          annotationId: payload.annotationId ? String(payload.annotationId) : current.annotationId
+          annotationId: payload.annotationId ? String(payload.annotationId) : current2.annotationId
         }),
         intent: intentOf(payload.figureId ? "figure" : "paper", Object.assign({}, payload, { page: page2 }), nextSeq),
         seq: nextSeq
@@ -6655,7 +6656,7 @@ function createStore2() {
     /** Show the standalone notes library (optionally focusing one note). */
     openNotes(payload = {}) {
       const nextSeq = state.seq + 1;
-      publish2({
+      publish3({
         route: {
           view: "notes",
           noteId: payload.noteId ? String(payload.noteId) : null,
@@ -6668,7 +6669,7 @@ function createStore2() {
     /** Return to the notes library from the reader opened out of it. */
     backToNotes(payload = {}) {
       const nextSeq = state.seq + 1;
-      publish2({
+      publish3({
         route: {
           view: "notes",
           noteId: payload.noteId ? String(payload.noteId) : null,
@@ -6681,12 +6682,12 @@ function createStore2() {
     /** Show the library (or the figure-search view) again. */
     backToLibrary(options = {}) {
       const nextSeq = state.seq + 1;
-      publish2({ route: { view: options.view === "figures" ? "figures" : "library" }, intent: null, seq: nextSeq });
+      publish3({ route: { view: options.view === "figures" ? "figures" : "library" }, intent: null, seq: nextSeq });
     },
     /** Show the figure-search surface, optionally focused on one figure. */
     openFigureSearch(payload = {}) {
       const nextSeq = state.seq + 1;
-      publish2({
+      publish3({
         route: { view: "figures", paperId: payload.paperId || null, figureId: payload.figureId || null },
         intent: intentOf("figure", payload, nextSeq),
         seq: nextSeq
@@ -6711,7 +6712,7 @@ function createStore2() {
 var navigation = createStore2();
 
 // src/surfaces/library/shell.jsx
-var import_react38 = __toESM(require("react"), 1);
+var import_react39 = __toESM(require("react"), 1);
 
 // src/core/files.js
 function formatBytes(bytes2) {
@@ -7151,13 +7152,13 @@ function sectionizeMarkdown(contentMd) {
   } else {
     if (matches[0].index > 0) bounds.push({ start: 0, end: matches[0].index, heading: "", level: 0 });
     for (let index = 0; index < matches.length; index += 1) {
-      const current = matches[index];
+      const current2 = matches[index];
       const next = matches[index + 1];
       bounds.push({
-        start: current.index,
+        start: current2.index,
         end: next ? next.index : text2.length,
-        heading: current.heading,
-        level: current.level
+        heading: current2.heading,
+        level: current2.level
       });
     }
   }
@@ -7744,25 +7745,25 @@ function normalizeSectionStyle(value, blocks) {
 }
 function getDataPath(data, path) {
   const parts = String(path || "").split("/").filter(Boolean);
-  let current = data;
+  let current2 = data;
   for (const part of parts) {
-    if (current == null || typeof current !== "object") return void 0;
-    current = current[part];
+    if (current2 == null || typeof current2 !== "object") return void 0;
+    current2 = current2[part];
   }
-  return current;
+  return current2;
 }
 function setDataPath(data, path, value) {
   const parts = String(path || "").split("/").filter(Boolean);
   if (parts.length === 0) return data;
   const root = data && typeof data === "object" ? { ...data } : {};
-  let current = root;
+  let current2 = root;
   for (let index = 0; index < parts.length - 1; index += 1) {
     const key = parts[index];
-    const child = current[key];
-    current[key] = child && typeof child === "object" && !Array.isArray(child) ? { ...child } : {};
-    current = current[key];
+    const child = current2[key];
+    current2[key] = child && typeof child === "object" && !Array.isArray(child) ? { ...child } : {};
+    current2 = current2[key];
   }
-  current[parts[parts.length - 1]] = value;
+  current2[parts[parts.length - 1]] = value;
   return root;
 }
 function normalizeContentJson(raw) {
@@ -8021,8 +8022,8 @@ function readAutoFix(noteId) {
 function patchAutoFix(noteId, patch) {
   const id = firstText2(noteId);
   if (!id) return readAutoFix("");
-  const current = readAutoFix(id);
-  const next = Object.assign({}, current, patch || {});
+  const current2 = readAutoFix(id);
+  const next = Object.assign({}, current2, patch || {});
   if (!BEAUTIFY_DIRECTIONS.includes(next.direction)) next.direction = DEFAULT_AUTOFIX_DIRECTION;
   next.lastBeautifiedAt = Number(next.lastBeautifiedAt) || 0;
   next.lastBeautifiedRevision = Number(next.lastBeautifiedRevision) || 0;
@@ -8316,11 +8317,11 @@ function coded(error, code) {
 function createNotesService(api) {
   if (typeof api !== "function") throw new Error("createNotesService requires the Host API callable");
   let state = { status: "unknown", reason: "", revision: 0 };
-  const listeners5 = /* @__PURE__ */ new Set();
+  const listeners6 = /* @__PURE__ */ new Set();
   let probing = null;
-  function publish2(next) {
+  function publish3(next) {
     state = Object.assign({}, state, next, { revision: state.revision + 1 });
-    listeners5.forEach((listener) => {
+    listeners6.forEach((listener) => {
       try {
         listener(state);
       } catch (error) {
@@ -8337,18 +8338,18 @@ function createNotesService(api) {
     }
     return promise.then(
       (data) => {
-        if (state.status !== "ready") publish2({ status: "ready", reason: "" });
+        if (state.status !== "ready") publish3({ status: "ready", reason: "" });
         return data;
       },
       (error) => {
         if (notesUnavailable(error)) {
-          publish2({ status: "unavailable", reason: String(error && error.message ? error.message : "") });
+          publish3({ status: "unavailable", reason: String(error && error.message ? error.message : "") });
           const next = coded(error, NOTES_UNAVAILABLE);
           next.cause = error;
           throw next;
         }
         if (notesOffline(error) && state.status !== "ready") {
-          publish2({ status: "offline", reason: String(error && error.message ? error.message : "") });
+          publish3({ status: "offline", reason: String(error && error.message ? error.message : "") });
         }
         throw error;
       }
@@ -8360,7 +8361,7 @@ function createNotesService(api) {
     probing = request2("notes.folders.tree", {}).then(() => state).catch((error) => {
       if (error && error.code === NOTES_UNAVAILABLE) return state;
       if (notesOffline(error)) {
-        publish2({ status: "offline", reason: String(error.message || "") });
+        publish3({ status: "offline", reason: String(error.message || "") });
         return state;
       }
       return state;
@@ -8421,8 +8422,8 @@ function createNotesService(api) {
       return state;
     },
     subscribe(listener) {
-      listeners5.add(listener);
-      return () => listeners5.delete(listener);
+      listeners6.add(listener);
+      return () => listeners6.delete(listener);
     },
     probe,
     /* ------------------------------ notes CRUD --------------------------- */
@@ -8466,8 +8467,8 @@ function createNotesService(api) {
     revisions(id) {
       return request2("notes.revisions", { id: String(id || "") }).then(normalizeRevisions);
     },
-    restoreRevision(id, revision) {
-      return request2("notes.restoreRevision", { id: String(id || ""), revision: Number(revision) }).then((data) => normalizeNote(data && (data.note || data)));
+    restoreRevision(id, revision2) {
+      return request2("notes.restoreRevision", { id: String(id || ""), revision: Number(revision2) }).then((data) => normalizeNote(data && (data.note || data)));
     },
     search(params) {
       return request2("notes.search", params || {}).then(normalizeSearchResults);
@@ -8574,13 +8575,13 @@ function createNotesService(api) {
       const sections = arrayOf(opts.sections).slice(0, 8);
       const figureCandidates = arrayOf(opts.figureCandidates);
       const hasFigures = figureCandidates.length > 0;
-      const current = BEAUTIFY_DIRECTIONS.includes(opts.direction) ? opts.direction : DEFAULT_AUTOFIX_DIRECTION;
+      const current2 = BEAUTIFY_DIRECTIONS.includes(opts.direction) ? opts.direction : DEFAULT_AUTOFIX_DIRECTION;
       const prompt = buildDirectionPrompt({
         title: firstText(opts.title),
         sections,
         hasFigures,
         figureCount: figureCandidates.length,
-        current,
+        current: current2,
         minChars: Number(opts.minChars) || 0
       });
       const params = {
@@ -8599,7 +8600,7 @@ function createNotesService(api) {
           error.code = data.status === "unavailable" ? "unavailable" : "error";
           throw error;
         }
-        const parsed = parseDirectionsPayload(data.answer, { hasFigures, current });
+        const parsed = parseDirectionsPayload(data.answer, { hasFigures, current: current2 });
         return Object.assign(parsed, {
           provider: firstText(data.provider),
           model: firstText(data.model),
@@ -8609,7 +8610,7 @@ function createNotesService(api) {
           reason: ""
         });
       }).catch((error) => {
-        const fallback = staticDirections(hasFigures, current);
+        const fallback = staticDirections(hasFigures, current2);
         return {
           directions: fallback.directions,
           recommended: fallback.recommended,
@@ -8921,7 +8922,7 @@ function buildBeautifyPrompt({ direction, layout, sections, context, figureCandi
   if (direction || layout || mode) lines.push("\u65B9\u5411=" + String(direction || "plain") + "\uFF1B\u6392\u7248=" + String(layout || "auto") + "\uFF1B\u6A21\u5F0F=" + String(mode || "manual") + (useFigures ? "\uFF1B\u53EF\u914D\u56FE" : ""));
   return lines.join("\n");
 }
-function buildDirectionPrompt({ title: title2, sections, hasFigures, figureCount, current, minChars }) {
+function buildDirectionPrompt({ title: title2, sections, hasFigures, figureCount, current: current2, minChars }) {
   const list = arrayOf(sections).map((section) => ({
     id: String(section.id || ""),
     heading: String(section.heading || ""),
@@ -8936,13 +8937,13 @@ function buildDirectionPrompt({ title: title2, sections, hasFigures, figureCount
     "\u4E0D\u8981\u6539\u5199\u5185\u5BB9\uFF0C\u53EA\u7ED9\u65B9\u5411\u5EFA\u8BAE\uFF1Blabel \u2264 10 \u5B57\uFF0Creason \u2264 24 \u5B57\u3002",
     '\u4E25\u683C\u53EA\u8F93\u51FA JSON\uFF1A{"directions":[{"id":"d1","direction":"plain","layout":"auto","useFigures":false,"label":"...","reason":"..."},{"id":"d2",...},{"id":"d3",...}],"recommended":"d1"}',
     "\u7B14\u8BB0\u6807\u9898\uFF1A" + (title2 || "\uFF08\u672A\u547D\u540D\uFF09"),
-    "\u5F53\u524D\u9ED8\u8BA4\u65B9\u5411\uFF1A" + (DIRECTION_LABELS[current] || current) + (minChars ? "\uFF1B\u672C\u6B21\u7EA6 " + String(minChars) + " \u5B57\u5F85\u6392\u7248" : ""),
+    "\u5F53\u524D\u9ED8\u8BA4\u65B9\u5411\uFF1A" + (DIRECTION_LABELS[current2] || current2) + (minChars ? "\uFF1B\u672C\u6B21\u7EA6 " + String(minChars) + " \u5B57\u5F85\u6392\u7248" : ""),
     "\u5DF2\u5B8C\u6210\u7AE0\u8282\uFF08JSON\uFF09\uFF1A",
     JSON.stringify(list)
   ];
   return lines.join("\n");
 }
-function parseDirectionsPayload(answer, { hasFigures, current }) {
+function parseDirectionsPayload(answer, { hasFigures, current: current2 }) {
   const text2 = String(answer == null ? "" : answer).trim();
   const fence = /```(?:json)?\s*([\s\S]*?)```/i.exec(text2);
   const jsonText = fence ? fence[1].trim() : text2;
@@ -8975,7 +8976,7 @@ function parseDirectionsPayload(answer, { hasFigures, current }) {
     });
     if (directions.length >= 3) break;
   }
-  const fallback = staticDirections(hasFigures, current);
+  const fallback = staticDirections(hasFigures, current2);
   for (const option of fallback.directions) {
     if (directions.length >= 3) break;
     if (seen.has(option.direction)) continue;
@@ -8983,10 +8984,10 @@ function parseDirectionsPayload(answer, { hasFigures, current }) {
     directions.push(option);
   }
   const recommendedRaw = firstText(parsed && parsed.recommended);
-  const recommended = directions.some((option) => option.id === recommendedRaw) ? recommendedRaw : (directions.find((option) => option.direction === current) || directions[0]).id;
+  const recommended = directions.some((option) => option.id === recommendedRaw) ? recommendedRaw : (directions.find((option) => option.direction === current2) || directions[0]).id;
   return { directions, recommended };
 }
-function staticDirections(hasFigures, current) {
+function staticDirections(hasFigures, current2) {
   const directions = STATIC_DIRECTIONS.map((option) => Object.assign({}, option));
   if (hasFigures) {
     directions[1] = {
@@ -8998,7 +8999,7 @@ function staticDirections(hasFigures, current) {
       reason: "\u5C11\u800C\u7CBE\u63D2\u5165 1 \u5F20\u8BBA\u6587\u539F\u56FE\uFF0C\u5176\u4F59\u4FDD\u6301\u514B\u5236"
     };
   }
-  const wanted = BEAUTIFY_DIRECTIONS.includes(current) ? current : DEFAULT_AUTOFIX_DIRECTION;
+  const wanted = BEAUTIFY_DIRECTIONS.includes(current2) ? current2 : DEFAULT_AUTOFIX_DIRECTION;
   const recommended = (directions.find((option) => option.direction === wanted) || directions[directions.length - 1]).id;
   return { directions, recommended };
 }
@@ -11028,6 +11029,42 @@ var import_react16 = __toESM(require("react"), 1);
 // src/surfaces/notes/editor.jsx
 var import_react15 = __toESM(require("react"), 1);
 
+// src/core/note-context.js
+var current = null;
+var listeners4 = /* @__PURE__ */ new Set();
+var revision = 0;
+function publish2(next) {
+  current = next;
+  revision += 1;
+  for (const listener of listeners4) {
+    try {
+      listener();
+    } catch (error) {
+      console.warn("[pappers-hall] note-context listener failed", error);
+    }
+  }
+}
+function getNoteContext() {
+  return current;
+}
+function subscribeNoteContext(listener) {
+  if (typeof listener !== "function") return () => {
+  };
+  listeners4.add(listener);
+  return () => {
+    listeners4.delete(listener);
+  };
+}
+function setNoteContext(context, noteId) {
+  if (context === null || context === void 0) {
+    if (current === null) return;
+    if (noteId !== void 0 && current.noteId !== String(noteId)) return;
+    publish2(null);
+    return;
+  }
+  publish2(context);
+}
+
 // src/surfaces/notes/cards.jsx
 var import_react13 = __toESM(require("react"), 1);
 
@@ -11284,7 +11321,7 @@ function FormBlock(props) {
   };
   const change = (field, value) => {
     if (field.bind && typeof props.onChangeData === "function") props.onChangeData(field.bind, value);
-    setLocal((current) => ({ ...current, [field.id]: value }));
+    setLocal((current2) => ({ ...current2, [field.id]: value }));
   };
   const control = (field) => {
     const value = valueOf(field);
@@ -11425,7 +11462,7 @@ function DataTableBlock(props) {
   }
   const toggle = (column) => {
     if (!block.sortable) return;
-    setSort((current) => current.key === column.key ? { key: column.key, dir: -current.dir } : { key: column.key, dir: 1 });
+    setSort((current2) => current2.key === column.key ? { key: column.key, dir: -current2.dir } : { key: column.key, dir: 1 });
   };
   const headCells = columns.map((column) => import_react13.default.createElement("th", {
     key: column.key,
@@ -11741,7 +11778,7 @@ function TabsBlock(props) {
     if (props.block.bind && typeof props.onChangeData === "function") props.onChangeData(props.block.bind, tabs[index] ? tabs[index].id : "");
     else setLocalActive(index);
   };
-  const current = tabs[Math.min(active, tabs.length - 1)];
+  const current2 = tabs[Math.min(active, tabs.length - 1)];
   return import_react13.default.createElement(
     "div",
     { className: "ph-n-doc__tabs" },
@@ -11761,7 +11798,7 @@ function TabsBlock(props) {
         tab.label
       ))
     ),
-    import_react13.default.createElement("div", { className: "ph-n-doc__tabpanel", role: "tabpanel" }, current ? import_react13.default.createElement(NestedBlocks, { blocks: current.blocks, t: props.t, onOpenFigure: props.onOpenFigure }) : null)
+    import_react13.default.createElement("div", { className: "ph-n-doc__tabpanel", role: "tabpanel" }, current2 ? import_react13.default.createElement(NestedBlocks, { blocks: current2.blocks, t: props.t, onOpenFigure: props.onOpenFigure }) : null)
   );
 }
 function DisclosureBlock(props) {
@@ -12646,10 +12683,10 @@ function RevisionsDialog(props) {
   import_react14.default.useEffect(() => {
     load();
   }, [load]);
-  const restore = (revision) => {
+  const restore = (revision2) => {
     if (busy2) return;
     setBusy(true);
-    Promise.resolve(service.restoreRevision(props.noteId, revision)).then((note) => {
+    Promise.resolve(service.restoreRevision(props.noteId, revision2)).then((note) => {
       props.onRestored && props.onRestored(note);
       props.onClose && props.onClose();
     }).catch((error) => {
@@ -13042,8 +13079,8 @@ function NoteEditor(props) {
     }
   }, [loadKey, note]);
   const buildDraftPayload = import_react15.default.useCallback(() => {
-    const current = noteRef.current;
-    if (!current) return null;
+    const current2 = noteRef.current;
+    if (!current2) return null;
     return {
       title: localRef.current.title,
       content: localRef.current.content,
@@ -13053,27 +13090,27 @@ function NoteEditor(props) {
   }, []);
   const persist = import_react15.default.useCallback(
     (options) => {
-      const current = noteRef.current;
-      if (!current || !current.id) return Promise.resolve(null);
+      const current2 = noteRef.current;
+      if (!current2 || !current2.id) return Promise.resolve(null);
       if (!dirtyRef.current) return Promise.resolve(null);
       const opts = options || {};
       const snapshot4 = { title: localRef.current.title, content: localRef.current.content };
-      const fingerprint = JSON.stringify([current.id, snapshot4.title, snapshot4.content]);
+      const fingerprint = JSON.stringify([current2.id, snapshot4.title, snapshot4.content]);
       if (saveOpRef.current.snapshot !== fingerprint) {
         const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
         saveOpRef.current = { id: "notes-save-" + random, snapshot: fingerprint };
       }
       const seq2 = saveSeqRef.current += 1;
       setSaveState({ status: "saving", at: Date.now(), message: "" });
-      const params = { id: current.id, patch: { title: snapshot4.title, content: snapshot4.content }, operationId: saveOpRef.current.id };
+      const params = { id: current2.id, patch: { title: snapshot4.title, content: snapshot4.content }, operationId: saveOpRef.current.id };
       if (!opts.force && revisionRef.current > 0) params.expectedRevision = revisionRef.current;
       return Promise.resolve(service.update(params)).then((saved) => {
         if (!saved) throw new Error("notes.update returned no note");
         if (!mountedRef.current || seq2 !== saveSeqRef.current) return saved;
         revisionRef.current = Number(saved.revision) || revisionRef.current;
-        loadKeyRef.current = String(saved.id || current.id) + ":" + String(revisionRef.current) + ":" + String(saved.updatedAt || "");
+        loadKeyRef.current = String(saved.id || current2.id) + ":" + String(revisionRef.current) + ":" + String(saved.updatedAt || "");
         if (localRef.current.title === snapshot4.title && localRef.current.content === snapshot4.content) dirtyRef.current = false;
-        clearDraft(current.id);
+        clearDraft(current2.id);
         retryCountRef.current = 0;
         setConflict(null);
         setDraftFound(null);
@@ -13084,7 +13121,7 @@ function NoteEditor(props) {
       }).catch((error) => {
         if (!mountedRef.current) throw error;
         const draft = buildDraftPayload();
-        if (draft) saveDraft(current.id, draft);
+        if (draft) saveDraft(current2.id, draft);
         if (error && error.code === "conflict") {
           setConflict({ currentRevision: Number(error.currentRevision) || 0 });
           setSaveState({ status: "conflict", at: Date.now(), message: String(error.message || "") });
@@ -13192,11 +13229,11 @@ function NoteEditor(props) {
     [incompleteIds, noteId]
   );
   function saveContentJson(nextContentJson, options) {
-    const current = noteRef.current;
-    if (!current) return Promise.reject(new Error("no note"));
+    const current2 = noteRef.current;
+    if (!current2) return Promise.reject(new Error("no note"));
     const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
     return Promise.resolve(service.update({
-      id: current.id,
+      id: current2.id,
       patch: {
         contentJson: nextContentJson,
         beautifiedRevision: revisionRef.current,
@@ -13207,7 +13244,7 @@ function NoteEditor(props) {
     })).then((saved) => {
       if (!saved) throw new Error("notes.update returned no note");
       revisionRef.current = Number(saved.revision) || revisionRef.current;
-      loadKeyRef.current = String(saved.id || current.id) + ":" + String(revisionRef.current) + ":" + String(saved.updatedAt || "");
+      loadKeyRef.current = String(saved.id || current2.id) + ":" + String(revisionRef.current) + ":" + String(saved.updatedAt || "");
       const next = saved.contentJson || nextContentJson;
       contentJsonRef.current = next;
       setContentJson(next);
@@ -13220,9 +13257,9 @@ function NoteEditor(props) {
     });
   }
   function patchContentData(path, value) {
-    const current = contentJsonRef.current;
-    if (!current || typeof path !== "string" || path === "") return;
-    const next = { ...current, data: setDataPath(current.data || {}, path, value) };
+    const current2 = contentJsonRef.current;
+    if (!current2 || typeof path !== "string" || path === "") return;
+    const next = { ...current2, data: setDataPath(current2.data || {}, path, value) };
     contentJsonRef.current = next;
     setContentJson(next);
     const seq2 = contentSaveSeqRef.current += 1;
@@ -13235,6 +13272,83 @@ function NoteEditor(props) {
       });
     }, 700);
   }
+  function appendNoteSection(heading, blocks, markdown) {
+    const current2 = noteRef.current;
+    if (!current2) return Promise.reject(new Error("no note"));
+    const base = String(localRef.current.content || "").replace(/\s+$/, "");
+    const next = base + (base === "" ? "" : "\n\n") + "## " + heading + "\n\n" + String(markdown || "").trim() + "\n";
+    applyLocal({ content: next });
+    return Promise.resolve(flush()).then(() => {
+      const sections2 = sectionizeMarkdown(next);
+      const section = sections2[sections2.length - 1];
+      if (!section) throw new Error("sectionize failed");
+      let stored = contentJsonRef.current;
+      try {
+        stored = stored && typeof stored === "object" ? JSON.parse(JSON.stringify(stored)) : null;
+      } catch {
+        stored = null;
+      }
+      const document2 = stored && Array.isArray(stored.sections) ? stored : { version: 2, direction: "", layout: "auto", createdAt: (/* @__PURE__ */ new Date()).toISOString(), sections: [] };
+      document2.sections = document2.sections.filter((entry) => entry && entry.id !== section.id);
+      document2.sections.push({
+        id: section.id,
+        sourceHash: section.hash,
+        heading: section.heading || heading,
+        style: blocks.some((block) => block.type === "figure") ? "figure" : "plain",
+        blocks
+      });
+      return saveContentJson(document2, { switchView: true });
+    });
+  }
+  function insertQuoteToNote(payload) {
+    const quote = String(payload && payload.quote || "").trim();
+    if (quote === "") return Promise.reject(new Error("empty quote"));
+    const title3 = String(payload && payload.paperTitle || "").trim();
+    const page2 = Number(payload && payload.page) || 0;
+    const attribution = "\u2014 " + (title3 || "\u8BBA\u6587") + (page2 > 0 ? ", p." + page2 : "");
+    const quoted = quote.split(/\r?\n/).map((line) => "> " + line).join("\n") + "\n>\n> " + attribution;
+    return appendNoteSection("\u5F15\u7528", [{ type: "quote", text: quote + "\n\n" + attribution }], quoted);
+  }
+  function insertFigureToNote(figure) {
+    if (!figure || !figure.figureId || !figure.paperId) return Promise.reject(new Error("invalid figure"));
+    const label = String(figure.label || "Figure");
+    const block = {
+      type: "figure",
+      figureId: String(figure.figureId),
+      paperId: String(figure.paperId),
+      label,
+      caption: String(figure.caption || ""),
+      page: Math.max(1, Number(figure.page) || 1),
+      imageUrl: String(figure.imageUrl || "/pappers-hall/figure/" + figure.figureId + ".png")
+    };
+    const source = "> \u5F15\u81EA " + (figure.paperTitle || "\u8BBA\u6587") + (figure.page ? ", p." + figure.page : "") + " \xB7 " + label;
+    return appendNoteSection("\u9644\u56FE", [block], source);
+  }
+  const linkPaperToCurrent = import_react15.default.useCallback((paperId) => {
+    const current2 = noteRef.current;
+    if (!current2 || !paperId) return Promise.resolve(null);
+    return Promise.resolve(service.link(current2.id, [paperId])).then((fresh) => {
+      if (fresh) {
+        noteRef.current = fresh;
+        if (onSavedRef.current) onSavedRef.current(fresh);
+        const active = getNoteContext();
+        if (active && active.noteId === current2.id) setNoteContext({ ...active, paperIds: Array.isArray(fresh.paperIds) ? fresh.paperIds : active.paperIds });
+      }
+      return fresh;
+    });
+  }, [service]);
+  import_react15.default.useEffect(() => {
+    if (!note || !note.id) return void 0;
+    setNoteContext({
+      noteId: note.id,
+      title: localRef.current.title,
+      paperIds: Array.isArray(note.paperIds) ? note.paperIds : [],
+      insertQuote: insertQuoteToNote,
+      insertFigure: insertFigureToNote,
+      linkPaper: linkPaperToCurrent
+    });
+    return void 0;
+  }, [note && note.id, title2, linkPaperToCurrent]);
   function runNoteAction(action) {
     if (!action || typeof action !== "object") return;
     if (action.kind === "figure") {
@@ -13311,11 +13425,11 @@ function NoteEditor(props) {
     const next = source.slice(0, start) + prefix + snippet + suffix + source.slice(end);
     applyLocal({ content: next });
     requestAnimationFrame(() => {
-      const current = textareaRef.current;
-      if (!current) return;
+      const current2 = textareaRef.current;
+      if (!current2) return;
       const caret = start + prefix.length + snippet.length;
-      current.focus();
-      current.setSelectionRange(caret, caret);
+      current2.focus();
+      current2.setSelectionRange(caret, caret);
     });
   }
   function runDirectives() {
@@ -13326,10 +13440,10 @@ function NoteEditor(props) {
     }
     cancelPendingAuto();
     setDirectiveRunning(true);
-    const current = noteRef.current;
+    const current2 = noteRef.current;
     const flushFirst = dirtyRef.current ? flush() : Promise.resolve(null);
     flushFirst.then(() => service.runDirectives({
-      note: noteRef.current || current,
+      note: noteRef.current || current2,
       sessionId: props.sessionId,
       paperId: props.paperId || "",
       baseContentJson: contentJsonRef.current
@@ -13345,10 +13459,10 @@ function NoteEditor(props) {
   }
   const reloadNote = import_react15.default.useCallback(() => {
     if (!noteId) return;
-    const current = noteRef.current;
+    const current2 = noteRef.current;
     Promise.resolve(service.get(noteId)).then((fresh) => {
       if (!fresh) return;
-      if (current) saveDraft(noteId, { title: current.title, content: current.contentMd, at: Date.now(), baseRevision: current.revision });
+      if (current2) saveDraft(noteId, { title: current2.title, content: current2.contentMd, at: Date.now(), baseRevision: current2.revision });
       clearDraft(noteId);
       noteRef.current = fresh;
       revisionRef.current = fresh.revision;
@@ -13499,9 +13613,9 @@ function NoteEditor(props) {
     const previous = sections2.filter((section) => incomplete.has(section.id) && section.start < firstStart).slice(-1)[0];
     return previous ? String(previous.raw || previous.text || "").slice(0, 600) : "";
   }
-  function loadFigureCandidates(current) {
-    if (!current) return Promise.resolve([]);
-    const links = Array.isArray(current.paperLinks) && current.paperLinks.length > 0 ? current.paperLinks : (Array.isArray(current.paperIds) ? current.paperIds : []).map((paperId) => ({ paperId }));
+  function loadFigureCandidates(current2) {
+    if (!current2) return Promise.resolve([]);
+    const links = Array.isArray(current2.paperLinks) && current2.paperLinks.length > 0 ? current2.paperLinks : (Array.isArray(current2.paperIds) ? current2.paperIds : []).map((paperId) => ({ paperId }));
     if (links.length === 0) return Promise.resolve([]);
     return Promise.resolve(service.figureCandidates(links, { limit: 12 })).then((result) => result && Array.isArray(result.candidates) ? result.candidates : []).catch(() => []);
   }
@@ -13509,13 +13623,13 @@ function NoteEditor(props) {
     if (autoBusyRef.current || !mountedRef.current) return;
     autoBusyRef.current = true;
     setAutoRunning(true);
-    const current = noteRef.current;
-    if (!current) {
+    const current2 = noteRef.current;
+    if (!current2) {
       autoBusyRef.current = false;
       setAutoRunning(false);
       return;
     }
-    loadFigureCandidates(current).then((candidates) => Promise.resolve(service.suggestDirections({
+    loadFigureCandidates(current2).then((candidates) => Promise.resolve(service.suggestDirections({
       noteId: noteRef.current && noteRef.current.id,
       title: localRef.current.title,
       sections: plan.eligible,
@@ -13567,8 +13681,8 @@ function NoteEditor(props) {
     if (overlay2) autoLastAtRef.current = Date.now();
   }
   function runAutoBeautify(overlay2, option) {
-    const current = noteRef.current;
-    if (!current || !overlay2) {
+    const current2 = noteRef.current;
+    if (!current2 || !overlay2) {
       autoBusyRef.current = false;
       if (mountedRef.current) setAutoRunning(false);
       return;
@@ -13578,7 +13692,7 @@ function NoteEditor(props) {
     showAutoStatus("info", t("notes.autofix.running", { count: overlay2.sections.length }), 0);
     const liveSections = sectionizeMarkdown(localRef.current.content).map((section) => ({ id: section.id, hash: section.hash, heading: section.heading }));
     Promise.resolve(service.beautify({
-      note: current,
+      note: current2,
       sections: overlay2.sections,
       direction: option.direction,
       layout: option.layout,
@@ -13622,10 +13736,10 @@ function NoteEditor(props) {
     });
   }
   function toggleAuto() {
-    const current = noteRef.current;
-    if (!current) return;
+    const current2 = noteRef.current;
+    if (!current2) return;
     const next = !autoEnabledRef.current;
-    const saved = patchAutoFix(current.id, { enabled: next, direction: autoDirectionRef.current });
+    const saved = patchAutoFix(current2.id, { enabled: next, direction: autoDirectionRef.current });
     autoEnabledRef.current = saved.enabled;
     autoDirectionRef.current = saved.direction;
     setAutoFix(saved);
@@ -13643,9 +13757,9 @@ function NoteEditor(props) {
     }
   }
   function changeAutoDirection(direction) {
-    const current = noteRef.current;
-    if (!current) return;
-    const saved = patchAutoFix(current.id, { direction });
+    const current2 = noteRef.current;
+    if (!current2) return;
+    const saved = patchAutoFix(current2.id, { direction });
     autoDirectionRef.current = saved.direction;
     setAutoFix(saved);
   }
@@ -14000,7 +14114,33 @@ function NoteEditor(props) {
     /* content --------------------------------------------------------------- */
     import_react15.default.createElement(
       "div",
-      { className: "ph-n-editor__content" },
+      {
+        className: "ph-n-editor__content",
+        onDragOver: (event) => {
+          if (event.dataTransfer && Array.from(event.dataTransfer.types || []).includes("application/x-pappers-hall-material")) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+          }
+        },
+        onDrop: (event) => {
+          const raw = event.dataTransfer && event.dataTransfer.getData("application/x-pappers-hall-material");
+          if (!raw) return;
+          event.preventDefault();
+          let materials = [];
+          try {
+            materials = JSON.parse(raw).materials || [];
+          } catch {
+            materials = [];
+          }
+          const figure = materials.find((item) => item && item.kind === "figure" && item.paperId && item.figureId);
+          if (!figure) return;
+          insertFigureToNote(figure).then(() => {
+            if (props.notify) props.notify("success", t("notes.figure.dropped"));
+          }).catch((error) => {
+            if (props.notify) props.notify("error", t("notes.figure.dropFailed", { message: String(error && error.message || error) }));
+          });
+        }
+      },
       viewMode === "cards" && contentJson ? import_react15.default.createElement(
         "div",
         { className: "ph-n-editor__cards ph-n-scroll" },
@@ -14196,7 +14336,7 @@ function NoteInline(props) {
 }
 
 // src/surfaces/notes/paper-panel.jsx
-var import_react31 = __toESM(require("react"), 1);
+var import_react32 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/text-layer.jsx
 var import_react18 = __toESM(require("react"), 1);
@@ -14506,6 +14646,28 @@ var READER_ZH = {
   "reader.notes.emptyDesc": "\u65B0\u5EFA\u4E00\u6761\uFF0C\u8FB9\u8BFB\u8FB9\u8BB0\uFF1B\u7B14\u8BB0\u4E0E\u8BBA\u6587\u7ED1\u5B9A\uFF0C\u4E5F\u4F1A\u51FA\u73B0\u5728\u7B14\u8BB0\u5E93\u3002",
   "reader.notes.new": "\u65B0\u5EFA\u7B14\u8BB0",
   "reader.notes.pick": "\u9009\u62E9\u4E0A\u65B9\u7B14\u8BB0\u7EE7\u7EED\u7F16\u8F91",
+  "reader.linkNote.short": "\u5173\u8054\u5230\u6B64\u7B14\u8BB0",
+  "reader.annot.quoteToNote": "\u5F15\u7528\u5230\u7B14\u8BB0",
+  "reader.linkNote.linkedShort": "\u5DF2\u5173\u8054",
+  "reader.linkNote.linked": "\u8FD9\u7BC7\u8BBA\u6587\u5DF2\u5173\u8054\u5230\u5F53\u524D\u7B14\u8BB0",
+  "reader.linkNote.hint": "\u628A\u8FD9\u7BC7\u8BBA\u6587\u5173\u8054\u5230\u5F53\u524D\u6253\u5F00\u7684\u7B14\u8BB0",
+  "reader.linkNote.noNote": "\u5148\u5728\u7B14\u8BB0\u4E2D\u5FC3\u6253\u5F00\u4E00\u7BC7\u7B14\u8BB0\uFF0C\u518D\u56DE\u6765\u5173\u8054",
+  "reader.linkNote.untitled": "\u672A\u547D\u540D\u7B14\u8BB0",
+  "reader.linkNote.done": "\u5DF2\u5173\u8054\u5230\u300A{title}\u300B",
+  "reader.linkNote.failed": "\u5173\u8054\u5931\u8D25\uFF1A{message}",
+  "reader.linkNote.emptyQuote": "\u8FD9\u6761\u6279\u6CE8\u6CA1\u6709\u53EF\u5F15\u7528\u7684\u6587\u5B57",
+  "reader.linkNote.quoteDone": "\u5DF2\u5F15\u7528\u5230\u300A{title}\u300B",
+  "reader.linkNote.quoteFailed": "\u5F15\u7528\u5931\u8D25\uFF1A{message}",
+  "reader.figures.tab": "\u56FE\u8868",
+  "reader.figures.loading": "\u6B63\u5728\u8BFB\u53D6\u56FE\u8868\u2026",
+  "reader.figures.failed": "\u56FE\u8868\u52A0\u8F7D\u5931\u8D25",
+  "reader.figures.empty": "\u8FD8\u6CA1\u6709\u63D0\u53D6\u5230\u56FE\u8868",
+  "reader.figures.emptyHint": "\u56FE\u8868\u68C0\u6D4B\u53EA\u8BC6\u522B\u5E26 caption \u7684\u56FE/\u8868\u3002",
+  "reader.figures.hint": "\u62D6\u62FD\u56FE\u8868\u5230\u7B14\u8BB0\uFF0C\u6216\u70B9\u201C\u653E\u5165\u5F53\u524D\u7B14\u8BB0\u201D\u3002",
+  "reader.figures.page": "\u7B2C {page} \u9875",
+  "reader.figures.insertNow": "\u653E\u5165\u5F53\u524D\u7B14\u8BB0",
+  "reader.figures.inserted": "\u56FE\u8868\u5DF2\u653E\u5165\u7B14\u8BB0",
+  "reader.figures.insertFailed": "\u653E\u5165\u5931\u8D25\uFF1A{message}",
   "reader.notes.tab": "\u7B14\u8BB0",
   "reader.notes.title": "\u672C\u8BBA\u6587\u7B14\u8BB0",
   "reader.selection.unreliableRegion": "\u8BE5\u533A\u57DF\u6587\u672C\u5C42\u4E0D\u53EF\u9760\uFF08\u53EF\u80FD\u662F\u56FE\u5185\u6587\u5B57\uFF09\uFF0C\u5DF2\u8DF3\u8FC7\u7FFB\u8BD1\uFF1B\u8BF7\u6362\u4E2A\u9009\u533A\u6216\u7A0D\u540E\u91CD\u8BD5\u3002",
@@ -15918,7 +16080,7 @@ var PageTextLayer = import_react18.default.memo(PageTextLayerImpl, (previous, ne
 });
 
 // src/surfaces/reader/shell.jsx
-var import_react30 = __toESM(require("react"), 1);
+var import_react31 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/styles.js
 var STYLE_ID2 = "ph-reader-styles";
@@ -18468,6 +18630,14 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
 @media (prefers-reduced-motion: reduce) {
   .ph-r-page--active .ph-r-page__img--loaded { animation: none; }
 }
+
+.ph-r-figures { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 18px; }
+.ph-r-figcard { margin: 0; padding: 8px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 10px; background: var(--dsw-alias-bg-layer-1); cursor: grab; }
+.ph-r-figcard:active { cursor: grabbing; }
+.ph-r-figcard__media { display: block; width: 100%; padding: 0; border: 0; border-radius: 7px; overflow: hidden; background: var(--dsw-alias-bg-layer-2); cursor: zoom-in; }
+.ph-r-figcard__media img { display: block; width: 100%; max-height: 160px; object-fit: contain; }
+.ph-r-figcard figcaption { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.ph-r-figcard__cap { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 5px 0 7px; font-size: 10.5px; line-height: 1.45; color: var(--dsw-alias-label-tertiary); }
 `;
 var styleRefCount = 0;
 function ensureReaderStyles() {
@@ -18930,7 +19100,7 @@ function isUndoContext(value) {
 }
 function createUndoStore() {
   const state = { entries: [], redo: [], revision: 0, busy: false };
-  const listeners5 = /* @__PURE__ */ new Set();
+  const listeners6 = /* @__PURE__ */ new Set();
   let snapshotValue2 = { revision: 0, busy: false, canUndo: false, canRedo: false, labels: [] };
   function refresh() {
     snapshotValue2 = {
@@ -18941,10 +19111,10 @@ function createUndoStore() {
       labels: state.entries.map((entry) => entry.label)
     };
   }
-  function publish2() {
+  function publish3() {
     state.revision += 1;
     refresh();
-    listeners5.forEach((listener) => {
+    listeners6.forEach((listener) => {
       try {
         listener();
       } catch (error) {
@@ -18955,14 +19125,14 @@ function createUndoStore() {
   refresh();
   async function run(entry, direction) {
     state.busy = true;
-    publish2();
+    publish3();
     try {
       if (direction === "undo") await entry.undo();
       else await entry.redo();
       return entry;
     } finally {
       state.busy = false;
-      publish2();
+      publish3();
     }
   }
   return {
@@ -18970,8 +19140,8 @@ function createUndoStore() {
       return snapshotValue2;
     },
     subscribe(listener) {
-      listeners5.add(listener);
-      return () => listeners5.delete(listener);
+      listeners6.add(listener);
+      return () => listeners6.delete(listener);
     },
     /** Register one completed, undoable action. */
     push(entry) {
@@ -18985,36 +19155,36 @@ function createUndoStore() {
       });
       if (state.entries.length > MAX_ENTRIES2) state.entries.splice(0, state.entries.length - MAX_ENTRIES2);
       state.redo = [];
-      publish2();
+      publish3();
     },
     async undo() {
       if (state.busy) return null;
       const entry = state.entries.pop();
       if (!entry) return null;
-      publish2();
+      publish3();
       try {
         return await run(entry, "undo");
       } finally {
         state.redo.push(entry);
-        publish2();
+        publish3();
       }
     },
     async redo() {
       if (state.busy) return null;
       const entry = state.redo.pop();
       if (!entry) return null;
-      publish2();
+      publish3();
       try {
         return await run(entry, "redo");
       } finally {
         state.entries.push(entry);
-        publish2();
+        publish3();
       }
     },
     clear() {
       state.entries = [];
       state.redo = [];
-      publish2();
+      publish3();
     }
   };
 }
@@ -19496,6 +19666,7 @@ function AnnotationPopover(props) {
       actionButton("explain", "book", rt("reader.annot.explain"), () => props.onExplain(annotation)),
       actionButton("ask", "note", rt("reader.annot.ask"), () => props.onAsk(annotation)),
       actionButton("cite", "quote", rt("reader.annot.cite"), () => props.onCite(annotation)),
+      actionButton("noteLink", "note", rt("reader.annot.quoteToNote"), () => props.onLinkNote && props.onLinkNote(annotation), { disabled: !props.onLinkNote }),
       actionButton("delete", "trash", rt("reader.annot.delete"), () => props.onDelete(annotation))
     ),
     translating ? import_react22.default.createElement("div", { className: "ph-r-popover__translation" }, import_react22.default.createElement(Spinner2, { size: 11 }), import_react22.default.createElement("span", null, rt("reader.popover.translating"))) : translation ? import_react22.default.createElement(
@@ -19699,6 +19870,14 @@ function AnnotationListPanel(props) {
                 onClick: (event) => {
                   event.stopPropagation();
                   props.onCite(annotation);
+                }
+              }),
+              import_react22.default.createElement(IconBtn, {
+                icon: "note",
+                title: rt("reader.annot.quoteToNote"),
+                onClick: (event) => {
+                  event.stopPropagation();
+                  if (props.onLinkNote) props.onLinkNote(annotation);
                 }
               }),
               import_react22.default.createElement(IconBtn, {
@@ -20451,4432 +20630,8 @@ function ReaderNotesPanel(props) {
   );
 }
 
-// src/surfaces/reader/outline.jsx
+// src/surfaces/reader/figures-panel.jsx
 var import_react26 = __toESM(require("react"), 1);
-function Outline(props) {
-  const t = props.t;
-  const items2 = Array.isArray(props.items) ? props.items.filter((item) => item && (item.title || item.page)).map((item) => ({
-    title: String(item.title || "").trim() || (item.page == null ? t("reader.outline.title") : t("reader.outline.page", { page: num(item.page, 1) })),
-    // Heuristic outlines may not resolve a page (Host returns null); keep
-    // the entry visible but non-jumpable instead of pretending it is page 1.
-    page: item.page == null || item.page === "" ? null : Math.max(1, Math.round(num(item.page, 1))),
-    level: Math.max(1, Math.min(4, Math.round(num(item.level, 1))))
-  })) : [];
-  if (props.loading && items2.length === 0) {
-    return import_react26.default.createElement(
-      "div",
-      { className: "ph-r-outline", "aria-busy": "true" },
-      [1, 2, 3, 4, 5].map(
-        (index) => import_react26.default.createElement(
-          "div",
-          { key: index, style: { padding: "7px 8px" } },
-          import_react26.default.createElement("span", { className: "ph-r-skeleton", style: { width: 40 + index * 37 % 50 + "%", height: 11 } })
-        )
-      )
-    );
-  }
-  if (props.error && items2.length === 0) {
-    return import_react26.default.createElement(Empty, {
-      icon: "warning",
-      tone: "error",
-      title: t("reader.outline.empty"),
-      desc: String(props.error),
-      action: props.onRetry ? import_react26.default.createElement(
-        "button",
-        { type: "button", className: "ph-r-btn ph-r-btn--soft ph-r-btn--sm", onClick: props.onRetry },
-        import_react26.default.createElement(Icon2, { name: "refresh", size: 13 }),
-        import_react26.default.createElement("span", null, t("reader.retry"))
-      ) : null
-    });
-  }
-  if (items2.length === 0) {
-    return import_react26.default.createElement(Empty, {
-      icon: "list",
-      title: t("reader.outline.empty"),
-      desc: t("reader.outline.emptyDesc")
-    });
-  }
-  let activeIndex = -1;
-  for (let index = 0; index < items2.length; index += 1) {
-    const itemPage = items2[index].page;
-    if (itemPage != null && itemPage <= props.page) activeIndex = index;
-  }
-  if (activeIndex < 0 && items2.length > 0) activeIndex = 0;
-  return import_react26.default.createElement(
-    "div",
-    { className: "ph-r-outline" },
-    import_react26.default.createElement(
-      "div",
-      { style: { display: "flex", alignItems: "center", gap: 6, padding: "4px 8px 6px" } },
-      import_react26.default.createElement(Icon2, { name: "list", size: 13 }),
-      import_react26.default.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: "var(--dsw-alias-label-secondary)" } }, t("reader.outline.title")),
-      import_react26.default.createElement(Badge2, null, String(items2.length))
-    ),
-    items2.map(
-      (item, index) => import_react26.default.createElement(
-        "button",
-        {
-          key: index + ":" + item.page + ":" + item.title,
-          type: "button",
-          className: cx("ph-r-outline__item", index === activeIndex && "ph-r-outline__item--active"),
-          style: { paddingLeft: 8 + (item.level - 1) * 13 },
-          onClick: () => {
-            if (item.page != null) props.onJump(item.page);
-          },
-          title: item.page == null ? item.title : t("reader.outline.jump", { title: item.title }),
-          disabled: item.page == null,
-          "aria-current": index === activeIndex ? "location" : void 0
-        },
-        import_react26.default.createElement("span", { className: "ph-r-outline__level" }, String(item.level)),
-        import_react26.default.createElement("span", { className: "ph-r-outline__label" }, item.title),
-        import_react26.default.createElement("span", { className: "ph-r-outline__page" }, item.page == null ? "\u2014" : String(item.page))
-      )
-    )
-  );
-}
-
-// src/surfaces/reader/page-canvas.jsx
-var import_react27 = __toESM(require("react"), 1);
-var PAGE_GAP = 16;
-var PAGE_TOP_PADDING = 18;
-var PAGE_BOTTOM_PADDING = 48;
-var CANVAS_SIDE_PADDING = 24;
-var VIRTUAL_BUFFER = 2;
-var DEFAULT_PAGE_WIDTH = 595;
-var DEFAULT_PAGE_HEIGHT = 791;
-var MIN_BASE_WIDTH = 300;
-var MAX_BASE_WIDTH = 1e3;
-var EMPTY_LIST = [];
-function scrollElementTo(element2, top, smooth) {
-  if (!element2) return;
-  const value = Math.max(0, Math.round(top));
-  try {
-    if (typeof element2.scrollTo === "function") {
-      element2.scrollTo({ top: value, behavior: smooth ? "smooth" : "auto" });
-      return;
-    }
-  } catch {
-  }
-  element2.scrollTop = value;
-}
-function usePageDescriptors(pages, total) {
-  return import_react27.default.useMemo(() => {
-    const list = arrayOf3(pages);
-    if (list.length > 0) {
-      return list.map((item, index) => {
-        const page2 = Math.max(1, Math.round(num(item && item.page, index + 1)));
-        const width = num(item && item.width, DEFAULT_PAGE_WIDTH) || DEFAULT_PAGE_WIDTH;
-        const height = num(item && item.height, DEFAULT_PAGE_HEIGHT) || DEFAULT_PAGE_HEIGHT;
-        return { page: page2, width, height, imageUrl: item && item.imageUrl ? item.imageUrl : "" };
-      });
-    }
-    const count = Math.max(1, Math.round(num(total, 1)));
-    const generated = [];
-    for (let page2 = 1; page2 <= count; page2 += 1) {
-      generated.push({ page: page2, width: DEFAULT_PAGE_WIDTH, height: DEFAULT_PAGE_HEIGHT, imageUrl: "" });
-    }
-    return generated;
-  }, [pages, total]);
-}
-function useAnnotationsByPage(annotations) {
-  return import_react27.default.useMemo(() => {
-    const map = /* @__PURE__ */ new Map();
-    for (const annotation of arrayOf3(annotations)) {
-      if (!annotation) continue;
-      const list = map.get(annotation.page);
-      if (list) list.push(annotation);
-      else map.set(annotation.page, [annotation]);
-    }
-    return map;
-  }, [annotations]);
-}
-function sameAnnotations(left, right) {
-  if (left === right) return true;
-  const a = left || EMPTY_LIST;
-  const b = right || EMPTY_LIST;
-  if (a.length !== b.length) return false;
-  for (let index = 0; index < a.length; index += 1) {
-    const one = a[index];
-    const two = b[index];
-    if (one === two) continue;
-    if (!one || !two) return false;
-    if (one.id !== two.id || one.comment !== two.comment || one.color !== two.color || one.kind !== two.kind) return false;
-    if (one.rects !== two.rects || one.pending !== two.pending) return false;
-  }
-  return true;
-}
-function PageViewImpl(props) {
-  const {
-    t,
-    paperId,
-    pageInfo,
-    width,
-    height,
-    active,
-    mode,
-    pageDataEntry,
-    layerEntry,
-    annotations,
-    activeAnnotationId,
-    selection,
-    selectionResult,
-    popover,
-    noteDraft,
-    search,
-    reducedMotion
-  } = props;
-  const page2 = pageInfo.page;
-  const pageRef = import_react27.default.useRef(null);
-  const imgRef = import_react27.default.useRef(null);
-  const [imageState, setImageState] = import_react27.default.useState("loading");
-  const [imageVersion, setImageVersion] = import_react27.default.useState(0);
-  const [imageSlow, setImageSlow] = import_react27.default.useState(false);
-  const [areaDrag, setAreaDrag] = import_react27.default.useState(null);
-  const areaRectRef = import_react27.default.useRef(null);
-  const [hover, setHover] = import_react27.default.useState(null);
-  const hoverFrame = import_react27.default.useRef(0);
-  const hoverPoint = import_react27.default.useRef(null);
-  const dragRef = import_react27.default.useRef(null);
-  const [selecting, setSelecting] = import_react27.default.useState(false);
-  const [dragSelect, setDragSelect] = import_react27.default.useState(null);
-  const selectRef = import_react27.default.useRef(null);
-  const selectFrame = import_react27.default.useRef(0);
-  const [noteGhost, setNoteGhost] = import_react27.default.useState(null);
-  const interactive = mode === "select";
-  const rawLayer = layerEntry && layerEntry.status === "ready" ? layerEntry.data : null;
-  const pageData = pageDataEntry && pageDataEntry.status === "ready" ? pageDataEntry.data : null;
-  const layer = import_react27.default.useMemo(() => {
-    if (!rawLayer) return null;
-    const width2 = num(rawLayer.width, pageInfo.width);
-    const height2 = num(rawLayer.height, pageInfo.height);
-    if (!(width2 > 0) || !(height2 > 0) || arrayOf3(rawLayer.words).length === 0) {
-      return Object.assign({}, rawLayer, { words: [], width: width2, height: height2 });
-    }
-    if (rawLayer.width === width2 && rawLayer.height === height2) return rawLayer;
-    return Object.assign({}, rawLayer, { width: width2, height: height2 });
-  }, [pageInfo.height, pageInfo.width, rawLayer]);
-  const selectable = import_react27.default.useMemo(() => selectableWords(layer), [layer]);
-  import_react27.default.useEffect(() => {
-    setImageState("loading");
-    setImageSlow(false);
-    setImageVersion(0);
-    setHover(null);
-    setAreaDrag(null);
-    setDragSelect(null);
-    selectRef.current = null;
-    setSelecting(false);
-    setNoteGhost(null);
-  }, [paperId, page2]);
-  const retryImage = import_react27.default.useCallback(() => {
-    setImageState("loading");
-    setImageSlow(false);
-    setImageVersion((value) => value + 1);
-  }, []);
-  const pointOf = import_react27.default.useCallback((event) => {
-    const element2 = pageRef.current;
-    if (!element2) return null;
-    const box = element2.getBoundingClientRect();
-    if (!(box.width > 0) || !(box.height > 0)) return null;
-    return {
-      x: clamp((event.clientX - box.left) / box.width, 0, 1),
-      y: clamp((event.clientY - box.top) / box.height, 0, 1)
-    };
-  }, []);
-  const selectionForPoints = import_react27.default.useCallback(
-    (start, current) => {
-      const rectNorm = pointRect(start, current);
-      if (!rectNorm || !selectable || selectable.words.length === 0) return null;
-      if (!(selectable.width > 0) || !(selectable.height > 0)) return null;
-      if (rectNorm.w < 15e-4 && rectNorm.h < 15e-4) return null;
-      const rectPoints = {
-        x: rectNorm.x * selectable.width,
-        y: rectNorm.y * selectable.height,
-        w: Math.max(rectNorm.w * selectable.width, 0.8),
-        h: Math.max(rectNorm.h * selectable.height, 0.8)
-      };
-      const startPoint = { x: start.x * selectable.width, y: start.y * selectable.height };
-      const endPoint = { x: current.x * selectable.width, y: current.y * selectable.height };
-      const anchorIndex = wordIndexAt(selectable.words, startPoint, selectable.width);
-      const focusIndex = wordIndexAt(selectable.words, endPoint, selectable.width);
-      if (anchorIndex >= 0 && focusIndex >= 0) {
-        const low = Math.min(anchorIndex, focusIndex);
-        const high = Math.max(anchorIndex, focusIndex);
-        const rangeIndexes = [];
-        for (let index = low; index <= high; index += 1) rangeIndexes.push(index);
-        const rangeBuilt = buildWordSelection(selectable.words, rangeIndexes, selectable.width, selectable.height);
-        if (rangeBuilt && rangeBuilt.wordCount > 0) {
-          return {
-            quotes: rangeBuilt.quote,
-            quote: rangeBuilt.quote,
-            rects: rangeBuilt.rects,
-            anchor: rangeBuilt.anchor,
-            wordCount: rangeBuilt.wordCount,
-            rect: rectNorm,
-            sequential: true
-          };
-        }
-      }
-      const allHits = hitTestWords(selectable.words, rectPoints);
-      if (allHits.length === 0) return null;
-      const originX = start.x * selectable.width;
-      const boxes = allHits.map((index) => ({ index, word: selectable.words[index] })).filter((item) => item.word);
-      boxes.sort((left, right) => left.word.x - right.word.x);
-      const clusters = [];
-      let currentCluster = [];
-      let clusterRight = -Infinity;
-      for (const item of boxes) {
-        if (currentCluster.length === 0) {
-          currentCluster = [item];
-          clusterRight = item.word.x + item.word.w;
-          continue;
-        }
-        if (item.word.x - clusterRight > selectable.width * 0.045) {
-          clusters.push(currentCluster);
-          currentCluster = [item];
-          clusterRight = item.word.x + item.word.w;
-        } else {
-          currentCluster.push(item);
-          clusterRight = Math.max(clusterRight, item.word.x + item.word.w);
-        }
-      }
-      if (currentCluster.length > 0) clusters.push(currentCluster);
-      let chosenCluster = clusters[0] || [];
-      if (clusters.length > 1) {
-        let bestDistance = Infinity;
-        for (const cluster of clusters) {
-          const left = cluster[0].word.x;
-          const right = Math.max.apply(null, cluster.map((item) => item.word.x + item.word.w));
-          const distance = originX < left ? left - originX : originX > right ? originX - right : 0;
-          if (distance < bestDistance) {
-            bestDistance = distance;
-            chosenCluster = cluster;
-          }
-        }
-      }
-      const hits = chosenCluster.map((item) => item.index);
-      if (hits.length === 0) return null;
-      const built = buildWordSelection(selectable.words, hits, selectable.width, selectable.height);
-      if (!built) return null;
-      return {
-        quotes: built.quote,
-        quote: built.quote,
-        rects: built.rects,
-        anchor: built.anchor,
-        wordCount: built.wordCount || hits.length,
-        rect: rectNorm
-      };
-    },
-    [selectable]
-  );
-  const anchorPx = import_react27.default.useCallback(
-    (anchor, placement) => {
-      if (!anchor) return null;
-      const half = placement && placement.halfWidth ? placement.halfWidth : 150;
-      const centerX = (anchor.x + anchor.w / 2) * width;
-      const left = clamp(centerX, Math.min(half, width / 2), Math.max(width - Math.min(half, width / 2), Math.min(half, width / 2)));
-      const bottom = (anchor.y + anchor.h) * height;
-      const top = (anchor.y + anchor.h) * height;
-      return {
-        below: { left, top: clamp(top + 8, 4, Math.max(height - 8, 8)) },
-        above: { left, top: clamp(anchor.y * height - 8, 4, Math.max(height - 8, 8)), flip: true },
-        bottom
-      };
-    },
-    [height, width]
-  );
-  const openAnnotationAt = import_react27.default.useCallback(
-    (point) => {
-      const annotation = annotationAt(annotations, point);
-      if (!annotation) return false;
-      const anchor = annotation.kind === "note" ? null : unionRect(annotation.rects);
-      const noteRect = annotation.rects && annotation.rects[0] ? annotation.rects[0] : null;
-      const resolved = anchor || noteRect || { x: point.x, y: point.y, w: 0, h: 0 };
-      props.onAnnotationOpen(annotation, resolved);
-      return true;
-    },
-    [annotations, props]
-  );
-  const handleMouseDown = import_react27.default.useCallback(
-    (event) => {
-      if (event.button !== 0) return;
-      const target = event.target;
-      if (target && target.closest && target.closest("[data-ph-overlay]")) return;
-      if (mode === "area") {
-        const point2 = pointOf(event);
-        if (!point2) return;
-        event.preventDefault();
-        dragRef.current = point2;
-        setAreaDrag({ x: point2.x, y: point2.y, w: 0, h: 0 });
-        return;
-      }
-      if (mode === "note") return;
-      if (mode !== "select") return;
-      const point = pointOf(event);
-      if (!point) return;
-      event.preventDefault();
-      props.onSelection(null);
-      props.onSelectionAction("closeResult");
-      setHover(null);
-      setDragSelect(null);
-      if (selectRef.current && typeof selectRef.current.cleanup === "function") selectRef.current.cleanup();
-      const drag = { start: point, last: point, moved: false, preview: null, cleanup: null };
-      selectRef.current = drag;
-      setSelecting(true);
-      const updatePreview = (nextPoint) => {
-        if (selectRef.current !== drag) return;
-        drag.last = nextPoint;
-        const dx = Math.abs(nextPoint.x - drag.start.x);
-        const dy = Math.abs(nextPoint.y - drag.start.y);
-        if (dx > 4e-3 || dy > 4e-3) drag.moved = true;
-        const preview = drag.moved ? selectionForPoints(drag.start, nextPoint) : null;
-        drag.preview = preview;
-        setDragSelect(preview);
-      };
-      const cleanup = () => {
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
-        window.removeEventListener("keydown", onKeyDown);
-        if (selectFrame.current && typeof cancelAnimationFrame === "function") cancelAnimationFrame(selectFrame.current);
-        selectFrame.current = 0;
-        selectRef.current = null;
-        setSelecting(false);
-        setDragSelect(null);
-      };
-      drag.cleanup = cleanup;
-      const onMove = (moveEvent) => {
-        if (selectRef.current !== drag) return;
-        const nextPoint = pointOf(moveEvent);
-        if (nextPoint) updatePreview(nextPoint);
-      };
-      const onUp = (upEvent) => {
-        if (selectRef.current !== drag) return;
-        const finalPoint = pointOf(upEvent) || drag.last;
-        if (finalPoint) updatePreview(finalPoint);
-        const preview = drag.preview;
-        const moved = drag.moved;
-        cleanup();
-        if (moved && preview && preview.wordCount > 0) {
-          props.onSelection({
-            page: page2,
-            quote: preview.quote,
-            rects: preview.rects,
-            anchor: preview.anchor,
-            wordCount: preview.wordCount
-          });
-          return;
-        }
-        if (finalPoint && openAnnotationAt(finalPoint)) return;
-        props.onSelection(null);
-      };
-      const onKeyDown = (keyEvent) => {
-        if (keyEvent.key !== "Escape") return;
-        cleanup();
-        props.onSelection(null);
-      };
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
-      window.addEventListener("keydown", onKeyDown);
-    },
-    [mode, openAnnotationAt, page2, pointOf, props, selectionForPoints]
-  );
-  import_react27.default.useEffect(() => {
-    if (!areaDrag) return void 0;
-    const onMove = (event) => {
-      const start = dragRef.current;
-      if (!start) return;
-      const point = pointOf(event);
-      if (!point) return;
-      const next = {
-        x: Math.min(start.x, point.x),
-        y: Math.min(start.y, point.y),
-        w: Math.abs(point.x - start.x),
-        h: Math.abs(point.y - start.y)
-      };
-      areaRectRef.current = next;
-      setAreaDrag(next);
-    };
-    const onUp = () => {
-      dragRef.current = null;
-      const current = areaRectRef.current;
-      areaRectRef.current = null;
-      setAreaDrag(null);
-      if (current && current.w > 0.012 && current.h > 8e-3) props.onCreateArea(current);
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, [areaDrag !== null, pointOf, props]);
-  const handleClick = import_react27.default.useCallback(
-    (event) => {
-      if (mode !== "note") return;
-      const target = event.target;
-      if (target && target.closest && target.closest("[data-ph-overlay]")) return;
-      const point = pointOf(event);
-      if (point) props.onNoteCreate(point);
-    },
-    [mode, pointOf, props]
-  );
-  const handleMouseMove = import_react27.default.useCallback(
-    (event) => {
-      if (selecting || event.buttons) {
-        if (hover) setHover(null);
-        return;
-      }
-      if (mode === "note") {
-        const point = pointOf(event);
-        setNoteGhost(point);
-        return;
-      }
-      if (!interactive || props.annotations.length === 0) {
-        if (hover) setHover(null);
-        return;
-      }
-      hoverPoint.current = pointOf(event);
-      if (hoverFrame.current) return;
-      const schedule2 = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (callback) => setTimeout(callback, 16);
-      hoverFrame.current = schedule2(() => {
-        hoverFrame.current = 0;
-        const point = hoverPoint.current;
-        if (!point) {
-          setHover(null);
-          return;
-        }
-        const annotation = annotationAt(props.annotations, point);
-        setHover((previous) => {
-          if (!annotation) return null;
-          if (previous && previous.annotationId === annotation.id) return previous;
-          return { annotationId: annotation.id, annotation, point };
-        });
-      });
-    },
-    [hover, interactive, mode, pointOf, props.annotations, selecting]
-  );
-  const clearHover = import_react27.default.useCallback(() => {
-    setHover(null);
-    setNoteGhost(null);
-  }, []);
-  const pageAnnotations = annotations;
-  const pageSelection = selection && selection.page === page2 ? selection : null;
-  const pagePopover = popover && popover.annotation && popover.annotation.page === page2 ? popover : null;
-  const pageNoteDraft = noteDraft && noteDraft.page === page2 ? noteDraft : null;
-  const pageSearchHits = import_react27.default.useMemo(() => {
-    if (!search || !search.query || !search.hits) return null;
-    return search.hits.map((hit, index) => ({ hit, index })).filter((entry) => entry.hit.page === page2).map((entry) => Object.assign({}, entry.hit, { order: entry.index }));
-  }, [page2, search]);
-  const activeHitOrder = search && search.hits && search.hits.length > 0 ? search.index : -1;
-  const selectionToolbar = pageSelection ? (() => {
-    const anchor = pageSelection.anchor;
-    const centerX = (anchor.x + anchor.w / 2) * width;
-    const half = Math.min(300, Math.max(180, width / 2 - 8));
-    const left = clamp(centerX, half, Math.max(width - half, half));
-    let top = anchor.y * height - 56;
-    let below = false;
-    if (top < 6) {
-      top = (anchor.y + anchor.h) * height + 10;
-      below = true;
-    }
-    return { left, top, below };
-  })() : null;
-  const showTooltip = hover && hover.annotation ? hover : null;
-  const figureHighlight = props.figureFocus && Number(props.figureFocus.page) === page2 ? props.figureFocus : null;
-  const tooltipStyle = showTooltip ? {
-    left: (showTooltip.point.x * 100).toFixed(3) + "%",
-    top: (showTooltip.point.y * 100).toFixed(3) + "%",
-    transform: showTooltip.point.y < 0.14 ? "translate(-50%, 14px)" : "translate(-50%, calc(-100% - 10px))"
-  } : null;
-  const popoverPosition = pagePopover ? (() => {
-    const anchor = pagePopover.anchor || { x: 0.5, y: 0.2, w: 0, h: 0 };
-    const half = 170;
-    const centerX = (anchor.x + anchor.w / 2) * width;
-    const left = clamp(centerX, Math.min(half, width / 2), Math.max(width - Math.min(half, width / 2), Math.min(half, width / 2)));
-    const below = (anchor.y + anchor.h) * height + 10;
-    const above = anchor.y * height - 10;
-    const estimated = 360;
-    const pageRect = pageRef.current ? pageRef.current.getBoundingClientRect() : null;
-    const viewportHeight = typeof window !== "undefined" && window.innerHeight ? window.innerHeight : 900;
-    const pageTop = pageRect ? pageRect.top : 0;
-    if (below + estimated > height || pageTop + below + estimated > viewportHeight - 12) {
-      const flippedTop = above - estimated;
-      if (pageTop + flippedTop >= 12) return { left, top: Math.max(6, flippedTop), flipped: true };
-    }
-    return { left, top: clamp(below, 4, Math.max(height - 40, 4)), flipped: false };
-  })() : null;
-  const notePosition = pageNoteDraft ? (() => {
-    const half = 148;
-    const left = clamp(pageNoteDraft.point.x * width, Math.min(half, width / 2), Math.max(width - Math.min(half, width / 2), Math.min(half, width / 2)));
-    const below = pageNoteDraft.point.y * height + 12;
-    const top = below + 240 <= height ? below : Math.max(4, pageNoteDraft.point.y * height - 250);
-    return { left, top };
-  })() : null;
-  const baseImageSrc = pageUrlOf(paperId, Object.assign({ page: page2 }, pageInfo, { imageUrl: pageInfo.imageUrl }));
-  const imageSrc = imageVersion > 0 ? baseImageSrc + (baseImageSrc.indexOf("?") >= 0 ? "&" : "?") + "retry=" + imageVersion : baseImageSrc;
-  const showImageSkeleton = imageState === "loading";
-  import_react27.default.useEffect(() => {
-    setImageSlow(false);
-    const node = imgRef.current;
-    if (!node) return void 0;
-    const settle = () => {
-      if (!node.complete) return false;
-      setImageState(node.naturalWidth > 0 ? "loaded" : "error");
-      return true;
-    };
-    if (settle()) return void 0;
-    const slowTimer = setTimeout(() => setImageSlow(true), 8e3);
-    const poll = setInterval(() => {
-      if (settle()) {
-        clearInterval(poll);
-        clearTimeout(slowTimer);
-      }
-    }, 500);
-    const stopPoll = setTimeout(() => clearInterval(poll), 2e4);
-    return () => {
-      clearTimeout(slowTimer);
-      clearInterval(poll);
-      clearTimeout(stopPoll);
-    };
-  }, [imageSrc, imageVersion]);
-  const layerStatus = layerEntry ? layerEntry.status : "idle";
-  return import_react27.default.createElement(
-    "div",
-    {
-      ref: pageRef,
-      className: cx(
-        "ph-r-page",
-        active && "ph-r-page--active",
-        mode === "area" && "ph-r-page--area",
-        mode === "note" && "ph-r-page--note",
-        mode === "select" && "ph-r-page--select"
-      ),
-      style: { width, height },
-      "data-ph-page": String(page2),
-      onMouseDown: handleMouseDown,
-      onClick: handleClick,
-      onMouseMove: handleMouseMove,
-      onMouseLeave: clearHover
-    },
-    import_react27.default.createElement(
-      "img",
-      {
-        key: "img-" + imageVersion,
-        ref: imgRef,
-        className: cx("ph-r-page__img", imageState === "loaded" && "ph-r-page__img--loaded"),
-        src: imageSrc,
-        alt: t("reader.thumbPage", { page: page2 }),
-        draggable: false,
-        decoding: "async",
-        // Only the viewport buffer is mounted, so eager loading is bounded and
-        // avoids lazy-loading races inside the virtualised scroll box.
-        loading: "eager",
-        fetchPriority: active ? "high" : "auto",
-        onLoad: () => {
-          setImageSlow(false);
-          setImageState("loaded");
-        },
-        onError: () => {
-          setImageSlow(false);
-          setImageState("error");
-        }
-      }
-    ),
-    showImageSkeleton ? import_react27.default.createElement("div", { className: "ph-r-page__skeleton" }) : null,
-    showImageSkeleton && imageSlow ? import_react27.default.createElement(
-      "div",
-      { className: "ph-r-page__slow", role: "status" },
-      import_react27.default.createElement(Spinner2, { size: 14 }),
-      import_react27.default.createElement("span", null, t("reader.page.slow")),
-      import_react27.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
-    ) : null,
-    imageState === "error" ? import_react27.default.createElement(
-      "div",
-      { className: "ph-r-page__error" },
-      import_react27.default.createElement(Icon2, { name: "warning", size: 18 }),
-      import_react27.default.createElement("span", null, t("reader.page.imageFailed")),
-      import_react27.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
-    ) : null,
-    import_react27.default.createElement(PageTextLayer, {
-      key: "text-" + page2,
-      page: page2,
-      words: selectable.words,
-      width: selectable.width,
-      height: selectable.height,
-      active: true,
-      // v0.3: the page canvas owns selection geometrically, so the text layer is
-      // purely visual and must not start a native DOM Range selection.
-      interactive: false
-    }),
-    (() => {
-      const overlayRects = dragSelect && dragSelect.rects ? dragSelect.rects : pageSelection ? pageSelection.rects : null;
-      if (!overlayRects || overlayRects.length === 0) return null;
-      return import_react27.default.createElement(
-        "div",
-        { className: "ph-r-selrect", "data-ph-text-selection": String(dragSelect ? dragSelect.wordCount : pageSelection ? pageSelection.wordCount || 0 : 0) },
-        overlayRects.map((rect, index) => import_react27.default.createElement("span", { key: index, className: "ph-r-selrect__box", style: rectStyle(rect) }))
-      );
-    })(),
-    dragSelect && dragSelect.wordCount > 0 ? import_react27.default.createElement(
-      "span",
-      {
-        className: "ph-r-selcount",
-        style: {
-          left: (clamp((dragSelect.rect.x + dragSelect.rect.x + dragSelect.rect.w) / 2, 0, 1) * 100).toFixed(2) + "%",
-          top: (clamp(dragSelect.rect.y + dragSelect.rect.h, 0, 1) * 100).toFixed(2) + "%"
-        }
-      },
-      t("reader.selection.selectedWords", { count: dragSelect.wordCount })
-    ) : null,
-    noteGhost && mode === "note" && !noteDraft ? import_react27.default.createElement("span", {
-      className: "ph-r-note-ghost",
-      style: { left: (noteGhost.x * 100).toFixed(2) + "%", top: (noteGhost.y * 100).toFixed(2) + "%" },
-      "aria-hidden": "true"
-    }, import_react27.default.createElement(Icon2, { name: "sticky", size: 12 })) : null,
-    import_react27.default.createElement(AnnotationMarks, {
-      page: page2,
-      annotations: pageAnnotations,
-      activeId: activeAnnotationId
-    }),
-    figureHighlight ? import_react27.default.createElement(FigureHighlightOverlay, { t, figureFocus: figureHighlight, page: page2 }) : null,
-    pageSearchHits && pageSearchHits.length > 0 ? import_react27.default.createElement(
-      "div",
-      { className: "ph-r-hits" },
-      pageSearchHits.map(
-        (hit) => hit.rects.map(
-          (rect, index) => import_react27.default.createElement("span", {
-            key: hit.order + ":" + index,
-            className: cx("ph-r-hit", hit.order === activeHitOrder && "ph-r-hit--active"),
-            style: rectStyle(rect)
-          })
-        )
-      )
-    ) : null,
-    areaDrag ? import_react27.default.createElement("span", { className: "ph-r-area-drag", style: rectStyle(areaDrag) }) : null,
-    active || pageSearchHits ? import_react27.default.createElement(
-      "span",
-      { className: "ph-r-page__chip" },
-      import_react27.default.createElement(Icon2, { name: "pages", size: 11 }),
-      String(page2)
-    ) : null,
-    active && !layer ? import_react27.default.createElement(
-      "span",
-      { className: "ph-r-page__structure" },
-      layerStatus === "loading" || layerStatus === "idle" ? t("reader.page.textLayer.loading") : t("reader.page.textLayer.unavailable")
-    ) : null,
-    showTooltip ? import_react27.default.createElement(AnnotationTooltip, { annotation: showTooltip.annotation, style: tooltipStyle }) : null,
-    selectionToolbar ? import_react27.default.createElement(
-      "div",
-      {
-        className: cx("ph-r-float", "ph-r-card", "ph-r-selbar"),
-        style: { left: selectionToolbar.left, top: selectionToolbar.top, transform: "translateX(-50%)" },
-        "data-ph-overlay": "selection",
-        onMouseDown: (event) => event.preventDefault()
-      },
-      import_react27.default.createElement("span", { className: "ph-r-selbar__count" }, t("reader.selection.selectedWords", { count: pageSelection ? pageSelection.wordCount || 0 : 0 })),
-      import_react27.default.createElement("span", { className: "ph-r-selbar__sep" }),
-      import_react27.default.createElement(
-        "button",
-        {
-          type: "button",
-          className: "ph-r-toolbtn ph-r-toolbtn--primary",
-          onClick: () => props.onSelectionAction("quickTranslate"),
-          title: t("reader.selection.quickTranslateHint")
-        },
-        import_react27.default.createElement(Icon2, { name: "sparkles", size: 14 }),
-        import_react27.default.createElement("span", null, t("reader.selection.quickTranslate"))
-      ),
-      import_react27.default.createElement(ColorPenRow, {
-        t,
-        onPick: (color) => props.onSelectionAction("highlight", { color })
-      }),
-      import_react27.default.createElement("span", { className: "ph-r-selbar__sep" }),
-      import_react27.default.createElement(
-        "button",
-        { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("copy"), title: t("reader.selection.copy") },
-        import_react27.default.createElement(Icon2, { name: "copy", size: 14 }),
-        import_react27.default.createElement("span", null, t("reader.selection.copy"))
-      ),
-      import_react27.default.createElement(
-        "button",
-        { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("explain"), title: t("reader.selection.explain") },
-        import_react27.default.createElement(Icon2, { name: "book", size: 14 }),
-        import_react27.default.createElement("span", null, t("reader.selection.explain"))
-      ),
-      import_react27.default.createElement(
-        "button",
-        { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("ask"), title: t("reader.selection.ask") },
-        import_react27.default.createElement(Icon2, { name: "note", size: 14 }),
-        import_react27.default.createElement("span", null, t("reader.selection.ask"))
-      ),
-      import_react27.default.createElement(
-        "button",
-        { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("cite"), title: t("reader.selection.cite") },
-        import_react27.default.createElement(Icon2, { name: "quote", size: 14 }),
-        import_react27.default.createElement("span", null, t("reader.selection.cite"))
-      )
-    ) : null,
-    pageSelection && selectionResult && selectionResult.page === page2 ? import_react27.default.createElement(
-      import_react27.default.Fragment,
-      null,
-      selectionResult.replace ? import_react27.default.createElement(
-        "div",
-        {
-          className: "ph-r-card ph-r-replacecard",
-          style: {
-            left: selectionToolbar ? selectionToolbar.left : "50%",
-            top: selectionToolbar ? selectionToolbar.top : 40,
-            transform: "translateX(-50%)"
-          },
-          "data-ph-overlay": "selection-replace",
-          onMouseDown: (event) => event.stopPropagation()
-        },
-        import_react27.default.createElement(
-          "div",
-          { className: "ph-r-resultcard__head" },
-          import_react27.default.createElement(Icon2, { name: "translate", size: 13 }),
-          import_react27.default.createElement("strong", null, t("reader.selection.translated")),
-          import_react27.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
-          import_react27.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.closeReplace"), onClick: () => props.onSelectionAction("closeReplace") })
-        ),
-        import_react27.default.createElement("div", { className: "ph-r-replacecard__text" }, firstText3(selectionResult.translation))
-      ) : import_react27.default.createElement(SelectionResultCard, {
-        t,
-        result: selectionResult,
-        width,
-        height,
-        anchor: pageSelection.anchor,
-        onClose: () => props.onSelectionAction("closeResult"),
-        onCopy: () => props.onSelectionAction("copyQuickTranslation"),
-        onReplace: () => props.onSelectionAction("replaceQuickTranslation"),
-        onSend: () => props.onSelectionAction("sendQuickTranslation"),
-        onRetry: () => props.onSelectionAction("retryQuickTranslation"),
-        onRefine: () => props.onSelectionAction("refineQuickTranslation")
-      })
-    ) : null,
-    pagePopover ? import_react27.default.createElement(AnnotationPopover, {
-      t,
-      annotation: pagePopover.annotation,
-      busy: Boolean(pagePopover.busy),
-      style: popoverPosition,
-      autoFocus: Boolean(pagePopover.autoFocus),
-      onClose: props.onAnnotationClose,
-      onUpdate: (patch) => props.onUpdateAnnotation(pagePopover.annotation, patch),
-      onDelete: () => props.onDeleteAnnotation(pagePopover.annotation),
-      onCopy: props.onCopyAnnotation,
-      onCite: props.onCiteAnnotation,
-      onAsk: props.onAskAnnotation,
-      onExplain: props.onExplainAnnotation,
-      onQuickTranslate: props.onQuickTranslateAnnotation ? () => props.onQuickTranslateAnnotation(pagePopover.annotation) : void 0,
-      onAiTranslate: props.onAiTranslateAnnotation ? () => props.onAiTranslateAnnotation(pagePopover.annotation) : void 0,
-      onUndoDelete: () => props.onDeleteAnnotation(pagePopover.annotation)
-    }) : null,
-    pageNoteDraft && notePosition ? import_react27.default.createElement(NoteComposer, {
-      t,
-      color: noteDraft.color,
-      style: notePosition,
-      onSave: (payload) => props.onNoteSave(Object.assign({ page: page2, point: pageNoteDraft.point }, payload)),
-      onCancel: props.onNoteCancel
-    }) : null
-  );
-}
-var PageView = import_react27.default.memo(PageViewImpl, (previous, next) => {
-  return previous.paperId === next.paperId && previous.pageInfo === next.pageInfo && previous.width === next.width && previous.height === next.height && previous.active === next.active && previous.mode === next.mode && previous.reducedMotion === next.reducedMotion && previous.pageDataEntry === next.pageDataEntry && previous.layerEntry === next.layerEntry && previous.activeAnnotationId === next.activeAnnotationId && previous.selection === next.selection && previous.selectionResult === next.selectionResult && previous.popover === next.popover && previous.noteDraft === next.noteDraft && previous.search === next.search && previous.t === next.t && sameAnnotations(previous.annotations, next.annotations);
-});
-function ColorPenRow(props) {
-  return import_react27.default.createElement(
-    "div",
-    { className: "ph-r-pens", role: "group", "aria-label": props.t("reader.selection.colors") },
-    ["yellow", "green", "blue", "red", "purple"].map(
-      (color) => import_react27.default.createElement("button", {
-        key: color,
-        type: "button",
-        className: "ph-r-pen ph-r-pen--" + color,
-        title: props.t("reader.annot.color." + color),
-        "aria-label": props.t("reader.annot.color." + color),
-        onClick: () => props.onPick(color)
-      })
-    )
-  );
-}
-function SelectionResultCard(props) {
-  const { t, result, anchor, width, height } = props;
-  const [now, setNow] = import_react27.default.useState(() => Date.now());
-  import_react27.default.useEffect(() => {
-    if (!result.loading) return void 0;
-    const timer2 = setInterval(() => setNow(Date.now()), 200);
-    return () => clearInterval(timer2);
-  }, [result.loading]);
-  const half = 170;
-  const centerX = (anchor.x + anchor.w / 2) * width;
-  const left = clamp(centerX, Math.min(half, width / 2), Math.max(width - Math.min(half, width / 2), Math.min(half, width / 2)));
-  let top = (anchor.y + anchor.h) * height + 12;
-  if (top + 240 > height) top = Math.max(6, anchor.y * height - 240);
-  const value = firstText3(result.translation);
-  const elapsedMs = result.latencyMs != null ? Number(result.latencyMs) : result.elapsedMs != null ? Number(result.elapsedMs) : result.loading && result.startedAt ? Math.max(0, now - result.startedAt) : null;
-  const elapsedLabel = elapsedMs == null ? "" : elapsedMs >= 1e3 ? (elapsedMs / 1e3).toFixed(1) + " s" : Math.round(elapsedMs) + " ms";
-  const translated = result.status === "translated" || Boolean(value);
-  const engineText = translated && (result.engine || result.provider) ? engineBadge(result.engine, result.model, result.latencyMs, result.cached) : "";
-  const loadingText = result.aiRefine ? t("reader.selection.refining") : t("reader.selection.quickTranslating");
-  return import_react27.default.createElement(
-    "div",
-    {
-      className: cx("ph-r-float", "ph-r-card", "ph-r-resultcard"),
-      style: { left, top },
-      "data-ph-overlay": "selection-result",
-      onMouseDown: (event) => event.stopPropagation()
-    },
-    import_react27.default.createElement(
-      "div",
-      { className: "ph-r-resultcard__head" },
-      import_react27.default.createElement(Icon2, { name: "sparkles", size: 13 }),
-      import_react27.default.createElement("strong", null, result.aiRefine ? t("reader.selection.aiRefine") : t("reader.selection.quickTranslate")),
-      engineText ? import_react27.default.createElement("span", { className: "ph-r-resultcard__engine", title: engineDetails(result.engine, result.model) }, engineText) : null,
-      result.freeOnly || result.mode === "free" || result.engine && result.engine.free ? import_react27.default.createElement(
-        "span",
-        { className: "ph-r-resultcard__free", title: t("reader.selection.freeFastHint") },
-        t("reader.selection.freeFast") + (!translated && elapsedLabel ? " \xB7 " + elapsedLabel : "")
-      ) : null,
-      result.provider === "llm" && result.fast ? import_react27.default.createElement("span", { className: "ph-r-ai__fast" }, t("reader.selection.fastMode")) : null,
-      import_react27.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
-      import_react27.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.close"), onClick: props.onClose })
-    ),
-    result.loading ? import_react27.default.createElement(
-      "div",
-      { className: "ph-r-resultcard__loading" },
-      import_react27.default.createElement(Spinner2, { size: 12 }),
-      import_react27.default.createElement("span", null, loadingText),
-      elapsedLabel ? import_react27.default.createElement(
-        "span",
-        { className: "ph-r-resultcard__meta" },
-        (result.provider ? providerLabel2(result.provider) + " \xB7 " : "") + elapsedLabel
-      ) : null
-    ) : null,
-    !result.loading && !value ? import_react27.default.createElement(
-      "div",
-      { className: "ph-r-resultcard__warn" },
-      t("reader.selection.quickUnavailable", { reason: firstText3(result.reason, t("reader.ai.reasonFallback")) }),
-      import_react27.default.createElement(
-        "div",
-        { className: "ph-r-resultcard__actions", style: { marginTop: 6, borderTop: "none", paddingTop: 0 } },
-        import_react27.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "refresh", onClick: props.onRetry }, t("reader.retry")),
-        props.onRefine ? import_react27.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine }, t("reader.selection.aiRefineCta")) : null
-      )
-    ) : null,
-    !result.loading && value ? import_react27.default.createElement("div", { className: "ph-r-resultcard__body" }, value) : null,
-    !result.loading && value ? import_react27.default.createElement(
-      "div",
-      { className: "ph-r-resultcard__actions" },
-      import_react27.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: props.onCopy }, t("reader.selection.copyTranslation")),
-      import_react27.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "translate", onClick: props.onReplace }, t("reader.selection.replace")),
-      import_react27.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: props.onSend }, t("reader.selection.sendToChat")),
-      props.onRefine && !result.aiRefine ? import_react27.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine, title: t("reader.selection.aiRefineHint") }, t("reader.selection.aiRefine")) : null
-    ) : null
-  );
-}
-function FigureHighlightOverlay(props) {
-  const t = props.t;
-  const focus = props.figureFocus;
-  const focusKey = focus && focus.figureId ? String(focus.figureId) + ":" + String(focus.seq || "") + ":" + String(props.page == null ? "" : props.page) : "";
-  const [expired, setExpired] = import_react27.default.useState(false);
-  import_react27.default.useEffect(() => {
-    setExpired(false);
-    if (focusKey === "") return void 0;
-    const timer2 = setTimeout(() => setExpired(true), 4600);
-    return () => clearTimeout(timer2);
-  }, [focusKey]);
-  if (!focus || !focus.bbox) return null;
-  if (expired) return null;
-  if (props.page != null && Number(focus.page) !== Number(props.page)) return null;
-  const bbox = focus.bbox || {};
-  let x = Number(bbox.x);
-  let y = Number(bbox.y);
-  let w = Number(bbox.w);
-  let h3 = Number(bbox.h);
-  if (![x, y, w, h3].every((value) => Number.isFinite(value))) return null;
-  const pageWidth = Number(bbox.pageWidth);
-  const pageHeight = Number(bbox.pageHeight);
-  if (Number.isFinite(pageWidth) && pageWidth > 0 && Number.isFinite(pageHeight) && pageHeight > 0 && (x > 1 || y > 1 || w > 1 || h3 > 1)) {
-    x /= pageWidth;
-    y /= pageHeight;
-    w /= pageWidth;
-    h3 /= pageHeight;
-  }
-  const style = {
-    left: (Math.max(0, Math.min(1, x)) * 100).toFixed(3) + "%",
-    top: (Math.max(0, Math.min(1, y)) * 100).toFixed(3) + "%",
-    width: (Math.max(1e-3, Math.min(1, w)) * 100).toFixed(3) + "%",
-    height: (Math.max(1e-3, Math.min(1, h3)) * 100).toFixed(3) + "%"
-  };
-  const label = focus.figureLabel ? t("reader.figure.highlightLabel", { label: focus.figureLabel }) : t("reader.figure.highlight");
-  return import_react27.default.createElement(
-    "div",
-    { className: "ph-r-fighl", style, "data-ph-figure-focus": String(focus.figureId || ""), "aria-hidden": "true" },
-    import_react27.default.createElement("span", { className: "ph-r-fighl__label" }, label)
-  );
-}
-function PageCanvas(props) {
-  const scrollRef = import_react27.default.useRef(null);
-  const layoutRef = import_react27.default.useRef([]);
-  const previousLayoutRef = import_react27.default.useRef(null);
-  const rafRef = import_react27.default.useRef(0);
-  const scrolledRef = import_react27.default.useRef(false);
-  const [scrollTop, setScrollTop] = import_react27.default.useState(0);
-  const [viewport, setViewport] = import_react27.default.useState({ width: 0, height: 0 });
-  const size = useElementSizeCompat(scrollRef);
-  import_react27.default.useEffect(() => {
-    setViewport({ width: size.width, height: size.height });
-  }, [size.width, size.height]);
-  const descriptors = usePageDescriptors(props.pages, props.total);
-  const baseWidth = import_react27.default.useMemo(() => {
-    if (viewport.width > 0) {
-      return clamp(viewport.width - CANVAS_SIDE_PADDING * 2, MIN_BASE_WIDTH, MAX_BASE_WIDTH);
-    }
-    return 640;
-  }, [viewport.width]);
-  const layout = import_react27.default.useMemo(() => {
-    const list = [];
-    let top = PAGE_TOP_PADDING;
-    for (const descriptor of descriptors) {
-      const pageWidth = baseWidth * props.zoom;
-      const pageHeight = pageWidth * (descriptor.height / descriptor.width);
-      list.push({ descriptor, width: pageWidth, height: pageHeight, top });
-      top += pageHeight + PAGE_GAP;
-    }
-    return list;
-  }, [baseWidth, descriptors, props.zoom]);
-  layoutRef.current = layout;
-  const contentHeight = layout.length > 0 ? layout[layout.length - 1].top + layout[layout.length - 1].height + PAGE_BOTTOM_PADDING : 0;
-  import_react27.default.useLayoutEffect(() => {
-    const element2 = scrollRef.current;
-    const previous = previousLayoutRef.current;
-    if (!element2 || !previous || previous.length === 0 || layout.length === 0) {
-      previousLayoutRef.current = layout;
-      return;
-    }
-    if (previous.length === layout.length) {
-      let anchorIndex = 0;
-      for (let index = 0; index < previous.length; index += 1) {
-        if (previous[index].top <= scrollTop + 8) anchorIndex = index;
-        else break;
-      }
-      const previousItem = previous[anchorIndex];
-      const nextItem = layout[anchorIndex];
-      if (previousItem && nextItem) {
-        const ratio = previousItem.height > 0 ? (scrollTop - previousItem.top) / previousItem.height : 0;
-        const nextTop = nextItem.top + ratio * nextItem.height;
-        if (Math.abs(nextTop - scrollTop) > 1) {
-          scrollElementTo(element2, nextTop, false);
-          setScrollTop(nextTop);
-        }
-      }
-    }
-    previousLayoutRef.current = layout;
-  }, [layout, scrollTop]);
-  import_react27.default.useEffect(() => {
-    const jump = props.jump;
-    if (!jump || !jump.page) return;
-    const element2 = scrollRef.current;
-    const index = layout.findIndex((item) => item.descriptor.page === jump.page);
-    if (!element2 || index < 0) return;
-    scrollElementTo(element2, layout[index].top, false);
-    setScrollTop(layout[index].top);
-    props.onPageChange(jump.page);
-  }, [props.jump && props.jump.seq]);
-  import_react27.default.useEffect(() => {
-    const focus = props.focus;
-    if (!focus || !focus.page || !focus.rect) return;
-    const element2 = scrollRef.current;
-    const index = layout.findIndex((item2) => item2.descriptor.page === focus.page);
-    if (!element2 || index < 0) return;
-    const item = layout[index];
-    scrollElementTo(element2, item.top + focus.rect.y * item.height - 140, !props.reducedMotion);
-  }, [props.focus && props.focus.seq]);
-  const handleScroll = import_react27.default.useCallback(() => {
-    const element2 = scrollRef.current;
-    if (!element2) return;
-    if (rafRef.current) return;
-    const run = () => {
-      rafRef.current = 0;
-      const currentTop = element2.scrollTop || 0;
-      setScrollTop(currentTop);
-      const collapsed = currentTop > 20;
-      if (collapsed !== scrolledRef.current) {
-        scrolledRef.current = collapsed;
-        if (props.onScrolledChange) props.onScrolledChange(collapsed);
-      }
-      const list = layoutRef.current;
-      if (list.length === 0) return;
-      const probe = currentTop + Math.max(120, (element2.clientHeight || 0) * 0.32);
-      let current = list[0].descriptor.page;
-      for (const item of list) {
-        if (item.top <= probe) current = item.descriptor.page;
-        else break;
-      }
-      if (current !== props.page) props.onPageChange(current);
-    };
-    if (typeof requestAnimationFrame === "function") rafRef.current = requestAnimationFrame(run);
-    else run();
-  }, [props]);
-  const visibleRange = import_react27.default.useMemo(() => {
-    if (layout.length === 0) return { start: 0, end: -1 };
-    const height = viewport.height > 0 ? viewport.height : 900;
-    const top = scrollTop - height * VIRTUAL_BUFFER;
-    const bottom = scrollTop + height * (VIRTUAL_BUFFER + 1);
-    let start = 0;
-    let end = layout.length - 1;
-    for (let index = 0; index < layout.length; index += 1) {
-      const item = layout[index];
-      if (item.top + item.height >= top) {
-        start = index;
-        break;
-      }
-    }
-    for (let index = start; index < layout.length; index += 1) {
-      const item = layout[index];
-      if (item.top > bottom) {
-        end = index - 1;
-        break;
-      }
-    }
-    const activeIndex = layout.findIndex((item) => item.descriptor.page === props.page);
-    if (activeIndex >= 0) {
-      start = Math.min(start, Math.max(0, activeIndex - 1));
-      end = Math.max(end, Math.min(layout.length - 1, activeIndex + 1));
-    }
-    return { start, end };
-  }, [layout, props.page, scrollTop, viewport.height]);
-  import_react27.default.useEffect(() => {
-    const list = layoutRef.current;
-    for (let index = visibleRange.start; index <= visibleRange.end; index += 1) {
-      const item = list[index];
-      if (!item) continue;
-      if (props.ensurePage) props.ensurePage(item.descriptor.page);
-      if (props.ensureLayer) props.ensureLayer(item.descriptor.page);
-    }
-  }, [props.ensureLayer, props.ensurePage, props.dataVersion, visibleRange]);
-  const annotationsByPage = useAnnotationsByPage(props.annotations);
-  const children = [];
-  for (let index = 0; index < layout.length; index += 1) {
-    const item = layout[index];
-    const descriptor = item.descriptor;
-    const visible = index >= visibleRange.start && index <= visibleRange.end;
-    if (!visible) {
-      children.push(
-        import_react27.default.createElement(
-          "div",
-          {
-            key: "ph-" + descriptor.page,
-            className: "ph-r-page__placeholder",
-            style: { width: item.width, height: item.height },
-            "aria-hidden": "true"
-          },
-          String(descriptor.page)
-        )
-      );
-      continue;
-    }
-    children.push(
-      import_react27.default.createElement(PageView, {
-        key: "ph-" + descriptor.page,
-        t: props.t,
-        paperId: props.paperId,
-        pageInfo: descriptor,
-        width: item.width,
-        height: item.height,
-        active: descriptor.page === props.page,
-        mode: props.mode,
-        pageDataEntry: props.getPageData ? props.getPageData(descriptor.page) : null,
-        layerEntry: props.getLayer ? props.getLayer(descriptor.page) : null,
-        annotations: annotationsByPage.get(descriptor.page) || EMPTY_LIST,
-        activeAnnotationId: props.activeAnnotationId,
-        selection: props.selection,
-        selectionResult: props.selectionResult,
-        popover: props.popover,
-        noteDraft: props.noteDraft,
-        search: props.search,
-        figureFocus: props.figureFocus,
-        reducedMotion: props.reducedMotion,
-        onSelection: props.actions.onSelection,
-        onSelectionAction: props.actions.onSelectionAction,
-        onAnnotationOpen: props.actions.onAnnotationOpen,
-        onAnnotationClose: props.actions.onAnnotationClose,
-        onUpdateAnnotation: props.actions.onUpdateAnnotation,
-        onDeleteAnnotation: props.actions.onDeleteAnnotation,
-        onCopyAnnotation: props.actions.onCopyAnnotation,
-        onCiteAnnotation: props.actions.onCiteAnnotation,
-        onAskAnnotation: props.actions.onAskAnnotation,
-        onExplainAnnotation: props.actions.onExplainAnnotation,
-        onQuickTranslateAnnotation: props.actions.onQuickTranslateAnnotation,
-        onAiTranslateAnnotation: props.actions.onAiTranslateAnnotation,
-        onCreateArea: props.actions.onCreateArea,
-        onNoteCreate: props.actions.onNoteCreate,
-        onNoteSave: props.actions.onNoteSave,
-        onNoteCancel: props.actions.onNoteCancel
-      })
-    );
-  }
-  return import_react27.default.createElement(
-    "div",
-    {
-      ref: scrollRef,
-      className: "ph-r-canvas ph-r-scroll",
-      onScroll: handleScroll,
-      "data-ph-scroll": "canvas"
-    },
-    import_react27.default.createElement(
-      "div",
-      { className: "ph-r-pages", style: { minHeight: contentHeight } },
-      children
-    )
-  );
-}
-function useElementSizeCompat(ref) {
-  const [size, setSize] = import_react27.default.useState({ width: 0, height: 0 });
-  import_react27.default.useEffect(() => {
-    const element2 = ref.current;
-    if (!element2) return void 0;
-    let frame2 = 0;
-    const measure = () => {
-      frame2 = 0;
-      const width = element2.clientWidth || 0;
-      const height = element2.clientHeight || 0;
-      setSize((previous) => previous.width === width && previous.height === height ? previous : { width, height });
-    };
-    const schedule2 = () => {
-      if (frame2) return;
-      frame2 = typeof requestAnimationFrame === "function" ? requestAnimationFrame(measure) : setTimeout(measure, 16);
-    };
-    measure();
-    let observer2 = null;
-    if (typeof ResizeObserver !== "undefined") {
-      observer2 = new ResizeObserver(schedule2);
-      observer2.observe(element2);
-    } else if (typeof window !== "undefined") {
-      window.addEventListener("resize", schedule2);
-    }
-    return () => {
-      if (frame2) {
-        if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame2);
-        else clearTimeout(frame2);
-      }
-      if (observer2) observer2.disconnect();
-      else if (typeof window !== "undefined") window.removeEventListener("resize", schedule2);
-    };
-  }, [ref]);
-  return size;
-}
-
-// src/surfaces/reader/toolbar.jsx
-var import_react28 = __toESM(require("react"), 1);
-function authorLine2(authors) {
-  const list = arrayOf3(authors);
-  const names = [];
-  for (const author of list) {
-    if (!author || typeof author !== "object") continue;
-    if (author.family) names.push([author.given, author.family].filter(Boolean).join(" "));
-    else if (author.literal) names.push(author.literal);
-    if (names.length === 3) break;
-  }
-  if (names.length === 0) return "";
-  return list.length > 3 ? names.join(", ") + " et al." : names.join(", ");
-}
-function displayTitle(paper, rt) {
-  if (!paper) return rt("reader.untitled");
-  return firstText3(paper.titleZh, paper.displayTitle, paper.title, rt("reader.untitled"));
-}
-function originalTitle(paper) {
-  if (!paper) return "";
-  const title2 = firstText3(paper.title);
-  const shown = firstText3(paper.titleZh, paper.displayTitle, paper.title);
-  return title2 && title2 !== shown ? title2 : "";
-}
-function ReaderToolbar(props) {
-  const rt = props.t;
-  const paper = props.paper;
-  const title2 = displayTitle(paper, rt);
-  const original = originalTitle(paper);
-  const authors = authorLine2(paper && paper.authors);
-  const total = Math.max(1, Math.round(num(props.total, 1)));
-  const page2 = Math.max(1, Math.min(total, Math.round(num(props.page, 1))));
-  const search = props.search || { open: false, query: "", hits: [], index: 0 };
-  const searchInputRef = import_react28.default.useRef(null);
-  const modeSlider = useSlidingThumb();
-  import_react28.default.useEffect(() => {
-    if (!search.open) return;
-    const timer2 = setTimeout(() => {
-      const element2 = searchInputRef.current;
-      if (element2 && typeof element2.focus === "function") element2.focus();
-    }, 30);
-    return () => clearTimeout(timer2);
-  }, [search.open]);
-  const commitPage = (raw) => {
-    const value = Math.round(num(raw, page2));
-    if (value < 1 || value > total) {
-      props.onPage(page2);
-      return;
-    }
-    if (value !== page2) props.onPage(value);
-  };
-  const metaParts = [];
-  if (authors) metaParts.push(authors);
-  if (paper && paper.year) metaParts.push(String(paper.year));
-  const venue = firstText3(paper && paper.venue, paper && paper.containerTitle);
-  if (venue) metaParts.push(venue);
-  if (paper && paper.pageCount) metaParts.push(rt("reader.pagesCount", { count: paper.pageCount }));
-  const modeItems = [
-    { id: "source", label: rt("reader.mode.source") },
-    { id: "compare", label: rt("reader.mode.compare") },
-    { id: "translation", label: rt("reader.mode.translation") }
-  ];
-  return import_react28.default.createElement(
-    "div",
-    { className: "ph-r-toolbar", role: "toolbar", "aria-label": rt("reader.mode.label") },
-    /* ---------------- identity row ---------------- */
-    import_react28.default.createElement(
-      "div",
-      { className: "ph-r-toolbar__row ph-r-toolbar__row--main" },
-      import_react28.default.createElement(
-        Btn,
-        {
-          className: "ph-r-toolbar__back",
-          size: "sm",
-          variant: "ghost",
-          icon: "arrowLeft",
-          onClick: props.onBack,
-          title: rt("reader.back")
-        },
-        rt("reader.back")
-      ),
-      import_react28.default.createElement(
-        "div",
-        { className: "ph-r-toolbar__titles" },
-        import_react28.default.createElement(
-          "div",
-          { className: "ph-r-toolbar__titleline" },
-          import_react28.default.createElement("h1", { className: "ph-r-toolbar__title", title: String(title2) }, title2),
-          import_react28.default.createElement("span", { className: "ph-r-toolbar__badge" }, rt("reader.pageOf", { page: page2, total }))
-        ),
-        import_react28.default.createElement(
-          "div",
-          { className: "ph-r-toolbar__meta", title: original ? original + (metaParts.length ? " \xB7 " + metaParts.join(" \xB7 ") : "") : metaParts.join(" \xB7 ") },
-          original ? import_react28.default.createElement("span", { style: { opacity: 0.85, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, original) : null,
-          original && metaParts.length ? import_react28.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, "\xB7") : null,
-          metaParts.length ? import_react28.default.createElement("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, metaParts.join(" \xB7 ")) : null
-        )
-      ),
-      import_react28.default.createElement(
-        "div",
-        { className: "ph-r-toolbar__actions" },
-        import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite") }, rt("reader.cite")),
-        import_react28.default.createElement(
-          "a",
-          {
-            className: "ph-r-btn ph-r-btn--ghost ph-r-btn--sm",
-            href: "/pappers-hall/pdf/" + encodeURIComponent(String(paper && paper.id || "")),
-            target: "_blank",
-            rel: "noopener noreferrer",
-            title: rt("reader.openPdf")
-          },
-          import_react28.default.createElement(Icon2, { name: "external", size: 14 }),
-          import_react28.default.createElement("span", { className: "ph-r-btn__label" }, rt("reader.openPdf"))
-        ),
-        import_react28.default.createElement(
-          Btn,
-          {
-            size: "sm",
-            variant: "soft",
-            icon: "note",
-            onClick: props.onToggleNotes,
-            title: rt("reader.notes.tab"),
-            active: props.sideOpen && props.sideTab === "notes"
-          },
-          rt("reader.notes.tab")
-        ),
-        import_react28.default.createElement(
-          Btn,
-          {
-            size: "sm",
-            variant: "soft",
-            icon: "sparkles",
-            onClick: props.onToggleAi,
-            title: rt("reader.ai"),
-            active: props.sideOpen && props.sideTab === "ai"
-          },
-          "AI"
-        ),
-        props.onOpenSettings ? import_react28.default.createElement(IconBtn, {
-          icon: "settings",
-          title: "\u8BBE\u7F6E",
-          "aria-label": "\u8BBE\u7F6E",
-          onClick: props.onOpenSettings
-        }) : null
-      )
-    ),
-    /* ---------------- tool row ---------------- */
-    import_react28.default.createElement(
-      "div",
-      { className: "ph-r-toolbar__row ph-r-toolbar__row--tools" },
-      import_react28.default.createElement(
-        "div",
-        { className: "ph-r-pager", role: "group", "aria-label": rt("reader.pageOf", { page: page2, total }) },
-        import_react28.default.createElement(IconBtn, {
-          icon: "chevronLeft",
-          title: rt("reader.prevPage"),
-          disabled: page2 <= 1 || props.loading,
-          onClick: () => props.onPage(Math.max(1, page2 - 1))
-        }),
-        import_react28.default.createElement("input", {
-          key: "page-input-" + page2,
-          className: "ph-r-pager__input",
-          type: "text",
-          inputMode: "numeric",
-          defaultValue: String(page2),
-          "aria-label": rt("reader.jumpPage"),
-          title: rt("reader.jumpPage"),
-          onKeyDown: (event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              commitPage(event.currentTarget.value);
-              event.currentTarget.blur();
-            }
-            if (event.key === "Escape") event.currentTarget.blur();
-          },
-          onBlur: (event) => commitPage(event.currentTarget.value)
-        }),
-        import_react28.default.createElement("span", { className: "ph-r-pager__total" }, "/ " + total),
-        import_react28.default.createElement(IconBtn, {
-          icon: "chevronRight",
-          title: rt("reader.nextPage"),
-          disabled: page2 >= total || props.loading,
-          onClick: () => props.onPage(Math.min(total, page2 + 1))
-        })
-      ),
-      import_react28.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
-      import_react28.default.createElement(
-        "div",
-        { className: "ph-r-zoom", role: "group", "aria-label": rt("reader.zoomValue", { percent: Math.round(props.zoom * 100) }) },
-        import_react28.default.createElement(IconBtn, { icon: "zoomOut", title: rt("reader.zoomOut"), onClick: () => props.onZoomStep(-1) }),
-        import_react28.default.createElement(
-          "button",
-          {
-            type: "button",
-            className: "ph-r-zoom__value",
-            title: rt("reader.zoomFit"),
-            onClick: props.onZoomFit
-          },
-          Math.round(num(props.zoom, 1) * 100) + "%"
-        ),
-        import_react28.default.createElement(IconBtn, { icon: "zoomIn", title: rt("reader.zoomIn"), onClick: () => props.onZoomStep(1) }),
-        import_react28.default.createElement(IconBtn, { icon: "fit", title: rt("reader.zoomFit"), onClick: props.onZoomFit })
-      ),
-      import_react28.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
-      import_react28.default.createElement(
-        "div",
-        {
-          className: cx("ph-r-segment", modeSlider.rect && "ph-r-segment--sliding"),
-          ref: modeSlider.ref,
-          role: "group",
-          "aria-label": rt("reader.mode.label")
-        },
-        import_react28.default.createElement(SlidingThumb, { rect: modeSlider.rect, inset: 2, popKey: props.mode }),
-        modeItems.map(
-          (item) => import_react28.default.createElement(
-            "button",
-            {
-              key: item.id,
-              type: "button",
-              "data-ph-active": props.mode === item.id ? "true" : void 0,
-              className: cx("ph-r-segment__item", props.mode === item.id && "ph-r-segment__item--active"),
-              onClick: () => props.onMode(item.id),
-              "aria-pressed": props.mode === item.id ? "true" : "false"
-            },
-            item.label
-          )
-        )
-      ),
-      import_react28.default.createElement("span", { className: "ph-r-toolbar__spacer" }),
-      search.open ? import_react28.default.createElement(
-        "div",
-        { className: "ph-r-find" },
-        import_react28.default.createElement(Icon2, { name: "search", size: 13, className: "ph-r-find__icon" }),
-        import_react28.default.createElement("input", {
-          ref: searchInputRef,
-          className: "ph-r-find__input",
-          type: "text",
-          value: search.query,
-          placeholder: rt("reader.search.placeholder"),
-          "aria-label": rt("reader.search.title"),
-          onChange: (event) => props.onSearchQuery(event.target.value),
-          onKeyDown: (event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              props.onSearchNext(event.shiftKey ? -1 : 1);
-            }
-            if (event.key === "Escape") {
-              event.preventDefault();
-              props.onSearchToggle(false);
-            }
-          }
-        }),
-        import_react28.default.createElement(
-          "span",
-          { className: cx("ph-r-find__count", search.query && search.hits.length === 0 && "ph-r-find__count--empty") },
-          !search.query ? "" : search.hits.length === 0 ? rt("reader.search.none") : rt("reader.search.count", { index: Math.min(search.index + 1, search.hits.length), total: search.hits.length })
-        ),
-        import_react28.default.createElement(IconBtn, { icon: "chevronUp", title: rt("reader.search.prev"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(-1) }),
-        import_react28.default.createElement(IconBtn, { icon: "chevronDown", title: rt("reader.search.next"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(1) }),
-        import_react28.default.createElement(IconBtn, { icon: "close", title: rt("reader.search.close"), onClick: () => props.onSearchToggle(false) })
-      ) : import_react28.default.createElement(IconBtn, { icon: "search", title: rt("reader.search"), onClick: () => props.onSearchToggle(true) }),
-      import_react28.default.createElement(IconBtn, {
-        icon: "sidePanel",
-        title: rt("reader.sidePanelToggle"),
-        active: props.sideOpen,
-        onClick: props.onToggleSide
-      })
-    )
-  );
-}
-
-// src/surfaces/reader/thumbnails.jsx
-var import_react29 = __toESM(require("react"), 1);
-var THUMB_INSET = 30;
-var OVERSCAN = 250;
-var FALLBACK_RAIL_WIDTH = 118;
-var DEFAULT_RATIO = 791 / 595;
-function offsetsOf(pages, total, railWidth) {
-  const thumbWidth = Math.max(60, railWidth - THUMB_INSET);
-  const list = Array.isArray(pages) && pages.length > 0 ? pages : null;
-  const count = list ? list.length : Math.max(1, Math.round(num(total, 1)));
-  const items2 = [];
-  let offset = 8;
-  for (let index = 0; index < count; index += 1) {
-    const descriptor = list ? list[index] || {} : {};
-    const page2 = Math.max(1, Math.round(num(descriptor.page, index + 1)));
-    const width = num(descriptor.width, 0) || 595;
-    const height = num(descriptor.height, 0) || 791;
-    const imageHeight = Math.round(thumbWidth * (height / width)) || Math.round(thumbWidth * DEFAULT_RATIO);
-    const itemHeight = imageHeight + 26;
-    const reportedUrl = typeof descriptor.imageUrl === "string" ? descriptor.imageUrl : "";
-    items2.push({ page: page2, offset, imageHeight, itemHeight, width: thumbWidth, imageUrl: reportedUrl });
-    offset += itemHeight;
-  }
-  return { items: items2, totalHeight: offset + 16, thumbWidth };
-}
-function Thumbnails(props) {
-  const t = props.t;
-  const scrollRef = import_react29.default.useRef(null);
-  const listRef = import_react29.default.useRef(null);
-  const [scrollTop, setScrollTop] = import_react29.default.useState(0);
-  const size = useElementSize(scrollRef);
-  const railWidth = size.width > 0 ? size.width : FALLBACK_RAIL_WIDTH;
-  const layout = import_react29.default.useMemo(() => offsetsOf(props.pages, props.total, railWidth), [props.pages, props.total, railWidth]);
-  const activeIndex = layout.items.findIndex((item) => item.page === props.page);
-  const visible = import_react29.default.useMemo(() => {
-    const height = size.height > 0 ? size.height : 900;
-    const top = scrollTop - OVERSCAN;
-    const bottom = scrollTop + height + OVERSCAN;
-    return layout.items.filter((item) => item.offset + item.itemHeight >= top && item.offset <= bottom);
-  }, [layout.items, scrollTop, size.height]);
-  const handleScroll = import_react29.default.useCallback(() => {
-    const element2 = scrollRef.current;
-    if (!element2) return;
-    setScrollTop(element2.scrollTop || 0);
-  }, []);
-  import_react29.default.useEffect(() => {
-    const element2 = scrollRef.current;
-    const item = layout.items[activeIndex];
-    if (!element2 || !item) return;
-    const height = element2.clientHeight || 0;
-    if (height <= 0) return;
-    const top = element2.scrollTop || 0;
-    if (item.offset < top + 8) element2.scrollTop = Math.max(0, item.offset - 8);
-    else if (item.offset + item.itemHeight > top + height - 8) element2.scrollTop = item.offset + item.itemHeight - height + 8;
-  }, [activeIndex, layout.items, props.page]);
-  return import_react29.default.createElement(
-    "div",
-    {
-      ref: scrollRef,
-      className: "ph-r-rail ph-r-scroll",
-      onScroll: handleScroll,
-      role: "navigation",
-      "aria-label": t("reader.thumbnails"),
-      "data-ph-scroll": "rail"
-    },
-    import_react29.default.createElement(
-      "div",
-      { ref: listRef, className: "ph-r-rail__inner", style: { height: layout.totalHeight } },
-      activeIndex >= 0 ? import_react29.default.createElement("span", {
-        className: "ph-r-rail__indicator",
-        style: {
-          height: 30,
-          transform: "translateY(" + (layout.items[activeIndex].offset + 8) + "px)"
-        },
-        "aria-hidden": "true"
-      }) : null,
-      visible.map((item) => {
-        const active = item.page === props.page;
-        return import_react29.default.createElement(
-          "button",
-          {
-            key: item.page,
-            type: "button",
-            className: cx("ph-r-rail__item", active && "ph-r-rail__item--active"),
-            style: { position: "absolute", left: 0, right: 0, top: item.offset },
-            onClick: () => props.onSelect(item.page),
-            "aria-label": t("reader.thumbPage", { page: item.page }),
-            "aria-current": active ? "page" : void 0,
-            "data-ph-thumb": String(item.page)
-          },
-          import_react29.default.createElement(
-            "span",
-            { className: "ph-r-rail__thumb", style: { height: item.imageHeight } },
-            import_react29.default.createElement(
-              "span",
-              {
-                style: {
-                  display: "block",
-                  width: "100%",
-                  height: "100%",
-                  background: "color-mix(in srgb, var(--dsw-alias-label-primary) 7%, #fff)"
-                },
-                "aria-hidden": "true"
-              }
-            ),
-            import_react29.default.createElement("img", {
-              src: item.imageUrl || pageImageUrl(props.paperId, item.page, 220),
-              alt: "",
-              loading: "lazy",
-              decoding: "async",
-              draggable: false,
-              style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" },
-              onLoad: (event) => {
-                const image = event.currentTarget;
-                if (image && image.parentElement) image.parentElement.style.background = "transparent";
-              },
-              onError: (event) => {
-                const image = event.currentTarget;
-                if (image) image.style.display = "none";
-              }
-            })
-          ),
-          import_react29.default.createElement(
-            "span",
-            { className: "ph-r-rail__num" },
-            String(item.page)
-          )
-        );
-      }),
-      layout.items.length === 0 ? import_react29.default.createElement(Icon2, { name: "pages", size: 20 }) : null
-    )
-  );
-}
-
-// src/surfaces/reader/shell.jsx
-var SIDE_TABS = ["outline", "annotations", "notes", "ai"];
-var TOOLS_TIP_FLAG = "reader.tools.tip.v1";
-var NO_ANNOTATIONS = [];
-var DEFAULT_COLOR = "yellow";
-function useReaderNotices(onToast) {
-  const [toasts, setToasts] = import_react30.default.useState([]);
-  const timers = import_react30.default.useRef(/* @__PURE__ */ new Map());
-  const external = typeof onToast === "function";
-  import_react30.default.useEffect(() => {
-    const pending = timers.current;
-    return () => {
-      pending.forEach((timer2) => clearTimeout(timer2));
-      pending.clear();
-    };
-  }, []);
-  const notify2 = import_react30.default.useCallback(
-    (kind, text2, action) => {
-      const message = String(text2 || "");
-      if (!message) return;
-      if (external && !action) {
-        try {
-          onToast(kind || "info", message);
-        } catch {
-        }
-        return;
-      }
-      const id = randomId();
-      setToasts(
-        (previous) => previous.concat([{
-          id,
-          kind: kind || "info",
-          text: message,
-          action: action && typeof action.onClick === "function" ? { label: String(action.label || ""), onClick: action.onClick } : null
-        }]).slice(-4)
-      );
-      const ttl = action ? 9e3 : 4800;
-      const timer2 = setTimeout(() => {
-        setToasts((previous) => previous.filter((toast) => toast.id !== id));
-        timers.current.delete(id);
-      }, ttl);
-      timers.current.set(id, timer2);
-    },
-    [external, onToast]
-  );
-  const dismiss2 = import_react30.default.useCallback((id) => {
-    setToasts((previous) => previous.filter((toast) => toast.id !== id));
-  }, []);
-  return { notify: notify2, toasts, dismiss: dismiss2, external };
-}
-function StateScreen(props) {
-  return import_react30.default.createElement(
-    "div",
-    { className: "ph-r-reader" },
-    import_react30.default.createElement(
-      "div",
-      { className: "ph-r-toolbar" },
-      import_react30.default.createElement(
-        "div",
-        { className: "ph-r-toolbar__row ph-r-toolbar__row--main" },
-        import_react30.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack }, props.t("reader.back"))
-      )
-    ),
-    import_react30.default.createElement(
-      "div",
-      { style: { flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 } },
-      props.loading ? import_react30.default.createElement(
-        "div",
-        { style: { display: "flex", alignItems: "center", gap: 10, color: "var(--dsw-alias-label-secondary)" }, role: "status" },
-        import_react30.default.createElement(Spinner2, { size: 16 }),
-        import_react30.default.createElement("span", null, props.t("reader.loading"))
-      ) : import_react30.default.createElement(Empty, {
-        icon: props.icon || "warning",
-        tone: props.tone,
-        title: props.title,
-        desc: props.desc,
-        action: props.retry ? import_react30.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: props.retry }, props.t("reader.retry")) : null
-      })
-    )
-  );
-}
-function useNavigationSnapshot(navigation2) {
-  const subscribe2 = import_react30.default.useCallback(
-    (listener) => navigation2 && typeof navigation2.subscribe === "function" ? navigation2.subscribe(listener) : () => {
-    },
-    [navigation2]
-  );
-  const getSnapshot2 = import_react30.default.useCallback(
-    () => navigation2 && typeof navigation2.getSnapshot === "function" ? navigation2.getSnapshot() : null,
-    [navigation2]
-  );
-  return import_react30.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
-}
-function annotationRequest(base, draft) {
-  const rects = arrayOf3(draft.rects).map(normalizeRect).filter(Boolean);
-  const params = {
-    paperId: base.paperId,
-    page: Math.max(1, Math.round(num(draft.page, base.page, 1))),
-    kind: draft.kind || "highlight",
-    rects,
-    color: draft.color || DEFAULT_COLOR,
-    origin: draft.origin || "user_note",
-    operationId: newOperationId("annot")
-  };
-  if (base.versionId) params.versionId = base.versionId;
-  const quote = firstText3(draft.quote);
-  const comment = firstText3(draft.comment);
-  if (quote) params.quote = quote;
-  if (comment) params.comment = comment;
-  if (params.kind === "note" && rects.length === 0) return params;
-  return params;
-}
-var ReaderBoundary = class extends import_react30.default.Component {
-  constructor(props) {
-    super(props);
-    this.state = { error: null, epoch: 0 };
-    this.retry = this.retry.bind(this);
-  }
-  static getDerivedStateFromError(error) {
-    return { error };
-  }
-  componentDidCatch(error, info) {
-    console.error("[pappers-hall] reader crashed", error, info);
-  }
-  retry() {
-    this.setState((previous) => ({ error: null, epoch: previous.epoch + 1 }));
-  }
-  render() {
-    if (this.state.error) {
-      const rt = this.props.t;
-      return import_react30.default.createElement(StateScreen, {
-        t: rt,
-        icon: "warning",
-        tone: "error",
-        title: rt("reader.error.title"),
-        desc: rt("reader.error.desc", { message: describeError2(this.state.error) }),
-        retry: this.retry,
-        onBack: this.props.onBack
-      });
-    }
-    return this.props.render("reader-" + this.state.epoch);
-  }
-};
-function ReaderShell(props) {
-  const rt = import_react30.default.useMemo(() => buildReaderT(props.t), [props.t]);
-  return import_react30.default.createElement(ReaderBoundary, {
-    t: rt,
-    onBack: props.onBack,
-    render: (key) => import_react30.default.createElement(ReaderShellInner, Object.assign({}, props, { key }))
-  });
-}
-function ReaderShellInner(props) {
-  const rt = import_react30.default.useMemo(() => buildReaderT(props.t), [props.t]);
-  const trSlider = useSlidingThumb();
-  const releaseStyles = import_react30.default.useMemo(() => ensureReaderStyles(), []);
-  import_react30.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  const apiCall = import_react30.default.useMemo(() => createApiCaller(props.api), [props.api]);
-  const reducedMotion = usePrefersReducedMotion();
-  const notices = useReaderNotices(props.onToast);
-  const notify2 = notices.notify;
-  const undoApi = useReaderUndo(props.undo);
-  const translationPreference = useTranslationPreference(props.translation, apiCall);
-  const preferredProvider = translationPreference.provider;
-  const notifyUndo = import_react30.default.useCallback(
-    (kind, text2) => {
-      notify2(kind, text2, {
-        label: rt("reader.undo.undo"),
-        onClick: () => {
-          Promise.resolve(undoApi.undo()).then((entry) => {
-            if (entry) notify2("info", rt("reader.undo.done", { label: entry.label }));
-          }).catch((error) => notify2("error", rt("reader.undo.failed", { message: describeError2(error) })));
-        }
-      });
-    },
-    [notify2, rt, undoApi]
-  );
-  const paperId = firstText3(props.paperId);
-  const openState = useAsync(
-    (signal) => paperId ? apiCall("reader.open", { id: paperId }, { signal }) : Promise.resolve(null),
-    [paperId],
-    { enabled: Boolean(paperId) }
-  );
-  const detail = openState.data || null;
-  const paper = detail && detail.paper || props.paper || null;
-  const versionId = firstText3(detail && detail.version && detail.version.id);
-  const pages = import_react30.default.useMemo(() => arrayOf3(detail && detail.pages), [detail]);
-  const total = import_react30.default.useMemo(() => {
-    const count = Math.round(num(pages.length > 0 ? pages.length : paper && paper.pageCount, 1));
-    return Math.max(1, count);
-  }, [pages, paper]);
-  const [figureFocus, setFigureFocus] = import_react30.default.useState(null);
-  const figureFocusTimer = import_react30.default.useRef(null);
-  const [page2, setPage] = import_react30.default.useState(() => {
-    const explicit = Math.round(num(props.initialPage, 0));
-    if (explicit > 0) return explicit;
-    const restored = props.paperId ? readReadingPosition(props.paperId) : 0;
-    return restored > 0 ? restored : 1;
-  });
-  const jumpSeq = import_react30.default.useRef(0);
-  const [jump, setJump] = import_react30.default.useState(null);
-  const pageRef = import_react30.default.useRef(page2);
-  pageRef.current = page2;
-  const totalRef = import_react30.default.useRef(total);
-  totalRef.current = total;
-  const goToPage = import_react30.default.useCallback((target, options) => {
-    const next = clamp(Math.round(num(target, 1)), 1, totalRef.current);
-    setPage(next);
-    jumpSeq.current += 1;
-    setJump({ page: next, seq: jumpSeq.current, smooth: !(options && options.instant) });
-  }, []);
-  const [zoom, setZoom] = import_react30.default.useState(1);
-  const zoomStep = import_react30.default.useCallback((direction) => {
-    setZoom((previous) => {
-      const next = Math.round((previous + direction * ZOOM_STEP) * 100) / 100;
-      return clamp(next, ZOOM_MIN, ZOOM_MAX);
-    });
-  }, []);
-  const zoomFit = import_react30.default.useCallback(() => setZoom(1), []);
-  const [mode, setMode] = import_react30.default.useState("source");
-  const changeMode = import_react30.default.useCallback((next) => {
-    setMode(next);
-  }, []);
-  const [tool, setTool] = import_react30.default.useState("select");
-  const changeTool = import_react30.default.useCallback(
-    (next) => {
-      setTool(next);
-      if (next === "area") notify2("info", rt("reader.areaModeActive"));
-      if (next === "note") notify2("info", rt("reader.noteModeActive"));
-      if (next === "select") clearNativeSelection();
-    },
-    [notify2, rt]
-  );
-  const [sideOpen, setSideOpen] = import_react30.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1150);
-  const [sideTab, setSideTab] = import_react30.default.useState(() => {
-    const requested = firstText3(props.initialTab);
-    return SIDE_TABS.indexOf(requested) >= 0 ? requested : "outline";
-  });
-  const [penColor, setPenColorState] = import_react30.default.useState(DEFAULT_COLOR);
-  const setPenColor = import_react30.default.useCallback((color) => {
-    const value = firstText3(color, DEFAULT_COLOR);
-    lastColor.current = value;
-    setPenColorState(value);
-  }, []);
-  const [toolsTip, setToolsTip] = import_react30.default.useState(() => !readFlag(TOOLS_TIP_FLAG));
-  const dismissToolsTip = import_react30.default.useCallback(() => {
-    writeFlag(TOOLS_TIP_FLAG, true);
-    setToolsTip(false);
-  }, []);
-  const showToolsTip = import_react30.default.useCallback(() => setToolsTip(true), []);
-  const openSide = import_react30.default.useCallback((tab) => {
-    setSideOpen(true);
-    if (tab) setSideTab(tab);
-  }, []);
-  const toggleSide = import_react30.default.useCallback(() => setSideOpen((value) => !value), []);
-  const [scrolled, setScrolled] = import_react30.default.useState(false);
-  const handleScrolledChange = import_react30.default.useCallback((value) => setScrolled(Boolean(value)), []);
-  const pageCache = import_react30.default.useRef(/* @__PURE__ */ new Map());
-  const layerCache = import_react30.default.useRef(/* @__PURE__ */ new Map());
-  const [dataVersion, setDataVersion] = import_react30.default.useState(0);
-  const bumpData = import_react30.default.useCallback(() => setDataVersion((value) => value + 1), []);
-  const getPageData = import_react30.default.useCallback(
-    (pageNo) => {
-      const entry = pageCache.current.get(pageNo);
-      return entry && entry.paperId === paperId ? entry : null;
-    },
-    [paperId]
-  );
-  const getLayer = import_react30.default.useCallback(
-    (pageNo) => {
-      const entry = layerCache.current.get(pageNo);
-      return entry && entry.paperId === paperId ? entry : null;
-    },
-    [paperId]
-  );
-  const structureRefreshes = import_react30.default.useRef(/* @__PURE__ */ new Map());
-  const ensurePage = import_react30.default.useCallback(
-    (pageNo) => {
-      if (!paperId || !pageNo) return;
-      const existing = pageCache.current.get(pageNo);
-      if (existing && existing.paperId === paperId) return;
-      pageCache.current.set(pageNo, { paperId, status: "loading" });
-      bumpData();
-      apiCall("reader.page", { id: paperId, page: pageNo }).then((data) => {
-        pageCache.current.set(pageNo, { paperId, status: "ready", data });
-        bumpData();
-        if (data && data.structureState === "pending") {
-          const attempts = structureRefreshes.current.get(pageNo) || 0;
-          if (attempts < 2) {
-            structureRefreshes.current.set(pageNo, attempts + 1);
-            setTimeout(() => {
-              const entry = pageCache.current.get(pageNo);
-              if (!entry || entry.paperId !== paperId) return;
-              pageCache.current.delete(pageNo);
-              ensurePageRef.current(pageNo);
-            }, 3500);
-          }
-        }
-      }).catch((error) => {
-        pageCache.current.set(pageNo, { paperId, status: "error", error });
-        bumpData();
-      });
-    },
-    [apiCall, bumpData, paperId]
-  );
-  const ensurePageRef = import_react30.default.useRef(ensurePage);
-  ensurePageRef.current = ensurePage;
-  const ensureLayer = import_react30.default.useCallback(
-    (pageNo) => {
-      if (!paperId || !pageNo) return;
-      const existing = layerCache.current.get(pageNo);
-      if (existing && existing.paperId === paperId) return;
-      layerCache.current.set(pageNo, { paperId, status: "loading" });
-      bumpData();
-      apiCall("reader.layer", { id: paperId, page: pageNo }).then((data) => {
-        layerCache.current.set(pageNo, { paperId, status: "ready", data });
-        bumpData();
-      }).catch((error) => {
-        layerCache.current.set(pageNo, { paperId, status: "error", error });
-        bumpData();
-      });
-    },
-    [apiCall, bumpData, paperId]
-  );
-  const retryPage = import_react30.default.useCallback(
-    (pageNo) => {
-      pageCache.current.delete(pageNo);
-      ensurePage(pageNo);
-    },
-    [ensurePage]
-  );
-  const retryLayer = import_react30.default.useCallback(
-    (pageNo) => {
-      layerCache.current.delete(pageNo);
-      ensureLayer(pageNo);
-    },
-    [ensureLayer]
-  );
-  const outlineState = useAsync(
-    (signal) => paperId ? apiCall("reader.outline", { id: paperId }, { signal }) : Promise.resolve({ items: [] }),
-    [paperId],
-    { enabled: Boolean(paperId) }
-  );
-  const outlineItems = import_react30.default.useMemo(() => arrayOf3(outlineState.data && outlineState.data.items), [outlineState.data]);
-  const [annotationReload, setAnnotationReload] = import_react30.default.useState(0);
-  const annotationsState = useAsync(
-    (signal) => paperId ? apiCall("annotations.list", versionId ? { paperId, versionId } : { paperId }, { signal }) : Promise.resolve([]),
-    [paperId, versionId, annotationReload],
-    { enabled: Boolean(paperId) }
-  );
-  const [annotations, setAnnotations] = import_react30.default.useState(NO_ANNOTATIONS);
-  import_react30.default.useEffect(() => {
-    if (annotationsState.status === "ready") setAnnotations(normalizeAnnotations(annotationsState.data));
-  }, [annotationsState.status, annotationsState.data]);
-  const lastColor = import_react30.default.useRef(DEFAULT_COLOR);
-  const intentSeq = import_react30.default.useRef(0);
-  const [annotationIntent, setAnnotationIntent] = import_react30.default.useState(() => {
-    const initial = firstText3(props.annotationId);
-    if (!initial) return null;
-    intentSeq.current += 1;
-    return { id: initial, seq: intentSeq.current };
-  });
-  const createAnnotation = import_react30.default.useCallback(
-    (draft) => {
-      const params = annotationRequest({ paperId, versionId, page: pageRef.current }, draft);
-      const optimistic = normalizeAnnotation(
-        Object.assign({}, params, {
-          id: "tmp-" + randomId(),
-          createdAt: (/* @__PURE__ */ new Date()).toISOString(),
-          updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-          revision: 0,
-          state: "active",
-          pending: true,
-          comment: firstText3(draft.comment),
-          quote: firstText3(draft.quote)
-        })
-      );
-      if (!optimistic) return Promise.reject(makeApiError("invalid", "invalid annotation"));
-      setAnnotations((previous) => previous.concat([optimistic]));
-      let promise;
-      try {
-        promise = apiCall("annotations.create", params);
-      } catch (error) {
-        promise = Promise.reject(error);
-      }
-      return Promise.resolve(promise).then((result) => {
-        const saved = normalizeAnnotation(result && result.annotation ? result.annotation : result);
-        if (!saved) throw makeApiError("internal", "empty annotation response");
-        setAnnotations((previous) => previous.map((annotation) => annotation.id === optimistic.id ? saved : annotation));
-        if (saved.color) lastColor.current = saved.color;
-        let liveId = saved.id;
-        undoApi.push({
-          label: rt("reader.undo.created"),
-          undo: async () => {
-            try {
-              await apiCall("annotations.delete", { id: liveId });
-            } catch (error) {
-              if (error && error.code === "not_found") return;
-              throw error;
-            }
-            setAnnotations((previous) => previous.filter((annotation) => annotation.id !== liveId));
-          },
-          redo: async () => {
-            const recreated = normalizeAnnotation(
-              await apiCall("annotations.create", params).then((res) => res && res.annotation ? res.annotation : res)
-            );
-            if (!recreated) throw makeApiError("internal", "empty annotation response");
-            liveId = recreated.id;
-            setAnnotations((previous) => previous.concat([recreated]));
-          }
-        });
-        return saved;
-      }).catch((error) => {
-        setAnnotations((previous) => previous.filter((annotation) => annotation.id !== optimistic.id));
-        throw error;
-      });
-    },
-    [apiCall, paperId, versionId]
-  );
-  const updateAnnotation = import_react30.default.useCallback(
-    (annotation, patch) => {
-      const previous = annotation;
-      setAnnotations(
-        (list) => list.map((item) => item.id === previous.id ? Object.assign({}, item, patch, { pending: true }) : item)
-      );
-      let promise;
-      try {
-        promise = apiCall("annotations.update", Object.assign({ id: previous.id, expectedRevision: previous.revision }, patch));
-      } catch (error) {
-        promise = Promise.reject(error);
-      }
-      return Promise.resolve(promise).then((result) => {
-        const saved = normalizeAnnotation(result && result.annotation ? result.annotation : result);
-        setAnnotations(
-          (list) => list.map(
-            (item) => item.id === previous.id ? saved || Object.assign({}, item, patch, { pending: false, revision: previous.revision + 1 }) : item
-          )
-        );
-        const inverse = {};
-        Object.keys(patch || {}).forEach((key) => {
-          if (key === "color") inverse.color = previous.color;
-          else if (key === "comment") inverse.comment = previous.comment;
-          else if (key === "quote") inverse.quote = previous.quote;
-        });
-        if (Object.keys(inverse).length > 0) {
-          const applyPatch = async (values) => {
-            const result2 = await apiCall("annotations.update", Object.assign({ id: previous.id }, values));
-            const restored = normalizeAnnotation(result2 && result2.annotation ? result2.annotation : result2);
-            setAnnotations((list) => list.map((item) => item.id === previous.id ? restored || Object.assign({}, item, values) : item));
-          };
-          undoApi.push({
-            label: rt("reader.undo.updated"),
-            undo: () => applyPatch(inverse),
-            redo: () => applyPatch(patch)
-          });
-        }
-        return saved;
-      }).catch((error) => {
-        setAnnotations((list) => list.map((item) => item.id === previous.id ? previous : item));
-        notify2("error", rt("reader.annot.failed", { message: describeError2(error) }));
-        throw error;
-      });
-    },
-    [apiCall, notify2, rt]
-  );
-  const deleteAnnotation = import_react30.default.useCallback(
-    (annotation) => {
-      let index = -1;
-      setAnnotations((list) => {
-        index = list.findIndex((item) => item.id === annotation.id);
-        return list.filter((item) => item.id !== annotation.id);
-      });
-      let promise;
-      try {
-        promise = apiCall("annotations.delete", { id: annotation.id });
-      } catch (error) {
-        promise = Promise.reject(error);
-      }
-      return Promise.resolve(promise).then(() => {
-        let liveId = annotation.id;
-        const recreatePayload = {
-          paperId,
-          page: annotation.page,
-          kind: annotation.kind,
-          rects: annotation.rects,
-          quote: annotation.quote,
-          comment: annotation.comment,
-          color: annotation.color,
-          origin: annotation.origin
-        };
-        if (versionId) recreatePayload.versionId = versionId;
-        undoApi.push({
-          label: rt("reader.undo.deleted"),
-          undo: async () => {
-            const recreated = normalizeAnnotation(
-              await apiCall("annotations.create", recreatePayload).then((res) => res && res.annotation ? res.annotation : res)
-            );
-            if (!recreated) throw makeApiError("internal", "empty annotation response");
-            liveId = recreated.id;
-            setAnnotations((list) => list.concat([recreated]));
-          },
-          redo: async () => {
-            try {
-              await apiCall("annotations.delete", { id: liveId });
-            } catch (error) {
-              if (!(error && error.code === "not_found")) throw error;
-            }
-            setAnnotations((list) => list.filter((item) => item.id !== liveId));
-          }
-        });
-        notifyUndo("success", rt("reader.annot.deleted"));
-      }).catch((error) => {
-        setAnnotations((list) => {
-          const restored = list.slice();
-          restored.splice(index >= 0 ? index : restored.length, 0, annotation);
-          return restored;
-        });
-        notify2("error", rt("reader.annot.failed", { message: describeError2(error) }));
-        throw error;
-      });
-    },
-    [apiCall, notify2, rt]
-  );
-  const [popover, setPopover] = import_react30.default.useState(null);
-  const popoverAnnotation = import_react30.default.useMemo(() => {
-    if (!popover) return null;
-    const found = annotations.find((annotation) => annotation.id === popover.id);
-    return found || null;
-  }, [annotations, popover]);
-  const popoverProp = import_react30.default.useMemo(() => {
-    if (!popoverAnnotation || !popover) return null;
-    return { annotation: popoverAnnotation, anchor: popover.anchor, autoFocus: Boolean(popover.autoFocus) };
-  }, [popoverAnnotation, popover]);
-  const activeAnnotationId = popoverAnnotation ? popoverAnnotation.id : null;
-  import_react30.default.useEffect(() => {
-    if (!annotationIntent) return;
-    if (annotationsState.status === "error") {
-      setAnnotationIntent(null);
-      return;
-    }
-    if (annotationsState.status !== "ready") return;
-    const target = annotations.find((annotation) => annotation.id === annotationIntent.id);
-    if (!target) {
-      if (annotations.length > 0) setAnnotationIntent(null);
-      return;
-    }
-    setAnnotationIntent(null);
-    if (target.page !== pageRef.current) goToPage(target.page);
-    setPopover({ id: target.id, anchor: target.rects[0] || { x: 0.5, y: 0.2, w: 0, h: 0 }, autoFocus: false });
-  }, [annotations, annotationIntent, annotationsState.status, goToPage]);
-  const navigation2 = props.navigation;
-  const navSnapshot = useNavigationSnapshot(navigation2);
-  const navConsumed = import_react30.default.useRef(0);
-  import_react30.default.useEffect(() => {
-    if (!navigation2 || !navSnapshot || !navSnapshot.seq) return;
-    if (navConsumed.current === navSnapshot.seq) return;
-    const route = navSnapshot.route || {};
-    if (route.view !== "reader" || route.paperId !== paperId) return;
-    navConsumed.current = navSnapshot.seq;
-    let intent = null;
-    try {
-      intent = typeof navigation2.consumeIntent === "function" ? navigation2.consumeIntent() : null;
-    } catch (error) {
-      intent = null;
-    }
-    const target = intent || route;
-    if (!target) return;
-    if (target.page && Math.round(num(target.page, 1)) !== pageRef.current) {
-      goToPage(target.page);
-    }
-    if (target.annotationId) {
-      intentSeq.current += 1;
-      setAnnotationIntent({ id: String(target.annotationId), seq: intentSeq.current });
-    }
-    if (target.kind === "figure" && target.figureId) {
-      const figurePage = Math.max(1, Math.round(num(target.page, pageRef.current)));
-      setFigureFocus({
-        figureId: String(target.figureId),
-        page: figurePage,
-        bbox: target.bbox || null,
-        figureLabel: target.figureLabel || target.label || "",
-        seq: Date.now()
-      });
-      if (figureFocusTimer.current) clearTimeout(figureFocusTimer.current);
-      figureFocusTimer.current = setTimeout(() => setFigureFocus(null), 4600);
-    }
-  }, [goToPage, navSnapshot, navigation2, notify2, paperId, rt]);
-  import_react30.default.useEffect(() => () => {
-    if (figureFocusTimer.current) clearTimeout(figureFocusTimer.current);
-  }, []);
-  import_react30.default.useEffect(() => {
-    if (!figureFocus) return;
-    if (Math.round(num(page2, 1)) !== figureFocus.page) setFigureFocus(null);
-  }, [page2, figureFocus]);
-  const openAnnotation = import_react30.default.useCallback((annotation, anchor) => {
-    setPopover({ id: annotation.id, anchor, autoFocus: false });
-  }, []);
-  const closePopover = import_react30.default.useCallback(() => setPopover(null), []);
-  const [selection, setSelection] = import_react30.default.useState(null);
-  const [selectionResult, setSelectionResult] = import_react30.default.useState(null);
-  const handleSelection = import_react30.default.useCallback((next) => {
-    setSelection(next);
-    if (!next) setSelectionResult(null);
-  }, []);
-  const clearSelection = import_react30.default.useCallback(() => {
-    setSelection(null);
-    setSelectionResult(null);
-    clearNativeSelection();
-  }, []);
-  const [aiRequest, setAiRequest] = import_react30.default.useState(null);
-  const aiSeq = import_react30.default.useRef(0);
-  const askAi = import_react30.default.useCallback((request2) => {
-    aiSeq.current += 1;
-    setAiRequest(Object.assign({}, request2, { seq: aiSeq.current }));
-    setSideOpen(true);
-    setSideTab("ai");
-  }, []);
-  const commitMaterials = import_react30.default.useCallback(
-    async (materials) => {
-      const list = arrayOf3(materials).filter((material) => material && material.id).map((material) => {
-        const item = { kind: material.kind || "paper", id: String(material.id) };
-        if (material.page) item.page = Math.max(1, Math.round(num(material.page, 1)));
-        return item;
-      });
-      if (list.length === 0) throw makeApiError("invalid", "no materials selected");
-      const params = { items: list, operationId: newOperationId("refs") };
-      if (props.sessionId) params.sessionId = props.sessionId;
-      const result = await apiCall("references.commit", params);
-      let bundleId = firstText3(result && result.bundleId, result && result.bundle && result.bundle.id);
-      if (props.pending && typeof props.pending.add === "function") {
-        try {
-          const added = props.pending.add(result, arrayOf3(materials));
-          bundleId = bundleId || firstText3(added && added.bundleId, added && added.id);
-        } catch (error) {
-          console.warn("[pappers-hall] pending store rejected the bundle", error);
-        }
-      }
-      if (bundleId && props.pending && typeof props.pending.remove === "function") {
-        undoApi.push({
-          label: rt("reader.undo.cited"),
-          undo: async () => {
-            props.pending.remove(bundleId);
-          },
-          redo: async () => {
-            props.pending.add(result, arrayOf3(materials));
-          }
-        });
-      }
-      notifyUndo("success", rt("reader.toast.cited"));
-      return result;
-    },
-    [apiCall, notify2, props.pending, props.sessionId, rt]
-  );
-  const citePaperPage = import_react30.default.useCallback(() => {
-    const title2 = firstText3(paper && paper.titleZh, paper && paper.title);
-    commitMaterials([{ kind: "paper", id: paperId, page: page2, title: title2 }]).catch((error) => {
-      notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) }));
-    });
-  }, [commitMaterials, notify2, page2, paper, paperId, rt]);
-  const citeAnnotation = import_react30.default.useCallback(
-    (annotation) => {
-      commitMaterials([
-        {
-          kind: "annotation",
-          id: annotation.id,
-          page: annotation.page,
-          title: firstText3(annotation.quote, annotation.comment)
-        }
-      ]).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
-    },
-    [commitMaterials, notify2, rt]
-  );
-  const citeAiAnswer = import_react30.default.useCallback(
-    (message) => {
-      const materials = [{ kind: "paper", id: paperId, page: page2, title: firstText3(paper && paper.titleZh, paper && paper.title) }];
-      for (const source of arrayOf3(message && message.sources)) {
-        if (source && source.kind === "figure" && source.figureId) {
-          materials.push({ kind: "figure", id: String(source.figureId), page: num(source.page, page2), title: firstText3(source.label) });
-        }
-      }
-      commitMaterials(materials).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
-    },
-    [commitMaterials, notify2, page2, paper, paperId, rt]
-  );
-  const TRANSLATABLE_ROLES2 = ["body", "heading", "caption"];
-  const [translations, setTranslations] = import_react30.default.useState({});
-  const translationSequence = import_react30.default.useRef(0);
-  const translatableBlocksFor = import_react30.default.useCallback(
-    (pageNo) => {
-      const entry = getPageData(pageNo);
-      if (!entry || entry.status !== "ready" || !entry.data) return [];
-      return arrayOf3(entry.data.blocks).filter(
-        (block) => block && block.id != null && typeof block.text === "string" && block.text.trim().length >= 2 && TRANSLATABLE_ROLES2.indexOf(String(block.role || "body")) >= 0 && !looksLikePageMetadata(block.text)
-      );
-    },
-    [getPageData]
-  );
-  const updateTranslationPage = import_react30.default.useCallback((pageNo, updater) => {
-    setTranslations((previous) => {
-      const current = previous[pageNo] || {
-        status: "idle",
-        entries: {},
-        pending: {},
-        progress: { total: 0, done: 0, failed: 0 },
-        provenance: null,
-        provider: "auto",
-        engine: null,
-        cachedAll: false
-      };
-      const next = updater(current);
-      return Object.assign({}, previous, { [pageNo]: next });
-    });
-  }, []);
-  const normalizeBlockEntry = import_react30.default.useCallback(
-    (block, item, fallbackEngine, fallbackReason, fallbackModel) => {
-      const translation2 = firstText3(item && item.translation);
-      const engine = readEngine(item, fallbackEngine && fallbackEngine.provider || "auto");
-      const translated = Boolean(translation2) && String(item && item.status || "translated") !== "unavailable";
-      return {
-        id: block.id,
-        translation: translated ? translation2 : "",
-        status: translated ? "translated" : "unavailable",
-        reason: translated ? "" : firstText3(item && item.reason, fallbackReason, rt("reader.ai.reasonFallback")),
-        cached: Boolean(item && item.cached),
-        provider: engine.provider,
-        engine,
-        model: firstText3(item && item.model, item && item.engine && item.engine.model, fallbackModel),
-        latencyMs: firstText3(item && item.latencyMs, item && item.latency)
-      };
-    },
-    [rt]
-  );
-  const summarizeEngines = import_react30.default.useCallback((blocks, entries2) => {
-    const labels = [];
-    const models = [];
-    for (const block of blocks) {
-      const entry = entries2[String(block.id)];
-      if (!entry || entry.status !== "translated") continue;
-      const title2 = engineTitle(entry.engine, entry.model);
-      if (title2 && labels.indexOf(title2) < 0) labels.push(title2);
-      if (entry.model && models.indexOf(entry.model) < 0) models.push(entry.model);
-    }
-    const firstEntry = blocks.map((block) => entries2[String(block.id)]).find((entry) => entry && entry.status === "translated");
-    return { label: labels.join(" + "), model: models.join(", "), engine: firstEntry ? firstEntry.engine || null : null };
-  }, []);
-  const runPageTranslation = import_react30.default.useCallback(
-    async (pageNo, options) => {
-      if (!paperId) return null;
-      const opts = options || {};
-      const blocks = translatableBlocksFor(pageNo);
-      if (blocks.length === 0) {
-        notify2("info", rt("reader.toast.translateNoBlocks"));
-        return null;
-      }
-      const provider = opts.provider || preferredProvider || "auto";
-      const token = translationSequence.current += 1;
-      const pending = {};
-      blocks.forEach((block) => {
-        pending[String(block.id)] = true;
-      });
-      updateTranslationPage(
-        pageNo,
-        (current) => Object.assign({}, current, {
-          status: "translating",
-          entries: {},
-          pending,
-          progress: { total: blocks.length, done: 0, failed: 0 },
-          provider,
-          engine: null,
-          provenance: null,
-          cachedAll: false,
-          reason: "",
-          startedAt: Date.now()
-        })
-      );
-      const params = { paperId, page: pageNo, target: "zh", provider };
-      if (props.sessionId) params.sessionId = props.sessionId;
-      const commit = (entries2, extra) => {
-        if (translationSequence.current !== token) return null;
-        const summary = summarizeEngines(blocks, entries2);
-        let done = 0;
-        let failed = 0;
-        for (const block of blocks) {
-          const entry = entries2[String(block.id)];
-          if (!entry) continue;
-          if (entry.status === "translated") done += 1;
-          else failed += 1;
-        }
-        const status = done === blocks.length ? "translated" : done > 0 ? "partial" : "unavailable";
-        const cachedAll = blocks.length > 0 && done === blocks.length && blocks.every((block) => {
-          const entry = entries2[String(block.id)];
-          return entry && entry.status === "translated" && entry.cached;
-        });
-        const firstFailure = blocks.map((block) => entries2[String(block.id)]).find((entry) => entry && entry.status !== "translated");
-        updateTranslationPage(
-          pageNo,
-          (current) => Object.assign({}, current, {
-            status,
-            entries: entries2,
-            pending: {},
-            progress: { total: blocks.length, done, failed },
-            provenance: { label: summary.label, model: summary.model, provider },
-            provider,
-            engine: summary.engine && summary.engine.engine,
-            cachedAll,
-            reason: status === "unavailable" ? firstText3(
-              extra && extra.reason,
-              firstFailure && firstFailure.reason,
-              rt("reader.bilingual.unavailable")
-            ) : ""
-          })
-        );
-        return { status, done, failed };
-      };
-      try {
-        const result = await apiCall("translate.blocks", params, { timeoutMs: 6e4 });
-        const returned = arrayOf3(result && result.blocks);
-        const fallbackEngine = readEngine(result, provider);
-        const fallbackModel = firstText3(
-          result && result.engine && result.engine.model,
-          result && result.provenance && result.provenance.model,
-          result && result.model
-        );
-        const fallbackReason = firstText3(result && result.reason, rt("reader.ai.reasonFallback"));
-        const entries2 = {};
-        blocks.forEach((block, index) => {
-          let item = returned.find((candidate) => candidate && String(candidate.id) === String(block.id));
-          if (!item && returned.length === blocks.length) item = returned[index];
-          entries2[String(block.id)] = normalizeBlockEntry(block, item, fallbackEngine, fallbackReason, fallbackModel);
-        });
-        const missing = blocks.filter((block) => {
-          const entry = entries2[String(block.id)];
-          return entry && entry.status !== "translated" && !entry.reason;
-        });
-        commit(entries2, { reason: firstText3(result && result.reason) });
-        if (missing.length > 0) {
-          await Promise.all(missing.slice(0, 2).map((block) => translateBlockInternal(block, pageNo, provider)));
-        }
-        return entries2;
-      } catch (error) {
-        const code = error && error.code;
-        if (code === "invalid" || code === "unknown_method" || code === "method_not_found" || code === "not_implemented") {
-          return legacyPerBlockTranslate(blocks, pageNo, provider, token);
-        }
-        const entries2 = {};
-        const reason = describeError2(error);
-        blocks.forEach((block) => {
-          entries2[String(block.id)] = {
-            id: block.id,
-            translation: "",
-            status: "unavailable",
-            reason,
-            cached: false,
-            provider,
-            engine: readEngine(null, provider)
-          };
-        });
-        commit(entries2, { reason });
-        return entries2;
-      }
-    },
-    [apiCall, notify2, preferredProvider, props.sessionId, rt, summarizeEngines, translatableBlocksFor, updateTranslationPage]
-  );
-  const legacyPerBlockTranslate = import_react30.default.useCallback(
-    async (blocks, pageNo, provider, token) => {
-      const entries2 = {};
-      const queue = blocks.slice().sort((left, right) => String(right.text || "").length - String(left.text || "").length);
-      let index = 0;
-      const worker = async () => {
-        while (queue.length > 0) {
-          if (translationSequence.current !== token) return;
-          const block = queue.shift();
-          const params = { paperId, page: pageNo, text: block.text, target: "zh", provider };
-          if (props.sessionId) params.sessionId = props.sessionId;
-          let item = null;
-          try {
-            item = await apiCall("translate.text", params, { timeoutMs: 3e4 });
-          } catch (error) {
-            item = { status: "unavailable", reason: describeError2(error) };
-          }
-          const entry = normalizeBlockEntry(block, item, readEngine(item, provider), rt("reader.ai.reasonFallback"));
-          entries2[String(block.id)] = entry;
-          const done2 = Object.values(entries2).filter((value) => value && value.status === "translated").length;
-          const failed2 = Object.values(entries2).filter((value) => value && value.status !== "translated").length;
-          if (translationSequence.current === token) {
-            updateTranslationPage(
-              pageNo,
-              (current) => Object.assign({}, current, {
-                entries: Object.assign({}, entries2),
-                pending: Object.fromEntries(blocks.filter((block2) => !entries2[String(block2.id)]).map((block2) => [String(block2.id), true])),
-                progress: { total: blocks.length, done: done2, failed: failed2 }
-              })
-            );
-          }
-          index += 1;
-        }
-      };
-      await Promise.all([worker(), worker()]);
-      if (translationSequence.current !== token) return entries2;
-      const summary = summarizeEngines(blocks, entries2);
-      let done = 0;
-      let failed = 0;
-      for (const block of blocks) {
-        const entry = entries2[String(block.id)];
-        if (entry && entry.status === "translated") done += 1;
-        else failed += 1;
-      }
-      updateTranslationPage(
-        pageNo,
-        (current) => Object.assign({}, current, {
-          status: done === blocks.length ? "translated" : done > 0 ? "partial" : "unavailable",
-          entries: entries2,
-          pending: {},
-          progress: { total: blocks.length, done, failed },
-          provenance: { label: summary.label, model: summary.model, provider },
-          engine: summary.engine && summary.engine.engine,
-          cachedAll: blocks.length > 0 && done === blocks.length && blocks.every((block) => entries2[String(block.id)] && entries2[String(block.id)].cached),
-          reason: done === 0 ? firstText3(
-            blocks.map((block) => entries2[String(block.id)]).find((entry) => entry && entry.reason)?.reason,
-            rt("reader.bilingual.unavailable")
-          ) : ""
-        })
-      );
-      return entries2;
-    },
-    [apiCall, normalizeBlockEntry, paperId, props.sessionId, rt, summarizeEngines, updateTranslationPage]
-  );
-  const translateBlockInternal = import_react30.default.useCallback(
-    async (block, pageNo, providerOverride) => {
-      if (!paperId || !block || block.id == null) return null;
-      const target = pageNo || pageRef.current;
-      const provider = providerOverride || preferredProvider || "auto";
-      const params = { paperId, page: target, text: block.text, target: "zh", provider };
-      if (props.sessionId) params.sessionId = props.sessionId;
-      updateTranslationPage(
-        target,
-        (current) => Object.assign({}, current, {
-          pending: Object.assign({}, current.pending, { [String(block.id)]: true }),
-          status: current.status === "translated" ? current.status : "translating"
-        })
-      );
-      let item = null;
-      try {
-        item = await apiCall("translate.text", params, { timeoutMs: 3e4 });
-      } catch (error) {
-        item = { status: "unavailable", reason: describeError2(error) };
-      }
-      const entry = normalizeBlockEntry(block, item, readEngine(item, provider), rt("reader.ai.reasonFallback"));
-      updateTranslationPage(target, (current) => {
-        const entries2 = Object.assign({}, current.entries, { [String(block.id)]: entry });
-        const blocks = translatableBlocksFor(target);
-        let done = 0;
-        let failed = 0;
-        for (const itemBlock of blocks) {
-          const pageEntry2 = entries2[String(itemBlock.id)];
-          if (!pageEntry2) continue;
-          if (pageEntry2.status === "translated") done += 1;
-          else failed += 1;
-        }
-        const pending = Object.assign({}, current.pending);
-        delete pending[String(block.id)];
-        const summary = summarizeEngines(blocks, entries2);
-        const status = Object.keys(pending).length > 0 ? "translating" : done === blocks.length ? "translated" : done > 0 ? "partial" : "unavailable";
-        return Object.assign({}, current, {
-          entries: entries2,
-          pending,
-          status,
-          progress: { total: blocks.length, done, failed },
-          provenance: { label: summary.label, model: summary.model, provider: current.provider || provider },
-          engine: summary.engine && summary.engine.engine,
-          cachedAll: blocks.length > 0 && done === blocks.length && blocks.every((itemBlock) => entries2[String(itemBlock.id)] && entries2[String(itemBlock.id)].cached)
-        });
-      });
-      return entry;
-    },
-    [apiCall, normalizeBlockEntry, preferredProvider, props.sessionId, rt, summarizeEngines, translatableBlocksFor, updateTranslationPage]
-  );
-  const translatePage = import_react30.default.useCallback(
-    (force, options) => {
-      if (!paperId) return;
-      const opts = options || {};
-      const target = pageRef.current;
-      const blocks = translatableBlocksFor(target);
-      if (blocks.length === 0) {
-        notify2("info", rt("reader.toast.translateNoBlocks"));
-        return;
-      }
-      const current = translations[target];
-      const entries2 = current && current.entries || {};
-      const provider = opts.provider || preferredProvider || "auto";
-      const hasEntries = Object.keys(entries2).length > 0;
-      if (!force && hasEntries) {
-        const failed = blocks.filter((block) => {
-          const entry = entries2[String(block.id)];
-          return !entry || entry.status !== "translated";
-        });
-        if (failed.length > 0 && failed.length < blocks.length) {
-          return Promise.all(failed.map((block) => translateBlockInternal(block, target, provider)));
-        }
-      }
-      return runPageTranslation(target, { provider });
-    },
-    [notify2, paperId, preferredProvider, rt, runPageTranslation, translateBlockInternal, translatableBlocksFor, translations]
-  );
-  const translateAiPage = import_react30.default.useCallback(() => {
-    return translatePage(true, { provider: "llm" });
-  }, [translatePage]);
-  const translateBlock = import_react30.default.useCallback(
-    (block) => translateBlockInternal(block, pageRef.current, preferredProvider || "auto"),
-    [preferredProvider, translateBlockInternal]
-  );
-  const detectedCache = import_react30.default.useRef(/* @__PURE__ */ new Map());
-  const detectLanguage2 = import_react30.default.useCallback(
-    async (text2) => {
-      const value = String(text2 || "").trim();
-      if (!value) return "empty";
-      if (detectedCache.current.has(value)) return detectedCache.current.get(value);
-      let language = "unknown";
-      try {
-        const result = await apiCall("translate.detect", { text: value });
-        const raw = firstText3(
-          result && result.language,
-          result && result.lang,
-          result && result.detected,
-          result && result.code
-        );
-        if (raw) language = /^(zh|cn|chinese|zh-cn|zh-hans|中文)/i.test(raw) ? "zh" : "other";
-        else if (result && (result.isChinese === true || result.chinese === true)) language = "zh";
-      } catch (error) {
-        const code = error && error.code;
-        if (code !== "invalid" && code !== "not_implemented" && code !== "unknown_method" && code !== "method_not_found") {
-        }
-      }
-      if (language === "unknown") language = isProbablyChinese(value) ? "zh" : "other";
-      if (detectedCache.current.size > 200) detectedCache.current.clear();
-      detectedCache.current.set(value, language);
-      return language;
-    },
-    [apiCall]
-  );
-  const quickTranslateText = import_react30.default.useCallback(
-    async (text2, pageNo, options) => {
-      const opts = options || {};
-      const quote = String(text2 || "").trim();
-      const targetPage = Math.max(1, Math.round(num(pageNo, pageRef.current)));
-      if (!quote) throw makeApiError("invalid", "empty selection");
-      if (opts.detect !== false) {
-        const language = await detectLanguage2(quote);
-        if (language === "zh") {
-          return { page: targetPage, quote, status: "same-language", translation: "", reason: "", provider: "auto" };
-        }
-      }
-      const paperTitle4 = firstText3(props.paper && props.paper.titleZh, props.paper && props.paper.title, "");
-      const context = { paperTitle: paperTitle4 || void 0, page: targetPage };
-      const base = { paperId, page: targetPage, text: quote, target: "zh", paperTitle: paperTitle4 || void 0, context };
-      const requestRects = normalizeRectsForRequest(opts.rects);
-      if (requestRects.length > 0) base.rects = requestRects;
-      if (props.sessionId) base.sessionId = props.sessionId;
-      const startedAt = Date.now();
-      const isAiRefine = Boolean(opts.refine) || opts.provider === "llm";
-      if (!isAiRefine) {
-        try {
-          const result = await apiCall("translate.text", Object.assign({}, base, { quick: true }), { timeoutMs: 7e3 });
-          const provenance = result && result.provenance || {};
-          const translation2 = firstText3(result && result.translation, result && result.answer, result && result.text);
-          const engine = readEngine(result, "auto");
-          const model = firstText3(result && result.engine && result.engine.model, provenance.model, result && result.model);
-          const rawLatency = result && result.latencyMs != null ? result.latencyMs : result && result.elapsedMs != null ? result.elapsedMs : result && result.elapsed;
-          const latency = rawLatency != null && rawLatency !== "" ? Number(rawLatency) : null;
-          const unavailable = !translation2;
-          const reliability = assessTranslationReliability(result, quote);
-          if (reliability.unreliable) {
-            return {
-              page: targetPage,
-              quote,
-              rects: requestRects,
-              status: "unreliable",
-              translation: "",
-              unreliable: true,
-              reason: rt("reader.selection.unreliableRegion") + (reliability.reason ? "\uFF08" + reliability.reason + "\uFF09" : ""),
-              provider: engine.provider || "auto",
-              engine,
-              model,
-              cached: false,
-              latencyMs: latency != null && Number.isFinite(latency) ? latency : Date.now() - startedAt,
-              fast: true,
-              freeOnly: false,
-              suggestAi: false,
-              aiRefine: false,
-              requestProvider: "auto"
-            };
-          }
-          return {
-            page: targetPage,
-            quote,
-            rects: requestRects,
-            status: translation2 ? "translated" : firstText3(result && result.status, "unavailable"),
-            translation: translation2,
-            reason: translation2 ? "" : firstText3(result && result.reason, provenance.reason, rt("reader.ai.reasonFallback")),
-            provider: engine.provider || "auto",
-            engine,
-            model,
-            cached: Boolean(result && result.cached),
-            latencyMs: latency != null && Number.isFinite(latency) ? latency : Date.now() - startedAt,
-            fast: true,
-            freeOnly: Boolean(result && (result.freeOnly || result.mode === "free" || result.engine && result.engine.free)),
-            suggestAi: unavailable ? result && result.suggestAi !== false : false,
-            aiRefine: false,
-            requestProvider: "auto"
-          };
-        } catch (error) {
-          const timedOut = Boolean(error && (error.code === "timeout" || error.code === "timed_out" || error.name === "TimeoutError"));
-          return {
-            page: targetPage,
-            quote,
-            rects: requestRects,
-            status: "unavailable",
-            translation: "",
-            reason: timedOut ? rt("reader.selection.quickTimeout") : firstText3(error && error.message, rt("reader.ai.reasonFallback")),
-            provider: "auto",
-            engine: null,
-            model: "",
-            cached: false,
-            latencyMs: null,
-            fast: true,
-            freeOnly: true,
-            suggestAi: true,
-            aiRefine: false,
-            requestProvider: "auto"
-          };
-        }
-      }
-      const provider = opts.provider || "llm";
-      const attempts = [
-        { method: "translate.text", params: Object.assign({}, base, { provider: "llm", fast: false }) },
-        { method: "ai.quickTranslate", params: Object.assign({}, base, { provider: "llm", fast: false }) }
-      ];
-      let lastError = null;
-      for (let index = 0; index < attempts.length; index += 1) {
-        const attempt = attempts[index];
-        const attemptStartedAt = Date.now();
-        try {
-          const result = await apiCall(attempt.method, attempt.params, { timeoutMs: 6e4 });
-          const provenance = result && result.provenance || {};
-          const translation2 = firstText3(result && result.translation, result && result.answer, result && result.text);
-          const engine = readEngine(result, provider);
-          const model = firstText3(result && result.engine && result.engine.model, provenance.model, result && result.model);
-          const rawLatency = result && result.latencyMs != null ? result.latencyMs : result && result.elapsedMs != null ? result.elapsedMs : result && result.elapsed;
-          const latency = rawLatency != null && rawLatency !== "" ? Number(rawLatency) : null;
-          const reliability = assessTranslationReliability(result, quote);
-          if (reliability.unreliable) {
-            return {
-              page: targetPage,
-              quote,
-              rects: requestRects,
-              status: "unreliable",
-              translation: "",
-              unreliable: true,
-              reason: rt("reader.selection.unreliableRegion") + (reliability.reason ? "\uFF08" + reliability.reason + "\uFF09" : ""),
-              provider: engine.provider || provider,
-              engine,
-              model,
-              cached: false,
-              latencyMs: latency != null && Number.isFinite(latency) ? latency : Date.now() - attemptStartedAt,
-              fast: true,
-              freeOnly: false,
-              suggestAi: false,
-              aiRefine: true,
-              requestProvider: provider
-            };
-          }
-          return {
-            page: targetPage,
-            quote,
-            rects: requestRects,
-            status: translation2 ? "translated" : firstText3(result && result.status, "unavailable"),
-            translation: translation2,
-            reason: translation2 ? "" : firstText3(result && result.reason, provenance.reason, rt("reader.ai.reasonFallback")),
-            provider: engine.provider || provider,
-            engine,
-            model,
-            cached: Boolean(result && result.cached),
-            latencyMs: latency != null && Number.isFinite(latency) ? latency : Date.now() - attemptStartedAt,
-            fast: true,
-            freeOnly: false,
-            suggestAi: false,
-            aiRefine: true,
-            reasoningEffort: firstText3(result && result.reasoningEffort, provenance.reasoningEffort),
-            requestProvider: provider
-          };
-        } catch (error) {
-          lastError = error;
-          const code = error && error.code;
-          if (code === "invalid" || code === "not_implemented" || code === "unknown_method" || code === "method_not_found" || code === "unavailable") continue;
-          throw error;
-        }
-      }
-      throw lastError || makeApiError("unavailable", rt("reader.ai.reasonFallback"));
-    },
-    [apiCall, detectLanguage2, paperId, props.paper, props.sessionId, rt]
-  );
-  const quickTranslateSelection = import_react30.default.useCallback(
-    (options) => {
-      const opts = options || {};
-      if (!selection) return;
-      const targetPage = Math.max(1, Math.round(num(selection.page, pageRef.current)));
-      const quote = selection.quote;
-      setSelectionResult({
-        page: targetPage,
-        quote,
-        kind: "quickTranslate",
-        loading: true,
-        status: "translating",
-        provider: opts.provider || preferredProvider,
-        aiRefine: Boolean(opts.refine),
-        startedAt: Date.now()
-      });
-      quickTranslateText(quote, targetPage, Object.assign({}, opts, { rects: selection.rects })).then((result) => {
-        if (result && result.status === "same-language") {
-          setSelectionResult(null);
-          notify2("info", rt("reader.selection.alreadyChinese"));
-          return;
-        }
-        setSelectionResult(Object.assign({}, result, { kind: "quickTranslate", loading: false }));
-      }).catch((error) => {
-        setSelectionResult({
-          page: targetPage,
-          quote,
-          kind: "quickTranslate",
-          loading: false,
-          status: "error",
-          provider: opts.provider || preferredProvider,
-          aiRefine: Boolean(opts.refine),
-          reason: describeError2(error)
-        });
-      });
-    },
-    [notify2, preferredProvider, quickTranslateText, rt, selection]
-  );
-  const refineQuickTranslation = import_react30.default.useCallback(() => {
-    const quote = selection ? selection.quote : selectionResult && selectionResult.quote;
-    const targetPage = selection ? selection.page : selectionResult && selectionResult.page;
-    if (!quote) return;
-    setSelectionResult(
-      (previous) => previous ? Object.assign({}, previous, { loading: true, status: "translating", provider: "llm", aiRefine: true, startedAt: Date.now() }) : previous
-    );
-    quickTranslateText(quote, targetPage, { provider: "llm", fast: true, refine: true, detect: false, rects: selection && selection.rects || selectionResult && selectionResult.rects }).then((result) => setSelectionResult(Object.assign({}, result, { kind: "quickTranslate", loading: false, aiRefine: true }))).catch((error) => {
-      setSelectionResult(
-        (previous) => previous ? Object.assign({}, previous, { loading: false, status: "error", reason: describeError2(error), aiRefine: true }) : previous
-      );
-    });
-  }, [quickTranslateText, selection, selectionResult]);
-  const quickTranslateAnnotation = import_react30.default.useCallback(
-    (annotation) => {
-      const text2 = firstText3(annotation && annotation.quote, annotation && annotation.comment);
-      return quickTranslateText(text2, annotation && annotation.page, { detect: false, rects: annotation && annotation.rects });
-    },
-    [quickTranslateText]
-  );
-  const aiTranslateAnnotation = import_react30.default.useCallback(
-    (annotation) => {
-      const text2 = firstText3(annotation && annotation.quote, annotation && annotation.comment);
-      return quickTranslateText(text2, annotation && annotation.page, { detect: false, provider: "llm", fast: true, refine: true, rects: annotation && annotation.rects });
-    },
-    [quickTranslateText]
-  );
-  const highlightSelection = import_react30.default.useCallback(
-    (color) => {
-      if (!selection) return;
-      const chosen = color || lastColor.current || DEFAULT_COLOR;
-      lastColor.current = chosen;
-      const target = {
-        page: selection.page || pageRef.current,
-        quote: selection.quote,
-        rects: selection.rects
-      };
-      clearNativeSelection();
-      setSelection(null);
-      setSelectionResult(null);
-      createAnnotation({
-        page: target.page,
-        kind: "highlight",
-        quote: target.quote,
-        rects: target.rects,
-        color: chosen,
-        comment: "",
-        origin: "user_note"
-      }).then(() => notifyUndo("success", rt("reader.annot.created"))).catch((error) => notify2("error", rt("reader.annot.failed", { message: describeError2(error) })));
-    },
-    [createAnnotation, notifyUndo, notify2, rt, selection]
-  );
-  const citeSelection = import_react30.default.useCallback(() => {
-    if (!selection) return;
-    const chosen = lastColor.current || DEFAULT_COLOR;
-    const target = {
-      page: selection.page || pageRef.current,
-      quote: selection.quote,
-      rects: selection.rects
-    };
-    clearNativeSelection();
-    setSelection(null);
-    setSelectionResult(null);
-    createAnnotation({
-      page: target.page,
-      kind: "highlight",
-      quote: target.quote,
-      rects: target.rects,
-      color: chosen,
-      comment: "",
-      origin: "user_note"
-    }).then((saved) => {
-      notifyUndo("success", rt("reader.annot.created"));
-      return commitMaterials([{ kind: "annotation", id: saved.id, page: saved.page, title: target.quote }]);
-    }).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
-  }, [commitMaterials, createAnnotation, notifyUndo, notify2, rt, selection]);
-  const sendQuickTranslation = import_react30.default.useCallback(() => {
-    if (!selection || !selectionResult) return;
-    const target = { page: selection.page || pageRef.current, quote: selection.quote, rects: selection.rects };
-    const translationText = firstText3(selectionResult.translation);
-    if (!translationText) return;
-    createAnnotation({
-      page: target.page,
-      kind: "highlight",
-      quote: target.quote,
-      rects: target.rects,
-      color: lastColor.current || DEFAULT_COLOR,
-      comment: translationText,
-      origin: "user_note"
-    }).then((saved) => {
-      return commitMaterials([{ kind: "annotation", id: saved.id, page: saved.page, title: target.quote }]).then(() => {
-        notifyUndo("success", rt("reader.selection.sentToChat"));
-      });
-    }).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
-  }, [commitMaterials, createAnnotation, notifyUndo, notify2, rt, selection, selectionResult]);
-  const handleSelectionAction = import_react30.default.useCallback(
-    (action, payload) => {
-      if (action === "closeResult") {
-        setSelectionResult(null);
-        return;
-      }
-      if (!selection) return;
-      if (action === "highlight") {
-        highlightSelection(payload && payload.color);
-        return;
-      }
-      if (action === "copy") {
-        copyText2(selection.quote).then((ok) => notify2(ok ? "success" : "error", ok ? rt("reader.toast.copied") : rt("reader.toast.copyFailed")));
-        return;
-      }
-      if (action === "quickTranslate") {
-        quickTranslateSelection();
-        return;
-      }
-      if (action === "copyQuickTranslation") {
-        const value = firstText3(selectionResult && selectionResult.translation);
-        if (value) copyText2(value).then((ok) => notify2(ok ? "success" : "error", ok ? rt("reader.toast.copied") : rt("reader.toast.copyFailed")));
-        return;
-      }
-      if (action === "replaceQuickTranslation") {
-        setSelectionResult((previous) => previous ? Object.assign({}, previous, { replace: true }) : previous);
-        return;
-      }
-      if (action === "closeReplace") {
-        setSelectionResult((previous) => previous ? Object.assign({}, previous, { replace: false }) : previous);
-        return;
-      }
-      if (action === "sendQuickTranslation") {
-        sendQuickTranslation();
-        return;
-      }
-      if (action === "refineQuickTranslation") {
-        refineQuickTranslation();
-        return;
-      }
-      if (action === "retryQuickTranslation") {
-        quickTranslateSelection(selectionResult && selectionResult.aiRefine ? { provider: "llm", fast: true, refine: true } : void 0);
-        return;
-      }
-      if (action === "explain") {
-        askAi({ type: "explain", quote: selection.quote, auto: true, includeImage: false });
-        return;
-      }
-      if (action === "ask") {
-        askAi({ type: "ask", quote: selection.quote, prompt: "", auto: false, includeImage: false });
-        notify2("info", rt("reader.toast.selectionAsk"));
-        return;
-      }
-      if (action === "cite") citeSelection();
-    },
-    [askAi, citeSelection, highlightSelection, notify2, notifyUndo, quickTranslateSelection, refineQuickTranslation, rt, selection, selectionResult, sendQuickTranslation]
-  );
-  const createArea = import_react30.default.useCallback(
-    (rect) => {
-      const normalized = normalizeRect(rect);
-      if (!normalized || normalized.w < 0.01 || normalized.h < 8e-3) {
-        notify2("info", rt("reader.toast.regionTooSmall"));
-        return;
-      }
-      createAnnotation({
-        page: pageRef.current,
-        kind: "area",
-        quote: "",
-        rects: [normalized],
-        color: lastColor.current || DEFAULT_COLOR,
-        comment: "",
-        origin: "user_note"
-      }).then((saved) => {
-        notifyUndo("success", rt("reader.annot.created"));
-        setPopover({ id: saved.id, anchor: saved.rects[0] || normalized, autoFocus: true });
-      }).catch((error) => notify2("error", rt("reader.annot.failed", { message: describeError2(error) })));
-    },
-    [createAnnotation, notifyUndo, notify2, rt]
-  );
-  const [noteDraft, setNoteDraft] = import_react30.default.useState(null);
-  const createNote = import_react30.default.useCallback((point) => {
-    setNoteDraft({ page: pageRef.current, point, color: lastColor.current || DEFAULT_COLOR });
-  }, []);
-  const cancelNote = import_react30.default.useCallback(() => setNoteDraft(null), []);
-  const saveNote = import_react30.default.useCallback(
-    (payload) => {
-      const point = payload.point || { x: 0.5, y: 0.5 };
-      const rect = normalizeRect({
-        x: clamp(point.x - 0.012, 0, 1),
-        y: clamp(point.y - 0.012, 0, 1),
-        w: 0.024,
-        h: 0.024
-      });
-      lastColor.current = payload.color || lastColor.current;
-      return createAnnotation({
-        page: Math.max(1, Math.round(num(payload.page, pageRef.current))),
-        kind: "note",
-        quote: "",
-        rects: rect ? [rect] : [],
-        color: payload.color || DEFAULT_COLOR,
-        comment: payload.text,
-        origin: "user_note"
-      }).then((saved) => {
-        notifyUndo("success", rt("reader.note.created"));
-        setNoteDraft(null);
-        setPopover({ id: saved.id, anchor: saved.rects[0] || rect || { x: 0.5, y: 0.5, w: 0, h: 0 }, autoFocus: false });
-        return saved;
-      }).catch((error) => {
-        notify2("error", rt("reader.note.failed", { message: describeError2(error) }));
-        throw error;
-      });
-    },
-    [createAnnotation, notifyUndo, notify2, rt]
-  );
-  const askAnnotation = import_react30.default.useCallback(
-    (annotation) => {
-      askAi({ type: "ask", quote: firstText3(annotation.quote, annotation.comment), prompt: "", auto: false });
-    },
-    [askAi]
-  );
-  const explainAnnotation = import_react30.default.useCallback(
-    (annotation) => {
-      askAi({ type: "explain", quote: firstText3(annotation.quote, annotation.comment), auto: true });
-    },
-    [askAi]
-  );
-  const copyAnnotation = import_react30.default.useCallback(
-    (annotation) => {
-      const text2 = firstText3(annotation.quote, annotation.comment);
-      copyText2(text2).then((ok) => notify2(ok ? "success" : "error", ok ? rt("reader.annot.copyDone") : rt("reader.toast.copyFailed")));
-    },
-    [notify2, rt]
-  );
-  const onAnnotationSelect = import_react30.default.useCallback(
-    (annotation) => {
-      if (annotation.page !== pageRef.current) goToPage(annotation.page);
-      const anchor = annotation.rects && annotation.rects.length > 0 ? annotation.rects[0] : { x: 0.5, y: 0.25, w: 0, h: 0 };
-      setPopover({ id: annotation.id, anchor, autoFocus: false });
-    },
-    [goToPage]
-  );
-  const deleteFromPopover = import_react30.default.useCallback(
-    (annotation) => {
-      setPopover(null);
-      deleteAnnotation(annotation).catch(() => {
-      });
-    },
-    [deleteAnnotation]
-  );
-  const emptySearch = import_react30.default.useCallback(() => ({ open: false, query: "", hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }), []);
-  const [search, setSearch] = import_react30.default.useState(emptySearch);
-  const focusSeq = import_react30.default.useRef(0);
-  import_react30.default.useEffect(() => {
-    if (!search.open) return;
-    const query = search.query;
-    if (!query.trim()) {
-      setSearch(
-        (previous) => previous.hits.length === 0 && previous.index === 0 && !previous.focus ? previous : Object.assign({}, previous, { hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 })
-      );
-      return;
-    }
-    const layerEntry = layerCache.current.get(page2);
-    let hits = [];
-    if (layerEntry && layerEntry.paperId === paperId && layerEntry.status === "ready") {
-      hits = findLayerMatches(layerEntry.data, query);
-    }
-    if (hits.length === 0) {
-      const dataEntry = pageCache.current.get(page2);
-      if (dataEntry && dataEntry.paperId === paperId && dataEntry.status === "ready") {
-        hits = findBlockMatches(dataEntry.data, query);
-      }
-    }
-    const withPage = hits.map((hit) => Object.assign({}, hit, { page: page2 }));
-    setSearch((previous) => {
-      if (previous.open && previous.query === query && previous.forPage === page2 && previous.forVersion === dataVersion) {
-        return previous;
-      }
-      focusSeq.current += 1;
-      return Object.assign({}, previous, {
-        hits: withPage,
-        index: 0,
-        forPage: page2,
-        forVersion: dataVersion,
-        focus: withPage.length > 0 ? { page: page2, rect: withPage[0].rects[0], seq: focusSeq.current } : null
-      });
-    });
-  }, [paperId, page2, search.open, search.query, dataVersion]);
-  const toggleSearch = import_react30.default.useCallback(
-    (open) => {
-      setSearch((previous) => {
-        if (open) return Object.assign({}, previous, { open: true, focus: previous.focus });
-        return emptySearch();
-      });
-    },
-    [emptySearch]
-  );
-  const setSearchQuery = import_react30.default.useCallback((query) => {
-    setSearch((previous) => Object.assign({}, previous, { query, hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }));
-  }, []);
-  const searchNext = import_react30.default.useCallback(
-    (delta) => {
-      setSearch((previous) => {
-        if (!previous.open || previous.hits.length === 0) {
-          notify2("info", rt("reader.search.none"));
-          return previous;
-        }
-        const index = (previous.index + delta + previous.hits.length) % previous.hits.length;
-        const hit = previous.hits[index];
-        if (!hit) return previous;
-        focusSeq.current += 1;
-        return Object.assign({}, previous, {
-          index,
-          focus: { page: hit.page, rect: hit.rects[0], seq: focusSeq.current }
-        });
-      });
-    },
-    [notify2, rt]
-  );
-  import_react30.default.useEffect(() => {
-    if (typeof window === "undefined") return void 0;
-    const onKeyDown = (event) => {
-      const target = event.target;
-      const editable = target && target.closest && target.closest('input, textarea, [contenteditable="true"]');
-      const meta = event.metaKey || event.ctrlKey;
-      if (!undoApi.external && meta && !editable && (event.key === "z" || event.key === "Z")) {
-        if (event.shiftKey) {
-          if (!undoApi.canRedo) return;
-          event.preventDefault();
-          Promise.resolve(undoApi.redo()).then((entry) => {
-            if (entry) notify2("info", rt("reader.undo.redone", { label: entry.label }));
-          }).catch((error) => notify2("error", rt("reader.undo.failed", { message: describeError2(error) })));
-          return;
-        }
-        if (!undoApi.canUndo) return;
-        event.preventDefault();
-        Promise.resolve(undoApi.undo()).then((entry) => {
-          if (entry) notify2("info", rt("reader.undo.done", { label: entry.label }));
-        }).catch((error) => notify2("error", rt("reader.undo.failed", { message: describeError2(error) })));
-        return;
-      }
-      if (meta && (event.key === "f" || event.key === "F")) {
-        event.preventDefault();
-        toggleSearch(true);
-        return;
-      }
-      if (meta && (event.key === "+" || event.key === "=")) {
-        event.preventDefault();
-        zoomStep(1);
-        return;
-      }
-      if (meta && event.key === "-") {
-        event.preventDefault();
-        zoomStep(-1);
-        return;
-      }
-      if (event.key === "Escape") {
-        if (noteDraft) {
-          setNoteDraft(null);
-          return;
-        }
-        if (popover) {
-          setPopover(null);
-          return;
-        }
-        if (tool !== "select") {
-          setTool("select");
-          return;
-        }
-        if (search.open) {
-          toggleSearch(false);
-          return;
-        }
-        if (selection) {
-          clearSelection();
-        }
-        return;
-      }
-      if (!editable && !meta && event.altKey && !event.shiftKey) {
-        const lower = String(event.key || "").toLowerCase();
-        if (lower === "a") {
-          event.preventDefault();
-          changeTool(tool === "area" ? "select" : "area");
-          return;
-        }
-        if (lower === "n") {
-          event.preventDefault();
-          changeTool(tool === "note" ? "select" : "note");
-          return;
-        }
-        if (lower === "h") {
-          event.preventDefault();
-          if (selection) highlightSelection(penColor);
-          else notify2("info", rt("reader.tools.highlightHint"));
-          return;
-        }
-      }
-      if (editable || meta) return;
-      if (event.key === "ArrowLeft" && event.altKey) {
-        event.preventDefault();
-        goToPage(pageRef.current - 1);
-      }
-      if (event.key === "ArrowRight" && event.altKey) {
-        event.preventDefault();
-        goToPage(pageRef.current + 1);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [changeTool, clearSelection, goToPage, highlightSelection, noteDraft, notify2, penColor, popover, rt, search.open, selection, tool, toggleSearch, undoApi, zoomStep]);
-  const resetKeyRef = import_react30.default.useRef(paperId);
-  import_react30.default.useEffect(() => {
-    if (!paperId) return;
-    if (resetKeyRef.current === paperId) return;
-    resetKeyRef.current = paperId;
-    const explicit = Math.round(num(props.initialPage, 0));
-    const restored = explicit > 0 ? explicit : readReadingPosition(paperId);
-    const target = restored > 0 ? restored : 1;
-    setPage(target);
-    jumpSeq.current += 1;
-    setJump({ page: target, seq: jumpSeq.current });
-    setAnnotations(NO_ANNOTATIONS);
-    setSelection(null);
-    setSelectionResult(null);
-    setPopover(null);
-    setNoteDraft(null);
-    setTool("select");
-    setTranslations({});
-    setSearch(emptySearch());
-    setAiRequest(null);
-    pageCache.current = /* @__PURE__ */ new Map();
-    layerCache.current = /* @__PURE__ */ new Map();
-    setDataVersion((value) => value + 1);
-    const initial = firstText3(props.annotationId);
-    if (initial) {
-      intentSeq.current += 1;
-      setAnnotationIntent({ id: initial, seq: intentSeq.current });
-    } else {
-      setAnnotationIntent(null);
-    }
-  }, [paperId]);
-  const jumpedRef = import_react30.default.useRef("");
-  import_react30.default.useEffect(() => {
-    if (openState.status !== "ready" || !paperId) return;
-    if (jumpedRef.current === paperId) return;
-    jumpedRef.current = paperId;
-    const target = clamp(pageRef.current, 1, total);
-    goToPage(target, { instant: true });
-  }, [openState.status, paperId, total]);
-  import_react30.default.useEffect(() => {
-    if (page2 > total) setPage(total);
-  }, [page2, total]);
-  import_react30.default.useEffect(() => {
-    if (!paperId) return void 0;
-    const timer2 = setTimeout(() => saveReadingPosition(paperId, page2), 500);
-    return () => clearTimeout(timer2);
-  }, [paperId, page2]);
-  const markedRef = import_react30.default.useRef("");
-  import_react30.default.useEffect(() => {
-    if (openState.status !== "ready" || !paperId || markedRef.current === paperId) return;
-    markedRef.current = paperId;
-    try {
-      Promise.resolve(apiCall("library.setRead", { id: paperId, read: true, operationId: newOperationId("read") })).catch(() => {
-      });
-    } catch {
-    }
-  }, [apiCall, openState.status, paperId]);
-  const pageEntry = getPageData(page2);
-  const translation = translations[page2] || null;
-  const pagesForRail = pages;
-  const rawT = props.t || rt;
-  const sideTabs = [
-    { id: "outline", label: rt("reader.outline.title"), count: outlineItems.length || null },
-    { id: "annotations", label: rt("reader.annot.listTitle"), count: annotations.length || null },
-    { id: "notes", label: rt("reader.notes.tab") },
-    { id: "ai", label: "AI" }
-  ];
-  const canvasActions = {
-    onSelection: handleSelection,
-    onSelectionAction: handleSelectionAction,
-    onAnnotationOpen: openAnnotation,
-    onAnnotationClose: closePopover,
-    onUpdateAnnotation: updateAnnotation,
-    onDeleteAnnotation: deleteFromPopover,
-    onCopyAnnotation: copyAnnotation,
-    onCiteAnnotation: citeAnnotation,
-    onAskAnnotation: askAnnotation,
-    onExplainAnnotation: explainAnnotation,
-    onQuickTranslateAnnotation: quickTranslateAnnotation,
-    onAiTranslateAnnotation: aiTranslateAnnotation,
-    onCreateArea: createArea,
-    onNoteCreate: createNote,
-    onNoteSave: saveNote,
-    onNoteCancel: cancelNote
-  };
-  if (!paperId) {
-    return import_react30.default.createElement(StateScreen, {
-      t: rt,
-      icon: "warning",
-      tone: "error",
-      title: rt("reader.error.title"),
-      desc: rt("reader.noPaper"),
-      onBack: props.onBack
-    });
-  }
-  if (openState.status === "error" && !detail) {
-    const offline = isOfflineError(openState.error);
-    return import_react30.default.createElement(StateScreen, {
-      t: rt,
-      icon: "warning",
-      tone: "error",
-      title: offline ? rt("reader.offline.title") : rt("reader.error.title"),
-      desc: offline ? rt("reader.offline.desc") : rt("reader.error.desc", { message: describeError2(openState.error) }),
-      retry: openState.reload,
-      onBack: props.onBack
-    });
-  }
-  if (!detail && openState.status === "loading") {
-    return import_react30.default.createElement(StateScreen, { t: rt, loading: true, onBack: props.onBack });
-  }
-  let sideBody = null;
-  if (sideTab === "outline") {
-    sideBody = import_react30.default.createElement(
-      "div",
-      { className: "ph-r-side__scroll ph-r-scroll" },
-      import_react30.default.createElement(Outline, {
-        t: rt,
-        items: outlineItems,
-        page: page2,
-        loading: outlineState.status === "loading",
-        error: outlineState.status === "error" ? describeError2(outlineState.error) : "",
-        onJump: (target) => goToPage(target),
-        onRetry: outlineState.reload
-      })
-    );
-  } else if (sideTab === "annotations") {
-    sideBody = import_react30.default.createElement(
-      "div",
-      { className: "ph-r-side__scroll ph-r-scroll" },
-      import_react30.default.createElement("div", { className: "ph-r-side__hint" }, rt("reader.annot.hint")),
-      import_react30.default.createElement(AnnotationListPanel, {
-        t: rt,
-        annotations,
-        page: page2,
-        activeId: activeAnnotationId,
-        onSelect: onAnnotationSelect,
-        onCite: citeAnnotation,
-        onDelete: (annotation) => deleteAnnotation(annotation).catch(() => {
-        })
-      })
-    );
-  } else if (sideTab === "notes") {
-    sideBody = import_react30.default.createElement(ReaderNotesPanel, {
-      t: rawT,
-      api: apiCall,
-      paperId,
-      paper,
-      sessionId: props.sessionId,
-      notify: notify2,
-      onOpenNoteLibrary: props.onOpenNoteLibrary,
-      onOpenPaper: (targetPaperId, targetPage) => {
-        if (props.onOpenPaper) props.onOpenPaper(targetPaperId, targetPage || 1);
-      }
-    });
-  } else {
-    sideBody = import_react30.default.createElement(AiPanel, {
-      t: rt,
-      api: apiCall,
-      paperId,
-      page: page2,
-      paper,
-      selection,
-      request: aiRequest,
-      onJumpPage: (target) => goToPage(target),
-      onCiteAnswer: citeAiAnswer,
-      onClearSelection: clearSelection,
-      notify: notify2,
-      sessionId: props.sessionId
-    });
-  }
-  const translationSheet = mode === "source" ? null : import_react30.default.createElement(
-    "div",
-    {
-      className: "ph-r-tr",
-      style: {
-        left: "var(--ph-r-rail)",
-        right: sideOpen ? "var(--ph-r-side)" : "0px"
-      },
-      "data-ph-translation-sheet": "true"
-    },
-    import_react30.default.createElement(
-      "div",
-      { className: "ph-r-tr__head" },
-      import_react30.default.createElement(Icon2, { name: "translate", size: 14 }),
-      import_react30.default.createElement("span", { className: "ph-r-tr__title" }, rt("reader.translation.sheet")),
-      import_react30.default.createElement(
-        "div",
-        {
-          className: cx("ph-r-tr__modes", trSlider.rect && "ph-r-tr__modes--sliding"),
-          ref: trSlider.ref,
-          role: "group",
-          "aria-label": rt("reader.translation.sheet")
-        },
-        import_react30.default.createElement(SlidingThumb, { rect: trSlider.rect, popKey: mode }),
-        import_react30.default.createElement(
-          "button",
-          {
-            type: "button",
-            "data-ph-active": mode === "compare" ? "true" : void 0,
-            className: cx("ph-r-tr__mode", mode === "compare" && "ph-r-tr__mode--active"),
-            onClick: () => changeMode("compare")
-          },
-          rt("reader.translation.mode.compare")
-        ),
-        import_react30.default.createElement(
-          "button",
-          {
-            type: "button",
-            "data-ph-active": mode === "translation" ? "true" : void 0,
-            className: cx("ph-r-tr__mode", mode === "translation" && "ph-r-tr__mode--active"),
-            onClick: () => changeMode("translation")
-          },
-          rt("reader.translation.mode.translation")
-        )
-      ),
-      import_react30.default.createElement("span", { className: "ph-r-tr__spacer" }),
-      import_react30.default.createElement(IconBtn, { icon: "close", title: rt("reader.translation.close"), onClick: () => changeMode("source") })
-    ),
-    import_react30.default.createElement(
-      "div",
-      { className: "ph-r-tr__body ph-r-scroll" },
-      import_react30.default.createElement(BilingualPanel, {
-        t: rt,
-        page: page2,
-        total,
-        mode: mode === "translation" ? "translation" : "compare",
-        blocksEntry: pageEntry,
-        structurePending: Boolean(pageEntry && pageEntry.status === "ready" && pageEntry.data && pageEntry.data.structureState === "pending"),
-        translation,
-        providerPreference: preferredProvider,
-        providerLabel: providerLabel2(preferredProvider),
-        onTranslatePage: (force) => translatePage(force),
-        onAiTranslatePage: () => translateAiPage(),
-        onTranslateBlock: (block) => translateBlock(block),
-        onRetryBlocks: () => retryPage(page2),
-        onRetryLayer: () => retryLayer(page2)
-      })
-    )
-  );
-  return import_react30.default.createElement(
-    "div",
-    {
-      className: cx(
-        "ph-r-reader",
-        scrolled && "ph-r-reader--scrolled",
-        search.open && "ph-r-reader--searching",
-        tool !== "select" && "ph-r-reader--tool-active"
-      ),
-      "data-ph-reader": paperId
-    },
-    import_react30.default.createElement(ReaderToolbar, {
-      t: rt,
-      paper,
-      total,
-      page: page2,
-      zoom,
-      mode,
-      tool,
-      sideOpen,
-      sideTab,
-      search,
-      loading: openState.status === "loading",
-      onBack: props.onBack,
-      onCite: citePaperPage,
-      onPage: (target) => goToPage(target),
-      onZoomStep: zoomStep,
-      onZoomFit: zoomFit,
-      onMode: changeMode,
-      onTool: changeTool,
-      onSearchToggle: toggleSearch,
-      onSearchQuery: setSearchQuery,
-      onSearchNext: searchNext,
-      onToggleAi: () => sideOpen && sideTab === "ai" ? setSideOpen(false) : openSide("ai"),
-      onToggleNotes: () => sideOpen && sideTab === "notes" ? setSideOpen(false) : openSide("notes"),
-      onToggleSide: toggleSide,
-      onOpenSettings: props.onOpenSettings
-    }),
-    tool !== "select" ? import_react30.default.createElement(
-      "div",
-      { className: "ph-r-modehint" },
-      import_react30.default.createElement(Icon2, { name: tool === "area" ? "area" : "sticky", size: 14 }),
-      import_react30.default.createElement("span", null, tool === "area" ? rt("reader.areaModeActive") : rt("reader.noteModeActive")),
-      import_react30.default.createElement(
-        "button",
-        { type: "button", className: "ph-r-toolbtn", onClick: () => changeTool("select") },
-        rt("reader.exitMode")
-      )
-    ) : null,
-    import_react30.default.createElement(
-      "div",
-      { className: "ph-r-body" },
-      import_react30.default.createElement(Thumbnails, {
-        t: rt,
-        paperId,
-        pages: pagesForRail,
-        total,
-        page: page2,
-        onSelect: (target) => goToPage(target)
-      }),
-      import_react30.default.createElement(PageCanvas, {
-        t: rt,
-        paperId,
-        pages,
-        total,
-        page: page2,
-        zoom,
-        jump,
-        focus: search.focus,
-        figureFocus,
-        mode: tool,
-        annotations,
-        activeAnnotationId,
-        selection,
-        selectionResult,
-        popover: popoverProp,
-        noteDraft,
-        search,
-        reducedMotion,
-        dataVersion,
-        getPageData,
-        getLayer,
-        ensurePage,
-        ensureLayer,
-        onPageChange: (next) => setPage((previous) => previous === next ? previous : next),
-        onScrolledChange: handleScrolledChange,
-        actions: canvasActions
-      }),
-      import_react30.default.createElement(
-        "aside",
-        { className: cx("ph-r-side", !sideOpen && "ph-r-side--closed"), "aria-label": rt("reader.sidePanel") },
-        import_react30.default.createElement(
-          "div",
-          { className: "ph-r-side__head" },
-          import_react30.default.createElement(Tabs, {
-            items: sideTabs,
-            value: sideTab,
-            onChange: (id) => {
-              setSideTab(id);
-              setSideOpen(true);
-            },
-            "aria-label": rt("reader.sidePanel"),
-            className: "ph-r-side__tabs"
-          }),
-          import_react30.default.createElement(IconBtn, { icon: "close", title: rt("reader.sidePanelToggle"), onClick: toggleSide })
-        ),
-        import_react30.default.createElement("div", { className: "ph-r-side__body" }, sideBody)
-      ),
-      translationSheet,
-      import_react30.default.createElement(FloatingAnnotationTools, {
-        t: rt,
-        tool,
-        selectionActive: Boolean(selection && selection.quote),
-        penColor,
-        onTool: changeTool,
-        onHighlight: (color) => highlightSelection(color),
-        onPen: setPenColor,
-        showTip: toolsTip,
-        onDismissTip: dismissToolsTip,
-        onShowTip: showToolsTip,
-        sidePanelOpen: sideOpen,
-        translationOpen: mode !== "source"
-      })
-    ),
-    notices.toasts.length > 0 ? import_react30.default.createElement(
-      "div",
-      { className: "ph-r-toasts", "aria-live": "polite" },
-      notices.toasts.map(
-        (toast) => import_react30.default.createElement(
-          "div",
-          { key: toast.id, className: cx("ph-r-toast", "ph-r-toast--" + toast.kind) },
-          import_react30.default.createElement(Icon2, {
-            name: toast.kind === "success" ? "check" : toast.kind === "error" || toast.kind === "warning" ? "warning" : "note",
-            size: 13
-          }),
-          import_react30.default.createElement("span", null, toast.text),
-          toast.action ? import_react30.default.createElement(
-            "button",
-            {
-              type: "button",
-              className: "ph-r-toast__action",
-              onClick: () => {
-                notices.dismiss(toast.id);
-                try {
-                  toast.action.onClick();
-                } catch (error) {
-                  console.warn("[pappers-hall] toast action failed", error);
-                }
-              }
-            },
-            toast.action.label
-          ) : null
-        )
-      )
-    ) : null
-  );
-}
-
-// src/surfaces/notes/paper-panel.jsx
-function pageImageUrl2(paperId, page2, width) {
-  return "/pappers-hall/page/" + encodeURIComponent(String(paperId)) + "/" + String(page2) + ".png?width=" + String(width || 900);
-}
-function text() {
-  for (let index = 0; index < arguments.length; index += 1) {
-    const value = arguments[index];
-    if (typeof value === "string" && value.trim() !== "") return value;
-  }
-  return "";
-}
-function paperTitle2(t, paper) {
-  return text(paper && paper.titleZh, paper && paper.displayTitle, paper && paper.title) || t("common.untitled");
-}
-var ANNOTATION_COLORS2 = {
-  yellow: "var(--dsw-alias-state-warn-primary, #d9a400)",
-  green: "var(--dsw-alias-state-success-primary, #16a34a)",
-  blue: "var(--dsw-alias-state-business-primary, #3d7bfd)",
-  red: "var(--dsw-alias-state-error-primary, #dc2626)",
-  purple: "#9b59b6"
-};
-function PaperPanel(props) {
-  const t = props.t;
-  const api = props.api;
-  const [query, setQuery] = import_react31.default.useState("");
-  const [folders, setFolders] = import_react31.default.useState([]);
-  const [folderId, setFolderId] = import_react31.default.useState("");
-  const [annotatedOnly, setAnnotatedOnly] = import_react31.default.useState(false);
-  const [readFilter, setReadFilter] = import_react31.default.useState("");
-  const [results, setResults] = import_react31.default.useState({ status: "idle", items: [], error: "" });
-  const [open, setOpen] = import_react31.default.useState(null);
-  const [page2, setPage] = import_react31.default.useState(1);
-  const [pageState, setPageState] = import_react31.default.useState({ status: "idle", text: "", source: "", error: "" });
-  const [translation, setTranslation] = import_react31.default.useState({ status: "idle", blocks: [], reason: "" });
-  const [annotations, setAnnotations] = import_react31.default.useState({ status: "idle", items: [], error: "" });
-  const [busy2, setBusy] = import_react31.default.useState("");
-  const [selection, setSelection] = import_react31.default.useState(null);
-  const [region, setRegion] = import_react31.default.useState({ status: "idle", text: "", translation: "", reason: "" });
-  const [ai, setAi] = import_react31.default.useState({ status: "idle", answer: "", reason: "" });
-  const dragRef = import_react31.default.useRef(null);
-  const imageWrapRef = import_react31.default.useRef(null);
-  const [layer, setLayer] = import_react31.default.useState(null);
-  const [renderWidth, setRenderWidth] = import_react31.default.useState(0);
-  import_react31.default.useEffect(() => {
-    let alive = true;
-    Promise.resolve(api("library.folders.tree", {})).then((result) => {
-      if (!alive) return;
-      const root = result && (result.items || result.folders);
-      const flat = [];
-      const walk = (nodes, depth) => {
-        for (const node of nodes || []) {
-          flat.push({ id: node.id, name: node.name, depth });
-          walk(node.children, (depth || 0) + 1);
-        }
-      };
-      walk(Array.isArray(root) ? root : [], 0);
-      setFolders(flat);
-    }).catch(() => {
-      if (alive) setFolders([]);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [api]);
-  import_react31.default.useEffect(() => {
-    const timer2 = setTimeout(() => {
-      setResults((previous) => Object.assign({}, previous, { status: "loading", error: "" }));
-      Promise.resolve(api("library.list", { query: query.trim(), limit: 100, ...folderId ? { folderId } : {} })).then((result) => {
-        let items2 = Array.isArray(result && result.items) ? result.items : Array.isArray(result) ? result : [];
-        if (annotatedOnly) items2 = items2.filter((paper) => Number(paper.annotationCount) > 0);
-        if (readFilter === "read") items2 = items2.filter((paper) => paper.read === true);
-        if (readFilter === "unread") items2 = items2.filter((paper) => paper.read !== true);
-        setResults({ status: "ready", items: items2.slice(0, 60), error: "" });
-      }).catch((error) => setResults({ status: "error", items: [], error: String(error && error.message || error) }));
-    }, 260);
-    return () => clearTimeout(timer2);
-  }, [api, query, folderId, annotatedOnly, readFilter]);
-  const openPaper = (paper) => {
-    if (!paper || !paper.id) return;
-    setOpen({ id: paper.id, paper, total: Number(paper.pageCount || paper.page_count || paper.pages) || 1, page: 1 });
-    setPage(1);
-    setTranslation({ status: "idle", blocks: [], reason: "" });
-  };
-  import_react31.default.useEffect(() => {
-    if (!open) return void 0;
-    let alive = true;
-    setPageState({ status: "loading", text: "", source: "", error: "" });
-    setAnnotations({ status: "loading", items: [], error: "" });
-    Promise.resolve(api("reader.pageText", { id: open.id, page: page2 })).then((result) => {
-      if (!alive) return;
-      setPageState({ status: "ready", text: String(result && result.text || ""), source: String(result && result.source || ""), error: "" });
-    }).catch((error) => {
-      if (!alive) return;
-      setPageState({ status: "error", text: "", source: "", error: String(error && error.message || error) });
-    });
-    Promise.resolve(api("annotations.list", { paperId: open.id, page: page2 })).then((result) => {
-      if (!alive) return;
-      setAnnotations({ status: "ready", items: Array.isArray(result) ? result : Array.isArray(result && result.items) ? result.items : [], error: "" });
-    }).catch((error) => {
-      if (!alive) return;
-      setAnnotations({ status: "error", items: [], error: String(error && error.message || error) });
-    });
-    setTranslation({ status: "idle", blocks: [], reason: "" });
-    setSelection(null);
-    setRegion({ status: "idle", text: "", translation: "", reason: "" });
-    setAi({ status: "idle", answer: "", reason: "" });
-    return () => {
-      alive = false;
-    };
-  }, [api, open, page2]);
-  import_react31.default.useEffect(() => {
-    if (!open) return void 0;
-    let alive = true;
-    setLayer(null);
-    Promise.resolve(api("reader.layer", { id: open.id, page: page2 })).then((value) => {
-      if (alive) setLayer(value || null);
-    }).catch(() => {
-      if (alive) setLayer(null);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [api, open, page2]);
-  import_react31.default.useEffect(() => {
-    const element2 = imageWrapRef.current;
-    if (!element2 || typeof ResizeObserver === "undefined") return void 0;
-    const observer2 = new ResizeObserver((entries2) => {
-      const width = entries2 && entries2[0] && entries2[0].contentRect ? entries2[0].contentRect.width : element2.clientWidth;
-      if (width > 0) setRenderWidth(width);
-    });
-    observer2.observe(element2);
-    return () => observer2.disconnect();
-  }, [open, page2, layer]);
-  const translatePage = () => {
-    if (!open || busy2) return;
-    setBusy("translate");
-    setTranslation({ status: "translating", blocks: [], reason: "" });
-    Promise.resolve(api("translate.blocks", { paperId: open.id, page: page2, provider: "auto" })).then((result) => {
-      const blocks = Array.isArray(result && result.blocks) ? result.blocks : [];
-      setTranslation({ status: String(result && result.status || "ready"), blocks, reason: String(result && result.reason || "") });
-    }).catch((error) => setTranslation({ status: "error", blocks: [], reason: String(error && error.message || error) })).then(() => setBusy(""));
-  };
-  const goPage = (next) => {
-    if (!open) return;
-    const target = Math.max(1, Math.min(open.total || 1, next));
-    if (target !== page2) setPage(target);
-  };
-  const selectable = import_react31.default.useMemo(() => selectableWords(layer), [layer]);
-  const pageHeight = layer && layer.width > 0 && renderWidth > 0 ? renderWidth * (layer.height / layer.width) : 0;
-  const onPageMouseUp = () => {
-    if (!open || !layer) return;
-    const pageElement = imageWrapRef.current;
-    if (!pageElement) return;
-    const picked = readPageSelection(pageElement, selectable);
-    if (!picked || !picked.quote) return;
-    setRegion({ status: "loading", text: picked.quote, translation: "", reason: "" });
-    Promise.resolve(api("translate.text", { paperId: open.id, page: page2, text: picked.quote, provider: "auto", fast: true })).then((result) => {
-      const translated = result && (result.translation || result.translatedText || result.text || "");
-      if (translated) {
-        setRegion({ status: "ready", text: picked.quote, translation: String(translated), reason: "" });
-        return;
-      }
-      return Promise.resolve(api("ai.complete", { prompt: "\u628A\u4E0B\u9762\u8BBA\u6587\u9009\u533A\u7FFB\u8BD1\u6210\u7B80\u4F53\u4E2D\u6587\uFF0C\u53EA\u8F93\u51FA\u8BD1\u6587\uFF1A\n\n" + picked.quote, fast: false, maxTokens: 1200, kind: "translate-region" })).then((ai2) => {
-        const answer = ai2 && ai2.status === "ok" ? String(ai2.answer || "") : "";
-        setRegion({ status: answer ? "ready" : "error", text: picked.quote, translation: answer, reason: answer ? "" : String(ai2 && ai2.reason || "\u7FFB\u8BD1\u4E0D\u53EF\u7528") });
-      });
-    }).catch((error) => setRegion({ status: "error", text: picked.quote, translation: "", reason: String(error && error.message || error) }));
-  };
-  const askAiPage = () => {
-    if (!open || busy2 === "ai") return;
-    setBusy("ai");
-    setAi({ status: "loading", answer: "", reason: "" });
-    Promise.resolve(api("ai.ask", { paperId: open.id, page: page2, prompt: "\u7528\u8981\u70B9\u603B\u7ED3\u8FD9\u4E00\u9875\uFF1A\u7814\u7A76\u95EE\u9898\u3001\u65B9\u6CD5\u3001\u5173\u952E\u7ED3\u679C\u3001\u5C40\u9650\u3002\u4E0D\u8981\u7F16\u9020\u3002", mode: "deep" })).then((result) => {
-      if (!result || result.status !== "ok") {
-        setAi({ status: "error", answer: "", reason: String(result && result.reason || "AI \u4E0D\u53EF\u7528") });
-        return;
-      }
-      setAi({ status: "ready", answer: String(result.answer || ""), reason: "" });
-    }).catch((error) => setAi({ status: "error", answer: "", reason: String(error && error.message || error) })).then(() => setBusy(""));
-  };
-  if (open) {
-    return import_react31.default.createElement(
-      "div",
-      { className: "ph-n-embedded-reader" },
-      import_react31.default.createElement(
-        "div",
-        { className: "ph-n-embedded-reader__bar" },
-        import_react31.default.createElement(IconButton, { icon: "chevronLeft", title: t("notes.papers.backToList"), onClick: () => setOpen(null) }),
-        import_react31.default.createElement("span", { className: "ph-n-embedded-reader__title" }, paperTitle2(t, open.paper))
-      ),
-      import_react31.default.createElement(
-        "div",
-        { className: "ph-n-embedded-reader__body" },
-        import_react31.default.createElement(ReaderShell, {
-          t,
-          api,
-          paperId: open.id,
-          paper: open.paper,
-          initialPage: 1,
-          onBack: () => setOpen(null),
-          sessionId: props.sessionId,
-          onOpenSettings: null
-        })
-      )
-    );
-  }
-  return import_react31.default.createElement(
-    "div",
-    { className: "ph-n-paperpane" },
-    import_react31.default.createElement(
-      "div",
-      { className: "ph-n-paperpane__head" },
-      import_react31.default.createElement(Icon, { name: "book", size: 14 }),
-      import_react31.default.createElement("span", { className: "ph-n-paperpane__title" }, t("notes.papers.panel")),
-      props.onClose ? import_react31.default.createElement(IconButton, { icon: "panelRight", title: t("notes.papers.panelClose"), onClick: props.onClose }) : null
-    ),
-    import_react31.default.createElement(
-      "div",
-      { className: "ph-n-paperpane__search" },
-      import_react31.default.createElement(SearchInput, {
-        value: query,
-        onChange: setQuery,
-        placeholder: t("notes.papers.panelSearch"),
-        clearLabel: t("common.clear"),
-        loading: results.status === "loading"
-      })
-    ),
-    import_react31.default.createElement(
-      "div",
-      { className: "ph-n-paperpane__filters" },
-      import_react31.default.createElement(
-        "select",
-        { className: "ph-select ph-select--inline", value: folderId, "aria-label": t("folders.pick"), onChange: (event) => setFolderId(event.target.value) },
-        import_react31.default.createElement("option", { value: "" }, t("folders.all")),
-        folders.map((folder) => import_react31.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
-      ),
-      import_react31.default.createElement(
-        "select",
-        { className: "ph-select ph-select--inline", value: readFilter, "aria-label": t("library.batch.reading"), onChange: (event) => setReadFilter(event.target.value) },
-        import_react31.default.createElement("option", { value: "" }, t("folders.anyState")),
-        import_react31.default.createElement("option", { value: "unread" }, t("library.smart.toRead")),
-        import_react31.default.createElement("option", { value: "read" }, t("library.smart.read"))
-      ),
-      import_react31.default.createElement(
-        "label",
-        { className: "ph-n-paperpane__annot" },
-        import_react31.default.createElement("input", { type: "checkbox", checked: annotatedOnly, onChange: (event) => setAnnotatedOnly(event.target.checked) }),
-        t("notes.papers.annotatedOnly")
-      )
-    ),
-    import_react31.default.createElement(
-      "div",
-      { className: "ph-n-paperpane__body" },
-      import_react31.default.createElement(
-        "div",
-        { className: "ph-n-paperpane__scroll ph-n-scroll" },
-        !open ? import_react31.default.createElement(
-          "div",
-          { className: "ph-n-paperlist" },
-          results.status === "loading" && results.items.length === 0 ? import_react31.default.createElement("div", { className: "ph-n-progress" }, import_react31.default.createElement(Spinner), import_react31.default.createElement("span", null, t("common.loading"))) : null,
-          results.status === "error" ? import_react31.default.createElement("div", { className: "ph-n-error" }, import_react31.default.createElement(Icon, { name: "warning", size: 14 }), import_react31.default.createElement("span", null, results.error)) : null,
-          results.status === "ready" && results.items.length === 0 ? import_react31.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch"), desc: t("notes.papers.panelHint") }) : null,
-          results.items.map(
-            (paper) => import_react31.default.createElement(
-              "button",
-              {
-                key: paper.id,
-                type: "button",
-                className: "ph-n-paperrow" + (props.filterPaperId === paper.id ? " ph-n-paperrow--active" : ""),
-                onClick: () => openPaper(paper),
-                title: paperTitle2(t, paper)
-              },
-              import_react31.default.createElement(
-                "span",
-                { className: "ph-n-paperrow__thumb" },
-                paper.thumbnailUrl ? import_react31.default.createElement("img", { src: paper.thumbnailUrl, alt: "", loading: "lazy" }) : null
-              ),
-              import_react31.default.createElement(
-                "span",
-                { className: "ph-n-paperrow__text" },
-                import_react31.default.createElement("span", { className: "ph-n-paperrow__title" }, paperTitle2(t, paper)),
-                import_react31.default.createElement("span", { className: "ph-n-paperrow__meta" }, [paper.year, paper.venue, Number(paper.annotationCount) > 0 ? "\u6279\u6CE8 " + paper.annotationCount : ""].filter(Boolean).join(" \xB7 ") || t("common.noVenue"))
-              )
-            )
-          )
-        ) : import_react31.default.createElement(
-          "div",
-          { className: "ph-n-paperview" },
-          import_react31.default.createElement(
-            "div",
-            { className: "ph-n-paperview__head" },
-            import_react31.default.createElement(
-              "div",
-              { className: "ph-n-paperview__titles" },
-              import_react31.default.createElement("div", { className: "ph-n-paperview__title" }, paperTitle2(t, open.paper)),
-              import_react31.default.createElement(
-                "div",
-                { className: "ph-n-paperview__meta" },
-                [text(open.paper && open.paper.title), open.paper && open.paper.year, open.paper && open.paper.venue].filter(Boolean).join(" \xB7 ")
-              )
-            ),
-            import_react31.default.createElement(IconButton, { icon: "close", title: t("notes.papers.closeView"), onClick: () => setOpen(null) })
-          ),
-          import_react31.default.createElement(
-            "div",
-            { className: "ph-n-paperview__pager" },
-            import_react31.default.createElement(IconButton, { icon: "chevronLeft", title: t("reader.prevPage"), disabled: page2 <= 1, onClick: () => goPage(page2 - 1) }),
-            import_react31.default.createElement("span", null, t("notes.papers.pageOf", { page: page2, total: open.total || 1 })),
-            import_react31.default.createElement(IconButton, { icon: "chevronRight", title: t("reader.nextPage"), disabled: page2 >= (open.total || 1), onClick: () => goPage(page2 + 1) }),
-            import_react31.default.createElement("span", { className: "ph-n-spacer" }),
-            import_react31.default.createElement(Button, { size: "sm", variant: "ghost", icon: "external", onClick: () => props.onOpenPaper && props.onOpenPaper(open.id, page2) }, t("notes.papers.open"))
-          ),
-          import_react31.default.createElement(
-            "div",
-            {
-              className: "ph-n-readerpage",
-              ref: imageWrapRef,
-              onMouseUp: onPageMouseUp,
-              title: t("notes.papers.regionHint"),
-              style: { "--ph-r-pageh": (pageHeight > 0 ? pageHeight : 640) + "px" }
-            },
-            import_react31.default.createElement("img", {
-              className: "ph-n-readerpage__img",
-              src: pageImageUrl2(open.id, page2, 1200),
-              alt: t("reader.thumbPage", { page: page2 }),
-              loading: "lazy",
-              draggable: false
-            }),
-            layer && selectable.words.length > 0 ? import_react31.default.createElement(PageTextLayer, { page: page2, words: selectable.words, width: selectable.width, height: selectable.height, active: true, interactive: true }) : null
-          ),
-          import_react31.default.createElement(
-            "div",
-            { className: "ph-n-paperview__section" },
-            import_react31.default.createElement("div", { className: "ph-n-paperview__section-title" }, import_react31.default.createElement(Icon, { name: "translate", size: 12 }), t("notes.papers.regionTitle")),
-            import_react31.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.regionHint")),
-            region.status === "loading" ? import_react31.default.createElement("div", { className: "ph-n-progress" }, import_react31.default.createElement(Spinner), import_react31.default.createElement("span", null, t("common.loading"))) : null,
-            region.status === "error" || region.status === "ready" && region.reason && !region.text ? import_react31.default.createElement("div", { className: "ph-n-error" }, import_react31.default.createElement(Icon, { name: "warning", size: 14 }), import_react31.default.createElement("span", null, region.reason || t("common.unavailable"))) : null,
-            region.text ? import_react31.default.createElement(
-              "div",
-              { className: "ph-n-region-result" },
-              import_react31.default.createElement("div", { className: "ph-n-region-result__source" }, region.text),
-              region.translation ? import_react31.default.createElement("div", { className: "ph-n-region-result__translation" }, region.translation) : import_react31.default.createElement("div", { className: "ph-n-caption" }, t("notes.papers.regionPending"))
-            ) : null,
-            import_react31.default.createElement(Button, { size: "sm", variant: "soft", icon: "sparkle", loading: busy2 === "ai", onClick: askAiPage }, t("notes.papers.askAi")),
-            ai.status === "loading" ? import_react31.default.createElement("div", { className: "ph-n-progress" }, import_react31.default.createElement(Spinner), import_react31.default.createElement("span", null, t("common.loading"))) : null,
-            ai.status === "error" ? import_react31.default.createElement("div", { className: "ph-n-error" }, import_react31.default.createElement(Icon, { name: "warning", size: 14 }), import_react31.default.createElement("span", null, ai.reason)) : null,
-            ai.answer ? import_react31.default.createElement("div", { className: "ph-n-region-result__translation" }, ai.answer) : null
-          ),
-          import_react31.default.createElement(
-            "div",
-            { className: "ph-n-paperview__section" },
-            import_react31.default.createElement(
-              "div",
-              { className: "ph-n-paperview__section-title" },
-              import_react31.default.createElement(Icon, { name: "translate", size: 12 }),
-              t("notes.papers.translation"),
-              import_react31.default.createElement(Button, { size: "sm", variant: "soft", icon: "translate", loading: busy2 === "translate", onClick: translatePage }, t("notes.papers.translatePage")),
-              import_react31.default.createElement("span", { className: "ph-n-spacer" }),
-              translation.blocks.length > 0 ? import_react31.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.translatedCount", { count: translation.blocks.filter((block) => block && block.translation).length })) : null
-            ),
-            translation.status === "translating" ? import_react31.default.createElement("div", { className: "ph-n-progress" }, import_react31.default.createElement(Spinner), import_react31.default.createElement("span", null, t("notes.papers.translating"))) : null,
-            translation.status === "error" || translation.reason && translation.blocks.length === 0 ? import_react31.default.createElement("div", { className: "ph-n-error" }, import_react31.default.createElement(Icon, { name: "warning", size: 14 }), import_react31.default.createElement("span", null, translation.reason || t("common.unavailable"))) : null,
-            translation.blocks.length > 0 ? import_react31.default.createElement(
-              "div",
-              { className: "ph-n-paperview__trans" },
-              translation.blocks.slice(0, 14).map(
-                (block, index) => import_react31.default.createElement(
-                  "div",
-                  { key: block && block.id || index },
-                  block && block.translation ? import_react31.default.createElement("p", null, block.translation) : import_react31.default.createElement("p", { className: "muted" }, (block && block.text ? String(block.text).slice(0, 180) : "") + " \xB7 " + t("notes.papers.untranslated"))
-                )
-              )
-            ) : translation.status === "idle" ? import_react31.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.translateHint")) : null
-          ),
-          import_react31.default.createElement(
-            "div",
-            { className: "ph-n-paperview__section" },
-            import_react31.default.createElement(
-              "div",
-              { className: "ph-n-paperview__section-title" },
-              import_react31.default.createElement(Icon, { name: "highlighter", size: 12 }),
-              t("notes.papers.annotations"),
-              import_react31.default.createElement("span", { className: "ph-n-caption" }, String(annotations.items.length))
-            ),
-            annotations.status === "ready" && annotations.items.length === 0 ? import_react31.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.noAnnotations")) : null,
-            annotations.items.slice(0, 8).map(
-              (annotation) => import_react31.default.createElement(
-                "button",
-                {
-                  key: annotation.id,
-                  type: "button",
-                  className: "ph-n-paperview__annot",
-                  onClick: () => props.onOpenPaper && props.onOpenPaper(open.id, page2, annotation.id),
-                  title: t("reader.annot.openInReader"),
-                  style: { textAlign: "left", cursor: "pointer" }
-                },
-                import_react31.default.createElement("span", { className: "ph-n-paperview__annot-dot", style: { background: ANNOTATION_COLORS2[annotation.color] || ANNOTATION_COLORS2.yellow } }),
-                import_react31.default.createElement("span", { className: "ph-n-paperview__annot-text" }, text(annotation.quote, annotation.comment) || annotation.kind)
-              )
-            )
-          ),
-          import_react31.default.createElement(
-            "div",
-            { className: "ph-n-paperview__section" },
-            import_react31.default.createElement(
-              "div",
-              { className: "ph-n-paperview__section-title" },
-              import_react31.default.createElement(Icon, { name: "note", size: 12 }),
-              t("notes.papers.useInNotes")
-            ),
-            pageState.status === "loading" ? import_react31.default.createElement("div", { className: "ph-n-progress" }, import_react31.default.createElement(Spinner), import_react31.default.createElement("span", null, t("common.loading"))) : pageState.status === "error" ? import_react31.default.createElement("div", { className: "ph-n-error" }, import_react31.default.createElement(Icon, { name: "warning", size: 14 }), import_react31.default.createElement("span", null, pageState.error)) : import_react31.default.createElement(
-              "p",
-              { className: "ph-n-caption", style: { maxHeight: 120, overflow: "hidden" } },
-              (pageState.text || "").replace(/\s+/g, " ").slice(0, 360) || t("reader.noText")
-            ),
-            import_react31.default.createElement(
-              "div",
-              { className: "ph-n-paperview__actions", style: { display: "flex", gap: 6, flexWrap: "wrap" } },
-              props.noteId ? import_react31.default.createElement(Button, {
-                size: "sm",
-                variant: "soft",
-                icon: "link",
-                onClick: () => props.onLinkPaper && props.onLinkPaper(open.paper),
-                disabled: Array.isArray(props.linkedPaperIds) && props.linkedPaperIds.indexOf(open.id) >= 0
-              }, t("notes.papers.linkCurrent")) : null,
-              import_react31.default.createElement(Button, { size: "sm", variant: "ghost", icon: "filter", onClick: () => props.onFilterByPaper && props.onFilterByPaper(open.paper) }, t("notes.fromPaper")),
-              import_react31.default.createElement(Button, { size: "sm", variant: "ghost", icon: "note", onClick: () => props.onCreateNote && props.onCreateNote(open.paper) }, t("notes.papers.newNote"))
-            )
-          )
-        )
-      )
-    )
-  );
-}
-
-// src/surfaces/library/toolbar.jsx
-var import_react32 = __toESM(require("react"), 1);
-function operationId(prefix) {
-  const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
-  return (prefix ? prefix + "-" : "") + random;
-}
-var SORT_OPTIONS = [
-  ["recent", "library.sort.recent"],
-  ["added", "library.sort.added"],
-  ["title", "library.sort.title"],
-  ["year", "library.sort.year"],
-  ["authors", "library.sort.authors"]
-];
-function ImportControl(props) {
-  const t = props.t;
-  const api = props.api;
-  const controller = props.controller;
-  const [importing, setImporting] = import_react32.default.useState(false);
-  const fileRef = import_react32.default.useRef(null);
-  const importFiles = (fileList) => {
-    const files = Array.prototype.slice.call(fileList || []);
-    if (files.length === 0) return;
-    setImporting(true);
-    const groups = /* @__PURE__ */ new Map();
-    const reads = files.map(
-      (file) => readFileAsDataUrl(file).then((dataUrl) => {
-        const format = importFormatOf(file.name);
-        const bucket = groups.get(format) || [];
-        bucket.push({ name: String(file.name || "upload"), base64: dataUrlPayload(dataUrl) });
-        groups.set(format, bucket);
-      })
-    );
-    Promise.all(reads).then(() => {
-      const calls = [];
-      groups.forEach((uploads, format) => {
-        const params = { uploads, operationId: operationId("import") };
-        if (format) params.format = format;
-        calls.push(api("library.import", params));
-      });
-      return Promise.all(calls);
-    }).then((results) => {
-      let accepted = 0;
-      let duplicates = 0;
-      let errors = 0;
-      results.forEach((result) => {
-        accepted += Number(result && result.accepted) || 0;
-        duplicates += Array.isArray(result && result.duplicates) ? result.duplicates.length : 0;
-        errors += Array.isArray(result && result.errors) ? result.errors.length : 0;
-      });
-      props.pushToast(errors > 0 ? "warning" : "success", duplicates > 0 ? t("toast.importedSkipped", { count: accepted, dupes: duplicates }) : t("toast.imported", { count: accepted }));
-      let classified = 0;
-      let createdFolders = 0;
-      let embeddingIssue = "";
-      results.forEach((result) => {
-        const classification = result && result.classification || (result && result.items ? result.items.map((item) => item && item.classification).filter(Boolean) : []);
-        const list = Array.isArray(classification) ? classification : [classification];
-        list.filter(Boolean).forEach((entry) => {
-          if (entry.folder || entry.folderId) classified += 1;
-          if (entry.created) createdFolders += 1;
-          if (entry.embedding === "unavailable" && entry.reason) embeddingIssue = String(entry.reason);
-        });
-      });
-      if (accepted > 0 && (classified > 0 || createdFolders > 0 || embeddingIssue)) {
-        notify("info", t("import.classified", { count: classified || accepted }) + (createdFolders > 0 ? " \xB7 " + t("import.createdFolders", { count: createdFolders }) : "") + (embeddingIssue ? " \xB7 " + t("import.embeddingUnavailable", { message: embeddingIssue }) : ""), { label: t("common.undo"), onClick: () => {
-          controller.refresh();
-        } }, 9e3);
-      }
-      controller.refresh();
-    }).catch((error) => props.pushToast("error", t("toast.importFailed", { message: describeError(t, error) }))).then(() => setImporting(false));
-  };
-  return h(
-    import_react32.default.Fragment,
-    null,
-    h("input", {
-      ref: fileRef,
-      type: "file",
-      multiple: true,
-      accept: ".pdf,.bib,.bibtex,.ris,.json",
-      className: "ph-hidden-input",
-      onChange: (event) => {
-        importFiles(event.target.files);
-        event.target.value = "";
-      }
-    }),
-    h(
-      Button,
-      {
-        variant: "primary",
-        icon: "import",
-        loading: importing,
-        className: "ph-importbtn",
-        onClick: () => fileRef.current && fileRef.current.click(),
-        title: t("library.import")
-      },
-      importing ? t("library.importing") : t("library.import")
-    )
-  );
-}
-function LibraryToolbar(props) {
-  const t = props.t;
-  const [narrow, setNarrow] = import_react32.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
-  import_react32.default.useEffect(() => {
-    const onResize = () => setNarrow(typeof window !== "undefined" && window.innerWidth <= 1100);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  const leftOpen = narrow ? Boolean(props.snapshot.mobileLeftOpen) && !props.snapshot.ui.leftCollapsed : !props.snapshot.ui.leftCollapsed;
-  const snapshot4 = props.snapshot;
-  const controller = props.controller;
-  return h(
-    "div",
-    { className: "ph-toolbar ph-toolbar--library" },
-    h(
-      "div",
-      { className: "ph-toolbar__lead" },
-      h(IconButton, {
-        icon: "panelLeft",
-        title: leftOpen ? t("library.sidebar.hide") : t("library.sidebar.show"),
-        "aria-label": leftOpen ? t("library.sidebar.hide") : t("library.sidebar.show"),
-        "aria-pressed": leftOpen ? "true" : "false",
-        active: leftOpen,
-        onClick: () => narrow && controller.toggleMobileLeft ? controller.toggleMobileLeft() : controller.toggleLeft()
-      }),
-      h("span", { className: "ph-toolbar__divider", "aria-hidden": "true" }),
-      h(
-        "label",
-        { className: "ph-toolbar__sort" },
-        h(Icon, { name: "sort", size: 13, className: "ph-toolbar__sorticon" }),
-        h(
-          "select",
-          { className: "ph-select ph-select--quiet", value: snapshot4.filters.sort, onChange: (event) => controller.setSort(event.target.value), "aria-label": t("library.sort") },
-          SORT_OPTIONS.map(([value, key]) => h("option", { key: value, value }, t(key)))
-        )
-      ),
-      h(Segmented, {
-        "aria-label": t("library.view.table"),
-        value: snapshot4.viewMode,
-        items: [
-          { id: "table", icon: "list", title: t("library.view.table") },
-          { id: "grid", icon: "grid", title: t("library.view.grid") }
-        ],
-        onChange: (value) => controller.setViewMode(value)
-      })
-    ),
-    h("span", { className: "ph-spacer" }),
-    h(
-      "div",
-      { className: "ph-toolbar__tail" },
-      h("span", { className: "ph-toolbar__count" }, t("library.table.total", { count: snapshot4.total || snapshot4.items.length })),
-      h(IconButton, {
-        icon: "panelRight",
-        title: snapshot4.ui.rightCollapsed ? t("library.details.expand") : t("library.details.collapse"),
-        "aria-label": snapshot4.ui.rightCollapsed ? t("library.details.expand") : t("library.details.collapse"),
-        active: !snapshot4.ui.rightCollapsed,
-        onClick: () => controller.toggleRight()
-      })
-    )
-  );
-}
-function BatchBar(props) {
-  const t = props.t;
-  const api = props.api;
-  const snapshot4 = props.snapshot;
-  const controller = props.controller;
-  const { push } = useToasts();
-  const [tagOpen, setTagOpen] = import_react32.default.useState(false);
-  const [tagValue, setTagValue] = import_react32.default.useState("");
-  const [collectionOpen, setCollectionOpen] = import_react32.default.useState(false);
-  const [busy2, setBusy] = import_react32.default.useState("");
-  const [armed, setArmed] = import_react32.default.useState(false);
-  const count = snapshot4.selection.length;
-  const selectedPapers = (snapshot4.items || []).filter((paper) => snapshot4.selection.indexOf(paper.id) >= 0);
-  const allFavorite = selectedPapers.length > 0 && selectedPapers.every((paper) => paper.favorite === true);
-  if (count === 0) return null;
-  const toast = (tone, text2) => {
-    push(tone, text2);
-    if (props.pushToast) props.pushToast(tone, text2);
-  };
-  const cite = () => {
-    const papers = controller.selectedPapers();
-    setBusy("cite");
-    api("references.commit", {
-      items: papers.map((paper) => ({ kind: "paper", id: paper.id })),
-      operationId: operationId("refs")
-    }).then((result) => {
-      pendingStore.add(result, papers.map((paper) => ({ kind: "paper", id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title })));
-      toast("success", t("toast.cited"));
-      controller.clearSelection();
-    }).catch((error) => toast("error", t("toast.citeFailed", { message: describeError(t, error) }))).then(() => setBusy(""));
-  };
-  const applyTag = () => {
-    const value = tagValue.trim();
-    if (!value) {
-      toast("info", t("toast.tagRequired"));
-      return;
-    }
-    setBusy("tag");
-    controller.addTagsToSelection([value]).then(() => {
-      toast("success", t("library.batch.tagsAdded"));
-      setTagValue("");
-      setTagOpen(false);
-      controller.clearSelection();
-    }).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
-  };
-  const assign = (collection) => {
-    setBusy("collection");
-    controller.assignCollection(collection.id, snapshot4.selection, true).then(() => {
-      toast("success", t("library.collection.assign") + " \xB7 " + collection.name);
-      setCollectionOpen(false);
-    }).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
-  };
-  const trashMode = snapshot4.filters.view === "trash";
-  const collections = (snapshot4.collections || []).filter((collection) => collection.kind !== "field");
-  return h(
-    "div",
-    { className: "ph-batch", role: "toolbar" },
-    h("span", { className: "ph-batch__count" }, t("library.selectedCount", { count })),
-    h("span", { className: "ph-batch__divider" }),
-    trashMode ? h(
-      import_react32.default.Fragment,
-      null,
-      h(Button, { size: "sm", icon: "restore", loading: busy2 === "restore", onClick: () => {
-        setBusy("restore");
-        controller.restoreSelection().then(() => toast("success", t("toast.restored"))).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
-      } }, t("library.batch.restore")),
-      h(Button, { size: "sm", variant: "danger", icon: "trash", loading: busy2 === "purge", onClick: () => {
-        if (!armed) {
-          setArmed(true);
-          return;
-        }
-        setBusy("purge");
-        controller.purgeSelection().then(() => {
-          toast("success", t("toast.purged"));
-          setArmed(false);
-        }).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
-      } }, armed ? t("library.batch.purgeConfirm") : t("library.batch.purge"))
-    ) : h(
-      import_react32.default.Fragment,
-      null,
-      h(
-        "div",
-        { className: "ph-batch__group ph-batch__group--primary" },
-        h(Button, { size: "sm", variant: "primary", icon: "quote", loading: busy2 === "cite", onClick: cite }, t("library.batch.cite")),
-        h(Button, { size: "sm", icon: "star", className: allFavorite ? "ph-batch__icon ph-batch__icon--on" : "ph-batch__icon", title: allFavorite ? t("folders.unfavorite") : t("details.favoriteOff"), onClick: () => {
-          const next = !allFavorite;
-          setBusy("fav");
-          controller.setFavorite(snapshot4.selection, next).then(() => toast("success", next ? t("details.favoriteOn") : t("folders.unfavorite"))).catch((error) => toast("error", describeError(t, error))).then(() => setBusy(""));
-        } }, allFavorite ? t("folders.unfavorite") : t("details.favoriteOff"))
-      ),
-      h("span", { className: "ph-batch__divider ph-batch__divider--soft" }),
-      h(
-        "div",
-        { className: "ph-batch__group ph-batch__group--secondary" },
-        h(FolderPicker, { t, folders: props.folders, value: "", allowAll: true, className: "ph-select--inline ph-select--quiet", label: t("folders.assignTo"), onChange: (id) => {
-          if (!id) return;
-          setBusy("folder");
-          controller.assignFolder(id, snapshot4.selection, true).then(() => toast("success", t("folders.assigned"))).catch((error) => toast("error", describeError(t, error))).then(() => setBusy(""));
-        } }),
-        tagOpen ? h(
-          "span",
-          { className: "ph-batch__tag" },
-          h("input", { value: tagValue, autoFocus: true, placeholder: t("library.batch.tagPlaceholder"), onChange: (event) => setTagValue(event.target.value), onKeyDown: (event) => {
-            if (event.key === "Enter") applyTag();
-            if (event.key === "Escape") {
-              setTagOpen(false);
-              setTagValue("");
-            }
-          } }),
-          h(Button, { size: "sm", variant: "primary", loading: busy2 === "tag", onClick: applyTag }, t("library.batch.tagApply"))
-        ) : h(Button, { size: "sm", icon: "tag", title: t("library.batch.tag"), onClick: () => setTagOpen(true) }, t("library.batch.tag")),
-        collectionOpen ? h(
-          "span",
-          { className: "ph-batch__tag" },
-          h(
-            "select",
-            {
-              className: "ph-select",
-              defaultValue: "",
-              onChange: (event) => {
-                const collection = collections.find((item) => item.id === event.target.value);
-                if (collection) assign(collection);
-              }
-            },
-            h("option", { value: "", disabled: true }, t("library.batch.collection")),
-            collections.map((collection) => h("option", { key: collection.id, value: collection.id }, collection.name))
-          ),
-          h(IconButton, { icon: "close", title: t("common.cancel"), onClick: () => setCollectionOpen(false) })
-        ) : h(Button, { size: "sm", icon: "collection", title: t("library.batch.collection"), onClick: () => setCollectionOpen(true) }, t("library.batch.collection")),
-        h("select", { className: "ph-select ph-select--inline ph-select--quiet", defaultValue: "", "aria-label": t("library.batch.reading"), onChange: (event) => {
-          const value = event.target.value;
-          if (!value) return;
-          setBusy("reading");
-          controller.setReadingSelection(snapshot4.selection, value).then(() => toast("success", t("library.batch.readingUpdated"))).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
-        } }, h("option", { value: "" }, t("library.batch.reading")), h("option", { value: "to-read" }, t("library.smart.toRead")), h("option", { value: "reading" }, t("library.smart.reading")), h("option", { value: "read" }, t("library.smart.read"))),
-        h(Button, { size: "sm", icon: "copy", loading: busy2 === "citeCopy", title: t("library.batch.copyCitation"), onClick: () => {
-          setBusy("citeCopy");
-          api("citation.format", { ids: snapshot4.selection, style: "bibtex" }).then((result) => copyText(result && result.content ? result.content : "")).then((ok) => toast(ok ? "success" : "warning", ok ? t("common.copied") : t("common.unavailable"))).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
-        } }, t("library.batch.copyCitation")),
-        h(Button, { size: "sm", icon: "chart", loading: busy2 === "metrics", title: t("library.batch.updateMetrics"), onClick: () => {
-          setBusy("metrics");
-          controller.refreshMetrics(snapshot4.selection).then((result) => {
-            const results = result && Array.isArray(result.results) ? result.results : [];
-            const ok = results.filter((entry) => entry && entry.status !== "failed").length;
-            toast(ok > 0 ? "success" : "warning", ok > 0 ? t("metrics.batchUpdated", { count: ok }) : t("metrics.refreshUnavailable"));
-          }).catch((error) => toast("error", t("metrics.refreshFailed", { message: describeError(t, error) }))).then(() => setBusy(""));
-        } }, t("library.batch.updateMetrics")),
-        h(Button, { size: "sm", variant: "danger", icon: "trash", className: "ph-batch__trash", loading: busy2 === "trash", title: armed ? t("library.batch.trashConfirm") : t("library.batch.trash"), onClick: () => {
-          if (!armed) {
-            setArmed(true);
-            setTimeout(() => setArmed(false), 4500);
-            return;
-          }
-          setBusy("trash");
-          controller.trashSelection().then((removed) => {
-            toast("success", t("toast.trashed") + (removed ? " \xB7 " + removed : ""));
-            setArmed(false);
-          }).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
-        } }, armed ? t("library.batch.trashConfirm") : t("library.batch.trash"))
-      )
-    ),
-    h("span", { className: "ph-batch__divider" }),
-    h(IconButton, { icon: "close", title: t("library.clearSelection"), onClick: () => {
-      controller.clearSelection();
-      setTagOpen(false);
-      setCollectionOpen(false);
-      setArmed(false);
-    } })
-  );
-}
-
-// src/surfaces/library/item-table.jsx
-var import_react33 = __toESM(require("react"), 1);
 
 // src/core/dnd.js
 var MATERIAL_MIME2 = "application/x-pappers-hall-material";
@@ -25171,7 +20926,4567 @@ function installDragToConversation(options) {
   };
 }
 
+// src/surfaces/reader/figures-panel.jsx
+function ReaderFiguresPanel(props) {
+  const t = props.t;
+  const [state, setState] = import_react26.default.useState({ status: "loading", items: [], error: null });
+  import_react26.default.useEffect(() => {
+    let alive = true;
+    setState({ status: "loading", items: [], error: null });
+    Promise.resolve(props.api("figures.list", { paperId: props.paperId })).then((result) => {
+      if (!alive) return;
+      const items2 = Array.isArray(result) ? result : Array.isArray(result && result.items) ? result.items : [];
+      setState({ status: "ready", items: items2, error: null });
+    }).catch((error) => {
+      if (alive) setState({ status: "error", items: [], error });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [props.api, props.paperId]);
+  if (state.status === "loading") return import_react26.default.createElement("div", { className: "ph-r-side__loading" }, import_react26.default.createElement(Spinner2, { size: 14 }), t("reader.figures.loading"));
+  if (state.status === "error") return import_react26.default.createElement(Empty, { icon: "warning", title: t("reader.figures.failed"), desc: String(state.error && state.error.message || state.error) });
+  if (state.items.length === 0) return import_react26.default.createElement(Empty, { icon: "image", title: t("reader.figures.empty"), desc: t("reader.figures.emptyHint") });
+  return import_react26.default.createElement(
+    "div",
+    { className: "ph-r-figures" },
+    import_react26.default.createElement("p", { className: "ph-r-side__hint" }, t("reader.figures.hint")),
+    state.items.map((figure) => {
+      const material = {
+        kind: "figure",
+        id: figure.id,
+        figureId: figure.id,
+        paperId: figure.paperId || props.paperId,
+        page: Number(figure.page) || 1,
+        label: figure.label || "",
+        title: figure.label || "",
+        caption: figure.caption || "",
+        paperTitle: props.paper && (props.paper.titleZh || props.paper.title) || "",
+        imageUrl: figure.imageUrl || "",
+        bbox: figure.bbox || null
+      };
+      return import_react26.default.createElement(
+        "figure",
+        { key: figure.id, className: "ph-r-figcard", ...dragProps(t, [material], { source: "reader" }) },
+        import_react26.default.createElement(
+          "button",
+          { type: "button", className: "ph-r-figcard__media", onClick: () => props.onOpenFigure && props.onOpenFigure(figure) },
+          import_react26.default.createElement("img", { src: figure.thumbnailUrl || figure.imageUrl, alt: figure.label || "", loading: "lazy", draggable: false })
+        ),
+        import_react26.default.createElement(
+          "figcaption",
+          null,
+          import_react26.default.createElement("strong", null, figure.label || "?"),
+          import_react26.default.createElement("span", null, t("reader.figures.page", { page: Number(figure.page) || 1 }))
+        ),
+        figure.caption ? import_react26.default.createElement("p", { className: "ph-r-figcard__cap" }, figure.caption) : null,
+        import_react26.default.createElement(Btn, { size: "sm", variant: "soft", icon: "plus", onClick: () => props.onOpenNoteInsert && props.onOpenNoteInsert(material) }, t("reader.figures.insertNow"))
+      );
+    })
+  );
+}
+
+// src/surfaces/reader/outline.jsx
+var import_react27 = __toESM(require("react"), 1);
+function Outline(props) {
+  const t = props.t;
+  const items2 = Array.isArray(props.items) ? props.items.filter((item) => item && (item.title || item.page)).map((item) => ({
+    title: String(item.title || "").trim() || (item.page == null ? t("reader.outline.title") : t("reader.outline.page", { page: num(item.page, 1) })),
+    // Heuristic outlines may not resolve a page (Host returns null); keep
+    // the entry visible but non-jumpable instead of pretending it is page 1.
+    page: item.page == null || item.page === "" ? null : Math.max(1, Math.round(num(item.page, 1))),
+    level: Math.max(1, Math.min(4, Math.round(num(item.level, 1))))
+  })) : [];
+  if (props.loading && items2.length === 0) {
+    return import_react27.default.createElement(
+      "div",
+      { className: "ph-r-outline", "aria-busy": "true" },
+      [1, 2, 3, 4, 5].map(
+        (index) => import_react27.default.createElement(
+          "div",
+          { key: index, style: { padding: "7px 8px" } },
+          import_react27.default.createElement("span", { className: "ph-r-skeleton", style: { width: 40 + index * 37 % 50 + "%", height: 11 } })
+        )
+      )
+    );
+  }
+  if (props.error && items2.length === 0) {
+    return import_react27.default.createElement(Empty, {
+      icon: "warning",
+      tone: "error",
+      title: t("reader.outline.empty"),
+      desc: String(props.error),
+      action: props.onRetry ? import_react27.default.createElement(
+        "button",
+        { type: "button", className: "ph-r-btn ph-r-btn--soft ph-r-btn--sm", onClick: props.onRetry },
+        import_react27.default.createElement(Icon2, { name: "refresh", size: 13 }),
+        import_react27.default.createElement("span", null, t("reader.retry"))
+      ) : null
+    });
+  }
+  if (items2.length === 0) {
+    return import_react27.default.createElement(Empty, {
+      icon: "list",
+      title: t("reader.outline.empty"),
+      desc: t("reader.outline.emptyDesc")
+    });
+  }
+  let activeIndex = -1;
+  for (let index = 0; index < items2.length; index += 1) {
+    const itemPage = items2[index].page;
+    if (itemPage != null && itemPage <= props.page) activeIndex = index;
+  }
+  if (activeIndex < 0 && items2.length > 0) activeIndex = 0;
+  return import_react27.default.createElement(
+    "div",
+    { className: "ph-r-outline" },
+    import_react27.default.createElement(
+      "div",
+      { style: { display: "flex", alignItems: "center", gap: 6, padding: "4px 8px 6px" } },
+      import_react27.default.createElement(Icon2, { name: "list", size: 13 }),
+      import_react27.default.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: "var(--dsw-alias-label-secondary)" } }, t("reader.outline.title")),
+      import_react27.default.createElement(Badge2, null, String(items2.length))
+    ),
+    items2.map(
+      (item, index) => import_react27.default.createElement(
+        "button",
+        {
+          key: index + ":" + item.page + ":" + item.title,
+          type: "button",
+          className: cx("ph-r-outline__item", index === activeIndex && "ph-r-outline__item--active"),
+          style: { paddingLeft: 8 + (item.level - 1) * 13 },
+          onClick: () => {
+            if (item.page != null) props.onJump(item.page);
+          },
+          title: item.page == null ? item.title : t("reader.outline.jump", { title: item.title }),
+          disabled: item.page == null,
+          "aria-current": index === activeIndex ? "location" : void 0
+        },
+        import_react27.default.createElement("span", { className: "ph-r-outline__level" }, String(item.level)),
+        import_react27.default.createElement("span", { className: "ph-r-outline__label" }, item.title),
+        import_react27.default.createElement("span", { className: "ph-r-outline__page" }, item.page == null ? "\u2014" : String(item.page))
+      )
+    )
+  );
+}
+
+// src/surfaces/reader/page-canvas.jsx
+var import_react28 = __toESM(require("react"), 1);
+var PAGE_GAP = 16;
+var PAGE_TOP_PADDING = 18;
+var PAGE_BOTTOM_PADDING = 48;
+var CANVAS_SIDE_PADDING = 24;
+var VIRTUAL_BUFFER = 2;
+var DEFAULT_PAGE_WIDTH = 595;
+var DEFAULT_PAGE_HEIGHT = 791;
+var MIN_BASE_WIDTH = 300;
+var MAX_BASE_WIDTH = 1e3;
+var EMPTY_LIST = [];
+function scrollElementTo(element2, top, smooth) {
+  if (!element2) return;
+  const value = Math.max(0, Math.round(top));
+  try {
+    if (typeof element2.scrollTo === "function") {
+      element2.scrollTo({ top: value, behavior: smooth ? "smooth" : "auto" });
+      return;
+    }
+  } catch {
+  }
+  element2.scrollTop = value;
+}
+function usePageDescriptors(pages, total) {
+  return import_react28.default.useMemo(() => {
+    const list = arrayOf3(pages);
+    if (list.length > 0) {
+      return list.map((item, index) => {
+        const page2 = Math.max(1, Math.round(num(item && item.page, index + 1)));
+        const width = num(item && item.width, DEFAULT_PAGE_WIDTH) || DEFAULT_PAGE_WIDTH;
+        const height = num(item && item.height, DEFAULT_PAGE_HEIGHT) || DEFAULT_PAGE_HEIGHT;
+        return { page: page2, width, height, imageUrl: item && item.imageUrl ? item.imageUrl : "" };
+      });
+    }
+    const count = Math.max(1, Math.round(num(total, 1)));
+    const generated = [];
+    for (let page2 = 1; page2 <= count; page2 += 1) {
+      generated.push({ page: page2, width: DEFAULT_PAGE_WIDTH, height: DEFAULT_PAGE_HEIGHT, imageUrl: "" });
+    }
+    return generated;
+  }, [pages, total]);
+}
+function useAnnotationsByPage(annotations) {
+  return import_react28.default.useMemo(() => {
+    const map = /* @__PURE__ */ new Map();
+    for (const annotation of arrayOf3(annotations)) {
+      if (!annotation) continue;
+      const list = map.get(annotation.page);
+      if (list) list.push(annotation);
+      else map.set(annotation.page, [annotation]);
+    }
+    return map;
+  }, [annotations]);
+}
+function sameAnnotations(left, right) {
+  if (left === right) return true;
+  const a = left || EMPTY_LIST;
+  const b = right || EMPTY_LIST;
+  if (a.length !== b.length) return false;
+  for (let index = 0; index < a.length; index += 1) {
+    const one = a[index];
+    const two = b[index];
+    if (one === two) continue;
+    if (!one || !two) return false;
+    if (one.id !== two.id || one.comment !== two.comment || one.color !== two.color || one.kind !== two.kind) return false;
+    if (one.rects !== two.rects || one.pending !== two.pending) return false;
+  }
+  return true;
+}
+function PageViewImpl(props) {
+  const {
+    t,
+    paperId,
+    pageInfo,
+    width,
+    height,
+    active,
+    mode,
+    pageDataEntry,
+    layerEntry,
+    annotations,
+    activeAnnotationId,
+    selection,
+    selectionResult,
+    popover,
+    noteDraft,
+    search,
+    reducedMotion
+  } = props;
+  const page2 = pageInfo.page;
+  const pageRef = import_react28.default.useRef(null);
+  const imgRef = import_react28.default.useRef(null);
+  const [imageState, setImageState] = import_react28.default.useState("loading");
+  const [imageVersion, setImageVersion] = import_react28.default.useState(0);
+  const [imageSlow, setImageSlow] = import_react28.default.useState(false);
+  const [areaDrag, setAreaDrag] = import_react28.default.useState(null);
+  const areaRectRef = import_react28.default.useRef(null);
+  const [hover, setHover] = import_react28.default.useState(null);
+  const hoverFrame = import_react28.default.useRef(0);
+  const hoverPoint = import_react28.default.useRef(null);
+  const dragRef = import_react28.default.useRef(null);
+  const [selecting, setSelecting] = import_react28.default.useState(false);
+  const [dragSelect, setDragSelect] = import_react28.default.useState(null);
+  const selectRef = import_react28.default.useRef(null);
+  const selectFrame = import_react28.default.useRef(0);
+  const [noteGhost, setNoteGhost] = import_react28.default.useState(null);
+  const interactive = mode === "select";
+  const rawLayer = layerEntry && layerEntry.status === "ready" ? layerEntry.data : null;
+  const pageData = pageDataEntry && pageDataEntry.status === "ready" ? pageDataEntry.data : null;
+  const layer = import_react28.default.useMemo(() => {
+    if (!rawLayer) return null;
+    const width2 = num(rawLayer.width, pageInfo.width);
+    const height2 = num(rawLayer.height, pageInfo.height);
+    if (!(width2 > 0) || !(height2 > 0) || arrayOf3(rawLayer.words).length === 0) {
+      return Object.assign({}, rawLayer, { words: [], width: width2, height: height2 });
+    }
+    if (rawLayer.width === width2 && rawLayer.height === height2) return rawLayer;
+    return Object.assign({}, rawLayer, { width: width2, height: height2 });
+  }, [pageInfo.height, pageInfo.width, rawLayer]);
+  const selectable = import_react28.default.useMemo(() => selectableWords(layer), [layer]);
+  import_react28.default.useEffect(() => {
+    setImageState("loading");
+    setImageSlow(false);
+    setImageVersion(0);
+    setHover(null);
+    setAreaDrag(null);
+    setDragSelect(null);
+    selectRef.current = null;
+    setSelecting(false);
+    setNoteGhost(null);
+  }, [paperId, page2]);
+  const retryImage = import_react28.default.useCallback(() => {
+    setImageState("loading");
+    setImageSlow(false);
+    setImageVersion((value) => value + 1);
+  }, []);
+  const pointOf = import_react28.default.useCallback((event) => {
+    const element2 = pageRef.current;
+    if (!element2) return null;
+    const box = element2.getBoundingClientRect();
+    if (!(box.width > 0) || !(box.height > 0)) return null;
+    return {
+      x: clamp((event.clientX - box.left) / box.width, 0, 1),
+      y: clamp((event.clientY - box.top) / box.height, 0, 1)
+    };
+  }, []);
+  const selectionForPoints = import_react28.default.useCallback(
+    (start, current2) => {
+      const rectNorm = pointRect(start, current2);
+      if (!rectNorm || !selectable || selectable.words.length === 0) return null;
+      if (!(selectable.width > 0) || !(selectable.height > 0)) return null;
+      if (rectNorm.w < 15e-4 && rectNorm.h < 15e-4) return null;
+      const rectPoints = {
+        x: rectNorm.x * selectable.width,
+        y: rectNorm.y * selectable.height,
+        w: Math.max(rectNorm.w * selectable.width, 0.8),
+        h: Math.max(rectNorm.h * selectable.height, 0.8)
+      };
+      const startPoint = { x: start.x * selectable.width, y: start.y * selectable.height };
+      const endPoint = { x: current2.x * selectable.width, y: current2.y * selectable.height };
+      const anchorIndex = wordIndexAt(selectable.words, startPoint, selectable.width);
+      const focusIndex = wordIndexAt(selectable.words, endPoint, selectable.width);
+      if (anchorIndex >= 0 && focusIndex >= 0) {
+        const low = Math.min(anchorIndex, focusIndex);
+        const high = Math.max(anchorIndex, focusIndex);
+        const rangeIndexes = [];
+        for (let index = low; index <= high; index += 1) rangeIndexes.push(index);
+        const rangeBuilt = buildWordSelection(selectable.words, rangeIndexes, selectable.width, selectable.height);
+        if (rangeBuilt && rangeBuilt.wordCount > 0) {
+          return {
+            quotes: rangeBuilt.quote,
+            quote: rangeBuilt.quote,
+            rects: rangeBuilt.rects,
+            anchor: rangeBuilt.anchor,
+            wordCount: rangeBuilt.wordCount,
+            rect: rectNorm,
+            sequential: true
+          };
+        }
+      }
+      const allHits = hitTestWords(selectable.words, rectPoints);
+      if (allHits.length === 0) return null;
+      const originX = start.x * selectable.width;
+      const boxes = allHits.map((index) => ({ index, word: selectable.words[index] })).filter((item) => item.word);
+      boxes.sort((left, right) => left.word.x - right.word.x);
+      const clusters = [];
+      let currentCluster = [];
+      let clusterRight = -Infinity;
+      for (const item of boxes) {
+        if (currentCluster.length === 0) {
+          currentCluster = [item];
+          clusterRight = item.word.x + item.word.w;
+          continue;
+        }
+        if (item.word.x - clusterRight > selectable.width * 0.045) {
+          clusters.push(currentCluster);
+          currentCluster = [item];
+          clusterRight = item.word.x + item.word.w;
+        } else {
+          currentCluster.push(item);
+          clusterRight = Math.max(clusterRight, item.word.x + item.word.w);
+        }
+      }
+      if (currentCluster.length > 0) clusters.push(currentCluster);
+      let chosenCluster = clusters[0] || [];
+      if (clusters.length > 1) {
+        let bestDistance = Infinity;
+        for (const cluster of clusters) {
+          const left = cluster[0].word.x;
+          const right = Math.max.apply(null, cluster.map((item) => item.word.x + item.word.w));
+          const distance = originX < left ? left - originX : originX > right ? originX - right : 0;
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            chosenCluster = cluster;
+          }
+        }
+      }
+      const hits = chosenCluster.map((item) => item.index);
+      if (hits.length === 0) return null;
+      const built = buildWordSelection(selectable.words, hits, selectable.width, selectable.height);
+      if (!built) return null;
+      return {
+        quotes: built.quote,
+        quote: built.quote,
+        rects: built.rects,
+        anchor: built.anchor,
+        wordCount: built.wordCount || hits.length,
+        rect: rectNorm
+      };
+    },
+    [selectable]
+  );
+  const anchorPx = import_react28.default.useCallback(
+    (anchor, placement) => {
+      if (!anchor) return null;
+      const half = placement && placement.halfWidth ? placement.halfWidth : 150;
+      const centerX = (anchor.x + anchor.w / 2) * width;
+      const left = clamp(centerX, Math.min(half, width / 2), Math.max(width - Math.min(half, width / 2), Math.min(half, width / 2)));
+      const bottom = (anchor.y + anchor.h) * height;
+      const top = (anchor.y + anchor.h) * height;
+      return {
+        below: { left, top: clamp(top + 8, 4, Math.max(height - 8, 8)) },
+        above: { left, top: clamp(anchor.y * height - 8, 4, Math.max(height - 8, 8)), flip: true },
+        bottom
+      };
+    },
+    [height, width]
+  );
+  const openAnnotationAt = import_react28.default.useCallback(
+    (point) => {
+      const annotation = annotationAt(annotations, point);
+      if (!annotation) return false;
+      const anchor = annotation.kind === "note" ? null : unionRect(annotation.rects);
+      const noteRect = annotation.rects && annotation.rects[0] ? annotation.rects[0] : null;
+      const resolved = anchor || noteRect || { x: point.x, y: point.y, w: 0, h: 0 };
+      props.onAnnotationOpen(annotation, resolved);
+      return true;
+    },
+    [annotations, props]
+  );
+  const handleMouseDown = import_react28.default.useCallback(
+    (event) => {
+      if (event.button !== 0) return;
+      const target = event.target;
+      if (target && target.closest && target.closest("[data-ph-overlay]")) return;
+      if (mode === "area") {
+        const point2 = pointOf(event);
+        if (!point2) return;
+        event.preventDefault();
+        dragRef.current = point2;
+        setAreaDrag({ x: point2.x, y: point2.y, w: 0, h: 0 });
+        return;
+      }
+      if (mode === "note") return;
+      if (mode !== "select") return;
+      const point = pointOf(event);
+      if (!point) return;
+      event.preventDefault();
+      props.onSelection(null);
+      props.onSelectionAction("closeResult");
+      setHover(null);
+      setDragSelect(null);
+      if (selectRef.current && typeof selectRef.current.cleanup === "function") selectRef.current.cleanup();
+      const drag = { start: point, last: point, moved: false, preview: null, cleanup: null };
+      selectRef.current = drag;
+      setSelecting(true);
+      const updatePreview = (nextPoint) => {
+        if (selectRef.current !== drag) return;
+        drag.last = nextPoint;
+        const dx = Math.abs(nextPoint.x - drag.start.x);
+        const dy = Math.abs(nextPoint.y - drag.start.y);
+        if (dx > 4e-3 || dy > 4e-3) drag.moved = true;
+        const preview = drag.moved ? selectionForPoints(drag.start, nextPoint) : null;
+        drag.preview = preview;
+        setDragSelect(preview);
+      };
+      const cleanup = () => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+        window.removeEventListener("keydown", onKeyDown);
+        if (selectFrame.current && typeof cancelAnimationFrame === "function") cancelAnimationFrame(selectFrame.current);
+        selectFrame.current = 0;
+        selectRef.current = null;
+        setSelecting(false);
+        setDragSelect(null);
+      };
+      drag.cleanup = cleanup;
+      const onMove = (moveEvent) => {
+        if (selectRef.current !== drag) return;
+        const nextPoint = pointOf(moveEvent);
+        if (nextPoint) updatePreview(nextPoint);
+      };
+      const onUp = (upEvent) => {
+        if (selectRef.current !== drag) return;
+        const finalPoint = pointOf(upEvent) || drag.last;
+        if (finalPoint) updatePreview(finalPoint);
+        const preview = drag.preview;
+        const moved = drag.moved;
+        cleanup();
+        if (moved && preview && preview.wordCount > 0) {
+          props.onSelection({
+            page: page2,
+            quote: preview.quote,
+            rects: preview.rects,
+            anchor: preview.anchor,
+            wordCount: preview.wordCount
+          });
+          return;
+        }
+        if (finalPoint && openAnnotationAt(finalPoint)) return;
+        props.onSelection(null);
+      };
+      const onKeyDown = (keyEvent) => {
+        if (keyEvent.key !== "Escape") return;
+        cleanup();
+        props.onSelection(null);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+      window.addEventListener("keydown", onKeyDown);
+    },
+    [mode, openAnnotationAt, page2, pointOf, props, selectionForPoints]
+  );
+  import_react28.default.useEffect(() => {
+    if (!areaDrag) return void 0;
+    const onMove = (event) => {
+      const start = dragRef.current;
+      if (!start) return;
+      const point = pointOf(event);
+      if (!point) return;
+      const next = {
+        x: Math.min(start.x, point.x),
+        y: Math.min(start.y, point.y),
+        w: Math.abs(point.x - start.x),
+        h: Math.abs(point.y - start.y)
+      };
+      areaRectRef.current = next;
+      setAreaDrag(next);
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      const current2 = areaRectRef.current;
+      areaRectRef.current = null;
+      setAreaDrag(null);
+      if (current2 && current2.w > 0.012 && current2.h > 8e-3) props.onCreateArea(current2);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [areaDrag !== null, pointOf, props]);
+  const handleClick = import_react28.default.useCallback(
+    (event) => {
+      if (mode !== "note") return;
+      const target = event.target;
+      if (target && target.closest && target.closest("[data-ph-overlay]")) return;
+      const point = pointOf(event);
+      if (point) props.onNoteCreate(point);
+    },
+    [mode, pointOf, props]
+  );
+  const handleMouseMove = import_react28.default.useCallback(
+    (event) => {
+      if (selecting || event.buttons) {
+        if (hover) setHover(null);
+        return;
+      }
+      if (mode === "note") {
+        const point = pointOf(event);
+        setNoteGhost(point);
+        return;
+      }
+      if (!interactive || props.annotations.length === 0) {
+        if (hover) setHover(null);
+        return;
+      }
+      hoverPoint.current = pointOf(event);
+      if (hoverFrame.current) return;
+      const schedule2 = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (callback) => setTimeout(callback, 16);
+      hoverFrame.current = schedule2(() => {
+        hoverFrame.current = 0;
+        const point = hoverPoint.current;
+        if (!point) {
+          setHover(null);
+          return;
+        }
+        const annotation = annotationAt(props.annotations, point);
+        setHover((previous) => {
+          if (!annotation) return null;
+          if (previous && previous.annotationId === annotation.id) return previous;
+          return { annotationId: annotation.id, annotation, point };
+        });
+      });
+    },
+    [hover, interactive, mode, pointOf, props.annotations, selecting]
+  );
+  const clearHover = import_react28.default.useCallback(() => {
+    setHover(null);
+    setNoteGhost(null);
+  }, []);
+  const pageAnnotations = annotations;
+  const pageSelection = selection && selection.page === page2 ? selection : null;
+  const pagePopover = popover && popover.annotation && popover.annotation.page === page2 ? popover : null;
+  const pageNoteDraft = noteDraft && noteDraft.page === page2 ? noteDraft : null;
+  const pageSearchHits = import_react28.default.useMemo(() => {
+    if (!search || !search.query || !search.hits) return null;
+    return search.hits.map((hit, index) => ({ hit, index })).filter((entry) => entry.hit.page === page2).map((entry) => Object.assign({}, entry.hit, { order: entry.index }));
+  }, [page2, search]);
+  const activeHitOrder = search && search.hits && search.hits.length > 0 ? search.index : -1;
+  const selectionToolbar = pageSelection ? (() => {
+    const anchor = pageSelection.anchor;
+    const centerX = (anchor.x + anchor.w / 2) * width;
+    const half = Math.min(300, Math.max(180, width / 2 - 8));
+    const left = clamp(centerX, half, Math.max(width - half, half));
+    let top = anchor.y * height - 56;
+    let below = false;
+    if (top < 6) {
+      top = (anchor.y + anchor.h) * height + 10;
+      below = true;
+    }
+    return { left, top, below };
+  })() : null;
+  const showTooltip = hover && hover.annotation ? hover : null;
+  const figureHighlight = props.figureFocus && Number(props.figureFocus.page) === page2 ? props.figureFocus : null;
+  const tooltipStyle = showTooltip ? {
+    left: (showTooltip.point.x * 100).toFixed(3) + "%",
+    top: (showTooltip.point.y * 100).toFixed(3) + "%",
+    transform: showTooltip.point.y < 0.14 ? "translate(-50%, 14px)" : "translate(-50%, calc(-100% - 10px))"
+  } : null;
+  const popoverPosition = pagePopover ? (() => {
+    const anchor = pagePopover.anchor || { x: 0.5, y: 0.2, w: 0, h: 0 };
+    const half = 170;
+    const centerX = (anchor.x + anchor.w / 2) * width;
+    const left = clamp(centerX, Math.min(half, width / 2), Math.max(width - Math.min(half, width / 2), Math.min(half, width / 2)));
+    const below = (anchor.y + anchor.h) * height + 10;
+    const above = anchor.y * height - 10;
+    const estimated = 360;
+    const pageRect = pageRef.current ? pageRef.current.getBoundingClientRect() : null;
+    const viewportHeight = typeof window !== "undefined" && window.innerHeight ? window.innerHeight : 900;
+    const pageTop = pageRect ? pageRect.top : 0;
+    if (below + estimated > height || pageTop + below + estimated > viewportHeight - 12) {
+      const flippedTop = above - estimated;
+      if (pageTop + flippedTop >= 12) return { left, top: Math.max(6, flippedTop), flipped: true };
+    }
+    return { left, top: clamp(below, 4, Math.max(height - 40, 4)), flipped: false };
+  })() : null;
+  const notePosition = pageNoteDraft ? (() => {
+    const half = 148;
+    const left = clamp(pageNoteDraft.point.x * width, Math.min(half, width / 2), Math.max(width - Math.min(half, width / 2), Math.min(half, width / 2)));
+    const below = pageNoteDraft.point.y * height + 12;
+    const top = below + 240 <= height ? below : Math.max(4, pageNoteDraft.point.y * height - 250);
+    return { left, top };
+  })() : null;
+  const baseImageSrc = pageUrlOf(paperId, Object.assign({ page: page2 }, pageInfo, { imageUrl: pageInfo.imageUrl }));
+  const imageSrc = imageVersion > 0 ? baseImageSrc + (baseImageSrc.indexOf("?") >= 0 ? "&" : "?") + "retry=" + imageVersion : baseImageSrc;
+  const showImageSkeleton = imageState === "loading";
+  import_react28.default.useEffect(() => {
+    setImageSlow(false);
+    const node = imgRef.current;
+    if (!node) return void 0;
+    const settle = () => {
+      if (!node.complete) return false;
+      setImageState(node.naturalWidth > 0 ? "loaded" : "error");
+      return true;
+    };
+    if (settle()) return void 0;
+    const slowTimer = setTimeout(() => setImageSlow(true), 8e3);
+    const poll = setInterval(() => {
+      if (settle()) {
+        clearInterval(poll);
+        clearTimeout(slowTimer);
+      }
+    }, 500);
+    const stopPoll = setTimeout(() => clearInterval(poll), 2e4);
+    return () => {
+      clearTimeout(slowTimer);
+      clearInterval(poll);
+      clearTimeout(stopPoll);
+    };
+  }, [imageSrc, imageVersion]);
+  const layerStatus = layerEntry ? layerEntry.status : "idle";
+  return import_react28.default.createElement(
+    "div",
+    {
+      ref: pageRef,
+      className: cx(
+        "ph-r-page",
+        active && "ph-r-page--active",
+        mode === "area" && "ph-r-page--area",
+        mode === "note" && "ph-r-page--note",
+        mode === "select" && "ph-r-page--select"
+      ),
+      style: { width, height },
+      "data-ph-page": String(page2),
+      onMouseDown: handleMouseDown,
+      onClick: handleClick,
+      onMouseMove: handleMouseMove,
+      onMouseLeave: clearHover
+    },
+    import_react28.default.createElement(
+      "img",
+      {
+        key: "img-" + imageVersion,
+        ref: imgRef,
+        className: cx("ph-r-page__img", imageState === "loaded" && "ph-r-page__img--loaded"),
+        src: imageSrc,
+        alt: t("reader.thumbPage", { page: page2 }),
+        draggable: false,
+        decoding: "async",
+        // Only the viewport buffer is mounted, so eager loading is bounded and
+        // avoids lazy-loading races inside the virtualised scroll box.
+        loading: "eager",
+        fetchPriority: active ? "high" : "auto",
+        onLoad: () => {
+          setImageSlow(false);
+          setImageState("loaded");
+        },
+        onError: () => {
+          setImageSlow(false);
+          setImageState("error");
+        }
+      }
+    ),
+    showImageSkeleton ? import_react28.default.createElement("div", { className: "ph-r-page__skeleton" }) : null,
+    showImageSkeleton && imageSlow ? import_react28.default.createElement(
+      "div",
+      { className: "ph-r-page__slow", role: "status" },
+      import_react28.default.createElement(Spinner2, { size: 14 }),
+      import_react28.default.createElement("span", null, t("reader.page.slow")),
+      import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
+    ) : null,
+    imageState === "error" ? import_react28.default.createElement(
+      "div",
+      { className: "ph-r-page__error" },
+      import_react28.default.createElement(Icon2, { name: "warning", size: 18 }),
+      import_react28.default.createElement("span", null, t("reader.page.imageFailed")),
+      import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
+    ) : null,
+    import_react28.default.createElement(PageTextLayer, {
+      key: "text-" + page2,
+      page: page2,
+      words: selectable.words,
+      width: selectable.width,
+      height: selectable.height,
+      active: true,
+      // v0.3: the page canvas owns selection geometrically, so the text layer is
+      // purely visual and must not start a native DOM Range selection.
+      interactive: false
+    }),
+    (() => {
+      const overlayRects = dragSelect && dragSelect.rects ? dragSelect.rects : pageSelection ? pageSelection.rects : null;
+      if (!overlayRects || overlayRects.length === 0) return null;
+      return import_react28.default.createElement(
+        "div",
+        { className: "ph-r-selrect", "data-ph-text-selection": String(dragSelect ? dragSelect.wordCount : pageSelection ? pageSelection.wordCount || 0 : 0) },
+        overlayRects.map((rect, index) => import_react28.default.createElement("span", { key: index, className: "ph-r-selrect__box", style: rectStyle(rect) }))
+      );
+    })(),
+    dragSelect && dragSelect.wordCount > 0 ? import_react28.default.createElement(
+      "span",
+      {
+        className: "ph-r-selcount",
+        style: {
+          left: (clamp((dragSelect.rect.x + dragSelect.rect.x + dragSelect.rect.w) / 2, 0, 1) * 100).toFixed(2) + "%",
+          top: (clamp(dragSelect.rect.y + dragSelect.rect.h, 0, 1) * 100).toFixed(2) + "%"
+        }
+      },
+      t("reader.selection.selectedWords", { count: dragSelect.wordCount })
+    ) : null,
+    noteGhost && mode === "note" && !noteDraft ? import_react28.default.createElement("span", {
+      className: "ph-r-note-ghost",
+      style: { left: (noteGhost.x * 100).toFixed(2) + "%", top: (noteGhost.y * 100).toFixed(2) + "%" },
+      "aria-hidden": "true"
+    }, import_react28.default.createElement(Icon2, { name: "sticky", size: 12 })) : null,
+    import_react28.default.createElement(AnnotationMarks, {
+      page: page2,
+      annotations: pageAnnotations,
+      activeId: activeAnnotationId
+    }),
+    figureHighlight ? import_react28.default.createElement(FigureHighlightOverlay, { t, figureFocus: figureHighlight, page: page2 }) : null,
+    pageSearchHits && pageSearchHits.length > 0 ? import_react28.default.createElement(
+      "div",
+      { className: "ph-r-hits" },
+      pageSearchHits.map(
+        (hit) => hit.rects.map(
+          (rect, index) => import_react28.default.createElement("span", {
+            key: hit.order + ":" + index,
+            className: cx("ph-r-hit", hit.order === activeHitOrder && "ph-r-hit--active"),
+            style: rectStyle(rect)
+          })
+        )
+      )
+    ) : null,
+    areaDrag ? import_react28.default.createElement("span", { className: "ph-r-area-drag", style: rectStyle(areaDrag) }) : null,
+    active || pageSearchHits ? import_react28.default.createElement(
+      "span",
+      { className: "ph-r-page__chip" },
+      import_react28.default.createElement(Icon2, { name: "pages", size: 11 }),
+      String(page2)
+    ) : null,
+    active && !layer ? import_react28.default.createElement(
+      "span",
+      { className: "ph-r-page__structure" },
+      layerStatus === "loading" || layerStatus === "idle" ? t("reader.page.textLayer.loading") : t("reader.page.textLayer.unavailable")
+    ) : null,
+    showTooltip ? import_react28.default.createElement(AnnotationTooltip, { annotation: showTooltip.annotation, style: tooltipStyle }) : null,
+    selectionToolbar ? import_react28.default.createElement(
+      "div",
+      {
+        className: cx("ph-r-float", "ph-r-card", "ph-r-selbar"),
+        style: { left: selectionToolbar.left, top: selectionToolbar.top, transform: "translateX(-50%)" },
+        "data-ph-overlay": "selection",
+        onMouseDown: (event) => event.preventDefault()
+      },
+      import_react28.default.createElement("span", { className: "ph-r-selbar__count" }, t("reader.selection.selectedWords", { count: pageSelection ? pageSelection.wordCount || 0 : 0 })),
+      import_react28.default.createElement("span", { className: "ph-r-selbar__sep" }),
+      import_react28.default.createElement(
+        "button",
+        {
+          type: "button",
+          className: "ph-r-toolbtn ph-r-toolbtn--primary",
+          onClick: () => props.onSelectionAction("quickTranslate"),
+          title: t("reader.selection.quickTranslateHint")
+        },
+        import_react28.default.createElement(Icon2, { name: "sparkles", size: 14 }),
+        import_react28.default.createElement("span", null, t("reader.selection.quickTranslate"))
+      ),
+      import_react28.default.createElement(ColorPenRow, {
+        t,
+        onPick: (color) => props.onSelectionAction("highlight", { color })
+      }),
+      import_react28.default.createElement("span", { className: "ph-r-selbar__sep" }),
+      import_react28.default.createElement(
+        "button",
+        { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("copy"), title: t("reader.selection.copy") },
+        import_react28.default.createElement(Icon2, { name: "copy", size: 14 }),
+        import_react28.default.createElement("span", null, t("reader.selection.copy"))
+      ),
+      import_react28.default.createElement(
+        "button",
+        { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("explain"), title: t("reader.selection.explain") },
+        import_react28.default.createElement(Icon2, { name: "book", size: 14 }),
+        import_react28.default.createElement("span", null, t("reader.selection.explain"))
+      ),
+      import_react28.default.createElement(
+        "button",
+        { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("ask"), title: t("reader.selection.ask") },
+        import_react28.default.createElement(Icon2, { name: "note", size: 14 }),
+        import_react28.default.createElement("span", null, t("reader.selection.ask"))
+      ),
+      import_react28.default.createElement(
+        "button",
+        { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("cite"), title: t("reader.selection.cite") },
+        import_react28.default.createElement(Icon2, { name: "quote", size: 14 }),
+        import_react28.default.createElement("span", null, t("reader.selection.cite"))
+      )
+    ) : null,
+    pageSelection && selectionResult && selectionResult.page === page2 ? import_react28.default.createElement(
+      import_react28.default.Fragment,
+      null,
+      selectionResult.replace ? import_react28.default.createElement(
+        "div",
+        {
+          className: "ph-r-card ph-r-replacecard",
+          style: {
+            left: selectionToolbar ? selectionToolbar.left : "50%",
+            top: selectionToolbar ? selectionToolbar.top : 40,
+            transform: "translateX(-50%)"
+          },
+          "data-ph-overlay": "selection-replace",
+          onMouseDown: (event) => event.stopPropagation()
+        },
+        import_react28.default.createElement(
+          "div",
+          { className: "ph-r-resultcard__head" },
+          import_react28.default.createElement(Icon2, { name: "translate", size: 13 }),
+          import_react28.default.createElement("strong", null, t("reader.selection.translated")),
+          import_react28.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
+          import_react28.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.closeReplace"), onClick: () => props.onSelectionAction("closeReplace") })
+        ),
+        import_react28.default.createElement("div", { className: "ph-r-replacecard__text" }, firstText3(selectionResult.translation))
+      ) : import_react28.default.createElement(SelectionResultCard, {
+        t,
+        result: selectionResult,
+        width,
+        height,
+        anchor: pageSelection.anchor,
+        onClose: () => props.onSelectionAction("closeResult"),
+        onCopy: () => props.onSelectionAction("copyQuickTranslation"),
+        onReplace: () => props.onSelectionAction("replaceQuickTranslation"),
+        onSend: () => props.onSelectionAction("sendQuickTranslation"),
+        onRetry: () => props.onSelectionAction("retryQuickTranslation"),
+        onRefine: () => props.onSelectionAction("refineQuickTranslation")
+      })
+    ) : null,
+    pagePopover ? import_react28.default.createElement(AnnotationPopover, {
+      t,
+      annotation: pagePopover.annotation,
+      busy: Boolean(pagePopover.busy),
+      style: popoverPosition,
+      autoFocus: Boolean(pagePopover.autoFocus),
+      onClose: props.onAnnotationClose,
+      onUpdate: (patch) => props.onUpdateAnnotation(pagePopover.annotation, patch),
+      onDelete: () => props.onDeleteAnnotation(pagePopover.annotation),
+      onCopy: props.onCopyAnnotation,
+      onCite: props.onCiteAnnotation,
+      onLinkNote: props.onLinkAnnotationNote,
+      onAsk: props.onAskAnnotation,
+      onExplain: props.onExplainAnnotation,
+      onQuickTranslate: props.onQuickTranslateAnnotation ? () => props.onQuickTranslateAnnotation(pagePopover.annotation) : void 0,
+      onAiTranslate: props.onAiTranslateAnnotation ? () => props.onAiTranslateAnnotation(pagePopover.annotation) : void 0,
+      onUndoDelete: () => props.onDeleteAnnotation(pagePopover.annotation)
+    }) : null,
+    pageNoteDraft && notePosition ? import_react28.default.createElement(NoteComposer, {
+      t,
+      color: noteDraft.color,
+      style: notePosition,
+      onSave: (payload) => props.onNoteSave(Object.assign({ page: page2, point: pageNoteDraft.point }, payload)),
+      onCancel: props.onNoteCancel
+    }) : null
+  );
+}
+var PageView = import_react28.default.memo(PageViewImpl, (previous, next) => {
+  return previous.paperId === next.paperId && previous.pageInfo === next.pageInfo && previous.width === next.width && previous.height === next.height && previous.active === next.active && previous.mode === next.mode && previous.reducedMotion === next.reducedMotion && previous.pageDataEntry === next.pageDataEntry && previous.layerEntry === next.layerEntry && previous.activeAnnotationId === next.activeAnnotationId && previous.selection === next.selection && previous.selectionResult === next.selectionResult && previous.popover === next.popover && previous.noteDraft === next.noteDraft && previous.search === next.search && previous.t === next.t && sameAnnotations(previous.annotations, next.annotations);
+});
+function ColorPenRow(props) {
+  return import_react28.default.createElement(
+    "div",
+    { className: "ph-r-pens", role: "group", "aria-label": props.t("reader.selection.colors") },
+    ["yellow", "green", "blue", "red", "purple"].map(
+      (color) => import_react28.default.createElement("button", {
+        key: color,
+        type: "button",
+        className: "ph-r-pen ph-r-pen--" + color,
+        title: props.t("reader.annot.color." + color),
+        "aria-label": props.t("reader.annot.color." + color),
+        onClick: () => props.onPick(color)
+      })
+    )
+  );
+}
+function SelectionResultCard(props) {
+  const { t, result, anchor, width, height } = props;
+  const [now, setNow] = import_react28.default.useState(() => Date.now());
+  import_react28.default.useEffect(() => {
+    if (!result.loading) return void 0;
+    const timer2 = setInterval(() => setNow(Date.now()), 200);
+    return () => clearInterval(timer2);
+  }, [result.loading]);
+  const half = 170;
+  const centerX = (anchor.x + anchor.w / 2) * width;
+  const left = clamp(centerX, Math.min(half, width / 2), Math.max(width - Math.min(half, width / 2), Math.min(half, width / 2)));
+  let top = (anchor.y + anchor.h) * height + 12;
+  if (top + 240 > height) top = Math.max(6, anchor.y * height - 240);
+  const value = firstText3(result.translation);
+  const elapsedMs = result.latencyMs != null ? Number(result.latencyMs) : result.elapsedMs != null ? Number(result.elapsedMs) : result.loading && result.startedAt ? Math.max(0, now - result.startedAt) : null;
+  const elapsedLabel = elapsedMs == null ? "" : elapsedMs >= 1e3 ? (elapsedMs / 1e3).toFixed(1) + " s" : Math.round(elapsedMs) + " ms";
+  const translated = result.status === "translated" || Boolean(value);
+  const engineText = translated && (result.engine || result.provider) ? engineBadge(result.engine, result.model, result.latencyMs, result.cached) : "";
+  const loadingText = result.aiRefine ? t("reader.selection.refining") : t("reader.selection.quickTranslating");
+  return import_react28.default.createElement(
+    "div",
+    {
+      className: cx("ph-r-float", "ph-r-card", "ph-r-resultcard"),
+      style: { left, top },
+      "data-ph-overlay": "selection-result",
+      onMouseDown: (event) => event.stopPropagation()
+    },
+    import_react28.default.createElement(
+      "div",
+      { className: "ph-r-resultcard__head" },
+      import_react28.default.createElement(Icon2, { name: "sparkles", size: 13 }),
+      import_react28.default.createElement("strong", null, result.aiRefine ? t("reader.selection.aiRefine") : t("reader.selection.quickTranslate")),
+      engineText ? import_react28.default.createElement("span", { className: "ph-r-resultcard__engine", title: engineDetails(result.engine, result.model) }, engineText) : null,
+      result.freeOnly || result.mode === "free" || result.engine && result.engine.free ? import_react28.default.createElement(
+        "span",
+        { className: "ph-r-resultcard__free", title: t("reader.selection.freeFastHint") },
+        t("reader.selection.freeFast") + (!translated && elapsedLabel ? " \xB7 " + elapsedLabel : "")
+      ) : null,
+      result.provider === "llm" && result.fast ? import_react28.default.createElement("span", { className: "ph-r-ai__fast" }, t("reader.selection.fastMode")) : null,
+      import_react28.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
+      import_react28.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.close"), onClick: props.onClose })
+    ),
+    result.loading ? import_react28.default.createElement(
+      "div",
+      { className: "ph-r-resultcard__loading" },
+      import_react28.default.createElement(Spinner2, { size: 12 }),
+      import_react28.default.createElement("span", null, loadingText),
+      elapsedLabel ? import_react28.default.createElement(
+        "span",
+        { className: "ph-r-resultcard__meta" },
+        (result.provider ? providerLabel2(result.provider) + " \xB7 " : "") + elapsedLabel
+      ) : null
+    ) : null,
+    !result.loading && !value ? import_react28.default.createElement(
+      "div",
+      { className: "ph-r-resultcard__warn" },
+      t("reader.selection.quickUnavailable", { reason: firstText3(result.reason, t("reader.ai.reasonFallback")) }),
+      import_react28.default.createElement(
+        "div",
+        { className: "ph-r-resultcard__actions", style: { marginTop: 6, borderTop: "none", paddingTop: 0 } },
+        import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "refresh", onClick: props.onRetry }, t("reader.retry")),
+        props.onRefine ? import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine }, t("reader.selection.aiRefineCta")) : null
+      )
+    ) : null,
+    !result.loading && value ? import_react28.default.createElement("div", { className: "ph-r-resultcard__body" }, value) : null,
+    !result.loading && value ? import_react28.default.createElement(
+      "div",
+      { className: "ph-r-resultcard__actions" },
+      import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: props.onCopy }, t("reader.selection.copyTranslation")),
+      import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "translate", onClick: props.onReplace }, t("reader.selection.replace")),
+      import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: props.onSend }, t("reader.selection.sendToChat")),
+      props.onRefine && !result.aiRefine ? import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine, title: t("reader.selection.aiRefineHint") }, t("reader.selection.aiRefine")) : null
+    ) : null
+  );
+}
+function FigureHighlightOverlay(props) {
+  const t = props.t;
+  const focus = props.figureFocus;
+  const focusKey = focus && focus.figureId ? String(focus.figureId) + ":" + String(focus.seq || "") + ":" + String(props.page == null ? "" : props.page) : "";
+  const [expired, setExpired] = import_react28.default.useState(false);
+  import_react28.default.useEffect(() => {
+    setExpired(false);
+    if (focusKey === "") return void 0;
+    const timer2 = setTimeout(() => setExpired(true), 4600);
+    return () => clearTimeout(timer2);
+  }, [focusKey]);
+  if (!focus || !focus.bbox) return null;
+  if (expired) return null;
+  if (props.page != null && Number(focus.page) !== Number(props.page)) return null;
+  const bbox = focus.bbox || {};
+  let x = Number(bbox.x);
+  let y = Number(bbox.y);
+  let w = Number(bbox.w);
+  let h3 = Number(bbox.h);
+  if (![x, y, w, h3].every((value) => Number.isFinite(value))) return null;
+  const pageWidth = Number(bbox.pageWidth);
+  const pageHeight = Number(bbox.pageHeight);
+  if (Number.isFinite(pageWidth) && pageWidth > 0 && Number.isFinite(pageHeight) && pageHeight > 0 && (x > 1 || y > 1 || w > 1 || h3 > 1)) {
+    x /= pageWidth;
+    y /= pageHeight;
+    w /= pageWidth;
+    h3 /= pageHeight;
+  }
+  const style = {
+    left: (Math.max(0, Math.min(1, x)) * 100).toFixed(3) + "%",
+    top: (Math.max(0, Math.min(1, y)) * 100).toFixed(3) + "%",
+    width: (Math.max(1e-3, Math.min(1, w)) * 100).toFixed(3) + "%",
+    height: (Math.max(1e-3, Math.min(1, h3)) * 100).toFixed(3) + "%"
+  };
+  const label = focus.figureLabel ? t("reader.figure.highlightLabel", { label: focus.figureLabel }) : t("reader.figure.highlight");
+  return import_react28.default.createElement(
+    "div",
+    { className: "ph-r-fighl", style, "data-ph-figure-focus": String(focus.figureId || ""), "aria-hidden": "true" },
+    import_react28.default.createElement("span", { className: "ph-r-fighl__label" }, label)
+  );
+}
+function PageCanvas(props) {
+  const scrollRef = import_react28.default.useRef(null);
+  const layoutRef = import_react28.default.useRef([]);
+  const previousLayoutRef = import_react28.default.useRef(null);
+  const rafRef = import_react28.default.useRef(0);
+  const scrolledRef = import_react28.default.useRef(false);
+  const [scrollTop, setScrollTop] = import_react28.default.useState(0);
+  const [viewport, setViewport] = import_react28.default.useState({ width: 0, height: 0 });
+  const size = useElementSizeCompat(scrollRef);
+  import_react28.default.useEffect(() => {
+    setViewport({ width: size.width, height: size.height });
+  }, [size.width, size.height]);
+  const descriptors = usePageDescriptors(props.pages, props.total);
+  const baseWidth = import_react28.default.useMemo(() => {
+    if (viewport.width > 0) {
+      return clamp(viewport.width - CANVAS_SIDE_PADDING * 2, MIN_BASE_WIDTH, MAX_BASE_WIDTH);
+    }
+    return 640;
+  }, [viewport.width]);
+  const layout = import_react28.default.useMemo(() => {
+    const list = [];
+    let top = PAGE_TOP_PADDING;
+    for (const descriptor of descriptors) {
+      const pageWidth = baseWidth * props.zoom;
+      const pageHeight = pageWidth * (descriptor.height / descriptor.width);
+      list.push({ descriptor, width: pageWidth, height: pageHeight, top });
+      top += pageHeight + PAGE_GAP;
+    }
+    return list;
+  }, [baseWidth, descriptors, props.zoom]);
+  layoutRef.current = layout;
+  const contentHeight = layout.length > 0 ? layout[layout.length - 1].top + layout[layout.length - 1].height + PAGE_BOTTOM_PADDING : 0;
+  import_react28.default.useLayoutEffect(() => {
+    const element2 = scrollRef.current;
+    const previous = previousLayoutRef.current;
+    if (!element2 || !previous || previous.length === 0 || layout.length === 0) {
+      previousLayoutRef.current = layout;
+      return;
+    }
+    if (previous.length === layout.length) {
+      let anchorIndex = 0;
+      for (let index = 0; index < previous.length; index += 1) {
+        if (previous[index].top <= scrollTop + 8) anchorIndex = index;
+        else break;
+      }
+      const previousItem = previous[anchorIndex];
+      const nextItem = layout[anchorIndex];
+      if (previousItem && nextItem) {
+        const ratio = previousItem.height > 0 ? (scrollTop - previousItem.top) / previousItem.height : 0;
+        const nextTop = nextItem.top + ratio * nextItem.height;
+        if (Math.abs(nextTop - scrollTop) > 1) {
+          scrollElementTo(element2, nextTop, false);
+          setScrollTop(nextTop);
+        }
+      }
+    }
+    previousLayoutRef.current = layout;
+  }, [layout, scrollTop]);
+  import_react28.default.useEffect(() => {
+    const jump = props.jump;
+    if (!jump || !jump.page) return;
+    const element2 = scrollRef.current;
+    const index = layout.findIndex((item) => item.descriptor.page === jump.page);
+    if (!element2 || index < 0) return;
+    scrollElementTo(element2, layout[index].top, false);
+    setScrollTop(layout[index].top);
+    props.onPageChange(jump.page);
+  }, [props.jump && props.jump.seq]);
+  import_react28.default.useEffect(() => {
+    const focus = props.focus;
+    if (!focus || !focus.page || !focus.rect) return;
+    const element2 = scrollRef.current;
+    const index = layout.findIndex((item2) => item2.descriptor.page === focus.page);
+    if (!element2 || index < 0) return;
+    const item = layout[index];
+    scrollElementTo(element2, item.top + focus.rect.y * item.height - 140, !props.reducedMotion);
+  }, [props.focus && props.focus.seq]);
+  const handleScroll = import_react28.default.useCallback(() => {
+    const element2 = scrollRef.current;
+    if (!element2) return;
+    if (rafRef.current) return;
+    const run = () => {
+      rafRef.current = 0;
+      const currentTop = element2.scrollTop || 0;
+      setScrollTop(currentTop);
+      const collapsed = currentTop > 20;
+      if (collapsed !== scrolledRef.current) {
+        scrolledRef.current = collapsed;
+        if (props.onScrolledChange) props.onScrolledChange(collapsed);
+      }
+      const list = layoutRef.current;
+      if (list.length === 0) return;
+      const probe = currentTop + Math.max(120, (element2.clientHeight || 0) * 0.32);
+      let current2 = list[0].descriptor.page;
+      for (const item of list) {
+        if (item.top <= probe) current2 = item.descriptor.page;
+        else break;
+      }
+      if (current2 !== props.page) props.onPageChange(current2);
+    };
+    if (typeof requestAnimationFrame === "function") rafRef.current = requestAnimationFrame(run);
+    else run();
+  }, [props]);
+  const visibleRange = import_react28.default.useMemo(() => {
+    if (layout.length === 0) return { start: 0, end: -1 };
+    const height = viewport.height > 0 ? viewport.height : 900;
+    const top = scrollTop - height * VIRTUAL_BUFFER;
+    const bottom = scrollTop + height * (VIRTUAL_BUFFER + 1);
+    let start = 0;
+    let end = layout.length - 1;
+    for (let index = 0; index < layout.length; index += 1) {
+      const item = layout[index];
+      if (item.top + item.height >= top) {
+        start = index;
+        break;
+      }
+    }
+    for (let index = start; index < layout.length; index += 1) {
+      const item = layout[index];
+      if (item.top > bottom) {
+        end = index - 1;
+        break;
+      }
+    }
+    const activeIndex = layout.findIndex((item) => item.descriptor.page === props.page);
+    if (activeIndex >= 0) {
+      start = Math.min(start, Math.max(0, activeIndex - 1));
+      end = Math.max(end, Math.min(layout.length - 1, activeIndex + 1));
+    }
+    return { start, end };
+  }, [layout, props.page, scrollTop, viewport.height]);
+  import_react28.default.useEffect(() => {
+    const list = layoutRef.current;
+    for (let index = visibleRange.start; index <= visibleRange.end; index += 1) {
+      const item = list[index];
+      if (!item) continue;
+      if (props.ensurePage) props.ensurePage(item.descriptor.page);
+      if (props.ensureLayer) props.ensureLayer(item.descriptor.page);
+    }
+  }, [props.ensureLayer, props.ensurePage, props.dataVersion, visibleRange]);
+  const annotationsByPage = useAnnotationsByPage(props.annotations);
+  const children = [];
+  for (let index = 0; index < layout.length; index += 1) {
+    const item = layout[index];
+    const descriptor = item.descriptor;
+    const visible = index >= visibleRange.start && index <= visibleRange.end;
+    if (!visible) {
+      children.push(
+        import_react28.default.createElement(
+          "div",
+          {
+            key: "ph-" + descriptor.page,
+            className: "ph-r-page__placeholder",
+            style: { width: item.width, height: item.height },
+            "aria-hidden": "true"
+          },
+          String(descriptor.page)
+        )
+      );
+      continue;
+    }
+    children.push(
+      import_react28.default.createElement(PageView, {
+        key: "ph-" + descriptor.page,
+        t: props.t,
+        paperId: props.paperId,
+        pageInfo: descriptor,
+        width: item.width,
+        height: item.height,
+        active: descriptor.page === props.page,
+        mode: props.mode,
+        pageDataEntry: props.getPageData ? props.getPageData(descriptor.page) : null,
+        layerEntry: props.getLayer ? props.getLayer(descriptor.page) : null,
+        annotations: annotationsByPage.get(descriptor.page) || EMPTY_LIST,
+        activeAnnotationId: props.activeAnnotationId,
+        selection: props.selection,
+        selectionResult: props.selectionResult,
+        popover: props.popover,
+        noteDraft: props.noteDraft,
+        search: props.search,
+        figureFocus: props.figureFocus,
+        reducedMotion: props.reducedMotion,
+        onSelection: props.actions.onSelection,
+        onSelectionAction: props.actions.onSelectionAction,
+        onAnnotationOpen: props.actions.onAnnotationOpen,
+        onAnnotationClose: props.actions.onAnnotationClose,
+        onUpdateAnnotation: props.actions.onUpdateAnnotation,
+        onDeleteAnnotation: props.actions.onDeleteAnnotation,
+        onCopyAnnotation: props.actions.onCopyAnnotation,
+        onCiteAnnotation: props.actions.onCiteAnnotation,
+        onAskAnnotation: props.actions.onAskAnnotation,
+        onExplainAnnotation: props.actions.onExplainAnnotation,
+        onQuickTranslateAnnotation: props.actions.onQuickTranslateAnnotation,
+        onAiTranslateAnnotation: props.actions.onAiTranslateAnnotation,
+        onCreateArea: props.actions.onCreateArea,
+        onNoteCreate: props.actions.onNoteCreate,
+        onNoteSave: props.actions.onNoteSave,
+        onNoteCancel: props.actions.onNoteCancel
+      })
+    );
+  }
+  return import_react28.default.createElement(
+    "div",
+    {
+      ref: scrollRef,
+      className: "ph-r-canvas ph-r-scroll",
+      onScroll: handleScroll,
+      "data-ph-scroll": "canvas"
+    },
+    import_react28.default.createElement(
+      "div",
+      { className: "ph-r-pages", style: { minHeight: contentHeight } },
+      children
+    )
+  );
+}
+function useElementSizeCompat(ref) {
+  const [size, setSize] = import_react28.default.useState({ width: 0, height: 0 });
+  import_react28.default.useEffect(() => {
+    const element2 = ref.current;
+    if (!element2) return void 0;
+    let frame2 = 0;
+    const measure = () => {
+      frame2 = 0;
+      const width = element2.clientWidth || 0;
+      const height = element2.clientHeight || 0;
+      setSize((previous) => previous.width === width && previous.height === height ? previous : { width, height });
+    };
+    const schedule2 = () => {
+      if (frame2) return;
+      frame2 = typeof requestAnimationFrame === "function" ? requestAnimationFrame(measure) : setTimeout(measure, 16);
+    };
+    measure();
+    let observer2 = null;
+    if (typeof ResizeObserver !== "undefined") {
+      observer2 = new ResizeObserver(schedule2);
+      observer2.observe(element2);
+    } else if (typeof window !== "undefined") {
+      window.addEventListener("resize", schedule2);
+    }
+    return () => {
+      if (frame2) {
+        if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame2);
+        else clearTimeout(frame2);
+      }
+      if (observer2) observer2.disconnect();
+      else if (typeof window !== "undefined") window.removeEventListener("resize", schedule2);
+    };
+  }, [ref]);
+  return size;
+}
+
+// src/surfaces/reader/toolbar.jsx
+var import_react29 = __toESM(require("react"), 1);
+function authorLine2(authors) {
+  const list = arrayOf3(authors);
+  const names = [];
+  for (const author of list) {
+    if (!author || typeof author !== "object") continue;
+    if (author.family) names.push([author.given, author.family].filter(Boolean).join(" "));
+    else if (author.literal) names.push(author.literal);
+    if (names.length === 3) break;
+  }
+  if (names.length === 0) return "";
+  return list.length > 3 ? names.join(", ") + " et al." : names.join(", ");
+}
+function displayTitle(paper, rt) {
+  if (!paper) return rt("reader.untitled");
+  return firstText3(paper.titleZh, paper.displayTitle, paper.title, rt("reader.untitled"));
+}
+function originalTitle(paper) {
+  if (!paper) return "";
+  const title2 = firstText3(paper.title);
+  const shown = firstText3(paper.titleZh, paper.displayTitle, paper.title);
+  return title2 && title2 !== shown ? title2 : "";
+}
+function ReaderToolbar(props) {
+  const rt = props.t;
+  const paper = props.paper;
+  const title2 = displayTitle(paper, rt);
+  const original = originalTitle(paper);
+  const authors = authorLine2(paper && paper.authors);
+  const total = Math.max(1, Math.round(num(props.total, 1)));
+  const page2 = Math.max(1, Math.min(total, Math.round(num(props.page, 1))));
+  const search = props.search || { open: false, query: "", hits: [], index: 0 };
+  const searchInputRef = import_react29.default.useRef(null);
+  const noteContext = props.noteContext || null;
+  const linkedToNote = Boolean(noteContext && paper && Array.isArray(noteContext.paperIds) && noteContext.paperIds.includes(paper.id));
+  const modeSlider = useSlidingThumb();
+  import_react29.default.useEffect(() => {
+    if (!search.open) return;
+    const timer2 = setTimeout(() => {
+      const element2 = searchInputRef.current;
+      if (element2 && typeof element2.focus === "function") element2.focus();
+    }, 30);
+    return () => clearTimeout(timer2);
+  }, [search.open]);
+  const commitPage = (raw) => {
+    const value = Math.round(num(raw, page2));
+    if (value < 1 || value > total) {
+      props.onPage(page2);
+      return;
+    }
+    if (value !== page2) props.onPage(value);
+  };
+  const metaParts = [];
+  if (authors) metaParts.push(authors);
+  if (paper && paper.year) metaParts.push(String(paper.year));
+  const venue = firstText3(paper && paper.venue, paper && paper.containerTitle);
+  if (venue) metaParts.push(venue);
+  if (paper && paper.pageCount) metaParts.push(rt("reader.pagesCount", { count: paper.pageCount }));
+  const modeItems = [
+    { id: "source", label: rt("reader.mode.source") },
+    { id: "compare", label: rt("reader.mode.compare") },
+    { id: "translation", label: rt("reader.mode.translation") }
+  ];
+  return import_react29.default.createElement(
+    "div",
+    { className: "ph-r-toolbar", role: "toolbar", "aria-label": rt("reader.mode.label") },
+    /* ---------------- identity row ---------------- */
+    import_react29.default.createElement(
+      "div",
+      { className: "ph-r-toolbar__row ph-r-toolbar__row--main" },
+      import_react29.default.createElement(
+        Btn,
+        {
+          className: "ph-r-toolbar__back",
+          size: "sm",
+          variant: "ghost",
+          icon: "arrowLeft",
+          onClick: props.onBack,
+          title: rt("reader.back")
+        },
+        rt("reader.back")
+      ),
+      import_react29.default.createElement(
+        "div",
+        { className: "ph-r-toolbar__titles" },
+        import_react29.default.createElement(
+          "div",
+          { className: "ph-r-toolbar__titleline" },
+          import_react29.default.createElement("h1", { className: "ph-r-toolbar__title", title: String(title2) }, title2),
+          import_react29.default.createElement("span", { className: "ph-r-toolbar__badge" }, rt("reader.pageOf", { page: page2, total }))
+        ),
+        import_react29.default.createElement(
+          "div",
+          { className: "ph-r-toolbar__meta", title: original ? original + (metaParts.length ? " \xB7 " + metaParts.join(" \xB7 ") : "") : metaParts.join(" \xB7 ") },
+          original ? import_react29.default.createElement("span", { style: { opacity: 0.85, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, original) : null,
+          original && metaParts.length ? import_react29.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, "\xB7") : null,
+          metaParts.length ? import_react29.default.createElement("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, metaParts.join(" \xB7 ")) : null
+        )
+      ),
+      import_react29.default.createElement(
+        "div",
+        { className: "ph-r-toolbar__actions" },
+        import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite") }, rt("reader.cite")),
+        import_react29.default.createElement(Btn, {
+          size: "sm",
+          variant: "soft",
+          icon: linkedToNote ? "checkCircle" : "link",
+          onClick: props.onLinkNote,
+          disabled: !noteContext || linkedToNote || !paper,
+          title: !noteContext ? rt("reader.linkNote.noNote") : linkedToNote ? rt("reader.linkNote.linked") : rt("reader.linkNote.hint")
+        }, linkedToNote ? rt("reader.linkNote.linkedShort") : rt("reader.linkNote.short")),
+        import_react29.default.createElement(
+          "a",
+          {
+            className: "ph-r-btn ph-r-btn--ghost ph-r-btn--sm",
+            href: "/pappers-hall/pdf/" + encodeURIComponent(String(paper && paper.id || "")),
+            target: "_blank",
+            rel: "noopener noreferrer",
+            title: rt("reader.openPdf")
+          },
+          import_react29.default.createElement(Icon2, { name: "external", size: 14 }),
+          import_react29.default.createElement("span", { className: "ph-r-btn__label" }, rt("reader.openPdf"))
+        ),
+        import_react29.default.createElement(
+          Btn,
+          {
+            size: "sm",
+            variant: "soft",
+            icon: "note",
+            onClick: props.onToggleNotes,
+            title: rt("reader.notes.tab"),
+            active: props.sideOpen && props.sideTab === "notes"
+          },
+          rt("reader.notes.tab")
+        ),
+        import_react29.default.createElement(
+          Btn,
+          {
+            size: "sm",
+            variant: "soft",
+            icon: "sparkles",
+            onClick: props.onToggleAi,
+            title: rt("reader.ai"),
+            active: props.sideOpen && props.sideTab === "ai"
+          },
+          "AI"
+        ),
+        props.onOpenSettings ? import_react29.default.createElement(IconBtn, {
+          icon: "settings",
+          title: "\u8BBE\u7F6E",
+          "aria-label": "\u8BBE\u7F6E",
+          onClick: props.onOpenSettings
+        }) : null
+      )
+    ),
+    /* ---------------- tool row ---------------- */
+    import_react29.default.createElement(
+      "div",
+      { className: "ph-r-toolbar__row ph-r-toolbar__row--tools" },
+      import_react29.default.createElement(
+        "div",
+        { className: "ph-r-pager", role: "group", "aria-label": rt("reader.pageOf", { page: page2, total }) },
+        import_react29.default.createElement(IconBtn, {
+          icon: "chevronLeft",
+          title: rt("reader.prevPage"),
+          disabled: page2 <= 1 || props.loading,
+          onClick: () => props.onPage(Math.max(1, page2 - 1))
+        }),
+        import_react29.default.createElement("input", {
+          key: "page-input-" + page2,
+          className: "ph-r-pager__input",
+          type: "text",
+          inputMode: "numeric",
+          defaultValue: String(page2),
+          "aria-label": rt("reader.jumpPage"),
+          title: rt("reader.jumpPage"),
+          onKeyDown: (event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commitPage(event.currentTarget.value);
+              event.currentTarget.blur();
+            }
+            if (event.key === "Escape") event.currentTarget.blur();
+          },
+          onBlur: (event) => commitPage(event.currentTarget.value)
+        }),
+        import_react29.default.createElement("span", { className: "ph-r-pager__total" }, "/ " + total),
+        import_react29.default.createElement(IconBtn, {
+          icon: "chevronRight",
+          title: rt("reader.nextPage"),
+          disabled: page2 >= total || props.loading,
+          onClick: () => props.onPage(Math.min(total, page2 + 1))
+        })
+      ),
+      import_react29.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
+      import_react29.default.createElement(
+        "div",
+        { className: "ph-r-zoom", role: "group", "aria-label": rt("reader.zoomValue", { percent: Math.round(props.zoom * 100) }) },
+        import_react29.default.createElement(IconBtn, { icon: "zoomOut", title: rt("reader.zoomOut"), onClick: () => props.onZoomStep(-1) }),
+        import_react29.default.createElement(
+          "button",
+          {
+            type: "button",
+            className: "ph-r-zoom__value",
+            title: rt("reader.zoomFit"),
+            onClick: props.onZoomFit
+          },
+          Math.round(num(props.zoom, 1) * 100) + "%"
+        ),
+        import_react29.default.createElement(IconBtn, { icon: "zoomIn", title: rt("reader.zoomIn"), onClick: () => props.onZoomStep(1) }),
+        import_react29.default.createElement(IconBtn, { icon: "fit", title: rt("reader.zoomFit"), onClick: props.onZoomFit })
+      ),
+      import_react29.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
+      import_react29.default.createElement(
+        "div",
+        {
+          className: cx("ph-r-segment", modeSlider.rect && "ph-r-segment--sliding"),
+          ref: modeSlider.ref,
+          role: "group",
+          "aria-label": rt("reader.mode.label")
+        },
+        import_react29.default.createElement(SlidingThumb, { rect: modeSlider.rect, inset: 2, popKey: props.mode }),
+        modeItems.map(
+          (item) => import_react29.default.createElement(
+            "button",
+            {
+              key: item.id,
+              type: "button",
+              "data-ph-active": props.mode === item.id ? "true" : void 0,
+              className: cx("ph-r-segment__item", props.mode === item.id && "ph-r-segment__item--active"),
+              onClick: () => props.onMode(item.id),
+              "aria-pressed": props.mode === item.id ? "true" : "false"
+            },
+            item.label
+          )
+        )
+      ),
+      import_react29.default.createElement("span", { className: "ph-r-toolbar__spacer" }),
+      search.open ? import_react29.default.createElement(
+        "div",
+        { className: "ph-r-find" },
+        import_react29.default.createElement(Icon2, { name: "search", size: 13, className: "ph-r-find__icon" }),
+        import_react29.default.createElement("input", {
+          ref: searchInputRef,
+          className: "ph-r-find__input",
+          type: "text",
+          value: search.query,
+          placeholder: rt("reader.search.placeholder"),
+          "aria-label": rt("reader.search.title"),
+          onChange: (event) => props.onSearchQuery(event.target.value),
+          onKeyDown: (event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              props.onSearchNext(event.shiftKey ? -1 : 1);
+            }
+            if (event.key === "Escape") {
+              event.preventDefault();
+              props.onSearchToggle(false);
+            }
+          }
+        }),
+        import_react29.default.createElement(
+          "span",
+          { className: cx("ph-r-find__count", search.query && search.hits.length === 0 && "ph-r-find__count--empty") },
+          !search.query ? "" : search.hits.length === 0 ? rt("reader.search.none") : rt("reader.search.count", { index: Math.min(search.index + 1, search.hits.length), total: search.hits.length })
+        ),
+        import_react29.default.createElement(IconBtn, { icon: "chevronUp", title: rt("reader.search.prev"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(-1) }),
+        import_react29.default.createElement(IconBtn, { icon: "chevronDown", title: rt("reader.search.next"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(1) }),
+        import_react29.default.createElement(IconBtn, { icon: "close", title: rt("reader.search.close"), onClick: () => props.onSearchToggle(false) })
+      ) : import_react29.default.createElement(IconBtn, { icon: "search", title: rt("reader.search"), onClick: () => props.onSearchToggle(true) }),
+      import_react29.default.createElement(IconBtn, {
+        icon: "sidePanel",
+        title: rt("reader.sidePanelToggle"),
+        active: props.sideOpen,
+        onClick: props.onToggleSide
+      })
+    )
+  );
+}
+
+// src/surfaces/reader/thumbnails.jsx
+var import_react30 = __toESM(require("react"), 1);
+var THUMB_INSET = 30;
+var OVERSCAN = 250;
+var FALLBACK_RAIL_WIDTH = 118;
+var DEFAULT_RATIO = 791 / 595;
+function offsetsOf(pages, total, railWidth) {
+  const thumbWidth = Math.max(60, railWidth - THUMB_INSET);
+  const list = Array.isArray(pages) && pages.length > 0 ? pages : null;
+  const count = list ? list.length : Math.max(1, Math.round(num(total, 1)));
+  const items2 = [];
+  let offset = 8;
+  for (let index = 0; index < count; index += 1) {
+    const descriptor = list ? list[index] || {} : {};
+    const page2 = Math.max(1, Math.round(num(descriptor.page, index + 1)));
+    const width = num(descriptor.width, 0) || 595;
+    const height = num(descriptor.height, 0) || 791;
+    const imageHeight = Math.round(thumbWidth * (height / width)) || Math.round(thumbWidth * DEFAULT_RATIO);
+    const itemHeight = imageHeight + 26;
+    const reportedUrl = typeof descriptor.imageUrl === "string" ? descriptor.imageUrl : "";
+    items2.push({ page: page2, offset, imageHeight, itemHeight, width: thumbWidth, imageUrl: reportedUrl });
+    offset += itemHeight;
+  }
+  return { items: items2, totalHeight: offset + 16, thumbWidth };
+}
+function Thumbnails(props) {
+  const t = props.t;
+  const scrollRef = import_react30.default.useRef(null);
+  const listRef = import_react30.default.useRef(null);
+  const [scrollTop, setScrollTop] = import_react30.default.useState(0);
+  const size = useElementSize(scrollRef);
+  const railWidth = size.width > 0 ? size.width : FALLBACK_RAIL_WIDTH;
+  const layout = import_react30.default.useMemo(() => offsetsOf(props.pages, props.total, railWidth), [props.pages, props.total, railWidth]);
+  const activeIndex = layout.items.findIndex((item) => item.page === props.page);
+  const visible = import_react30.default.useMemo(() => {
+    const height = size.height > 0 ? size.height : 900;
+    const top = scrollTop - OVERSCAN;
+    const bottom = scrollTop + height + OVERSCAN;
+    return layout.items.filter((item) => item.offset + item.itemHeight >= top && item.offset <= bottom);
+  }, [layout.items, scrollTop, size.height]);
+  const handleScroll = import_react30.default.useCallback(() => {
+    const element2 = scrollRef.current;
+    if (!element2) return;
+    setScrollTop(element2.scrollTop || 0);
+  }, []);
+  import_react30.default.useEffect(() => {
+    const element2 = scrollRef.current;
+    const item = layout.items[activeIndex];
+    if (!element2 || !item) return;
+    const height = element2.clientHeight || 0;
+    if (height <= 0) return;
+    const top = element2.scrollTop || 0;
+    if (item.offset < top + 8) element2.scrollTop = Math.max(0, item.offset - 8);
+    else if (item.offset + item.itemHeight > top + height - 8) element2.scrollTop = item.offset + item.itemHeight - height + 8;
+  }, [activeIndex, layout.items, props.page]);
+  return import_react30.default.createElement(
+    "div",
+    {
+      ref: scrollRef,
+      className: "ph-r-rail ph-r-scroll",
+      onScroll: handleScroll,
+      role: "navigation",
+      "aria-label": t("reader.thumbnails"),
+      "data-ph-scroll": "rail"
+    },
+    import_react30.default.createElement(
+      "div",
+      { ref: listRef, className: "ph-r-rail__inner", style: { height: layout.totalHeight } },
+      activeIndex >= 0 ? import_react30.default.createElement("span", {
+        className: "ph-r-rail__indicator",
+        style: {
+          height: 30,
+          transform: "translateY(" + (layout.items[activeIndex].offset + 8) + "px)"
+        },
+        "aria-hidden": "true"
+      }) : null,
+      visible.map((item) => {
+        const active = item.page === props.page;
+        return import_react30.default.createElement(
+          "button",
+          {
+            key: item.page,
+            type: "button",
+            className: cx("ph-r-rail__item", active && "ph-r-rail__item--active"),
+            style: { position: "absolute", left: 0, right: 0, top: item.offset },
+            onClick: () => props.onSelect(item.page),
+            "aria-label": t("reader.thumbPage", { page: item.page }),
+            "aria-current": active ? "page" : void 0,
+            "data-ph-thumb": String(item.page)
+          },
+          import_react30.default.createElement(
+            "span",
+            { className: "ph-r-rail__thumb", style: { height: item.imageHeight } },
+            import_react30.default.createElement(
+              "span",
+              {
+                style: {
+                  display: "block",
+                  width: "100%",
+                  height: "100%",
+                  background: "color-mix(in srgb, var(--dsw-alias-label-primary) 7%, #fff)"
+                },
+                "aria-hidden": "true"
+              }
+            ),
+            import_react30.default.createElement("img", {
+              src: item.imageUrl || pageImageUrl(props.paperId, item.page, 220),
+              alt: "",
+              loading: "lazy",
+              decoding: "async",
+              draggable: false,
+              style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" },
+              onLoad: (event) => {
+                const image = event.currentTarget;
+                if (image && image.parentElement) image.parentElement.style.background = "transparent";
+              },
+              onError: (event) => {
+                const image = event.currentTarget;
+                if (image) image.style.display = "none";
+              }
+            })
+          ),
+          import_react30.default.createElement(
+            "span",
+            { className: "ph-r-rail__num" },
+            String(item.page)
+          )
+        );
+      }),
+      layout.items.length === 0 ? import_react30.default.createElement(Icon2, { name: "pages", size: 20 }) : null
+    )
+  );
+}
+
+// src/surfaces/reader/shell.jsx
+var SIDE_TABS = ["outline", "annotations", "notes", "ai"];
+var TOOLS_TIP_FLAG = "reader.tools.tip.v1";
+var NO_ANNOTATIONS = [];
+var DEFAULT_COLOR = "yellow";
+function useReaderNotices(onToast) {
+  const [toasts, setToasts] = import_react31.default.useState([]);
+  const timers = import_react31.default.useRef(/* @__PURE__ */ new Map());
+  const external = typeof onToast === "function";
+  import_react31.default.useEffect(() => {
+    const pending = timers.current;
+    return () => {
+      pending.forEach((timer2) => clearTimeout(timer2));
+      pending.clear();
+    };
+  }, []);
+  const notify2 = import_react31.default.useCallback(
+    (kind, text2, action) => {
+      const message = String(text2 || "");
+      if (!message) return;
+      if (external && !action) {
+        try {
+          onToast(kind || "info", message);
+        } catch {
+        }
+        return;
+      }
+      const id = randomId();
+      setToasts(
+        (previous) => previous.concat([{
+          id,
+          kind: kind || "info",
+          text: message,
+          action: action && typeof action.onClick === "function" ? { label: String(action.label || ""), onClick: action.onClick } : null
+        }]).slice(-4)
+      );
+      const ttl = action ? 9e3 : 4800;
+      const timer2 = setTimeout(() => {
+        setToasts((previous) => previous.filter((toast) => toast.id !== id));
+        timers.current.delete(id);
+      }, ttl);
+      timers.current.set(id, timer2);
+    },
+    [external, onToast]
+  );
+  const dismiss2 = import_react31.default.useCallback((id) => {
+    setToasts((previous) => previous.filter((toast) => toast.id !== id));
+  }, []);
+  return { notify: notify2, toasts, dismiss: dismiss2, external };
+}
+function StateScreen(props) {
+  return import_react31.default.createElement(
+    "div",
+    { className: "ph-r-reader" },
+    import_react31.default.createElement(
+      "div",
+      { className: "ph-r-toolbar" },
+      import_react31.default.createElement(
+        "div",
+        { className: "ph-r-toolbar__row ph-r-toolbar__row--main" },
+        import_react31.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack }, props.t("reader.back"))
+      )
+    ),
+    import_react31.default.createElement(
+      "div",
+      { style: { flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 } },
+      props.loading ? import_react31.default.createElement(
+        "div",
+        { style: { display: "flex", alignItems: "center", gap: 10, color: "var(--dsw-alias-label-secondary)" }, role: "status" },
+        import_react31.default.createElement(Spinner2, { size: 16 }),
+        import_react31.default.createElement("span", null, props.t("reader.loading"))
+      ) : import_react31.default.createElement(Empty, {
+        icon: props.icon || "warning",
+        tone: props.tone,
+        title: props.title,
+        desc: props.desc,
+        action: props.retry ? import_react31.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: props.retry }, props.t("reader.retry")) : null
+      })
+    )
+  );
+}
+function useNavigationSnapshot(navigation2) {
+  const subscribe2 = import_react31.default.useCallback(
+    (listener) => navigation2 && typeof navigation2.subscribe === "function" ? navigation2.subscribe(listener) : () => {
+    },
+    [navigation2]
+  );
+  const getSnapshot2 = import_react31.default.useCallback(
+    () => navigation2 && typeof navigation2.getSnapshot === "function" ? navigation2.getSnapshot() : null,
+    [navigation2]
+  );
+  return import_react31.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
+}
+function annotationRequest(base, draft) {
+  const rects = arrayOf3(draft.rects).map(normalizeRect).filter(Boolean);
+  const params = {
+    paperId: base.paperId,
+    page: Math.max(1, Math.round(num(draft.page, base.page, 1))),
+    kind: draft.kind || "highlight",
+    rects,
+    color: draft.color || DEFAULT_COLOR,
+    origin: draft.origin || "user_note",
+    operationId: newOperationId("annot")
+  };
+  if (base.versionId) params.versionId = base.versionId;
+  const quote = firstText3(draft.quote);
+  const comment = firstText3(draft.comment);
+  if (quote) params.quote = quote;
+  if (comment) params.comment = comment;
+  if (params.kind === "note" && rects.length === 0) return params;
+  return params;
+}
+var ReaderBoundary = class extends import_react31.default.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null, epoch: 0 };
+    this.retry = this.retry.bind(this);
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    console.error("[pappers-hall] reader crashed", error, info);
+  }
+  retry() {
+    this.setState((previous) => ({ error: null, epoch: previous.epoch + 1 }));
+  }
+  render() {
+    if (this.state.error) {
+      const rt = this.props.t;
+      return import_react31.default.createElement(StateScreen, {
+        t: rt,
+        icon: "warning",
+        tone: "error",
+        title: rt("reader.error.title"),
+        desc: rt("reader.error.desc", { message: describeError2(this.state.error) }),
+        retry: this.retry,
+        onBack: this.props.onBack
+      });
+    }
+    return this.props.render("reader-" + this.state.epoch);
+  }
+};
+function ReaderShell(props) {
+  const rt = import_react31.default.useMemo(() => buildReaderT(props.t), [props.t]);
+  return import_react31.default.createElement(ReaderBoundary, {
+    t: rt,
+    onBack: props.onBack,
+    render: (key) => import_react31.default.createElement(ReaderShellInner, Object.assign({}, props, { key }))
+  });
+}
+function ReaderShellInner(props) {
+  const rt = import_react31.default.useMemo(() => buildReaderT(props.t), [props.t]);
+  const trSlider = useSlidingThumb();
+  const releaseStyles = import_react31.default.useMemo(() => ensureReaderStyles(), []);
+  import_react31.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  const apiCall = import_react31.default.useMemo(() => createApiCaller(props.api), [props.api]);
+  const reducedMotion = usePrefersReducedMotion();
+  const notices = useReaderNotices(props.onToast);
+  const notify2 = notices.notify;
+  const undoApi = useReaderUndo(props.undo);
+  const translationPreference = useTranslationPreference(props.translation, apiCall);
+  const preferredProvider = translationPreference.provider;
+  const notifyUndo = import_react31.default.useCallback(
+    (kind, text2) => {
+      notify2(kind, text2, {
+        label: rt("reader.undo.undo"),
+        onClick: () => {
+          Promise.resolve(undoApi.undo()).then((entry) => {
+            if (entry) notify2("info", rt("reader.undo.done", { label: entry.label }));
+          }).catch((error) => notify2("error", rt("reader.undo.failed", { message: describeError2(error) })));
+        }
+      });
+    },
+    [notify2, rt, undoApi]
+  );
+  const paperId = firstText3(props.paperId);
+  const openState = useAsync(
+    (signal) => paperId ? apiCall("reader.open", { id: paperId }, { signal }) : Promise.resolve(null),
+    [paperId],
+    { enabled: Boolean(paperId) }
+  );
+  const detail = openState.data || null;
+  const paper = detail && detail.paper || props.paper || null;
+  const versionId = firstText3(detail && detail.version && detail.version.id);
+  const pages = import_react31.default.useMemo(() => arrayOf3(detail && detail.pages), [detail]);
+  const total = import_react31.default.useMemo(() => {
+    const count = Math.round(num(pages.length > 0 ? pages.length : paper && paper.pageCount, 1));
+    return Math.max(1, count);
+  }, [pages, paper]);
+  const [figureFocus, setFigureFocus] = import_react31.default.useState(null);
+  const [noteContext, setNoteContextState] = import_react31.default.useState(() => getNoteContext());
+  const figureFocusTimer = import_react31.default.useRef(null);
+  const [page2, setPage] = import_react31.default.useState(() => {
+    const explicit = Math.round(num(props.initialPage, 0));
+    if (explicit > 0) return explicit;
+    const restored = props.paperId ? readReadingPosition(props.paperId) : 0;
+    return restored > 0 ? restored : 1;
+  });
+  const jumpSeq = import_react31.default.useRef(0);
+  const [jump, setJump] = import_react31.default.useState(null);
+  const pageRef = import_react31.default.useRef(page2);
+  pageRef.current = page2;
+  const totalRef = import_react31.default.useRef(total);
+  totalRef.current = total;
+  const goToPage = import_react31.default.useCallback((target, options) => {
+    const next = clamp(Math.round(num(target, 1)), 1, totalRef.current);
+    setPage(next);
+    jumpSeq.current += 1;
+    setJump({ page: next, seq: jumpSeq.current, smooth: !(options && options.instant) });
+  }, []);
+  const [zoom, setZoom] = import_react31.default.useState(1);
+  const zoomStep = import_react31.default.useCallback((direction) => {
+    setZoom((previous) => {
+      const next = Math.round((previous + direction * ZOOM_STEP) * 100) / 100;
+      return clamp(next, ZOOM_MIN, ZOOM_MAX);
+    });
+  }, []);
+  const zoomFit = import_react31.default.useCallback(() => setZoom(1), []);
+  const [mode, setMode] = import_react31.default.useState("source");
+  const changeMode = import_react31.default.useCallback((next) => {
+    setMode(next);
+  }, []);
+  const [tool, setTool] = import_react31.default.useState("select");
+  const changeTool = import_react31.default.useCallback(
+    (next) => {
+      setTool(next);
+      if (next === "area") notify2("info", rt("reader.areaModeActive"));
+      if (next === "note") notify2("info", rt("reader.noteModeActive"));
+      if (next === "select") clearNativeSelection();
+    },
+    [notify2, rt]
+  );
+  const [sideOpen, setSideOpen] = import_react31.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1150);
+  const [sideTab, setSideTab] = import_react31.default.useState(() => {
+    const requested = firstText3(props.initialTab);
+    return SIDE_TABS.indexOf(requested) >= 0 ? requested : "outline";
+  });
+  const [penColor, setPenColorState] = import_react31.default.useState(DEFAULT_COLOR);
+  const setPenColor = import_react31.default.useCallback((color) => {
+    const value = firstText3(color, DEFAULT_COLOR);
+    lastColor.current = value;
+    setPenColorState(value);
+  }, []);
+  const [toolsTip, setToolsTip] = import_react31.default.useState(() => !readFlag(TOOLS_TIP_FLAG));
+  const dismissToolsTip = import_react31.default.useCallback(() => {
+    writeFlag(TOOLS_TIP_FLAG, true);
+    setToolsTip(false);
+  }, []);
+  const showToolsTip = import_react31.default.useCallback(() => setToolsTip(true), []);
+  const openSide = import_react31.default.useCallback((tab) => {
+    setSideOpen(true);
+    if (tab) setSideTab(tab);
+  }, []);
+  const toggleSide = import_react31.default.useCallback(() => setSideOpen((value) => !value), []);
+  const [scrolled, setScrolled] = import_react31.default.useState(false);
+  const handleScrolledChange = import_react31.default.useCallback((value) => setScrolled(Boolean(value)), []);
+  const pageCache = import_react31.default.useRef(/* @__PURE__ */ new Map());
+  const layerCache = import_react31.default.useRef(/* @__PURE__ */ new Map());
+  const [dataVersion, setDataVersion] = import_react31.default.useState(0);
+  const bumpData = import_react31.default.useCallback(() => setDataVersion((value) => value + 1), []);
+  const getPageData = import_react31.default.useCallback(
+    (pageNo) => {
+      const entry = pageCache.current.get(pageNo);
+      return entry && entry.paperId === paperId ? entry : null;
+    },
+    [paperId]
+  );
+  const getLayer = import_react31.default.useCallback(
+    (pageNo) => {
+      const entry = layerCache.current.get(pageNo);
+      return entry && entry.paperId === paperId ? entry : null;
+    },
+    [paperId]
+  );
+  const structureRefreshes = import_react31.default.useRef(/* @__PURE__ */ new Map());
+  const ensurePage = import_react31.default.useCallback(
+    (pageNo) => {
+      if (!paperId || !pageNo) return;
+      const existing = pageCache.current.get(pageNo);
+      if (existing && existing.paperId === paperId) return;
+      pageCache.current.set(pageNo, { paperId, status: "loading" });
+      bumpData();
+      apiCall("reader.page", { id: paperId, page: pageNo }).then((data) => {
+        pageCache.current.set(pageNo, { paperId, status: "ready", data });
+        bumpData();
+        if (data && data.structureState === "pending") {
+          const attempts = structureRefreshes.current.get(pageNo) || 0;
+          if (attempts < 2) {
+            structureRefreshes.current.set(pageNo, attempts + 1);
+            setTimeout(() => {
+              const entry = pageCache.current.get(pageNo);
+              if (!entry || entry.paperId !== paperId) return;
+              pageCache.current.delete(pageNo);
+              ensurePageRef.current(pageNo);
+            }, 3500);
+          }
+        }
+      }).catch((error) => {
+        pageCache.current.set(pageNo, { paperId, status: "error", error });
+        bumpData();
+      });
+    },
+    [apiCall, bumpData, paperId]
+  );
+  const ensurePageRef = import_react31.default.useRef(ensurePage);
+  ensurePageRef.current = ensurePage;
+  const ensureLayer = import_react31.default.useCallback(
+    (pageNo) => {
+      if (!paperId || !pageNo) return;
+      const existing = layerCache.current.get(pageNo);
+      if (existing && existing.paperId === paperId) return;
+      layerCache.current.set(pageNo, { paperId, status: "loading" });
+      bumpData();
+      apiCall("reader.layer", { id: paperId, page: pageNo }).then((data) => {
+        layerCache.current.set(pageNo, { paperId, status: "ready", data });
+        bumpData();
+      }).catch((error) => {
+        layerCache.current.set(pageNo, { paperId, status: "error", error });
+        bumpData();
+      });
+    },
+    [apiCall, bumpData, paperId]
+  );
+  const retryPage = import_react31.default.useCallback(
+    (pageNo) => {
+      pageCache.current.delete(pageNo);
+      ensurePage(pageNo);
+    },
+    [ensurePage]
+  );
+  const retryLayer = import_react31.default.useCallback(
+    (pageNo) => {
+      layerCache.current.delete(pageNo);
+      ensureLayer(pageNo);
+    },
+    [ensureLayer]
+  );
+  const outlineState = useAsync(
+    (signal) => paperId ? apiCall("reader.outline", { id: paperId }, { signal }) : Promise.resolve({ items: [] }),
+    [paperId],
+    { enabled: Boolean(paperId) }
+  );
+  const outlineItems = import_react31.default.useMemo(() => arrayOf3(outlineState.data && outlineState.data.items), [outlineState.data]);
+  const [annotationReload, setAnnotationReload] = import_react31.default.useState(0);
+  const annotationsState = useAsync(
+    (signal) => paperId ? apiCall("annotations.list", versionId ? { paperId, versionId } : { paperId }, { signal }) : Promise.resolve([]),
+    [paperId, versionId, annotationReload],
+    { enabled: Boolean(paperId) }
+  );
+  const [annotations, setAnnotations] = import_react31.default.useState(NO_ANNOTATIONS);
+  import_react31.default.useEffect(() => {
+    if (annotationsState.status === "ready") setAnnotations(normalizeAnnotations(annotationsState.data));
+  }, [annotationsState.status, annotationsState.data]);
+  const lastColor = import_react31.default.useRef(DEFAULT_COLOR);
+  const intentSeq = import_react31.default.useRef(0);
+  const [annotationIntent, setAnnotationIntent] = import_react31.default.useState(() => {
+    const initial = firstText3(props.annotationId);
+    if (!initial) return null;
+    intentSeq.current += 1;
+    return { id: initial, seq: intentSeq.current };
+  });
+  const createAnnotation = import_react31.default.useCallback(
+    (draft) => {
+      const params = annotationRequest({ paperId, versionId, page: pageRef.current }, draft);
+      const optimistic = normalizeAnnotation(
+        Object.assign({}, params, {
+          id: "tmp-" + randomId(),
+          createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+          revision: 0,
+          state: "active",
+          pending: true,
+          comment: firstText3(draft.comment),
+          quote: firstText3(draft.quote)
+        })
+      );
+      if (!optimistic) return Promise.reject(makeApiError("invalid", "invalid annotation"));
+      setAnnotations((previous) => previous.concat([optimistic]));
+      let promise;
+      try {
+        promise = apiCall("annotations.create", params);
+      } catch (error) {
+        promise = Promise.reject(error);
+      }
+      return Promise.resolve(promise).then((result) => {
+        const saved = normalizeAnnotation(result && result.annotation ? result.annotation : result);
+        if (!saved) throw makeApiError("internal", "empty annotation response");
+        setAnnotations((previous) => previous.map((annotation) => annotation.id === optimistic.id ? saved : annotation));
+        if (saved.color) lastColor.current = saved.color;
+        let liveId = saved.id;
+        undoApi.push({
+          label: rt("reader.undo.created"),
+          undo: async () => {
+            try {
+              await apiCall("annotations.delete", { id: liveId });
+            } catch (error) {
+              if (error && error.code === "not_found") return;
+              throw error;
+            }
+            setAnnotations((previous) => previous.filter((annotation) => annotation.id !== liveId));
+          },
+          redo: async () => {
+            const recreated = normalizeAnnotation(
+              await apiCall("annotations.create", params).then((res) => res && res.annotation ? res.annotation : res)
+            );
+            if (!recreated) throw makeApiError("internal", "empty annotation response");
+            liveId = recreated.id;
+            setAnnotations((previous) => previous.concat([recreated]));
+          }
+        });
+        return saved;
+      }).catch((error) => {
+        setAnnotations((previous) => previous.filter((annotation) => annotation.id !== optimistic.id));
+        throw error;
+      });
+    },
+    [apiCall, paperId, versionId]
+  );
+  const updateAnnotation = import_react31.default.useCallback(
+    (annotation, patch) => {
+      const previous = annotation;
+      setAnnotations(
+        (list) => list.map((item) => item.id === previous.id ? Object.assign({}, item, patch, { pending: true }) : item)
+      );
+      let promise;
+      try {
+        promise = apiCall("annotations.update", Object.assign({ id: previous.id, expectedRevision: previous.revision }, patch));
+      } catch (error) {
+        promise = Promise.reject(error);
+      }
+      return Promise.resolve(promise).then((result) => {
+        const saved = normalizeAnnotation(result && result.annotation ? result.annotation : result);
+        setAnnotations(
+          (list) => list.map(
+            (item) => item.id === previous.id ? saved || Object.assign({}, item, patch, { pending: false, revision: previous.revision + 1 }) : item
+          )
+        );
+        const inverse = {};
+        Object.keys(patch || {}).forEach((key) => {
+          if (key === "color") inverse.color = previous.color;
+          else if (key === "comment") inverse.comment = previous.comment;
+          else if (key === "quote") inverse.quote = previous.quote;
+        });
+        if (Object.keys(inverse).length > 0) {
+          const applyPatch = async (values) => {
+            const result2 = await apiCall("annotations.update", Object.assign({ id: previous.id }, values));
+            const restored = normalizeAnnotation(result2 && result2.annotation ? result2.annotation : result2);
+            setAnnotations((list) => list.map((item) => item.id === previous.id ? restored || Object.assign({}, item, values) : item));
+          };
+          undoApi.push({
+            label: rt("reader.undo.updated"),
+            undo: () => applyPatch(inverse),
+            redo: () => applyPatch(patch)
+          });
+        }
+        return saved;
+      }).catch((error) => {
+        setAnnotations((list) => list.map((item) => item.id === previous.id ? previous : item));
+        notify2("error", rt("reader.annot.failed", { message: describeError2(error) }));
+        throw error;
+      });
+    },
+    [apiCall, notify2, rt]
+  );
+  const deleteAnnotation = import_react31.default.useCallback(
+    (annotation) => {
+      let index = -1;
+      setAnnotations((list) => {
+        index = list.findIndex((item) => item.id === annotation.id);
+        return list.filter((item) => item.id !== annotation.id);
+      });
+      let promise;
+      try {
+        promise = apiCall("annotations.delete", { id: annotation.id });
+      } catch (error) {
+        promise = Promise.reject(error);
+      }
+      return Promise.resolve(promise).then(() => {
+        let liveId = annotation.id;
+        const recreatePayload = {
+          paperId,
+          page: annotation.page,
+          kind: annotation.kind,
+          rects: annotation.rects,
+          quote: annotation.quote,
+          comment: annotation.comment,
+          color: annotation.color,
+          origin: annotation.origin
+        };
+        if (versionId) recreatePayload.versionId = versionId;
+        undoApi.push({
+          label: rt("reader.undo.deleted"),
+          undo: async () => {
+            const recreated = normalizeAnnotation(
+              await apiCall("annotations.create", recreatePayload).then((res) => res && res.annotation ? res.annotation : res)
+            );
+            if (!recreated) throw makeApiError("internal", "empty annotation response");
+            liveId = recreated.id;
+            setAnnotations((list) => list.concat([recreated]));
+          },
+          redo: async () => {
+            try {
+              await apiCall("annotations.delete", { id: liveId });
+            } catch (error) {
+              if (!(error && error.code === "not_found")) throw error;
+            }
+            setAnnotations((list) => list.filter((item) => item.id !== liveId));
+          }
+        });
+        notifyUndo("success", rt("reader.annot.deleted"));
+      }).catch((error) => {
+        setAnnotations((list) => {
+          const restored = list.slice();
+          restored.splice(index >= 0 ? index : restored.length, 0, annotation);
+          return restored;
+        });
+        notify2("error", rt("reader.annot.failed", { message: describeError2(error) }));
+        throw error;
+      });
+    },
+    [apiCall, notify2, rt]
+  );
+  const [popover, setPopover] = import_react31.default.useState(null);
+  const popoverAnnotation = import_react31.default.useMemo(() => {
+    if (!popover) return null;
+    const found = annotations.find((annotation) => annotation.id === popover.id);
+    return found || null;
+  }, [annotations, popover]);
+  const popoverProp = import_react31.default.useMemo(() => {
+    if (!popoverAnnotation || !popover) return null;
+    return { annotation: popoverAnnotation, anchor: popover.anchor, autoFocus: Boolean(popover.autoFocus) };
+  }, [popoverAnnotation, popover]);
+  const activeAnnotationId = popoverAnnotation ? popoverAnnotation.id : null;
+  import_react31.default.useEffect(() => {
+    if (!annotationIntent) return;
+    if (annotationsState.status === "error") {
+      setAnnotationIntent(null);
+      return;
+    }
+    if (annotationsState.status !== "ready") return;
+    const target = annotations.find((annotation) => annotation.id === annotationIntent.id);
+    if (!target) {
+      if (annotations.length > 0) setAnnotationIntent(null);
+      return;
+    }
+    setAnnotationIntent(null);
+    if (target.page !== pageRef.current) goToPage(target.page);
+    setPopover({ id: target.id, anchor: target.rects[0] || { x: 0.5, y: 0.2, w: 0, h: 0 }, autoFocus: false });
+  }, [annotations, annotationIntent, annotationsState.status, goToPage]);
+  const navigation2 = props.navigation;
+  const navSnapshot = useNavigationSnapshot(navigation2);
+  const navConsumed = import_react31.default.useRef(0);
+  import_react31.default.useEffect(() => {
+    if (!navigation2 || !navSnapshot || !navSnapshot.seq) return;
+    if (navConsumed.current === navSnapshot.seq) return;
+    const route = navSnapshot.route || {};
+    if (route.view !== "reader" || route.paperId !== paperId) return;
+    navConsumed.current = navSnapshot.seq;
+    let intent = null;
+    try {
+      intent = typeof navigation2.consumeIntent === "function" ? navigation2.consumeIntent() : null;
+    } catch (error) {
+      intent = null;
+    }
+    const target = intent || route;
+    if (!target) return;
+    if (target.page && Math.round(num(target.page, 1)) !== pageRef.current) {
+      goToPage(target.page);
+    }
+    if (target.annotationId) {
+      intentSeq.current += 1;
+      setAnnotationIntent({ id: String(target.annotationId), seq: intentSeq.current });
+    }
+    if (target.kind === "figure" && target.figureId) {
+      const figurePage = Math.max(1, Math.round(num(target.page, pageRef.current)));
+      setFigureFocus({
+        figureId: String(target.figureId),
+        page: figurePage,
+        bbox: target.bbox || null,
+        figureLabel: target.figureLabel || target.label || "",
+        seq: Date.now()
+      });
+      if (figureFocusTimer.current) clearTimeout(figureFocusTimer.current);
+      figureFocusTimer.current = setTimeout(() => setFigureFocus(null), 4600);
+    }
+  }, [goToPage, navSnapshot, navigation2, notify2, paperId, rt]);
+  import_react31.default.useEffect(() => () => {
+    if (figureFocusTimer.current) clearTimeout(figureFocusTimer.current);
+  }, []);
+  import_react31.default.useEffect(() => {
+    const sync = () => setNoteContextState(getNoteContext());
+    sync();
+    return subscribeNoteContext(sync);
+  }, []);
+  const linkCurrentPaper = import_react31.default.useCallback(() => {
+    if (!noteContext || typeof noteContext.linkPaper !== "function" || !paperId) return;
+    Promise.resolve(noteContext.linkPaper(paperId)).then((fresh) => {
+      if (fresh) {
+        setNoteContextState((current2) => current2 ? { ...current2, paperIds: Array.isArray(fresh.paperIds) ? fresh.paperIds : current2.paperIds } : current2);
+        notify2("success", rt("reader.linkNote.done", { title: noteContext.title || rt("reader.linkNote.untitled") }));
+      }
+    }).catch((error) => notify2("error", rt("reader.linkNote.failed", { message: describeError2(error) })));
+  }, [noteContext, paperId, notify2, rt]);
+  const insertFigureIntoNote = import_react31.default.useCallback((material) => {
+    if (!noteContext || typeof noteContext.insertFigure !== "function") {
+      notify2("warning", rt("reader.linkNote.noNote"));
+      return;
+    }
+    Promise.resolve(noteContext.insertFigure(material)).then(() => notify2("success", rt("reader.figures.inserted"))).catch((error) => notify2("error", rt("reader.figures.insertFailed", { message: describeError2(error) })));
+  }, [noteContext, notify2, rt]);
+  const linkAnnotationToNote = import_react31.default.useCallback((annotation) => {
+    if (!noteContext || typeof noteContext.insertQuote !== "function") {
+      notify2("warning", rt("reader.linkNote.noNote"));
+      return;
+    }
+    const quote = firstText3(annotation && annotation.quote);
+    if (quote === "") {
+      notify2("warning", rt("reader.linkNote.emptyQuote"));
+      return;
+    }
+    Promise.resolve(noteContext.insertQuote({
+      quote,
+      comment: firstText3(annotation && annotation.comment),
+      paperTitle: firstText3(paper && (paper.titleZh || paper.title)),
+      page: Number(annotation && annotation.page) || page2,
+      annotationId: annotation && annotation.id
+    })).then(() => notify2("success", rt("reader.linkNote.quoteDone", { title: noteContext.title || rt("reader.linkNote.untitled") }))).catch((error) => notify2("error", rt("reader.linkNote.quoteFailed", { message: describeError2(error) })));
+  }, [noteContext, notify2, rt, paper, page2]);
+  import_react31.default.useEffect(() => {
+    if (!figureFocus) return;
+    if (Math.round(num(page2, 1)) !== figureFocus.page) setFigureFocus(null);
+  }, [page2, figureFocus]);
+  const openAnnotation = import_react31.default.useCallback((annotation, anchor) => {
+    setPopover({ id: annotation.id, anchor, autoFocus: false });
+  }, []);
+  const closePopover = import_react31.default.useCallback(() => setPopover(null), []);
+  const [selection, setSelection] = import_react31.default.useState(null);
+  const [selectionResult, setSelectionResult] = import_react31.default.useState(null);
+  const handleSelection = import_react31.default.useCallback((next) => {
+    setSelection(next);
+    if (!next) setSelectionResult(null);
+  }, []);
+  const clearSelection = import_react31.default.useCallback(() => {
+    setSelection(null);
+    setSelectionResult(null);
+    clearNativeSelection();
+  }, []);
+  const [aiRequest, setAiRequest] = import_react31.default.useState(null);
+  const aiSeq = import_react31.default.useRef(0);
+  const askAi = import_react31.default.useCallback((request2) => {
+    aiSeq.current += 1;
+    setAiRequest(Object.assign({}, request2, { seq: aiSeq.current }));
+    setSideOpen(true);
+    setSideTab("ai");
+  }, []);
+  const commitMaterials = import_react31.default.useCallback(
+    async (materials) => {
+      const list = arrayOf3(materials).filter((material) => material && material.id).map((material) => {
+        const item = { kind: material.kind || "paper", id: String(material.id) };
+        if (material.page) item.page = Math.max(1, Math.round(num(material.page, 1)));
+        return item;
+      });
+      if (list.length === 0) throw makeApiError("invalid", "no materials selected");
+      const params = { items: list, operationId: newOperationId("refs") };
+      if (props.sessionId) params.sessionId = props.sessionId;
+      const result = await apiCall("references.commit", params);
+      let bundleId = firstText3(result && result.bundleId, result && result.bundle && result.bundle.id);
+      if (props.pending && typeof props.pending.add === "function") {
+        try {
+          const added = props.pending.add(result, arrayOf3(materials));
+          bundleId = bundleId || firstText3(added && added.bundleId, added && added.id);
+        } catch (error) {
+          console.warn("[pappers-hall] pending store rejected the bundle", error);
+        }
+      }
+      if (bundleId && props.pending && typeof props.pending.remove === "function") {
+        undoApi.push({
+          label: rt("reader.undo.cited"),
+          undo: async () => {
+            props.pending.remove(bundleId);
+          },
+          redo: async () => {
+            props.pending.add(result, arrayOf3(materials));
+          }
+        });
+      }
+      notifyUndo("success", rt("reader.toast.cited"));
+      return result;
+    },
+    [apiCall, notify2, props.pending, props.sessionId, rt]
+  );
+  const citePaperPage = import_react31.default.useCallback(() => {
+    const title2 = firstText3(paper && paper.titleZh, paper && paper.title);
+    commitMaterials([{ kind: "paper", id: paperId, page: page2, title: title2 }]).catch((error) => {
+      notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) }));
+    });
+  }, [commitMaterials, notify2, page2, paper, paperId, rt]);
+  const citeAnnotation = import_react31.default.useCallback(
+    (annotation) => {
+      commitMaterials([
+        {
+          kind: "annotation",
+          id: annotation.id,
+          page: annotation.page,
+          title: firstText3(annotation.quote, annotation.comment)
+        }
+      ]).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
+    },
+    [commitMaterials, notify2, rt]
+  );
+  const citeAiAnswer = import_react31.default.useCallback(
+    (message) => {
+      const materials = [{ kind: "paper", id: paperId, page: page2, title: firstText3(paper && paper.titleZh, paper && paper.title) }];
+      for (const source of arrayOf3(message && message.sources)) {
+        if (source && source.kind === "figure" && source.figureId) {
+          materials.push({ kind: "figure", id: String(source.figureId), page: num(source.page, page2), title: firstText3(source.label) });
+        }
+      }
+      commitMaterials(materials).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
+    },
+    [commitMaterials, notify2, page2, paper, paperId, rt]
+  );
+  const TRANSLATABLE_ROLES2 = ["body", "heading", "caption"];
+  const [translations, setTranslations] = import_react31.default.useState({});
+  const translationSequence = import_react31.default.useRef(0);
+  const translatableBlocksFor = import_react31.default.useCallback(
+    (pageNo) => {
+      const entry = getPageData(pageNo);
+      if (!entry || entry.status !== "ready" || !entry.data) return [];
+      return arrayOf3(entry.data.blocks).filter(
+        (block) => block && block.id != null && typeof block.text === "string" && block.text.trim().length >= 2 && TRANSLATABLE_ROLES2.indexOf(String(block.role || "body")) >= 0 && !looksLikePageMetadata(block.text)
+      );
+    },
+    [getPageData]
+  );
+  const updateTranslationPage = import_react31.default.useCallback((pageNo, updater) => {
+    setTranslations((previous) => {
+      const current2 = previous[pageNo] || {
+        status: "idle",
+        entries: {},
+        pending: {},
+        progress: { total: 0, done: 0, failed: 0 },
+        provenance: null,
+        provider: "auto",
+        engine: null,
+        cachedAll: false
+      };
+      const next = updater(current2);
+      return Object.assign({}, previous, { [pageNo]: next });
+    });
+  }, []);
+  const normalizeBlockEntry = import_react31.default.useCallback(
+    (block, item, fallbackEngine, fallbackReason, fallbackModel) => {
+      const translation2 = firstText3(item && item.translation);
+      const engine = readEngine(item, fallbackEngine && fallbackEngine.provider || "auto");
+      const translated = Boolean(translation2) && String(item && item.status || "translated") !== "unavailable";
+      return {
+        id: block.id,
+        translation: translated ? translation2 : "",
+        status: translated ? "translated" : "unavailable",
+        reason: translated ? "" : firstText3(item && item.reason, fallbackReason, rt("reader.ai.reasonFallback")),
+        cached: Boolean(item && item.cached),
+        provider: engine.provider,
+        engine,
+        model: firstText3(item && item.model, item && item.engine && item.engine.model, fallbackModel),
+        latencyMs: firstText3(item && item.latencyMs, item && item.latency)
+      };
+    },
+    [rt]
+  );
+  const summarizeEngines = import_react31.default.useCallback((blocks, entries2) => {
+    const labels = [];
+    const models = [];
+    for (const block of blocks) {
+      const entry = entries2[String(block.id)];
+      if (!entry || entry.status !== "translated") continue;
+      const title2 = engineTitle(entry.engine, entry.model);
+      if (title2 && labels.indexOf(title2) < 0) labels.push(title2);
+      if (entry.model && models.indexOf(entry.model) < 0) models.push(entry.model);
+    }
+    const firstEntry = blocks.map((block) => entries2[String(block.id)]).find((entry) => entry && entry.status === "translated");
+    return { label: labels.join(" + "), model: models.join(", "), engine: firstEntry ? firstEntry.engine || null : null };
+  }, []);
+  const runPageTranslation = import_react31.default.useCallback(
+    async (pageNo, options) => {
+      if (!paperId) return null;
+      const opts = options || {};
+      const blocks = translatableBlocksFor(pageNo);
+      if (blocks.length === 0) {
+        notify2("info", rt("reader.toast.translateNoBlocks"));
+        return null;
+      }
+      const provider = opts.provider || preferredProvider || "auto";
+      const token = translationSequence.current += 1;
+      const pending = {};
+      blocks.forEach((block) => {
+        pending[String(block.id)] = true;
+      });
+      updateTranslationPage(
+        pageNo,
+        (current2) => Object.assign({}, current2, {
+          status: "translating",
+          entries: {},
+          pending,
+          progress: { total: blocks.length, done: 0, failed: 0 },
+          provider,
+          engine: null,
+          provenance: null,
+          cachedAll: false,
+          reason: "",
+          startedAt: Date.now()
+        })
+      );
+      const params = { paperId, page: pageNo, target: "zh", provider };
+      if (props.sessionId) params.sessionId = props.sessionId;
+      const commit = (entries2, extra) => {
+        if (translationSequence.current !== token) return null;
+        const summary = summarizeEngines(blocks, entries2);
+        let done = 0;
+        let failed = 0;
+        for (const block of blocks) {
+          const entry = entries2[String(block.id)];
+          if (!entry) continue;
+          if (entry.status === "translated") done += 1;
+          else failed += 1;
+        }
+        const status = done === blocks.length ? "translated" : done > 0 ? "partial" : "unavailable";
+        const cachedAll = blocks.length > 0 && done === blocks.length && blocks.every((block) => {
+          const entry = entries2[String(block.id)];
+          return entry && entry.status === "translated" && entry.cached;
+        });
+        const firstFailure = blocks.map((block) => entries2[String(block.id)]).find((entry) => entry && entry.status !== "translated");
+        updateTranslationPage(
+          pageNo,
+          (current2) => Object.assign({}, current2, {
+            status,
+            entries: entries2,
+            pending: {},
+            progress: { total: blocks.length, done, failed },
+            provenance: { label: summary.label, model: summary.model, provider },
+            provider,
+            engine: summary.engine && summary.engine.engine,
+            cachedAll,
+            reason: status === "unavailable" ? firstText3(
+              extra && extra.reason,
+              firstFailure && firstFailure.reason,
+              rt("reader.bilingual.unavailable")
+            ) : ""
+          })
+        );
+        return { status, done, failed };
+      };
+      try {
+        const result = await apiCall("translate.blocks", params, { timeoutMs: 6e4 });
+        const returned = arrayOf3(result && result.blocks);
+        const fallbackEngine = readEngine(result, provider);
+        const fallbackModel = firstText3(
+          result && result.engine && result.engine.model,
+          result && result.provenance && result.provenance.model,
+          result && result.model
+        );
+        const fallbackReason = firstText3(result && result.reason, rt("reader.ai.reasonFallback"));
+        const entries2 = {};
+        blocks.forEach((block, index) => {
+          let item = returned.find((candidate) => candidate && String(candidate.id) === String(block.id));
+          if (!item && returned.length === blocks.length) item = returned[index];
+          entries2[String(block.id)] = normalizeBlockEntry(block, item, fallbackEngine, fallbackReason, fallbackModel);
+        });
+        const missing = blocks.filter((block) => {
+          const entry = entries2[String(block.id)];
+          return entry && entry.status !== "translated" && !entry.reason;
+        });
+        commit(entries2, { reason: firstText3(result && result.reason) });
+        if (missing.length > 0) {
+          await Promise.all(missing.slice(0, 2).map((block) => translateBlockInternal(block, pageNo, provider)));
+        }
+        return entries2;
+      } catch (error) {
+        const code = error && error.code;
+        if (code === "invalid" || code === "unknown_method" || code === "method_not_found" || code === "not_implemented") {
+          return legacyPerBlockTranslate(blocks, pageNo, provider, token);
+        }
+        const entries2 = {};
+        const reason = describeError2(error);
+        blocks.forEach((block) => {
+          entries2[String(block.id)] = {
+            id: block.id,
+            translation: "",
+            status: "unavailable",
+            reason,
+            cached: false,
+            provider,
+            engine: readEngine(null, provider)
+          };
+        });
+        commit(entries2, { reason });
+        return entries2;
+      }
+    },
+    [apiCall, notify2, preferredProvider, props.sessionId, rt, summarizeEngines, translatableBlocksFor, updateTranslationPage]
+  );
+  const legacyPerBlockTranslate = import_react31.default.useCallback(
+    async (blocks, pageNo, provider, token) => {
+      const entries2 = {};
+      const queue = blocks.slice().sort((left, right) => String(right.text || "").length - String(left.text || "").length);
+      let index = 0;
+      const worker = async () => {
+        while (queue.length > 0) {
+          if (translationSequence.current !== token) return;
+          const block = queue.shift();
+          const params = { paperId, page: pageNo, text: block.text, target: "zh", provider };
+          if (props.sessionId) params.sessionId = props.sessionId;
+          let item = null;
+          try {
+            item = await apiCall("translate.text", params, { timeoutMs: 3e4 });
+          } catch (error) {
+            item = { status: "unavailable", reason: describeError2(error) };
+          }
+          const entry = normalizeBlockEntry(block, item, readEngine(item, provider), rt("reader.ai.reasonFallback"));
+          entries2[String(block.id)] = entry;
+          const done2 = Object.values(entries2).filter((value) => value && value.status === "translated").length;
+          const failed2 = Object.values(entries2).filter((value) => value && value.status !== "translated").length;
+          if (translationSequence.current === token) {
+            updateTranslationPage(
+              pageNo,
+              (current2) => Object.assign({}, current2, {
+                entries: Object.assign({}, entries2),
+                pending: Object.fromEntries(blocks.filter((block2) => !entries2[String(block2.id)]).map((block2) => [String(block2.id), true])),
+                progress: { total: blocks.length, done: done2, failed: failed2 }
+              })
+            );
+          }
+          index += 1;
+        }
+      };
+      await Promise.all([worker(), worker()]);
+      if (translationSequence.current !== token) return entries2;
+      const summary = summarizeEngines(blocks, entries2);
+      let done = 0;
+      let failed = 0;
+      for (const block of blocks) {
+        const entry = entries2[String(block.id)];
+        if (entry && entry.status === "translated") done += 1;
+        else failed += 1;
+      }
+      updateTranslationPage(
+        pageNo,
+        (current2) => Object.assign({}, current2, {
+          status: done === blocks.length ? "translated" : done > 0 ? "partial" : "unavailable",
+          entries: entries2,
+          pending: {},
+          progress: { total: blocks.length, done, failed },
+          provenance: { label: summary.label, model: summary.model, provider },
+          engine: summary.engine && summary.engine.engine,
+          cachedAll: blocks.length > 0 && done === blocks.length && blocks.every((block) => entries2[String(block.id)] && entries2[String(block.id)].cached),
+          reason: done === 0 ? firstText3(
+            blocks.map((block) => entries2[String(block.id)]).find((entry) => entry && entry.reason)?.reason,
+            rt("reader.bilingual.unavailable")
+          ) : ""
+        })
+      );
+      return entries2;
+    },
+    [apiCall, normalizeBlockEntry, paperId, props.sessionId, rt, summarizeEngines, updateTranslationPage]
+  );
+  const translateBlockInternal = import_react31.default.useCallback(
+    async (block, pageNo, providerOverride) => {
+      if (!paperId || !block || block.id == null) return null;
+      const target = pageNo || pageRef.current;
+      const provider = providerOverride || preferredProvider || "auto";
+      const params = { paperId, page: target, text: block.text, target: "zh", provider };
+      if (props.sessionId) params.sessionId = props.sessionId;
+      updateTranslationPage(
+        target,
+        (current2) => Object.assign({}, current2, {
+          pending: Object.assign({}, current2.pending, { [String(block.id)]: true }),
+          status: current2.status === "translated" ? current2.status : "translating"
+        })
+      );
+      let item = null;
+      try {
+        item = await apiCall("translate.text", params, { timeoutMs: 3e4 });
+      } catch (error) {
+        item = { status: "unavailable", reason: describeError2(error) };
+      }
+      const entry = normalizeBlockEntry(block, item, readEngine(item, provider), rt("reader.ai.reasonFallback"));
+      updateTranslationPage(target, (current2) => {
+        const entries2 = Object.assign({}, current2.entries, { [String(block.id)]: entry });
+        const blocks = translatableBlocksFor(target);
+        let done = 0;
+        let failed = 0;
+        for (const itemBlock of blocks) {
+          const pageEntry2 = entries2[String(itemBlock.id)];
+          if (!pageEntry2) continue;
+          if (pageEntry2.status === "translated") done += 1;
+          else failed += 1;
+        }
+        const pending = Object.assign({}, current2.pending);
+        delete pending[String(block.id)];
+        const summary = summarizeEngines(blocks, entries2);
+        const status = Object.keys(pending).length > 0 ? "translating" : done === blocks.length ? "translated" : done > 0 ? "partial" : "unavailable";
+        return Object.assign({}, current2, {
+          entries: entries2,
+          pending,
+          status,
+          progress: { total: blocks.length, done, failed },
+          provenance: { label: summary.label, model: summary.model, provider: current2.provider || provider },
+          engine: summary.engine && summary.engine.engine,
+          cachedAll: blocks.length > 0 && done === blocks.length && blocks.every((itemBlock) => entries2[String(itemBlock.id)] && entries2[String(itemBlock.id)].cached)
+        });
+      });
+      return entry;
+    },
+    [apiCall, normalizeBlockEntry, preferredProvider, props.sessionId, rt, summarizeEngines, translatableBlocksFor, updateTranslationPage]
+  );
+  const translatePage = import_react31.default.useCallback(
+    (force, options) => {
+      if (!paperId) return;
+      const opts = options || {};
+      const target = pageRef.current;
+      const blocks = translatableBlocksFor(target);
+      if (blocks.length === 0) {
+        notify2("info", rt("reader.toast.translateNoBlocks"));
+        return;
+      }
+      const current2 = translations[target];
+      const entries2 = current2 && current2.entries || {};
+      const provider = opts.provider || preferredProvider || "auto";
+      const hasEntries = Object.keys(entries2).length > 0;
+      if (!force && hasEntries) {
+        const failed = blocks.filter((block) => {
+          const entry = entries2[String(block.id)];
+          return !entry || entry.status !== "translated";
+        });
+        if (failed.length > 0 && failed.length < blocks.length) {
+          return Promise.all(failed.map((block) => translateBlockInternal(block, target, provider)));
+        }
+      }
+      return runPageTranslation(target, { provider });
+    },
+    [notify2, paperId, preferredProvider, rt, runPageTranslation, translateBlockInternal, translatableBlocksFor, translations]
+  );
+  const translateAiPage = import_react31.default.useCallback(() => {
+    return translatePage(true, { provider: "llm" });
+  }, [translatePage]);
+  const translateBlock = import_react31.default.useCallback(
+    (block) => translateBlockInternal(block, pageRef.current, preferredProvider || "auto"),
+    [preferredProvider, translateBlockInternal]
+  );
+  const detectedCache = import_react31.default.useRef(/* @__PURE__ */ new Map());
+  const detectLanguage2 = import_react31.default.useCallback(
+    async (text2) => {
+      const value = String(text2 || "").trim();
+      if (!value) return "empty";
+      if (detectedCache.current.has(value)) return detectedCache.current.get(value);
+      let language = "unknown";
+      try {
+        const result = await apiCall("translate.detect", { text: value });
+        const raw = firstText3(
+          result && result.language,
+          result && result.lang,
+          result && result.detected,
+          result && result.code
+        );
+        if (raw) language = /^(zh|cn|chinese|zh-cn|zh-hans|中文)/i.test(raw) ? "zh" : "other";
+        else if (result && (result.isChinese === true || result.chinese === true)) language = "zh";
+      } catch (error) {
+        const code = error && error.code;
+        if (code !== "invalid" && code !== "not_implemented" && code !== "unknown_method" && code !== "method_not_found") {
+        }
+      }
+      if (language === "unknown") language = isProbablyChinese(value) ? "zh" : "other";
+      if (detectedCache.current.size > 200) detectedCache.current.clear();
+      detectedCache.current.set(value, language);
+      return language;
+    },
+    [apiCall]
+  );
+  const quickTranslateText = import_react31.default.useCallback(
+    async (text2, pageNo, options) => {
+      const opts = options || {};
+      const quote = String(text2 || "").trim();
+      const targetPage = Math.max(1, Math.round(num(pageNo, pageRef.current)));
+      if (!quote) throw makeApiError("invalid", "empty selection");
+      if (opts.detect !== false) {
+        const language = await detectLanguage2(quote);
+        if (language === "zh") {
+          return { page: targetPage, quote, status: "same-language", translation: "", reason: "", provider: "auto" };
+        }
+      }
+      const paperTitle4 = firstText3(props.paper && props.paper.titleZh, props.paper && props.paper.title, "");
+      const context = { paperTitle: paperTitle4 || void 0, page: targetPage };
+      const base = { paperId, page: targetPage, text: quote, target: "zh", paperTitle: paperTitle4 || void 0, context };
+      const requestRects = normalizeRectsForRequest(opts.rects);
+      if (requestRects.length > 0) base.rects = requestRects;
+      if (props.sessionId) base.sessionId = props.sessionId;
+      const startedAt = Date.now();
+      const isAiRefine = Boolean(opts.refine) || opts.provider === "llm";
+      if (!isAiRefine) {
+        try {
+          const result = await apiCall("translate.text", Object.assign({}, base, { quick: true }), { timeoutMs: 7e3 });
+          const provenance = result && result.provenance || {};
+          const translation2 = firstText3(result && result.translation, result && result.answer, result && result.text);
+          const engine = readEngine(result, "auto");
+          const model = firstText3(result && result.engine && result.engine.model, provenance.model, result && result.model);
+          const rawLatency = result && result.latencyMs != null ? result.latencyMs : result && result.elapsedMs != null ? result.elapsedMs : result && result.elapsed;
+          const latency = rawLatency != null && rawLatency !== "" ? Number(rawLatency) : null;
+          const unavailable = !translation2;
+          const reliability = assessTranslationReliability(result, quote);
+          if (reliability.unreliable) {
+            return {
+              page: targetPage,
+              quote,
+              rects: requestRects,
+              status: "unreliable",
+              translation: "",
+              unreliable: true,
+              reason: rt("reader.selection.unreliableRegion") + (reliability.reason ? "\uFF08" + reliability.reason + "\uFF09" : ""),
+              provider: engine.provider || "auto",
+              engine,
+              model,
+              cached: false,
+              latencyMs: latency != null && Number.isFinite(latency) ? latency : Date.now() - startedAt,
+              fast: true,
+              freeOnly: false,
+              suggestAi: false,
+              aiRefine: false,
+              requestProvider: "auto"
+            };
+          }
+          return {
+            page: targetPage,
+            quote,
+            rects: requestRects,
+            status: translation2 ? "translated" : firstText3(result && result.status, "unavailable"),
+            translation: translation2,
+            reason: translation2 ? "" : firstText3(result && result.reason, provenance.reason, rt("reader.ai.reasonFallback")),
+            provider: engine.provider || "auto",
+            engine,
+            model,
+            cached: Boolean(result && result.cached),
+            latencyMs: latency != null && Number.isFinite(latency) ? latency : Date.now() - startedAt,
+            fast: true,
+            freeOnly: Boolean(result && (result.freeOnly || result.mode === "free" || result.engine && result.engine.free)),
+            suggestAi: unavailable ? result && result.suggestAi !== false : false,
+            aiRefine: false,
+            requestProvider: "auto"
+          };
+        } catch (error) {
+          const timedOut = Boolean(error && (error.code === "timeout" || error.code === "timed_out" || error.name === "TimeoutError"));
+          return {
+            page: targetPage,
+            quote,
+            rects: requestRects,
+            status: "unavailable",
+            translation: "",
+            reason: timedOut ? rt("reader.selection.quickTimeout") : firstText3(error && error.message, rt("reader.ai.reasonFallback")),
+            provider: "auto",
+            engine: null,
+            model: "",
+            cached: false,
+            latencyMs: null,
+            fast: true,
+            freeOnly: true,
+            suggestAi: true,
+            aiRefine: false,
+            requestProvider: "auto"
+          };
+        }
+      }
+      const provider = opts.provider || "llm";
+      const attempts = [
+        { method: "translate.text", params: Object.assign({}, base, { provider: "llm", fast: false }) },
+        { method: "ai.quickTranslate", params: Object.assign({}, base, { provider: "llm", fast: false }) }
+      ];
+      let lastError = null;
+      for (let index = 0; index < attempts.length; index += 1) {
+        const attempt = attempts[index];
+        const attemptStartedAt = Date.now();
+        try {
+          const result = await apiCall(attempt.method, attempt.params, { timeoutMs: 6e4 });
+          const provenance = result && result.provenance || {};
+          const translation2 = firstText3(result && result.translation, result && result.answer, result && result.text);
+          const engine = readEngine(result, provider);
+          const model = firstText3(result && result.engine && result.engine.model, provenance.model, result && result.model);
+          const rawLatency = result && result.latencyMs != null ? result.latencyMs : result && result.elapsedMs != null ? result.elapsedMs : result && result.elapsed;
+          const latency = rawLatency != null && rawLatency !== "" ? Number(rawLatency) : null;
+          const reliability = assessTranslationReliability(result, quote);
+          if (reliability.unreliable) {
+            return {
+              page: targetPage,
+              quote,
+              rects: requestRects,
+              status: "unreliable",
+              translation: "",
+              unreliable: true,
+              reason: rt("reader.selection.unreliableRegion") + (reliability.reason ? "\uFF08" + reliability.reason + "\uFF09" : ""),
+              provider: engine.provider || provider,
+              engine,
+              model,
+              cached: false,
+              latencyMs: latency != null && Number.isFinite(latency) ? latency : Date.now() - attemptStartedAt,
+              fast: true,
+              freeOnly: false,
+              suggestAi: false,
+              aiRefine: true,
+              requestProvider: provider
+            };
+          }
+          return {
+            page: targetPage,
+            quote,
+            rects: requestRects,
+            status: translation2 ? "translated" : firstText3(result && result.status, "unavailable"),
+            translation: translation2,
+            reason: translation2 ? "" : firstText3(result && result.reason, provenance.reason, rt("reader.ai.reasonFallback")),
+            provider: engine.provider || provider,
+            engine,
+            model,
+            cached: Boolean(result && result.cached),
+            latencyMs: latency != null && Number.isFinite(latency) ? latency : Date.now() - attemptStartedAt,
+            fast: true,
+            freeOnly: false,
+            suggestAi: false,
+            aiRefine: true,
+            reasoningEffort: firstText3(result && result.reasoningEffort, provenance.reasoningEffort),
+            requestProvider: provider
+          };
+        } catch (error) {
+          lastError = error;
+          const code = error && error.code;
+          if (code === "invalid" || code === "not_implemented" || code === "unknown_method" || code === "method_not_found" || code === "unavailable") continue;
+          throw error;
+        }
+      }
+      throw lastError || makeApiError("unavailable", rt("reader.ai.reasonFallback"));
+    },
+    [apiCall, detectLanguage2, paperId, props.paper, props.sessionId, rt]
+  );
+  const quickTranslateSelection = import_react31.default.useCallback(
+    (options) => {
+      const opts = options || {};
+      if (!selection) return;
+      const targetPage = Math.max(1, Math.round(num(selection.page, pageRef.current)));
+      const quote = selection.quote;
+      setSelectionResult({
+        page: targetPage,
+        quote,
+        kind: "quickTranslate",
+        loading: true,
+        status: "translating",
+        provider: opts.provider || preferredProvider,
+        aiRefine: Boolean(opts.refine),
+        startedAt: Date.now()
+      });
+      quickTranslateText(quote, targetPage, Object.assign({}, opts, { rects: selection.rects })).then((result) => {
+        if (result && result.status === "same-language") {
+          setSelectionResult(null);
+          notify2("info", rt("reader.selection.alreadyChinese"));
+          return;
+        }
+        setSelectionResult(Object.assign({}, result, { kind: "quickTranslate", loading: false }));
+      }).catch((error) => {
+        setSelectionResult({
+          page: targetPage,
+          quote,
+          kind: "quickTranslate",
+          loading: false,
+          status: "error",
+          provider: opts.provider || preferredProvider,
+          aiRefine: Boolean(opts.refine),
+          reason: describeError2(error)
+        });
+      });
+    },
+    [notify2, preferredProvider, quickTranslateText, rt, selection]
+  );
+  const refineQuickTranslation = import_react31.default.useCallback(() => {
+    const quote = selection ? selection.quote : selectionResult && selectionResult.quote;
+    const targetPage = selection ? selection.page : selectionResult && selectionResult.page;
+    if (!quote) return;
+    setSelectionResult(
+      (previous) => previous ? Object.assign({}, previous, { loading: true, status: "translating", provider: "llm", aiRefine: true, startedAt: Date.now() }) : previous
+    );
+    quickTranslateText(quote, targetPage, { provider: "llm", fast: true, refine: true, detect: false, rects: selection && selection.rects || selectionResult && selectionResult.rects }).then((result) => setSelectionResult(Object.assign({}, result, { kind: "quickTranslate", loading: false, aiRefine: true }))).catch((error) => {
+      setSelectionResult(
+        (previous) => previous ? Object.assign({}, previous, { loading: false, status: "error", reason: describeError2(error), aiRefine: true }) : previous
+      );
+    });
+  }, [quickTranslateText, selection, selectionResult]);
+  const quickTranslateAnnotation = import_react31.default.useCallback(
+    (annotation) => {
+      const text2 = firstText3(annotation && annotation.quote, annotation && annotation.comment);
+      return quickTranslateText(text2, annotation && annotation.page, { detect: false, rects: annotation && annotation.rects });
+    },
+    [quickTranslateText]
+  );
+  const aiTranslateAnnotation = import_react31.default.useCallback(
+    (annotation) => {
+      const text2 = firstText3(annotation && annotation.quote, annotation && annotation.comment);
+      return quickTranslateText(text2, annotation && annotation.page, { detect: false, provider: "llm", fast: true, refine: true, rects: annotation && annotation.rects });
+    },
+    [quickTranslateText]
+  );
+  const highlightSelection = import_react31.default.useCallback(
+    (color) => {
+      if (!selection) return;
+      const chosen = color || lastColor.current || DEFAULT_COLOR;
+      lastColor.current = chosen;
+      const target = {
+        page: selection.page || pageRef.current,
+        quote: selection.quote,
+        rects: selection.rects
+      };
+      clearNativeSelection();
+      setSelection(null);
+      setSelectionResult(null);
+      createAnnotation({
+        page: target.page,
+        kind: "highlight",
+        quote: target.quote,
+        rects: target.rects,
+        color: chosen,
+        comment: "",
+        origin: "user_note"
+      }).then(() => notifyUndo("success", rt("reader.annot.created"))).catch((error) => notify2("error", rt("reader.annot.failed", { message: describeError2(error) })));
+    },
+    [createAnnotation, notifyUndo, notify2, rt, selection]
+  );
+  const citeSelection = import_react31.default.useCallback(() => {
+    if (!selection) return;
+    const chosen = lastColor.current || DEFAULT_COLOR;
+    const target = {
+      page: selection.page || pageRef.current,
+      quote: selection.quote,
+      rects: selection.rects
+    };
+    clearNativeSelection();
+    setSelection(null);
+    setSelectionResult(null);
+    createAnnotation({
+      page: target.page,
+      kind: "highlight",
+      quote: target.quote,
+      rects: target.rects,
+      color: chosen,
+      comment: "",
+      origin: "user_note"
+    }).then((saved) => {
+      notifyUndo("success", rt("reader.annot.created"));
+      return commitMaterials([{ kind: "annotation", id: saved.id, page: saved.page, title: target.quote }]);
+    }).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
+  }, [commitMaterials, createAnnotation, notifyUndo, notify2, rt, selection]);
+  const sendQuickTranslation = import_react31.default.useCallback(() => {
+    if (!selection || !selectionResult) return;
+    const target = { page: selection.page || pageRef.current, quote: selection.quote, rects: selection.rects };
+    const translationText = firstText3(selectionResult.translation);
+    if (!translationText) return;
+    createAnnotation({
+      page: target.page,
+      kind: "highlight",
+      quote: target.quote,
+      rects: target.rects,
+      color: lastColor.current || DEFAULT_COLOR,
+      comment: translationText,
+      origin: "user_note"
+    }).then((saved) => {
+      return commitMaterials([{ kind: "annotation", id: saved.id, page: saved.page, title: target.quote }]).then(() => {
+        notifyUndo("success", rt("reader.selection.sentToChat"));
+      });
+    }).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
+  }, [commitMaterials, createAnnotation, notifyUndo, notify2, rt, selection, selectionResult]);
+  const handleSelectionAction = import_react31.default.useCallback(
+    (action, payload) => {
+      if (action === "closeResult") {
+        setSelectionResult(null);
+        return;
+      }
+      if (!selection) return;
+      if (action === "highlight") {
+        highlightSelection(payload && payload.color);
+        return;
+      }
+      if (action === "copy") {
+        copyText2(selection.quote).then((ok) => notify2(ok ? "success" : "error", ok ? rt("reader.toast.copied") : rt("reader.toast.copyFailed")));
+        return;
+      }
+      if (action === "quickTranslate") {
+        quickTranslateSelection();
+        return;
+      }
+      if (action === "copyQuickTranslation") {
+        const value = firstText3(selectionResult && selectionResult.translation);
+        if (value) copyText2(value).then((ok) => notify2(ok ? "success" : "error", ok ? rt("reader.toast.copied") : rt("reader.toast.copyFailed")));
+        return;
+      }
+      if (action === "replaceQuickTranslation") {
+        setSelectionResult((previous) => previous ? Object.assign({}, previous, { replace: true }) : previous);
+        return;
+      }
+      if (action === "closeReplace") {
+        setSelectionResult((previous) => previous ? Object.assign({}, previous, { replace: false }) : previous);
+        return;
+      }
+      if (action === "sendQuickTranslation") {
+        sendQuickTranslation();
+        return;
+      }
+      if (action === "refineQuickTranslation") {
+        refineQuickTranslation();
+        return;
+      }
+      if (action === "retryQuickTranslation") {
+        quickTranslateSelection(selectionResult && selectionResult.aiRefine ? { provider: "llm", fast: true, refine: true } : void 0);
+        return;
+      }
+      if (action === "explain") {
+        askAi({ type: "explain", quote: selection.quote, auto: true, includeImage: false });
+        return;
+      }
+      if (action === "ask") {
+        askAi({ type: "ask", quote: selection.quote, prompt: "", auto: false, includeImage: false });
+        notify2("info", rt("reader.toast.selectionAsk"));
+        return;
+      }
+      if (action === "cite") citeSelection();
+    },
+    [askAi, citeSelection, highlightSelection, notify2, notifyUndo, quickTranslateSelection, refineQuickTranslation, rt, selection, selectionResult, sendQuickTranslation]
+  );
+  const createArea = import_react31.default.useCallback(
+    (rect) => {
+      const normalized = normalizeRect(rect);
+      if (!normalized || normalized.w < 0.01 || normalized.h < 8e-3) {
+        notify2("info", rt("reader.toast.regionTooSmall"));
+        return;
+      }
+      createAnnotation({
+        page: pageRef.current,
+        kind: "area",
+        quote: "",
+        rects: [normalized],
+        color: lastColor.current || DEFAULT_COLOR,
+        comment: "",
+        origin: "user_note"
+      }).then((saved) => {
+        notifyUndo("success", rt("reader.annot.created"));
+        setPopover({ id: saved.id, anchor: saved.rects[0] || normalized, autoFocus: true });
+      }).catch((error) => notify2("error", rt("reader.annot.failed", { message: describeError2(error) })));
+    },
+    [createAnnotation, notifyUndo, notify2, rt]
+  );
+  const [noteDraft, setNoteDraft] = import_react31.default.useState(null);
+  const createNote = import_react31.default.useCallback((point) => {
+    setNoteDraft({ page: pageRef.current, point, color: lastColor.current || DEFAULT_COLOR });
+  }, []);
+  const cancelNote = import_react31.default.useCallback(() => setNoteDraft(null), []);
+  const saveNote = import_react31.default.useCallback(
+    (payload) => {
+      const point = payload.point || { x: 0.5, y: 0.5 };
+      const rect = normalizeRect({
+        x: clamp(point.x - 0.012, 0, 1),
+        y: clamp(point.y - 0.012, 0, 1),
+        w: 0.024,
+        h: 0.024
+      });
+      lastColor.current = payload.color || lastColor.current;
+      return createAnnotation({
+        page: Math.max(1, Math.round(num(payload.page, pageRef.current))),
+        kind: "note",
+        quote: "",
+        rects: rect ? [rect] : [],
+        color: payload.color || DEFAULT_COLOR,
+        comment: payload.text,
+        origin: "user_note"
+      }).then((saved) => {
+        notifyUndo("success", rt("reader.note.created"));
+        setNoteDraft(null);
+        setPopover({ id: saved.id, anchor: saved.rects[0] || rect || { x: 0.5, y: 0.5, w: 0, h: 0 }, autoFocus: false });
+        return saved;
+      }).catch((error) => {
+        notify2("error", rt("reader.note.failed", { message: describeError2(error) }));
+        throw error;
+      });
+    },
+    [createAnnotation, notifyUndo, notify2, rt]
+  );
+  const askAnnotation = import_react31.default.useCallback(
+    (annotation) => {
+      askAi({ type: "ask", quote: firstText3(annotation.quote, annotation.comment), prompt: "", auto: false });
+    },
+    [askAi]
+  );
+  const explainAnnotation = import_react31.default.useCallback(
+    (annotation) => {
+      askAi({ type: "explain", quote: firstText3(annotation.quote, annotation.comment), auto: true });
+    },
+    [askAi]
+  );
+  const copyAnnotation = import_react31.default.useCallback(
+    (annotation) => {
+      const text2 = firstText3(annotation.quote, annotation.comment);
+      copyText2(text2).then((ok) => notify2(ok ? "success" : "error", ok ? rt("reader.annot.copyDone") : rt("reader.toast.copyFailed")));
+    },
+    [notify2, rt]
+  );
+  const onAnnotationSelect = import_react31.default.useCallback(
+    (annotation) => {
+      if (annotation.page !== pageRef.current) goToPage(annotation.page);
+      const anchor = annotation.rects && annotation.rects.length > 0 ? annotation.rects[0] : { x: 0.5, y: 0.25, w: 0, h: 0 };
+      setPopover({ id: annotation.id, anchor, autoFocus: false });
+    },
+    [goToPage]
+  );
+  const deleteFromPopover = import_react31.default.useCallback(
+    (annotation) => {
+      setPopover(null);
+      deleteAnnotation(annotation).catch(() => {
+      });
+    },
+    [deleteAnnotation]
+  );
+  const emptySearch = import_react31.default.useCallback(() => ({ open: false, query: "", hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }), []);
+  const [search, setSearch] = import_react31.default.useState(emptySearch);
+  const focusSeq = import_react31.default.useRef(0);
+  import_react31.default.useEffect(() => {
+    if (!search.open) return;
+    const query = search.query;
+    if (!query.trim()) {
+      setSearch(
+        (previous) => previous.hits.length === 0 && previous.index === 0 && !previous.focus ? previous : Object.assign({}, previous, { hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 })
+      );
+      return;
+    }
+    const layerEntry = layerCache.current.get(page2);
+    let hits = [];
+    if (layerEntry && layerEntry.paperId === paperId && layerEntry.status === "ready") {
+      hits = findLayerMatches(layerEntry.data, query);
+    }
+    if (hits.length === 0) {
+      const dataEntry = pageCache.current.get(page2);
+      if (dataEntry && dataEntry.paperId === paperId && dataEntry.status === "ready") {
+        hits = findBlockMatches(dataEntry.data, query);
+      }
+    }
+    const withPage = hits.map((hit) => Object.assign({}, hit, { page: page2 }));
+    setSearch((previous) => {
+      if (previous.open && previous.query === query && previous.forPage === page2 && previous.forVersion === dataVersion) {
+        return previous;
+      }
+      focusSeq.current += 1;
+      return Object.assign({}, previous, {
+        hits: withPage,
+        index: 0,
+        forPage: page2,
+        forVersion: dataVersion,
+        focus: withPage.length > 0 ? { page: page2, rect: withPage[0].rects[0], seq: focusSeq.current } : null
+      });
+    });
+  }, [paperId, page2, search.open, search.query, dataVersion]);
+  const toggleSearch = import_react31.default.useCallback(
+    (open) => {
+      setSearch((previous) => {
+        if (open) return Object.assign({}, previous, { open: true, focus: previous.focus });
+        return emptySearch();
+      });
+    },
+    [emptySearch]
+  );
+  const setSearchQuery = import_react31.default.useCallback((query) => {
+    setSearch((previous) => Object.assign({}, previous, { query, hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }));
+  }, []);
+  const searchNext = import_react31.default.useCallback(
+    (delta) => {
+      setSearch((previous) => {
+        if (!previous.open || previous.hits.length === 0) {
+          notify2("info", rt("reader.search.none"));
+          return previous;
+        }
+        const index = (previous.index + delta + previous.hits.length) % previous.hits.length;
+        const hit = previous.hits[index];
+        if (!hit) return previous;
+        focusSeq.current += 1;
+        return Object.assign({}, previous, {
+          index,
+          focus: { page: hit.page, rect: hit.rects[0], seq: focusSeq.current }
+        });
+      });
+    },
+    [notify2, rt]
+  );
+  import_react31.default.useEffect(() => {
+    if (typeof window === "undefined") return void 0;
+    const onKeyDown = (event) => {
+      const target = event.target;
+      const editable = target && target.closest && target.closest('input, textarea, [contenteditable="true"]');
+      const meta = event.metaKey || event.ctrlKey;
+      if (!undoApi.external && meta && !editable && (event.key === "z" || event.key === "Z")) {
+        if (event.shiftKey) {
+          if (!undoApi.canRedo) return;
+          event.preventDefault();
+          Promise.resolve(undoApi.redo()).then((entry) => {
+            if (entry) notify2("info", rt("reader.undo.redone", { label: entry.label }));
+          }).catch((error) => notify2("error", rt("reader.undo.failed", { message: describeError2(error) })));
+          return;
+        }
+        if (!undoApi.canUndo) return;
+        event.preventDefault();
+        Promise.resolve(undoApi.undo()).then((entry) => {
+          if (entry) notify2("info", rt("reader.undo.done", { label: entry.label }));
+        }).catch((error) => notify2("error", rt("reader.undo.failed", { message: describeError2(error) })));
+        return;
+      }
+      if (meta && (event.key === "f" || event.key === "F")) {
+        event.preventDefault();
+        toggleSearch(true);
+        return;
+      }
+      if (meta && (event.key === "+" || event.key === "=")) {
+        event.preventDefault();
+        zoomStep(1);
+        return;
+      }
+      if (meta && event.key === "-") {
+        event.preventDefault();
+        zoomStep(-1);
+        return;
+      }
+      if (event.key === "Escape") {
+        if (noteDraft) {
+          setNoteDraft(null);
+          return;
+        }
+        if (popover) {
+          setPopover(null);
+          return;
+        }
+        if (tool !== "select") {
+          setTool("select");
+          return;
+        }
+        if (search.open) {
+          toggleSearch(false);
+          return;
+        }
+        if (selection) {
+          clearSelection();
+        }
+        return;
+      }
+      if (!editable && !meta && event.altKey && !event.shiftKey) {
+        const lower = String(event.key || "").toLowerCase();
+        if (lower === "a") {
+          event.preventDefault();
+          changeTool(tool === "area" ? "select" : "area");
+          return;
+        }
+        if (lower === "n") {
+          event.preventDefault();
+          changeTool(tool === "note" ? "select" : "note");
+          return;
+        }
+        if (lower === "h") {
+          event.preventDefault();
+          if (selection) highlightSelection(penColor);
+          else notify2("info", rt("reader.tools.highlightHint"));
+          return;
+        }
+      }
+      if (editable || meta) return;
+      if (event.key === "ArrowLeft" && event.altKey) {
+        event.preventDefault();
+        goToPage(pageRef.current - 1);
+      }
+      if (event.key === "ArrowRight" && event.altKey) {
+        event.preventDefault();
+        goToPage(pageRef.current + 1);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [changeTool, clearSelection, goToPage, highlightSelection, noteDraft, notify2, penColor, popover, rt, search.open, selection, tool, toggleSearch, undoApi, zoomStep]);
+  const resetKeyRef = import_react31.default.useRef(paperId);
+  import_react31.default.useEffect(() => {
+    if (!paperId) return;
+    if (resetKeyRef.current === paperId) return;
+    resetKeyRef.current = paperId;
+    const explicit = Math.round(num(props.initialPage, 0));
+    const restored = explicit > 0 ? explicit : readReadingPosition(paperId);
+    const target = restored > 0 ? restored : 1;
+    setPage(target);
+    jumpSeq.current += 1;
+    setJump({ page: target, seq: jumpSeq.current });
+    setAnnotations(NO_ANNOTATIONS);
+    setSelection(null);
+    setSelectionResult(null);
+    setPopover(null);
+    setNoteDraft(null);
+    setTool("select");
+    setTranslations({});
+    setSearch(emptySearch());
+    setAiRequest(null);
+    pageCache.current = /* @__PURE__ */ new Map();
+    layerCache.current = /* @__PURE__ */ new Map();
+    setDataVersion((value) => value + 1);
+    const initial = firstText3(props.annotationId);
+    if (initial) {
+      intentSeq.current += 1;
+      setAnnotationIntent({ id: initial, seq: intentSeq.current });
+    } else {
+      setAnnotationIntent(null);
+    }
+  }, [paperId]);
+  const jumpedRef = import_react31.default.useRef("");
+  import_react31.default.useEffect(() => {
+    if (openState.status !== "ready" || !paperId) return;
+    if (jumpedRef.current === paperId) return;
+    jumpedRef.current = paperId;
+    const target = clamp(pageRef.current, 1, total);
+    goToPage(target, { instant: true });
+  }, [openState.status, paperId, total]);
+  import_react31.default.useEffect(() => {
+    if (page2 > total) setPage(total);
+  }, [page2, total]);
+  import_react31.default.useEffect(() => {
+    if (!paperId) return void 0;
+    const timer2 = setTimeout(() => saveReadingPosition(paperId, page2), 500);
+    return () => clearTimeout(timer2);
+  }, [paperId, page2]);
+  const markedRef = import_react31.default.useRef("");
+  import_react31.default.useEffect(() => {
+    if (openState.status !== "ready" || !paperId || markedRef.current === paperId) return;
+    markedRef.current = paperId;
+    try {
+      Promise.resolve(apiCall("library.setRead", { id: paperId, read: true, operationId: newOperationId("read") })).catch(() => {
+      });
+    } catch {
+    }
+  }, [apiCall, openState.status, paperId]);
+  const pageEntry = getPageData(page2);
+  const translation = translations[page2] || null;
+  const pagesForRail = pages;
+  const rawT = props.t || rt;
+  const sideTabs = [
+    { id: "outline", label: rt("reader.outline.title"), count: outlineItems.length || null },
+    { id: "annotations", label: rt("reader.annot.listTitle"), count: annotations.length || null },
+    { id: "figures", label: rt("reader.figures.tab") },
+    { id: "notes", label: rt("reader.notes.tab") },
+    { id: "ai", label: "AI" }
+  ];
+  const canvasActions = {
+    onSelection: handleSelection,
+    onSelectionAction: handleSelectionAction,
+    onAnnotationOpen: openAnnotation,
+    onAnnotationClose: closePopover,
+    onUpdateAnnotation: updateAnnotation,
+    onDeleteAnnotation: deleteFromPopover,
+    onCopyAnnotation: copyAnnotation,
+    onCiteAnnotation: citeAnnotation,
+    onLinkAnnotationNote: linkAnnotationToNote,
+    onAskAnnotation: askAnnotation,
+    onExplainAnnotation: explainAnnotation,
+    onQuickTranslateAnnotation: quickTranslateAnnotation,
+    onAiTranslateAnnotation: aiTranslateAnnotation,
+    onCreateArea: createArea,
+    onNoteCreate: createNote,
+    onNoteSave: saveNote,
+    onNoteCancel: cancelNote
+  };
+  if (!paperId) {
+    return import_react31.default.createElement(StateScreen, {
+      t: rt,
+      icon: "warning",
+      tone: "error",
+      title: rt("reader.error.title"),
+      desc: rt("reader.noPaper"),
+      onBack: props.onBack
+    });
+  }
+  if (openState.status === "error" && !detail) {
+    const offline = isOfflineError(openState.error);
+    return import_react31.default.createElement(StateScreen, {
+      t: rt,
+      icon: "warning",
+      tone: "error",
+      title: offline ? rt("reader.offline.title") : rt("reader.error.title"),
+      desc: offline ? rt("reader.offline.desc") : rt("reader.error.desc", { message: describeError2(openState.error) }),
+      retry: openState.reload,
+      onBack: props.onBack
+    });
+  }
+  if (!detail && openState.status === "loading") {
+    return import_react31.default.createElement(StateScreen, { t: rt, loading: true, onBack: props.onBack });
+  }
+  let sideBody = null;
+  if (sideTab === "outline") {
+    sideBody = import_react31.default.createElement(
+      "div",
+      { className: "ph-r-side__scroll ph-r-scroll" },
+      import_react31.default.createElement(Outline, {
+        t: rt,
+        items: outlineItems,
+        page: page2,
+        loading: outlineState.status === "loading",
+        error: outlineState.status === "error" ? describeError2(outlineState.error) : "",
+        onJump: (target) => goToPage(target),
+        onRetry: outlineState.reload
+      })
+    );
+  } else if (sideTab === "annotations") {
+    sideBody = import_react31.default.createElement(
+      "div",
+      { className: "ph-r-side__scroll ph-r-scroll" },
+      import_react31.default.createElement("div", { className: "ph-r-side__hint" }, rt("reader.annot.hint")),
+      import_react31.default.createElement(AnnotationListPanel, {
+        t: rt,
+        annotations,
+        page: page2,
+        activeId: activeAnnotationId,
+        onSelect: onAnnotationSelect,
+        onCite: citeAnnotation,
+        onLinkNote: linkAnnotationToNote,
+        onDelete: (annotation) => deleteAnnotation(annotation).catch(() => {
+        })
+      })
+    );
+  } else if (sideTab === "notes") {
+    sideBody = import_react31.default.createElement(ReaderNotesPanel, {
+      t: rawT,
+      api: apiCall,
+      paperId,
+      paper,
+      sessionId: props.sessionId,
+      notify: notify2,
+      onOpenNoteLibrary: props.onOpenNoteLibrary,
+      onOpenPaper: (targetPaperId, targetPage) => {
+        if (props.onOpenPaper) props.onOpenPaper(targetPaperId, targetPage || 1);
+      }
+    });
+  } else if (sideTab === "figures") {
+    sideBody = import_react31.default.createElement(
+      "div",
+      { className: "ph-r-side__scroll ph-r-scroll" },
+      import_react31.default.createElement(ReaderFiguresPanel, {
+        t: rt,
+        api: apiCall,
+        paperId,
+        paper,
+        onOpenFigure: (figure) => {
+          if (!figure) return;
+          goToPage(Number(figure.page) || 1);
+          setFigureFocus({ figureId: String(figure.id), page: Number(figure.page) || 1, bbox: figure.bbox || null, figureLabel: figure.label || "", seq: Date.now() });
+          if (figureFocusTimer.current) clearTimeout(figureFocusTimer.current);
+          figureFocusTimer.current = setTimeout(() => setFigureFocus(null), 4600);
+        },
+        onOpenNoteInsert: insertFigureIntoNote
+      })
+    );
+  } else {
+    sideBody = import_react31.default.createElement(AiPanel, {
+      t: rt,
+      api: apiCall,
+      paperId,
+      page: page2,
+      paper,
+      selection,
+      request: aiRequest,
+      onJumpPage: (target) => goToPage(target),
+      onCiteAnswer: citeAiAnswer,
+      onClearSelection: clearSelection,
+      notify: notify2,
+      sessionId: props.sessionId
+    });
+  }
+  const translationSheet = mode === "source" ? null : import_react31.default.createElement(
+    "div",
+    {
+      className: "ph-r-tr",
+      style: {
+        left: "var(--ph-r-rail)",
+        right: sideOpen ? "var(--ph-r-side)" : "0px"
+      },
+      "data-ph-translation-sheet": "true"
+    },
+    import_react31.default.createElement(
+      "div",
+      { className: "ph-r-tr__head" },
+      import_react31.default.createElement(Icon2, { name: "translate", size: 14 }),
+      import_react31.default.createElement("span", { className: "ph-r-tr__title" }, rt("reader.translation.sheet")),
+      import_react31.default.createElement(
+        "div",
+        {
+          className: cx("ph-r-tr__modes", trSlider.rect && "ph-r-tr__modes--sliding"),
+          ref: trSlider.ref,
+          role: "group",
+          "aria-label": rt("reader.translation.sheet")
+        },
+        import_react31.default.createElement(SlidingThumb, { rect: trSlider.rect, popKey: mode }),
+        import_react31.default.createElement(
+          "button",
+          {
+            type: "button",
+            "data-ph-active": mode === "compare" ? "true" : void 0,
+            className: cx("ph-r-tr__mode", mode === "compare" && "ph-r-tr__mode--active"),
+            onClick: () => changeMode("compare")
+          },
+          rt("reader.translation.mode.compare")
+        ),
+        import_react31.default.createElement(
+          "button",
+          {
+            type: "button",
+            "data-ph-active": mode === "translation" ? "true" : void 0,
+            className: cx("ph-r-tr__mode", mode === "translation" && "ph-r-tr__mode--active"),
+            onClick: () => changeMode("translation")
+          },
+          rt("reader.translation.mode.translation")
+        )
+      ),
+      import_react31.default.createElement("span", { className: "ph-r-tr__spacer" }),
+      import_react31.default.createElement(IconBtn, { icon: "close", title: rt("reader.translation.close"), onClick: () => changeMode("source") })
+    ),
+    import_react31.default.createElement(
+      "div",
+      { className: "ph-r-tr__body ph-r-scroll" },
+      import_react31.default.createElement(BilingualPanel, {
+        t: rt,
+        page: page2,
+        total,
+        mode: mode === "translation" ? "translation" : "compare",
+        blocksEntry: pageEntry,
+        structurePending: Boolean(pageEntry && pageEntry.status === "ready" && pageEntry.data && pageEntry.data.structureState === "pending"),
+        translation,
+        providerPreference: preferredProvider,
+        providerLabel: providerLabel2(preferredProvider),
+        onTranslatePage: (force) => translatePage(force),
+        onAiTranslatePage: () => translateAiPage(),
+        onTranslateBlock: (block) => translateBlock(block),
+        onRetryBlocks: () => retryPage(page2),
+        onRetryLayer: () => retryLayer(page2)
+      })
+    )
+  );
+  return import_react31.default.createElement(
+    "div",
+    {
+      className: cx(
+        "ph-r-reader",
+        scrolled && "ph-r-reader--scrolled",
+        search.open && "ph-r-reader--searching",
+        tool !== "select" && "ph-r-reader--tool-active"
+      ),
+      "data-ph-reader": paperId
+    },
+    import_react31.default.createElement(ReaderToolbar, {
+      t: rt,
+      paper,
+      total,
+      page: page2,
+      zoom,
+      mode,
+      tool,
+      sideOpen,
+      sideTab,
+      search,
+      loading: openState.status === "loading",
+      onBack: props.onBack,
+      onCite: citePaperPage,
+      noteContext,
+      onLinkNote: linkCurrentPaper,
+      onPage: (target) => goToPage(target),
+      onZoomStep: zoomStep,
+      onZoomFit: zoomFit,
+      onMode: changeMode,
+      onTool: changeTool,
+      onSearchToggle: toggleSearch,
+      onSearchQuery: setSearchQuery,
+      onSearchNext: searchNext,
+      onToggleAi: () => sideOpen && sideTab === "ai" ? setSideOpen(false) : openSide("ai"),
+      onToggleNotes: () => sideOpen && sideTab === "notes" ? setSideOpen(false) : openSide("notes"),
+      onToggleSide: toggleSide,
+      onOpenSettings: props.onOpenSettings
+    }),
+    tool !== "select" ? import_react31.default.createElement(
+      "div",
+      { className: "ph-r-modehint" },
+      import_react31.default.createElement(Icon2, { name: tool === "area" ? "area" : "sticky", size: 14 }),
+      import_react31.default.createElement("span", null, tool === "area" ? rt("reader.areaModeActive") : rt("reader.noteModeActive")),
+      import_react31.default.createElement(
+        "button",
+        { type: "button", className: "ph-r-toolbtn", onClick: () => changeTool("select") },
+        rt("reader.exitMode")
+      )
+    ) : null,
+    import_react31.default.createElement(
+      "div",
+      { className: "ph-r-body" },
+      import_react31.default.createElement(Thumbnails, {
+        t: rt,
+        paperId,
+        pages: pagesForRail,
+        total,
+        page: page2,
+        onSelect: (target) => goToPage(target)
+      }),
+      import_react31.default.createElement(PageCanvas, {
+        t: rt,
+        paperId,
+        pages,
+        total,
+        page: page2,
+        zoom,
+        jump,
+        focus: search.focus,
+        figureFocus,
+        mode: tool,
+        annotations,
+        activeAnnotationId,
+        selection,
+        selectionResult,
+        popover: popoverProp,
+        noteDraft,
+        search,
+        reducedMotion,
+        dataVersion,
+        getPageData,
+        getLayer,
+        ensurePage,
+        ensureLayer,
+        onPageChange: (next) => setPage((previous) => previous === next ? previous : next),
+        onScrolledChange: handleScrolledChange,
+        actions: canvasActions
+      }),
+      import_react31.default.createElement(
+        "aside",
+        { className: cx("ph-r-side", !sideOpen && "ph-r-side--closed"), "aria-label": rt("reader.sidePanel") },
+        import_react31.default.createElement(
+          "div",
+          { className: "ph-r-side__head" },
+          import_react31.default.createElement(Tabs, {
+            items: sideTabs,
+            value: sideTab,
+            onChange: (id) => {
+              setSideTab(id);
+              setSideOpen(true);
+            },
+            "aria-label": rt("reader.sidePanel"),
+            className: "ph-r-side__tabs"
+          }),
+          import_react31.default.createElement(IconBtn, { icon: "close", title: rt("reader.sidePanelToggle"), onClick: toggleSide })
+        ),
+        import_react31.default.createElement("div", { className: "ph-r-side__body" }, sideBody)
+      ),
+      translationSheet,
+      import_react31.default.createElement(FloatingAnnotationTools, {
+        t: rt,
+        tool,
+        selectionActive: Boolean(selection && selection.quote),
+        penColor,
+        onTool: changeTool,
+        onHighlight: (color) => highlightSelection(color),
+        onPen: setPenColor,
+        showTip: toolsTip,
+        onDismissTip: dismissToolsTip,
+        onShowTip: showToolsTip,
+        sidePanelOpen: sideOpen,
+        translationOpen: mode !== "source"
+      })
+    ),
+    notices.toasts.length > 0 ? import_react31.default.createElement(
+      "div",
+      { className: "ph-r-toasts", "aria-live": "polite" },
+      notices.toasts.map(
+        (toast) => import_react31.default.createElement(
+          "div",
+          { key: toast.id, className: cx("ph-r-toast", "ph-r-toast--" + toast.kind) },
+          import_react31.default.createElement(Icon2, {
+            name: toast.kind === "success" ? "check" : toast.kind === "error" || toast.kind === "warning" ? "warning" : "note",
+            size: 13
+          }),
+          import_react31.default.createElement("span", null, toast.text),
+          toast.action ? import_react31.default.createElement(
+            "button",
+            {
+              type: "button",
+              className: "ph-r-toast__action",
+              onClick: () => {
+                notices.dismiss(toast.id);
+                try {
+                  toast.action.onClick();
+                } catch (error) {
+                  console.warn("[pappers-hall] toast action failed", error);
+                }
+              }
+            },
+            toast.action.label
+          ) : null
+        )
+      )
+    ) : null
+  );
+}
+
+// src/surfaces/notes/paper-panel.jsx
+function pageImageUrl2(paperId, page2, width) {
+  return "/pappers-hall/page/" + encodeURIComponent(String(paperId)) + "/" + String(page2) + ".png?width=" + String(width || 900);
+}
+function text() {
+  for (let index = 0; index < arguments.length; index += 1) {
+    const value = arguments[index];
+    if (typeof value === "string" && value.trim() !== "") return value;
+  }
+  return "";
+}
+function paperTitle2(t, paper) {
+  return text(paper && paper.titleZh, paper && paper.displayTitle, paper && paper.title) || t("common.untitled");
+}
+var ANNOTATION_COLORS2 = {
+  yellow: "var(--dsw-alias-state-warn-primary, #d9a400)",
+  green: "var(--dsw-alias-state-success-primary, #16a34a)",
+  blue: "var(--dsw-alias-state-business-primary, #3d7bfd)",
+  red: "var(--dsw-alias-state-error-primary, #dc2626)",
+  purple: "#9b59b6"
+};
+function PaperPanel(props) {
+  const t = props.t;
+  const api = props.api;
+  const [query, setQuery] = import_react32.default.useState("");
+  const [folders, setFolders] = import_react32.default.useState([]);
+  const [folderId, setFolderId] = import_react32.default.useState("");
+  const [annotatedOnly, setAnnotatedOnly] = import_react32.default.useState(false);
+  const [readFilter, setReadFilter] = import_react32.default.useState("");
+  const [results, setResults] = import_react32.default.useState({ status: "idle", items: [], error: "" });
+  const [open, setOpen] = import_react32.default.useState(null);
+  const [page2, setPage] = import_react32.default.useState(1);
+  const [pageState, setPageState] = import_react32.default.useState({ status: "idle", text: "", source: "", error: "" });
+  const [translation, setTranslation] = import_react32.default.useState({ status: "idle", blocks: [], reason: "" });
+  const [annotations, setAnnotations] = import_react32.default.useState({ status: "idle", items: [], error: "" });
+  const [busy2, setBusy] = import_react32.default.useState("");
+  const [selection, setSelection] = import_react32.default.useState(null);
+  const [region, setRegion] = import_react32.default.useState({ status: "idle", text: "", translation: "", reason: "" });
+  const [ai, setAi] = import_react32.default.useState({ status: "idle", answer: "", reason: "" });
+  const dragRef = import_react32.default.useRef(null);
+  const imageWrapRef = import_react32.default.useRef(null);
+  const [layer, setLayer] = import_react32.default.useState(null);
+  const [renderWidth, setRenderWidth] = import_react32.default.useState(0);
+  import_react32.default.useEffect(() => {
+    let alive = true;
+    Promise.resolve(api("library.folders.tree", {})).then((result) => {
+      if (!alive) return;
+      const root = result && (result.items || result.folders);
+      const flat = [];
+      const walk = (nodes, depth) => {
+        for (const node of nodes || []) {
+          flat.push({ id: node.id, name: node.name, depth });
+          walk(node.children, (depth || 0) + 1);
+        }
+      };
+      walk(Array.isArray(root) ? root : [], 0);
+      setFolders(flat);
+    }).catch(() => {
+      if (alive) setFolders([]);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [api]);
+  import_react32.default.useEffect(() => {
+    const timer2 = setTimeout(() => {
+      setResults((previous) => Object.assign({}, previous, { status: "loading", error: "" }));
+      Promise.resolve(api("library.list", { query: query.trim(), limit: 100, ...folderId ? { folderId } : {} })).then((result) => {
+        let items2 = Array.isArray(result && result.items) ? result.items : Array.isArray(result) ? result : [];
+        if (annotatedOnly) items2 = items2.filter((paper) => Number(paper.annotationCount) > 0);
+        if (readFilter === "read") items2 = items2.filter((paper) => paper.read === true);
+        if (readFilter === "unread") items2 = items2.filter((paper) => paper.read !== true);
+        setResults({ status: "ready", items: items2.slice(0, 60), error: "" });
+      }).catch((error) => setResults({ status: "error", items: [], error: String(error && error.message || error) }));
+    }, 260);
+    return () => clearTimeout(timer2);
+  }, [api, query, folderId, annotatedOnly, readFilter]);
+  const openPaper = (paper) => {
+    if (!paper || !paper.id) return;
+    setOpen({ id: paper.id, paper, total: Number(paper.pageCount || paper.page_count || paper.pages) || 1, page: 1 });
+    setPage(1);
+    setTranslation({ status: "idle", blocks: [], reason: "" });
+  };
+  import_react32.default.useEffect(() => {
+    if (!open) return void 0;
+    let alive = true;
+    setPageState({ status: "loading", text: "", source: "", error: "" });
+    setAnnotations({ status: "loading", items: [], error: "" });
+    Promise.resolve(api("reader.pageText", { id: open.id, page: page2 })).then((result) => {
+      if (!alive) return;
+      setPageState({ status: "ready", text: String(result && result.text || ""), source: String(result && result.source || ""), error: "" });
+    }).catch((error) => {
+      if (!alive) return;
+      setPageState({ status: "error", text: "", source: "", error: String(error && error.message || error) });
+    });
+    Promise.resolve(api("annotations.list", { paperId: open.id, page: page2 })).then((result) => {
+      if (!alive) return;
+      setAnnotations({ status: "ready", items: Array.isArray(result) ? result : Array.isArray(result && result.items) ? result.items : [], error: "" });
+    }).catch((error) => {
+      if (!alive) return;
+      setAnnotations({ status: "error", items: [], error: String(error && error.message || error) });
+    });
+    setTranslation({ status: "idle", blocks: [], reason: "" });
+    setSelection(null);
+    setRegion({ status: "idle", text: "", translation: "", reason: "" });
+    setAi({ status: "idle", answer: "", reason: "" });
+    return () => {
+      alive = false;
+    };
+  }, [api, open, page2]);
+  import_react32.default.useEffect(() => {
+    if (!open) return void 0;
+    let alive = true;
+    setLayer(null);
+    Promise.resolve(api("reader.layer", { id: open.id, page: page2 })).then((value) => {
+      if (alive) setLayer(value || null);
+    }).catch(() => {
+      if (alive) setLayer(null);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [api, open, page2]);
+  import_react32.default.useEffect(() => {
+    const element2 = imageWrapRef.current;
+    if (!element2 || typeof ResizeObserver === "undefined") return void 0;
+    const observer2 = new ResizeObserver((entries2) => {
+      const width = entries2 && entries2[0] && entries2[0].contentRect ? entries2[0].contentRect.width : element2.clientWidth;
+      if (width > 0) setRenderWidth(width);
+    });
+    observer2.observe(element2);
+    return () => observer2.disconnect();
+  }, [open, page2, layer]);
+  const translatePage = () => {
+    if (!open || busy2) return;
+    setBusy("translate");
+    setTranslation({ status: "translating", blocks: [], reason: "" });
+    Promise.resolve(api("translate.blocks", { paperId: open.id, page: page2, provider: "auto" })).then((result) => {
+      const blocks = Array.isArray(result && result.blocks) ? result.blocks : [];
+      setTranslation({ status: String(result && result.status || "ready"), blocks, reason: String(result && result.reason || "") });
+    }).catch((error) => setTranslation({ status: "error", blocks: [], reason: String(error && error.message || error) })).then(() => setBusy(""));
+  };
+  const goPage = (next) => {
+    if (!open) return;
+    const target = Math.max(1, Math.min(open.total || 1, next));
+    if (target !== page2) setPage(target);
+  };
+  const selectable = import_react32.default.useMemo(() => selectableWords(layer), [layer]);
+  const pageHeight = layer && layer.width > 0 && renderWidth > 0 ? renderWidth * (layer.height / layer.width) : 0;
+  const onPageMouseUp = () => {
+    if (!open || !layer) return;
+    const pageElement = imageWrapRef.current;
+    if (!pageElement) return;
+    const picked = readPageSelection(pageElement, selectable);
+    if (!picked || !picked.quote) return;
+    setRegion({ status: "loading", text: picked.quote, translation: "", reason: "" });
+    Promise.resolve(api("translate.text", { paperId: open.id, page: page2, text: picked.quote, provider: "auto", fast: true })).then((result) => {
+      const translated = result && (result.translation || result.translatedText || result.text || "");
+      if (translated) {
+        setRegion({ status: "ready", text: picked.quote, translation: String(translated), reason: "" });
+        return;
+      }
+      return Promise.resolve(api("ai.complete", { prompt: "\u628A\u4E0B\u9762\u8BBA\u6587\u9009\u533A\u7FFB\u8BD1\u6210\u7B80\u4F53\u4E2D\u6587\uFF0C\u53EA\u8F93\u51FA\u8BD1\u6587\uFF1A\n\n" + picked.quote, fast: false, maxTokens: 1200, kind: "translate-region" })).then((ai2) => {
+        const answer = ai2 && ai2.status === "ok" ? String(ai2.answer || "") : "";
+        setRegion({ status: answer ? "ready" : "error", text: picked.quote, translation: answer, reason: answer ? "" : String(ai2 && ai2.reason || "\u7FFB\u8BD1\u4E0D\u53EF\u7528") });
+      });
+    }).catch((error) => setRegion({ status: "error", text: picked.quote, translation: "", reason: String(error && error.message || error) }));
+  };
+  const askAiPage = () => {
+    if (!open || busy2 === "ai") return;
+    setBusy("ai");
+    setAi({ status: "loading", answer: "", reason: "" });
+    Promise.resolve(api("ai.ask", { paperId: open.id, page: page2, prompt: "\u7528\u8981\u70B9\u603B\u7ED3\u8FD9\u4E00\u9875\uFF1A\u7814\u7A76\u95EE\u9898\u3001\u65B9\u6CD5\u3001\u5173\u952E\u7ED3\u679C\u3001\u5C40\u9650\u3002\u4E0D\u8981\u7F16\u9020\u3002", mode: "deep" })).then((result) => {
+      if (!result || result.status !== "ok") {
+        setAi({ status: "error", answer: "", reason: String(result && result.reason || "AI \u4E0D\u53EF\u7528") });
+        return;
+      }
+      setAi({ status: "ready", answer: String(result.answer || ""), reason: "" });
+    }).catch((error) => setAi({ status: "error", answer: "", reason: String(error && error.message || error) })).then(() => setBusy(""));
+  };
+  if (open) {
+    return import_react32.default.createElement(
+      "div",
+      { className: "ph-n-embedded-reader" },
+      import_react32.default.createElement(
+        "div",
+        { className: "ph-n-embedded-reader__bar" },
+        import_react32.default.createElement(IconButton, { icon: "chevronLeft", title: t("notes.papers.backToList"), onClick: () => setOpen(null) }),
+        import_react32.default.createElement("span", { className: "ph-n-embedded-reader__title" }, paperTitle2(t, open.paper))
+      ),
+      import_react32.default.createElement(
+        "div",
+        { className: "ph-n-embedded-reader__body" },
+        import_react32.default.createElement(ReaderShell, {
+          t,
+          api,
+          paperId: open.id,
+          paper: open.paper,
+          initialPage: 1,
+          onBack: () => setOpen(null),
+          sessionId: props.sessionId,
+          onOpenSettings: null
+        })
+      )
+    );
+  }
+  return import_react32.default.createElement(
+    "div",
+    { className: "ph-n-paperpane" },
+    import_react32.default.createElement(
+      "div",
+      { className: "ph-n-paperpane__head" },
+      import_react32.default.createElement(Icon, { name: "book", size: 14 }),
+      import_react32.default.createElement("span", { className: "ph-n-paperpane__title" }, t("notes.papers.panel")),
+      props.onClose ? import_react32.default.createElement(IconButton, { icon: "panelRight", title: t("notes.papers.panelClose"), onClick: props.onClose }) : null
+    ),
+    import_react32.default.createElement(
+      "div",
+      { className: "ph-n-paperpane__search" },
+      import_react32.default.createElement(SearchInput, {
+        value: query,
+        onChange: setQuery,
+        placeholder: t("notes.papers.panelSearch"),
+        clearLabel: t("common.clear"),
+        loading: results.status === "loading"
+      })
+    ),
+    import_react32.default.createElement(
+      "div",
+      { className: "ph-n-paperpane__filters" },
+      import_react32.default.createElement(
+        "select",
+        { className: "ph-select ph-select--inline", value: folderId, "aria-label": t("folders.pick"), onChange: (event) => setFolderId(event.target.value) },
+        import_react32.default.createElement("option", { value: "" }, t("folders.all")),
+        folders.map((folder) => import_react32.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
+      ),
+      import_react32.default.createElement(
+        "select",
+        { className: "ph-select ph-select--inline", value: readFilter, "aria-label": t("library.batch.reading"), onChange: (event) => setReadFilter(event.target.value) },
+        import_react32.default.createElement("option", { value: "" }, t("folders.anyState")),
+        import_react32.default.createElement("option", { value: "unread" }, t("library.smart.toRead")),
+        import_react32.default.createElement("option", { value: "read" }, t("library.smart.read"))
+      ),
+      import_react32.default.createElement(
+        "label",
+        { className: "ph-n-paperpane__annot" },
+        import_react32.default.createElement("input", { type: "checkbox", checked: annotatedOnly, onChange: (event) => setAnnotatedOnly(event.target.checked) }),
+        t("notes.papers.annotatedOnly")
+      )
+    ),
+    import_react32.default.createElement(
+      "div",
+      { className: "ph-n-paperpane__body" },
+      import_react32.default.createElement(
+        "div",
+        { className: "ph-n-paperpane__scroll ph-n-scroll" },
+        !open ? import_react32.default.createElement(
+          "div",
+          { className: "ph-n-paperlist" },
+          results.status === "loading" && results.items.length === 0 ? import_react32.default.createElement("div", { className: "ph-n-progress" }, import_react32.default.createElement(Spinner), import_react32.default.createElement("span", null, t("common.loading"))) : null,
+          results.status === "error" ? import_react32.default.createElement("div", { className: "ph-n-error" }, import_react32.default.createElement(Icon, { name: "warning", size: 14 }), import_react32.default.createElement("span", null, results.error)) : null,
+          results.status === "ready" && results.items.length === 0 ? import_react32.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch"), desc: t("notes.papers.panelHint") }) : null,
+          results.items.map(
+            (paper) => import_react32.default.createElement(
+              "button",
+              {
+                key: paper.id,
+                type: "button",
+                className: "ph-n-paperrow" + (props.filterPaperId === paper.id ? " ph-n-paperrow--active" : ""),
+                onClick: () => openPaper(paper),
+                title: paperTitle2(t, paper)
+              },
+              import_react32.default.createElement(
+                "span",
+                { className: "ph-n-paperrow__thumb" },
+                paper.thumbnailUrl ? import_react32.default.createElement("img", { src: paper.thumbnailUrl, alt: "", loading: "lazy" }) : null
+              ),
+              import_react32.default.createElement(
+                "span",
+                { className: "ph-n-paperrow__text" },
+                import_react32.default.createElement("span", { className: "ph-n-paperrow__title" }, paperTitle2(t, paper)),
+                import_react32.default.createElement("span", { className: "ph-n-paperrow__meta" }, [paper.year, paper.venue, Number(paper.annotationCount) > 0 ? "\u6279\u6CE8 " + paper.annotationCount : ""].filter(Boolean).join(" \xB7 ") || t("common.noVenue"))
+              )
+            )
+          )
+        ) : import_react32.default.createElement(
+          "div",
+          { className: "ph-n-paperview" },
+          import_react32.default.createElement(
+            "div",
+            { className: "ph-n-paperview__head" },
+            import_react32.default.createElement(
+              "div",
+              { className: "ph-n-paperview__titles" },
+              import_react32.default.createElement("div", { className: "ph-n-paperview__title" }, paperTitle2(t, open.paper)),
+              import_react32.default.createElement(
+                "div",
+                { className: "ph-n-paperview__meta" },
+                [text(open.paper && open.paper.title), open.paper && open.paper.year, open.paper && open.paper.venue].filter(Boolean).join(" \xB7 ")
+              )
+            ),
+            import_react32.default.createElement(IconButton, { icon: "close", title: t("notes.papers.closeView"), onClick: () => setOpen(null) })
+          ),
+          import_react32.default.createElement(
+            "div",
+            { className: "ph-n-paperview__pager" },
+            import_react32.default.createElement(IconButton, { icon: "chevronLeft", title: t("reader.prevPage"), disabled: page2 <= 1, onClick: () => goPage(page2 - 1) }),
+            import_react32.default.createElement("span", null, t("notes.papers.pageOf", { page: page2, total: open.total || 1 })),
+            import_react32.default.createElement(IconButton, { icon: "chevronRight", title: t("reader.nextPage"), disabled: page2 >= (open.total || 1), onClick: () => goPage(page2 + 1) }),
+            import_react32.default.createElement("span", { className: "ph-n-spacer" }),
+            import_react32.default.createElement(Button, { size: "sm", variant: "ghost", icon: "external", onClick: () => props.onOpenPaper && props.onOpenPaper(open.id, page2) }, t("notes.papers.open"))
+          ),
+          import_react32.default.createElement(
+            "div",
+            {
+              className: "ph-n-readerpage",
+              ref: imageWrapRef,
+              onMouseUp: onPageMouseUp,
+              title: t("notes.papers.regionHint"),
+              style: { "--ph-r-pageh": (pageHeight > 0 ? pageHeight : 640) + "px" }
+            },
+            import_react32.default.createElement("img", {
+              className: "ph-n-readerpage__img",
+              src: pageImageUrl2(open.id, page2, 1200),
+              alt: t("reader.thumbPage", { page: page2 }),
+              loading: "lazy",
+              draggable: false
+            }),
+            layer && selectable.words.length > 0 ? import_react32.default.createElement(PageTextLayer, { page: page2, words: selectable.words, width: selectable.width, height: selectable.height, active: true, interactive: true }) : null
+          ),
+          import_react32.default.createElement(
+            "div",
+            { className: "ph-n-paperview__section" },
+            import_react32.default.createElement("div", { className: "ph-n-paperview__section-title" }, import_react32.default.createElement(Icon, { name: "translate", size: 12 }), t("notes.papers.regionTitle")),
+            import_react32.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.regionHint")),
+            region.status === "loading" ? import_react32.default.createElement("div", { className: "ph-n-progress" }, import_react32.default.createElement(Spinner), import_react32.default.createElement("span", null, t("common.loading"))) : null,
+            region.status === "error" || region.status === "ready" && region.reason && !region.text ? import_react32.default.createElement("div", { className: "ph-n-error" }, import_react32.default.createElement(Icon, { name: "warning", size: 14 }), import_react32.default.createElement("span", null, region.reason || t("common.unavailable"))) : null,
+            region.text ? import_react32.default.createElement(
+              "div",
+              { className: "ph-n-region-result" },
+              import_react32.default.createElement("div", { className: "ph-n-region-result__source" }, region.text),
+              region.translation ? import_react32.default.createElement("div", { className: "ph-n-region-result__translation" }, region.translation) : import_react32.default.createElement("div", { className: "ph-n-caption" }, t("notes.papers.regionPending"))
+            ) : null,
+            import_react32.default.createElement(Button, { size: "sm", variant: "soft", icon: "sparkle", loading: busy2 === "ai", onClick: askAiPage }, t("notes.papers.askAi")),
+            ai.status === "loading" ? import_react32.default.createElement("div", { className: "ph-n-progress" }, import_react32.default.createElement(Spinner), import_react32.default.createElement("span", null, t("common.loading"))) : null,
+            ai.status === "error" ? import_react32.default.createElement("div", { className: "ph-n-error" }, import_react32.default.createElement(Icon, { name: "warning", size: 14 }), import_react32.default.createElement("span", null, ai.reason)) : null,
+            ai.answer ? import_react32.default.createElement("div", { className: "ph-n-region-result__translation" }, ai.answer) : null
+          ),
+          import_react32.default.createElement(
+            "div",
+            { className: "ph-n-paperview__section" },
+            import_react32.default.createElement(
+              "div",
+              { className: "ph-n-paperview__section-title" },
+              import_react32.default.createElement(Icon, { name: "translate", size: 12 }),
+              t("notes.papers.translation"),
+              import_react32.default.createElement(Button, { size: "sm", variant: "soft", icon: "translate", loading: busy2 === "translate", onClick: translatePage }, t("notes.papers.translatePage")),
+              import_react32.default.createElement("span", { className: "ph-n-spacer" }),
+              translation.blocks.length > 0 ? import_react32.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.translatedCount", { count: translation.blocks.filter((block) => block && block.translation).length })) : null
+            ),
+            translation.status === "translating" ? import_react32.default.createElement("div", { className: "ph-n-progress" }, import_react32.default.createElement(Spinner), import_react32.default.createElement("span", null, t("notes.papers.translating"))) : null,
+            translation.status === "error" || translation.reason && translation.blocks.length === 0 ? import_react32.default.createElement("div", { className: "ph-n-error" }, import_react32.default.createElement(Icon, { name: "warning", size: 14 }), import_react32.default.createElement("span", null, translation.reason || t("common.unavailable"))) : null,
+            translation.blocks.length > 0 ? import_react32.default.createElement(
+              "div",
+              { className: "ph-n-paperview__trans" },
+              translation.blocks.slice(0, 14).map(
+                (block, index) => import_react32.default.createElement(
+                  "div",
+                  { key: block && block.id || index },
+                  block && block.translation ? import_react32.default.createElement("p", null, block.translation) : import_react32.default.createElement("p", { className: "muted" }, (block && block.text ? String(block.text).slice(0, 180) : "") + " \xB7 " + t("notes.papers.untranslated"))
+                )
+              )
+            ) : translation.status === "idle" ? import_react32.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.translateHint")) : null
+          ),
+          import_react32.default.createElement(
+            "div",
+            { className: "ph-n-paperview__section" },
+            import_react32.default.createElement(
+              "div",
+              { className: "ph-n-paperview__section-title" },
+              import_react32.default.createElement(Icon, { name: "highlighter", size: 12 }),
+              t("notes.papers.annotations"),
+              import_react32.default.createElement("span", { className: "ph-n-caption" }, String(annotations.items.length))
+            ),
+            annotations.status === "ready" && annotations.items.length === 0 ? import_react32.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.noAnnotations")) : null,
+            annotations.items.slice(0, 8).map(
+              (annotation) => import_react32.default.createElement(
+                "button",
+                {
+                  key: annotation.id,
+                  type: "button",
+                  className: "ph-n-paperview__annot",
+                  onClick: () => props.onOpenPaper && props.onOpenPaper(open.id, page2, annotation.id),
+                  title: t("reader.annot.openInReader"),
+                  style: { textAlign: "left", cursor: "pointer" }
+                },
+                import_react32.default.createElement("span", { className: "ph-n-paperview__annot-dot", style: { background: ANNOTATION_COLORS2[annotation.color] || ANNOTATION_COLORS2.yellow } }),
+                import_react32.default.createElement("span", { className: "ph-n-paperview__annot-text" }, text(annotation.quote, annotation.comment) || annotation.kind)
+              )
+            )
+          ),
+          import_react32.default.createElement(
+            "div",
+            { className: "ph-n-paperview__section" },
+            import_react32.default.createElement(
+              "div",
+              { className: "ph-n-paperview__section-title" },
+              import_react32.default.createElement(Icon, { name: "note", size: 12 }),
+              t("notes.papers.useInNotes")
+            ),
+            pageState.status === "loading" ? import_react32.default.createElement("div", { className: "ph-n-progress" }, import_react32.default.createElement(Spinner), import_react32.default.createElement("span", null, t("common.loading"))) : pageState.status === "error" ? import_react32.default.createElement("div", { className: "ph-n-error" }, import_react32.default.createElement(Icon, { name: "warning", size: 14 }), import_react32.default.createElement("span", null, pageState.error)) : import_react32.default.createElement(
+              "p",
+              { className: "ph-n-caption", style: { maxHeight: 120, overflow: "hidden" } },
+              (pageState.text || "").replace(/\s+/g, " ").slice(0, 360) || t("reader.noText")
+            ),
+            import_react32.default.createElement(
+              "div",
+              { className: "ph-n-paperview__actions", style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+              props.noteId ? import_react32.default.createElement(Button, {
+                size: "sm",
+                variant: "soft",
+                icon: "link",
+                onClick: () => props.onLinkPaper && props.onLinkPaper(open.paper),
+                disabled: Array.isArray(props.linkedPaperIds) && props.linkedPaperIds.indexOf(open.id) >= 0
+              }, t("notes.papers.linkCurrent")) : null,
+              import_react32.default.createElement(Button, { size: "sm", variant: "ghost", icon: "filter", onClick: () => props.onFilterByPaper && props.onFilterByPaper(open.paper) }, t("notes.fromPaper")),
+              import_react32.default.createElement(Button, { size: "sm", variant: "ghost", icon: "note", onClick: () => props.onCreateNote && props.onCreateNote(open.paper) }, t("notes.papers.newNote"))
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+// src/surfaces/library/toolbar.jsx
+var import_react33 = __toESM(require("react"), 1);
+function operationId(prefix) {
+  const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+  return (prefix ? prefix + "-" : "") + random;
+}
+var SORT_OPTIONS = [
+  ["recent", "library.sort.recent"],
+  ["added", "library.sort.added"],
+  ["title", "library.sort.title"],
+  ["year", "library.sort.year"],
+  ["authors", "library.sort.authors"]
+];
+function ImportControl(props) {
+  const t = props.t;
+  const api = props.api;
+  const controller = props.controller;
+  const [importing, setImporting] = import_react33.default.useState(false);
+  const fileRef = import_react33.default.useRef(null);
+  const importFiles = (fileList) => {
+    const files = Array.prototype.slice.call(fileList || []);
+    if (files.length === 0) return;
+    setImporting(true);
+    const groups = /* @__PURE__ */ new Map();
+    const reads = files.map(
+      (file) => readFileAsDataUrl(file).then((dataUrl) => {
+        const format = importFormatOf(file.name);
+        const bucket = groups.get(format) || [];
+        bucket.push({ name: String(file.name || "upload"), base64: dataUrlPayload(dataUrl) });
+        groups.set(format, bucket);
+      })
+    );
+    Promise.all(reads).then(() => {
+      const calls = [];
+      groups.forEach((uploads, format) => {
+        const params = { uploads, operationId: operationId("import") };
+        if (format) params.format = format;
+        calls.push(api("library.import", params));
+      });
+      return Promise.all(calls);
+    }).then((results) => {
+      let accepted = 0;
+      let duplicates = 0;
+      let errors = 0;
+      results.forEach((result) => {
+        accepted += Number(result && result.accepted) || 0;
+        duplicates += Array.isArray(result && result.duplicates) ? result.duplicates.length : 0;
+        errors += Array.isArray(result && result.errors) ? result.errors.length : 0;
+      });
+      props.pushToast(errors > 0 ? "warning" : "success", duplicates > 0 ? t("toast.importedSkipped", { count: accepted, dupes: duplicates }) : t("toast.imported", { count: accepted }));
+      let classified = 0;
+      let createdFolders = 0;
+      let embeddingIssue = "";
+      results.forEach((result) => {
+        const classification = result && result.classification || (result && result.items ? result.items.map((item) => item && item.classification).filter(Boolean) : []);
+        const list = Array.isArray(classification) ? classification : [classification];
+        list.filter(Boolean).forEach((entry) => {
+          if (entry.folder || entry.folderId) classified += 1;
+          if (entry.created) createdFolders += 1;
+          if (entry.embedding === "unavailable" && entry.reason) embeddingIssue = String(entry.reason);
+        });
+      });
+      if (accepted > 0 && (classified > 0 || createdFolders > 0 || embeddingIssue)) {
+        notify("info", t("import.classified", { count: classified || accepted }) + (createdFolders > 0 ? " \xB7 " + t("import.createdFolders", { count: createdFolders }) : "") + (embeddingIssue ? " \xB7 " + t("import.embeddingUnavailable", { message: embeddingIssue }) : ""), { label: t("common.undo"), onClick: () => {
+          controller.refresh();
+        } }, 9e3);
+      }
+      controller.refresh();
+    }).catch((error) => props.pushToast("error", t("toast.importFailed", { message: describeError(t, error) }))).then(() => setImporting(false));
+  };
+  return h(
+    import_react33.default.Fragment,
+    null,
+    h("input", {
+      ref: fileRef,
+      type: "file",
+      multiple: true,
+      accept: ".pdf,.bib,.bibtex,.ris,.json",
+      className: "ph-hidden-input",
+      onChange: (event) => {
+        importFiles(event.target.files);
+        event.target.value = "";
+      }
+    }),
+    h(
+      Button,
+      {
+        variant: "primary",
+        icon: "import",
+        loading: importing,
+        className: "ph-importbtn",
+        onClick: () => fileRef.current && fileRef.current.click(),
+        title: t("library.import")
+      },
+      importing ? t("library.importing") : t("library.import")
+    )
+  );
+}
+function LibraryToolbar(props) {
+  const t = props.t;
+  const [narrow, setNarrow] = import_react33.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
+  import_react33.default.useEffect(() => {
+    const onResize = () => setNarrow(typeof window !== "undefined" && window.innerWidth <= 1100);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const leftOpen = narrow ? Boolean(props.snapshot.mobileLeftOpen) && !props.snapshot.ui.leftCollapsed : !props.snapshot.ui.leftCollapsed;
+  const snapshot4 = props.snapshot;
+  const controller = props.controller;
+  return h(
+    "div",
+    { className: "ph-toolbar ph-toolbar--library" },
+    h(
+      "div",
+      { className: "ph-toolbar__lead" },
+      h(IconButton, {
+        icon: "panelLeft",
+        title: leftOpen ? t("library.sidebar.hide") : t("library.sidebar.show"),
+        "aria-label": leftOpen ? t("library.sidebar.hide") : t("library.sidebar.show"),
+        "aria-pressed": leftOpen ? "true" : "false",
+        active: leftOpen,
+        onClick: () => narrow && controller.toggleMobileLeft ? controller.toggleMobileLeft() : controller.toggleLeft()
+      }),
+      h("span", { className: "ph-toolbar__divider", "aria-hidden": "true" }),
+      h(
+        "label",
+        { className: "ph-toolbar__sort" },
+        h(Icon, { name: "sort", size: 13, className: "ph-toolbar__sorticon" }),
+        h(
+          "select",
+          { className: "ph-select ph-select--quiet", value: snapshot4.filters.sort, onChange: (event) => controller.setSort(event.target.value), "aria-label": t("library.sort") },
+          SORT_OPTIONS.map(([value, key]) => h("option", { key: value, value }, t(key)))
+        )
+      ),
+      h(Segmented, {
+        "aria-label": t("library.view.table"),
+        value: snapshot4.viewMode,
+        items: [
+          { id: "table", icon: "list", title: t("library.view.table") },
+          { id: "grid", icon: "grid", title: t("library.view.grid") }
+        ],
+        onChange: (value) => controller.setViewMode(value)
+      })
+    ),
+    h("span", { className: "ph-spacer" }),
+    h(
+      "div",
+      { className: "ph-toolbar__tail" },
+      h("span", { className: "ph-toolbar__count" }, t("library.table.total", { count: snapshot4.total || snapshot4.items.length })),
+      h(IconButton, {
+        icon: "panelRight",
+        title: snapshot4.ui.rightCollapsed ? t("library.details.expand") : t("library.details.collapse"),
+        "aria-label": snapshot4.ui.rightCollapsed ? t("library.details.expand") : t("library.details.collapse"),
+        active: !snapshot4.ui.rightCollapsed,
+        onClick: () => controller.toggleRight()
+      })
+    )
+  );
+}
+function BatchBar(props) {
+  const t = props.t;
+  const api = props.api;
+  const snapshot4 = props.snapshot;
+  const controller = props.controller;
+  const { push } = useToasts();
+  const [tagOpen, setTagOpen] = import_react33.default.useState(false);
+  const [tagValue, setTagValue] = import_react33.default.useState("");
+  const [collectionOpen, setCollectionOpen] = import_react33.default.useState(false);
+  const [busy2, setBusy] = import_react33.default.useState("");
+  const [armed, setArmed] = import_react33.default.useState(false);
+  const count = snapshot4.selection.length;
+  const selectedPapers = (snapshot4.items || []).filter((paper) => snapshot4.selection.indexOf(paper.id) >= 0);
+  const allFavorite = selectedPapers.length > 0 && selectedPapers.every((paper) => paper.favorite === true);
+  if (count === 0) return null;
+  const toast = (tone, text2) => {
+    push(tone, text2);
+    if (props.pushToast) props.pushToast(tone, text2);
+  };
+  const cite = () => {
+    const papers = controller.selectedPapers();
+    setBusy("cite");
+    api("references.commit", {
+      items: papers.map((paper) => ({ kind: "paper", id: paper.id })),
+      operationId: operationId("refs")
+    }).then((result) => {
+      pendingStore.add(result, papers.map((paper) => ({ kind: "paper", id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title })));
+      toast("success", t("toast.cited"));
+      controller.clearSelection();
+    }).catch((error) => toast("error", t("toast.citeFailed", { message: describeError(t, error) }))).then(() => setBusy(""));
+  };
+  const applyTag = () => {
+    const value = tagValue.trim();
+    if (!value) {
+      toast("info", t("toast.tagRequired"));
+      return;
+    }
+    setBusy("tag");
+    controller.addTagsToSelection([value]).then(() => {
+      toast("success", t("library.batch.tagsAdded"));
+      setTagValue("");
+      setTagOpen(false);
+      controller.clearSelection();
+    }).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
+  };
+  const assign = (collection) => {
+    setBusy("collection");
+    controller.assignCollection(collection.id, snapshot4.selection, true).then(() => {
+      toast("success", t("library.collection.assign") + " \xB7 " + collection.name);
+      setCollectionOpen(false);
+    }).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
+  };
+  const trashMode = snapshot4.filters.view === "trash";
+  const collections = (snapshot4.collections || []).filter((collection) => collection.kind !== "field");
+  return h(
+    "div",
+    { className: "ph-batch", role: "toolbar" },
+    h("span", { className: "ph-batch__count" }, t("library.selectedCount", { count })),
+    h("span", { className: "ph-batch__divider" }),
+    trashMode ? h(
+      import_react33.default.Fragment,
+      null,
+      h(Button, { size: "sm", icon: "restore", loading: busy2 === "restore", onClick: () => {
+        setBusy("restore");
+        controller.restoreSelection().then(() => toast("success", t("toast.restored"))).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
+      } }, t("library.batch.restore")),
+      h(Button, { size: "sm", variant: "danger", icon: "trash", loading: busy2 === "purge", onClick: () => {
+        if (!armed) {
+          setArmed(true);
+          return;
+        }
+        setBusy("purge");
+        controller.purgeSelection().then(() => {
+          toast("success", t("toast.purged"));
+          setArmed(false);
+        }).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
+      } }, armed ? t("library.batch.purgeConfirm") : t("library.batch.purge"))
+    ) : h(
+      import_react33.default.Fragment,
+      null,
+      h(
+        "div",
+        { className: "ph-batch__group ph-batch__group--primary" },
+        h(Button, { size: "sm", variant: "primary", icon: "quote", loading: busy2 === "cite", onClick: cite }, t("library.batch.cite")),
+        h(Button, { size: "sm", icon: "star", className: allFavorite ? "ph-batch__icon ph-batch__icon--on" : "ph-batch__icon", title: allFavorite ? t("folders.unfavorite") : t("details.favoriteOff"), onClick: () => {
+          const next = !allFavorite;
+          setBusy("fav");
+          controller.setFavorite(snapshot4.selection, next).then(() => toast("success", next ? t("details.favoriteOn") : t("folders.unfavorite"))).catch((error) => toast("error", describeError(t, error))).then(() => setBusy(""));
+        } }, allFavorite ? t("folders.unfavorite") : t("details.favoriteOff"))
+      ),
+      h("span", { className: "ph-batch__divider ph-batch__divider--soft" }),
+      h(
+        "div",
+        { className: "ph-batch__group ph-batch__group--secondary" },
+        h(FolderPicker, { t, folders: props.folders, value: "", allowAll: true, className: "ph-select--inline ph-select--quiet", label: t("folders.assignTo"), onChange: (id) => {
+          if (!id) return;
+          setBusy("folder");
+          controller.assignFolder(id, snapshot4.selection, true).then(() => toast("success", t("folders.assigned"))).catch((error) => toast("error", describeError(t, error))).then(() => setBusy(""));
+        } }),
+        tagOpen ? h(
+          "span",
+          { className: "ph-batch__tag" },
+          h("input", { value: tagValue, autoFocus: true, placeholder: t("library.batch.tagPlaceholder"), onChange: (event) => setTagValue(event.target.value), onKeyDown: (event) => {
+            if (event.key === "Enter") applyTag();
+            if (event.key === "Escape") {
+              setTagOpen(false);
+              setTagValue("");
+            }
+          } }),
+          h(Button, { size: "sm", variant: "primary", loading: busy2 === "tag", onClick: applyTag }, t("library.batch.tagApply"))
+        ) : h(Button, { size: "sm", icon: "tag", title: t("library.batch.tag"), onClick: () => setTagOpen(true) }, t("library.batch.tag")),
+        collectionOpen ? h(
+          "span",
+          { className: "ph-batch__tag" },
+          h(
+            "select",
+            {
+              className: "ph-select",
+              defaultValue: "",
+              onChange: (event) => {
+                const collection = collections.find((item) => item.id === event.target.value);
+                if (collection) assign(collection);
+              }
+            },
+            h("option", { value: "", disabled: true }, t("library.batch.collection")),
+            collections.map((collection) => h("option", { key: collection.id, value: collection.id }, collection.name))
+          ),
+          h(IconButton, { icon: "close", title: t("common.cancel"), onClick: () => setCollectionOpen(false) })
+        ) : h(Button, { size: "sm", icon: "collection", title: t("library.batch.collection"), onClick: () => setCollectionOpen(true) }, t("library.batch.collection")),
+        h("select", { className: "ph-select ph-select--inline ph-select--quiet", defaultValue: "", "aria-label": t("library.batch.reading"), onChange: (event) => {
+          const value = event.target.value;
+          if (!value) return;
+          setBusy("reading");
+          controller.setReadingSelection(snapshot4.selection, value).then(() => toast("success", t("library.batch.readingUpdated"))).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
+        } }, h("option", { value: "" }, t("library.batch.reading")), h("option", { value: "to-read" }, t("library.smart.toRead")), h("option", { value: "reading" }, t("library.smart.reading")), h("option", { value: "read" }, t("library.smart.read"))),
+        h(Button, { size: "sm", icon: "copy", loading: busy2 === "citeCopy", title: t("library.batch.copyCitation"), onClick: () => {
+          setBusy("citeCopy");
+          api("citation.format", { ids: snapshot4.selection, style: "bibtex" }).then((result) => copyText(result && result.content ? result.content : "")).then((ok) => toast(ok ? "success" : "warning", ok ? t("common.copied") : t("common.unavailable"))).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
+        } }, t("library.batch.copyCitation")),
+        h(Button, { size: "sm", icon: "chart", loading: busy2 === "metrics", title: t("library.batch.updateMetrics"), onClick: () => {
+          setBusy("metrics");
+          controller.refreshMetrics(snapshot4.selection).then((result) => {
+            const results = result && Array.isArray(result.results) ? result.results : [];
+            const ok = results.filter((entry) => entry && entry.status !== "failed").length;
+            toast(ok > 0 ? "success" : "warning", ok > 0 ? t("metrics.batchUpdated", { count: ok }) : t("metrics.refreshUnavailable"));
+          }).catch((error) => toast("error", t("metrics.refreshFailed", { message: describeError(t, error) }))).then(() => setBusy(""));
+        } }, t("library.batch.updateMetrics")),
+        h(Button, { size: "sm", variant: "danger", icon: "trash", className: "ph-batch__trash", loading: busy2 === "trash", title: armed ? t("library.batch.trashConfirm") : t("library.batch.trash"), onClick: () => {
+          if (!armed) {
+            setArmed(true);
+            setTimeout(() => setArmed(false), 4500);
+            return;
+          }
+          setBusy("trash");
+          controller.trashSelection().then((removed) => {
+            toast("success", t("toast.trashed") + (removed ? " \xB7 " + removed : ""));
+            setArmed(false);
+          }).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
+        } }, armed ? t("library.batch.trashConfirm") : t("library.batch.trash"))
+      )
+    ),
+    h("span", { className: "ph-batch__divider" }),
+    h(IconButton, { icon: "close", title: t("library.clearSelection"), onClick: () => {
+      controller.clearSelection();
+      setTagOpen(false);
+      setCollectionOpen(false);
+      setArmed(false);
+    } })
+  );
+}
+
 // src/surfaces/library/item-table.jsx
+var import_react34 = __toESM(require("react"), 1);
 function thumbUrl(paper) {
   return paper && paper.thumbnailUrl || (paper && paper.id ? "/pappers-hall/thumb/" + paper.id + ".png" : "");
 }
@@ -25271,8 +25586,8 @@ function TableRow(props) {
 function GridCard(props) {
   const t = props.t;
   const paper = props.paper;
-  const [failed, setFailed] = import_react33.default.useState(false);
-  import_react33.default.useEffect(() => setFailed(false), [paper.id]);
+  const [failed, setFailed] = import_react34.default.useState(false);
+  import_react34.default.useEffect(() => setFailed(false), [paper.id]);
   return h(
     "article",
     {
@@ -25313,10 +25628,10 @@ function ItemTable(props) {
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const items2 = snapshot4.items || [];
-  const selection = import_react33.default.useMemo(() => new Set(snapshot4.selection || []), [snapshot4.selection]);
-  const selectedPapers = import_react33.default.useMemo(() => items2.filter((paper) => selection.has(paper.id)), [items2, selection]);
-  const scrollRef = import_react33.default.useRef(null);
-  const [focused, setFocused] = import_react33.default.useState(0);
+  const selection = import_react34.default.useMemo(() => new Set(snapshot4.selection || []), [snapshot4.selection]);
+  const selectedPapers = import_react34.default.useMemo(() => items2.filter((paper) => selection.has(paper.id)), [items2, selection]);
+  const scrollRef = import_react34.default.useRef(null);
+  const [focused, setFocused] = import_react34.default.useState(0);
   const ensureVisible = (index) => {
     const container = scrollRef.current;
     if (!container) return;
@@ -25471,10 +25786,10 @@ function ItemTable(props) {
 }
 
 // src/surfaces/library/details.jsx
-var import_react35 = __toESM(require("react"), 1);
+var import_react36 = __toESM(require("react"), 1);
 
 // src/surfaces/library/metrics.jsx
-var import_react34 = __toESM(require("react"), 1);
+var import_react35 = __toESM(require("react"), 1);
 function num2(value) {
   if (value === null || value === void 0 || value === "") return null;
   const n = Number(value);
@@ -25522,13 +25837,13 @@ function MetricsSection(props) {
   const t = props.t;
   const detail = props.detail;
   const metrics = detail && detail.metrics || {};
-  const [editing, setEditing] = import_react34.default.useState(false);
-  const [busy2, setBusy] = import_react34.default.useState(false);
-  const [failed, setFailed] = import_react34.default.useState("");
-  const [form, setForm] = import_react34.default.useState({});
-  const [saving, setSaving] = import_react34.default.useState(false);
-  const [armed, setArmed] = import_react34.default.useState(false);
-  import_react34.default.useEffect(() => {
+  const [editing, setEditing] = import_react35.default.useState(false);
+  const [busy2, setBusy] = import_react35.default.useState(false);
+  const [failed, setFailed] = import_react35.default.useState("");
+  const [form, setForm] = import_react35.default.useState({});
+  const [saving, setSaving] = import_react35.default.useState(false);
+  const [armed, setArmed] = import_react35.default.useState(false);
+  import_react35.default.useEffect(() => {
     setEditing(false);
     setFailed("");
   }, [detail && detail.id]);
@@ -25662,14 +25977,14 @@ function MetricsSection(props) {
 // src/surfaces/library/details.jsx
 function Field(props) {
   if (props.value == null || props.value === "") return null;
-  return h(import_react35.default.Fragment, null, h("dt", null, props.label), h("dd", { className: props.mono ? "ph-mono" : void 0 }, props.value));
+  return h(import_react36.default.Fragment, null, h("dt", null, props.label), h("dd", { className: props.mono ? "ph-mono" : void 0 }, props.value));
 }
 var figureDragActive = false;
 function figureUrl(figure) {
   return figure && figure.imageUrl || (figure && figure.id ? "/pappers-hall/figure/" + figure.id + ".png?width=480" : "");
 }
 function AbstractBlock(props) {
-  const [open, setOpen] = import_react35.default.useState(false);
+  const [open, setOpen] = import_react36.default.useState(false);
   const t = props.t;
   if (!props.text) {
     return h(
@@ -25697,12 +26012,12 @@ function InfoTab(props) {
   const detail = props.detail;
   const summary = props.summary;
   const controller = props.controller;
-  const [editing, setEditing] = import_react35.default.useState(false);
-  const [titleZh, setTitleZh] = import_react35.default.useState(firstText(detail && detail.titleZh, summary && summary.titleZh));
-  const [saving, setSaving] = import_react35.default.useState(false);
+  const [editing, setEditing] = import_react36.default.useState(false);
+  const [titleZh, setTitleZh] = import_react36.default.useState(firstText(detail && detail.titleZh, summary && summary.titleZh));
+  const [saving, setSaving] = import_react36.default.useState(false);
   const fileInfo = detail && detail.fileInfo || {};
   const sources = Array.isArray(detail && detail.sources) ? detail.sources : [];
-  import_react35.default.useEffect(() => {
+  import_react36.default.useEffect(() => {
     setTitleZh(firstText(detail && detail.titleZh, summary && summary.titleZh));
     setEditing(false);
   }, [detail && detail.id, detail && detail.titleZh, summary && summary.titleZh]);
@@ -25801,12 +26116,12 @@ function InfoTab(props) {
             return;
           }
           const memberships = Array.isArray(detail.collections) && detail.collections.length > 0 ? detail.collections : Array.isArray(detail.folders) ? detail.folders : [];
-          const current = memberships.filter((folder) => folder && folder.kind !== "field" && !String(folder.id || "").startsWith("field:")).map((folder) => folder && (folder.id || folder.collectionId)).filter(Boolean);
-          if (current.length === 0) {
+          const current2 = memberships.filter((folder) => folder && folder.kind !== "field" && !String(folder.id || "").startsWith("field:")).map((folder) => folder && (folder.id || folder.collectionId)).filter(Boolean);
+          if (current2.length === 0) {
             props.onToast("info", t("folders.alreadyNone"));
             return;
           }
-          Promise.all(current.map((folderId) => controller.assignFolder(folderId, [detail.id], false))).then(() => props.onToast("success", t("folders.released"))).catch((error) => props.onToast("error", describeError(t, error)));
+          Promise.all(current2.map((folderId) => controller.assignFolder(folderId, [detail.id], false))).then(() => props.onToast("success", t("folders.released"))).catch((error) => props.onToast("error", describeError(t, error)));
         }
       })
     ),
@@ -25915,7 +26230,7 @@ function TagsTab(props) {
   const t = props.t;
   const detail = props.detail;
   const controller = props.controller;
-  const [value, setValue] = import_react35.default.useState("");
+  const [value, setValue] = import_react36.default.useState("");
   const tags = Array.isArray(detail.tags) ? detail.tags : [];
   const suggestions = (props.tags || []).filter((tag) => tags.indexOf(tag.name) < 0 && (!value || String(tag.name).toLowerCase().includes(value.toLowerCase()))).slice(0, 8);
   const add = () => {
@@ -26113,15 +26428,15 @@ function DetailsPane(props) {
 }
 
 // src/surfaces/library/duplicates.jsx
-var import_react36 = __toESM(require("react"), 1);
+var import_react37 = __toESM(require("react"), 1);
 function DuplicatesPane(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const duplicates = snapshot4.duplicates || { status: "idle", groups: [], error: null };
-  const [primary, setPrimary] = import_react36.default.useState({});
-  const [busy2, setBusy] = import_react36.default.useState("");
-  import_react36.default.useEffect(() => {
+  const [primary, setPrimary] = import_react37.default.useState({});
+  const [busy2, setBusy] = import_react37.default.useState("");
+  import_react37.default.useEffect(() => {
     if (duplicates.status === "idle") controller.loadDuplicates();
   }, [duplicates.status, controller]);
   if (duplicates.status === "loading" || duplicates.status === "idle") {
@@ -26165,18 +26480,18 @@ function DuplicatesPane(props) {
 }
 
 // src/surfaces/library/dialogs.jsx
-var import_react37 = __toESM(require("react"), 1);
+var import_react38 = __toESM(require("react"), 1);
 function useDebounced(value, delay) {
-  const [debounced, setDebounced] = import_react37.default.useState(value);
-  import_react37.default.useEffect(() => {
+  const [debounced, setDebounced] = import_react38.default.useState(value);
+  import_react38.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(value), delay == null ? 240 : delay);
     return () => clearTimeout(timer2);
   }, [value, delay]);
   return debounced;
 }
 function Dialog(props) {
-  const ref = import_react37.default.useRef(null);
-  import_react37.default.useEffect(() => {
+  const ref = import_react38.default.useRef(null);
+  import_react38.default.useEffect(() => {
     const onKey = (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -26201,18 +26516,18 @@ function Dialog(props) {
 }
 function CommandPalette(props) {
   const t = props.t;
-  const [query, setQuery] = import_react37.default.useState("");
-  const [index, setIndex] = import_react37.default.useState(0);
-  const inputRef = import_react37.default.useRef(null);
+  const [query, setQuery] = import_react38.default.useState("");
+  const [index, setIndex] = import_react38.default.useState(0);
+  const inputRef = import_react38.default.useRef(null);
   const commands = (props.commands || []).filter((command) => !query || String(command.label + " " + (command.hint || "")).toLowerCase().indexOf(query.toLowerCase()) >= 0);
-  import_react37.default.useEffect(() => {
+  import_react38.default.useEffect(() => {
     if (props.open) {
       setQuery("");
       setIndex(0);
       setTimeout(() => inputRef.current && inputRef.current.focus(), 30);
     }
   }, [props.open]);
-  import_react37.default.useEffect(() => {
+  import_react38.default.useEffect(() => {
     setIndex(0);
   }, [query]);
   if (!props.open) return null;
@@ -26263,17 +26578,17 @@ function CommandPalette(props) {
 function CitationDialog(props) {
   const t = props.t;
   const api = props.api;
-  const [query, setQuery] = import_react37.default.useState("");
+  const [query, setQuery] = import_react38.default.useState("");
   const debounced = useDebounced(query, 260);
-  const [results, setResults] = import_react37.default.useState([]);
-  const [picked, setPicked] = import_react37.default.useState(null);
-  const [style, setStyle] = import_react37.default.useState("bibtex");
-  const [preview, setPreview] = import_react37.default.useState("");
-  const [busy2, setBusy] = import_react37.default.useState(false);
-  const [error, setError] = import_react37.default.useState("");
-  const [tick, setTick] = import_react37.default.useState(0);
-  const dialogRef = import_react37.default.useRef(null);
-  import_react37.default.useEffect(() => {
+  const [results, setResults] = import_react38.default.useState([]);
+  const [picked, setPicked] = import_react38.default.useState(null);
+  const [style, setStyle] = import_react38.default.useState("bibtex");
+  const [preview, setPreview] = import_react38.default.useState("");
+  const [busy2, setBusy] = import_react38.default.useState(false);
+  const [error, setError] = import_react38.default.useState("");
+  const [tick, setTick] = import_react38.default.useState(0);
+  const dialogRef = import_react38.default.useRef(null);
+  import_react38.default.useEffect(() => {
     if (!props.open) return;
     setQuery("");
     setPicked(null);
@@ -26281,7 +26596,7 @@ function CitationDialog(props) {
     setError("");
     setTimeout(() => dialogRef.current && dialogRef.current.focus(), 30);
   }, [props.open]);
-  import_react37.default.useEffect(() => {
+  import_react38.default.useEffect(() => {
     if (!props.open) return void 0;
     let alive = true;
     api("library.list", { query: debounced.trim() || void 0, state: "active", sort: "recent", limit: 8 }).then((value) => {
@@ -26293,7 +26608,7 @@ function CitationDialog(props) {
       alive = false;
     };
   }, [api, debounced, props.open, tick]);
-  import_react37.default.useEffect(() => {
+  import_react38.default.useEffect(() => {
     if (!picked) {
       setPreview("");
       return void 0;
@@ -26382,15 +26697,15 @@ function GlobalSearch(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const controller = props.controller;
-  const [value, setValue] = import_react38.default.useState(snapshot4.filters.query || "");
-  const external = import_react38.default.useRef(snapshot4.filters.query || "");
-  import_react38.default.useEffect(() => {
+  const [value, setValue] = import_react39.default.useState(snapshot4.filters.query || "");
+  const external = import_react39.default.useRef(snapshot4.filters.query || "");
+  import_react39.default.useEffect(() => {
     if (snapshot4.filters.query !== external.current) {
       external.current = snapshot4.filters.query || "";
       setValue(snapshot4.filters.query || "");
     }
   }, [snapshot4.filters.query]);
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       if (value !== snapshot4.filters.query) controller.setQuery(value);
     }, 260);
@@ -26409,9 +26724,9 @@ function GlobalSearch(props) {
 }
 function TopbarMenu(props) {
   const t = props.t;
-  const [open, setOpen] = import_react38.default.useState(false);
-  const ref = import_react38.default.useRef(null);
-  import_react38.default.useEffect(() => {
+  const [open, setOpen] = import_react39.default.useState(false);
+  const ref = import_react39.default.useRef(null);
+  import_react39.default.useEffect(() => {
     if (!open) return void 0;
     const close = (event) => {
       if (ref.current && !ref.current.contains(event.target)) setOpen(false);
@@ -26491,8 +26806,8 @@ function StatusBar(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const library = props.library;
-  const [busy2, setBusy] = import_react38.default.useState("");
-  const [errorText, setErrorText] = import_react38.default.useState("");
+  const [busy2, setBusy] = import_react39.default.useState("");
+  const [errorText, setErrorText] = import_react39.default.useState("");
   const status = snapshot4.statusData;
   const counts = snapshot4.counts || status && status.counts || {};
   const index = status && status.index || {};
@@ -26503,7 +26818,7 @@ function StatusBar(props) {
   const running = Number(jobs.running) || 0;
   const paused = jobs.globalPaused === true || jobs.state === "paused";
   const offline = snapshot4.offline;
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     const timer2 = setInterval(() => library.refreshStatus(), STATUS_POLL_MS);
     return () => clearInterval(timer2);
   }, [library]);
@@ -26573,9 +26888,9 @@ function StatusBar(props) {
   );
 }
 function PaneResizer(props) {
-  const [active, setActive] = import_react38.default.useState(false);
-  const start = import_react38.default.useRef(null);
-  const latest = import_react38.default.useRef(null);
+  const [active, setActive] = import_react39.default.useState(false);
+  const start = import_react39.default.useRef(null);
+  const latest = import_react39.default.useRef(null);
   const onMouseDown = (event) => {
     event.preventDefault();
     start.current = { x: event.clientX, width: props.width };
@@ -26618,9 +26933,9 @@ function ContextMenu(props) {
   const menu = props.menu;
   const paper = props.paper;
   const library = props.library;
-  const [submenu, setSubmenu] = import_react38.default.useState(false);
-  const [armed, setArmed] = import_react38.default.useState(false);
-  const ref = import_react38.default.useRef(null);
+  const [submenu, setSubmenu] = import_react39.default.useState(false);
+  const [armed, setArmed] = import_react39.default.useState(false);
+  const ref = import_react39.default.useRef(null);
   const style = { left: Math.min(menu.x, (typeof window !== "undefined" ? window.innerWidth : 800) - 220) + "px", top: Math.min(menu.y, (typeof window !== "undefined" ? window.innerHeight : 600) - 280) + "px" };
   if (!paper) return null;
   const close = () => library.closeContextMenu();
@@ -26640,7 +26955,7 @@ function ContextMenu(props) {
       props.onShowDetails && props.onShowDetails();
     }) }, h(Icon, { name: "tag", size: 14 }), t("library.context.tag")),
     collections.length > 0 ? h(
-      import_react38.default.Fragment,
+      import_react39.default.Fragment,
       null,
       h("button", { type: "button", className: "ph-ctxmenu__item", onClick: () => setSubmenu(!submenu), "aria-expanded": submenu ? "true" : "false" }, h(Icon, { name: "collection", size: 14 }), t("library.context.collection")),
       submenu ? h("div", { className: "ph-ctxmenu__sub" }, collections.map((collection) => h("button", { key: collection.id, type: "button", className: "ph-ctxmenu__item", onClick: act(() => library.assignCollection(collection.id, [paper.id], true).then(() => props.pushToast("success", t("library.collection.assign") + " \xB7 " + collection.name)).catch((error) => props.pushToast("error", t("toast.failed", { message: describeError(t, error) })))) }, h("span", { className: "ph-collection__dot", "data-color": collection.color || "blue" }), collection.name))) : null
@@ -26648,7 +26963,7 @@ function ContextMenu(props) {
     h("button", { type: "button", className: "ph-ctxmenu__item", onClick: act(() => copyText(paper.id).then((ok) => props.pushToast(ok ? "success" : "warning", ok ? t("toast.copied") : t("common.unavailable")))) }, h(Icon, { name: "copy", size: 14 }), t("library.context.copyId")),
     h("div", { className: "ph-ctxmenu__sep" }),
     trashMode ? h(
-      import_react38.default.Fragment,
+      import_react39.default.Fragment,
       null,
       h("button", { type: "button", className: "ph-ctxmenu__item", onClick: act(() => library.setSelection([paper.id]) || library.restoreSelection().then(() => props.pushToast("success", t("toast.restored"))).catch((error) => props.pushToast("error", t("toast.failed", { message: describeError(t, error) })))) }, h(Icon, { name: "restore", size: 14 }), t("library.context.restore")),
       h("button", { type: "button", className: "ph-ctxmenu__item ph-ctxmenu__item--danger", onClick: () => {
@@ -26663,7 +26978,7 @@ function ContextMenu(props) {
 }
 function LibrarySkeleton() {
   return h(
-    import_react38.default.Fragment,
+    import_react39.default.Fragment,
     null,
     h("div", { className: "ph-pane ph-pane--left" }, h("div", { className: "ph-left-skeleton" }, [0, 1, 2, 3, 4].map((index) => h("div", { key: index, className: "ph-details__skeletonrow" }, h("span", { className: "ph-skeleton", style: { width: "16px", height: "16px" } }), h("span", { className: "ph-skeleton", style: { flex: 1, height: "11px" } }))))),
     h("div", { className: "ph-pane ph-pane--mid" }, h("div", { className: "ph-table-skeleton" }, [0, 1, 2, 3, 4, 5, 6, 7].map((index) => h("div", { key: index, className: "ph-table-skeleton__row" }, h("span", { className: "ph-skeleton", style: { width: 14, height: 14 } }), h("div", { className: "ph-table-skeleton__main" }, h("span", { className: "ph-skeleton", style: { width: "58%" } }), h("span", { className: "ph-skeleton", style: { width: "36%", height: 9 } })), h("span", { className: "ph-skeleton", style: { width: 72, height: 10 } }))))),
@@ -26671,8 +26986,8 @@ function LibrarySkeleton() {
   );
 }
 function useNarrowLayout() {
-  const [narrow, setNarrow] = import_react38.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
-  import_react38.default.useEffect(() => {
+  const [narrow, setNarrow] = import_react39.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
+  import_react39.default.useEffect(() => {
     const onResize = () => setNarrow(typeof window !== "undefined" && window.innerWidth <= 1100);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -26684,18 +26999,18 @@ function LibraryShell(props) {
   const t = props.t;
   const api = props.api;
   const library = props.library;
-  const snapshot4 = import_react38.default.useSyncExternalStore(library.subscribe, library.getSnapshot, library.getSnapshot);
+  const snapshot4 = import_react39.default.useSyncExternalStore(library.subscribe, library.getSnapshot, library.getSnapshot);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [newCollectionOpen, setNewCollectionOpen] = import_react38.default.useState(false);
-  const [newCollectionName, setNewCollectionName] = import_react38.default.useState("");
-  const [dragWidth, setDragWidth] = import_react38.default.useState({ left: null, right: null });
-  const [paletteOpen, setPaletteOpen] = import_react38.default.useState(false);
-  const [citationOpen, setCitationOpen] = import_react38.default.useState(false);
-  const [helpOpen, setHelpOpen] = import_react38.default.useState(false);
-  const [inlineNoteId, setInlineNoteId] = import_react38.default.useState(() => String(props.initialNoteId || ""));
-  const filtersKeyRef = import_react38.default.useRef(null);
-  const notePrevLeftRef = import_react38.default.useRef(null);
-  import_react38.default.useEffect(() => {
+  const [newCollectionOpen, setNewCollectionOpen] = import_react39.default.useState(false);
+  const [newCollectionName, setNewCollectionName] = import_react39.default.useState("");
+  const [dragWidth, setDragWidth] = import_react39.default.useState({ left: null, right: null });
+  const [paletteOpen, setPaletteOpen] = import_react39.default.useState(false);
+  const [citationOpen, setCitationOpen] = import_react39.default.useState(false);
+  const [helpOpen, setHelpOpen] = import_react39.default.useState(false);
+  const [inlineNoteId, setInlineNoteId] = import_react39.default.useState(() => String(props.initialNoteId || ""));
+  const filtersKeyRef = import_react39.default.useRef(null);
+  const notePrevLeftRef = import_react39.default.useRef(null);
+  import_react39.default.useEffect(() => {
     const key = [snapshot4.filters.view, snapshot4.filters.collectionId, snapshot4.filters.folderId, snapshot4.filters.favorite, snapshot4.filters.reading, snapshot4.filters.query, (snapshot4.filters.tags || []).join("|")].join("");
     if (filtersKeyRef.current === null) {
       filtersKeyRef.current = key;
@@ -26705,10 +27020,10 @@ function LibraryShell(props) {
     filtersKeyRef.current = key;
     setInlineNoteId("");
   }, [snapshot4.filters.view, snapshot4.filters.collectionId, snapshot4.filters.folderId, snapshot4.filters.favorite, snapshot4.filters.reading, snapshot4.filters.query, (snapshot4.filters.tags || []).join("|")]);
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     if (props.initialNoteId) setInlineNoteId(String(props.initialNoteId));
   }, [props.initialNoteId]);
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     if (inlineNoteId) {
       if (notePrevLeftRef.current === null) notePrevLeftRef.current = Boolean(snapshot4.ui.leftCollapsed);
       if (!snapshot4.ui.leftCollapsed) library.setUi({ leftCollapsed: true });
@@ -26718,11 +27033,11 @@ function LibraryShell(props) {
       if (!previous) library.setUi({ leftCollapsed: false });
     }
   }, [inlineNoteId]);
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     if (snapshot4.status === "idle") library.refresh();
     else library.refreshStatus();
   }, []);
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     installUndoShortcuts();
     const onKey = (event) => {
       const meta = event.metaKey || event.ctrlKey;
@@ -26746,7 +27061,7 @@ function LibraryShell(props) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     const offView = bus.on("open-library-view", (payload) => {
       if (payload && payload.folderId) {
         library.setFolderFilter(String(payload.folderId));
@@ -26770,7 +27085,7 @@ function LibraryShell(props) {
       offPaper();
     };
   }, [library]);
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     if (!snapshot4.contextMenu) return void 0;
     const close = () => library.closeContextMenu();
     const onKey = (event) => {
@@ -26784,7 +27099,7 @@ function LibraryShell(props) {
     };
   }, [snapshot4.contextMenu, library]);
   const contextPaper = snapshot4.contextMenu ? snapshot4.items.find((paper) => paper.id === snapshot4.contextMenu.paperId) : null;
-  const citePaper = import_react38.default.useCallback(
+  const citePaper = import_react39.default.useCallback(
     (paper) => {
       api("references.commit", { items: [{ kind: "paper", id: paper.id }], operationId: operationId2("refs") }).then((result) => {
         pendingStore.add(result, [{ kind: "paper", id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title }]);
@@ -26793,7 +27108,7 @@ function LibraryShell(props) {
     },
     [api, push, t]
   );
-  const exportPaper = import_react38.default.useCallback(
+  const exportPaper = import_react39.default.useCallback(
     (paper) => {
       api("export.bibtex", { ids: [paper.id] }).then((result) => {
         if (result && result.content) {
@@ -26804,20 +27119,20 @@ function LibraryShell(props) {
     },
     [api, push, t]
   );
-  const copyCitation = import_react38.default.useCallback((paper, style) => {
+  const copyCitation = import_react39.default.useCallback((paper, style) => {
     api("citation.format", { ids: [paper.id], style: style || "bibtex" }).then((result) => {
       if (!result || !result.content) return notify("info", t("common.unavailable"));
       copyText(String(result.content)).then((ok) => notify(ok ? "success" : "warning", ok ? t("common.copied") : t("common.unavailable")));
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const copyCitationKey = import_react38.default.useCallback((paper) => {
+  const copyCitationKey = import_react39.default.useCallback((paper) => {
     api("citation.key", { ids: [paper.id] }).then((result) => {
       const key = result && Array.isArray(result.keys) && result.keys[0] ? result.keys[0].key : "";
       if (!key) return notify("info", t("common.unavailable"));
       copyText(key).then((ok) => notify(ok ? "success" : "warning", ok ? t("common.copied") + " \xB7 " + key : t("common.unavailable")));
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const exportAnnotations = import_react38.default.useCallback((paper, format, action) => {
+  const exportAnnotations = import_react39.default.useCallback((paper, format, action) => {
     api("export.annotations", { paperId: paper.id, format: format || "markdown" }).then((result) => {
       const content = result && result.content ? String(result.content) : "";
       if (!content) return notify("info", t("annotations.exportEmpty"));
@@ -26829,16 +27144,16 @@ function LibraryShell(props) {
       }
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const insertCitation = import_react38.default.useCallback((paper) => {
+  const insertCitation = import_react39.default.useCallback((paper) => {
     if (!paper) return;
     deliverMaterials([{ kind: "paper", id: paper.id, title: paperTitle(t, paper) }], {}).then((result) => {
       if (!result.ok) return notify("error", t("dnd.failed", { message: result.reason || "" }));
       notify(result.inserted ? "success" : "warning", result.inserted ? t("citation.inserted") : t("dnd.queued", { count: 1 }));
     });
   }, [t]);
-  const updateMetrics = import_react38.default.useCallback((ids) => library.refreshMetrics(ids), [library]);
-  const editMetrics = import_react38.default.useCallback((paperId, fields) => library.updateMetrics(paperId, fields), [library]);
-  const resetMetrics = import_react38.default.useCallback(
+  const updateMetrics = import_react39.default.useCallback((ids) => library.refreshMetrics(ids), [library]);
+  const editMetrics = import_react39.default.useCallback((paperId, fields) => library.updateMetrics(paperId, fields), [library]);
+  const resetMetrics = import_react39.default.useCallback(
     (paperId) => api("metrics.reset", { paperId: String(paperId) }).catch(() => api("metrics.update", { paperId: String(paperId), fields: { impactFactor: null, fiveYearImpactFactor: null, impactFactorYear: null, quartile: null, citationCount: null, hIndex: null, issn: null, publisher: null } })).then(() => library.selectPaper(String(paperId), { tab: "info" })),
     [api, library]
   );
@@ -26873,7 +27188,7 @@ function LibraryShell(props) {
   ].filter(Boolean);
   const openContext = (menu) => library.openContextMenu(menu);
   const openPaper = (paperId, page2) => props.onOpenPaper(paperId, page2);
-  const rootRef = import_react38.default.useRef(null);
+  const rootRef = import_react39.default.useRef(null);
   if (snapshot4.offline) {
     return h(
       "div",
@@ -27042,7 +27357,7 @@ function LibraryShell(props) {
         }
       },
       loadingFirst ? h(LibrarySkeleton, { t }) : h(
-        import_react38.default.Fragment,
+        import_react39.default.Fragment,
         null,
         mobileBackdrop,
         left,
@@ -27070,14 +27385,14 @@ function LibraryShell(props) {
 }
 
 // src/surfaces/figure-search.jsx
-var import_react39 = __toESM(require("react"), 1);
+var import_react40 = __toESM(require("react"), 1);
 function operationId3(prefix) {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
   return (prefix ? prefix + "-" : "") + random;
 }
 function useDebounced2(value, delay) {
-  const [debounced, setDebounced] = import_react39.default.useState(value);
-  import_react39.default.useEffect(() => {
+  const [debounced, setDebounced] = import_react40.default.useState(value);
+  import_react40.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(value), delay == null ? 300 : delay);
     return () => clearTimeout(timer2);
   }, [value, delay]);
@@ -27116,8 +27431,8 @@ function paperTitle3(t, paper) {
   return paper.titleZh || paper.displayTitle || paper.title || t("common.untitled");
 }
 function FigureThumb(props) {
-  const [failed, setFailed] = import_react39.default.useState(false);
-  import_react39.default.useEffect(() => setFailed(false), [props.src]);
+  const [failed, setFailed] = import_react40.default.useState(false);
+  import_react40.default.useEffect(() => setFailed(false), [props.src]);
   if (failed || !props.src) return h(Icon, { name: "figure", size: 24 });
   return h("img", { src: props.src, alt: props.alt || "", loading: "lazy", decoding: "async", draggable: false, onError: () => setFailed(true) });
 }
@@ -27169,16 +27484,16 @@ function FigureSearch(props) {
   const api = props.api;
   const { toasts, push } = useToasts();
   const focus = props.focusFigure || null;
-  const [query, setQuery] = import_react39.default.useState(props.initialQuery || "");
+  const [query, setQuery] = import_react40.default.useState(props.initialQuery || "");
   const debounced = useDebounced2(query, 320);
-  const [upload, setUpload] = import_react39.default.useState(null);
-  const [readOnly, setReadOnly] = import_react39.default.useState(false);
-  const [annotatedOnly, setAnnotatedOnly] = import_react39.default.useState(false);
-  const [mode, setMode] = import_react39.default.useState(focus && focus.figureId ? "figure" : "text");
-  const [revision, setRevision] = import_react39.default.useState(0);
-  const [state, setState] = import_react39.default.useState({ status: "idle", data: null, error: null });
-  const fileRef = import_react39.default.useRef(null);
-  import_react39.default.useEffect(() => {
+  const [upload, setUpload] = import_react40.default.useState(null);
+  const [readOnly, setReadOnly] = import_react40.default.useState(false);
+  const [annotatedOnly, setAnnotatedOnly] = import_react40.default.useState(false);
+  const [mode, setMode] = import_react40.default.useState(focus && focus.figureId ? "figure" : "text");
+  const [revision2, setRevision] = import_react40.default.useState(0);
+  const [state, setState] = import_react40.default.useState({ status: "idle", data: null, error: null });
+  const fileRef = import_react40.default.useRef(null);
+  import_react40.default.useEffect(() => {
     if (focus && focus.figureId) {
       setMode("figure");
       setQuery("");
@@ -27186,7 +27501,7 @@ function FigureSearch(props) {
       setRevision((value) => value + 1);
     }
   }, [focus && focus.figureId, focus && focus.paperId]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     let alive = true;
     const controller = new AbortController();
     const value = debounced.trim();
@@ -27321,7 +27636,7 @@ function FigureSearch(props) {
       alive = false;
       controller.abort();
     };
-  }, [mode, debounced, upload && upload.base64, focus && focus.figureId, readOnly, annotatedOnly, revision]);
+  }, [mode, debounced, upload && upload.base64, focus && focus.figureId, readOnly, annotatedOnly, revision2]);
   const cards = state.data && state.data.cards || [];
   const channels = state.data && state.data.channels || [];
   const warnings = channels.filter((channel) => channel && channel.status && channel.status !== "ok").map((channel) => ({ name: channel.name || "image", status: channel.status, note: channel.note || "" }));
@@ -27468,7 +27783,7 @@ function FigureSearch(props) {
 
 // src/surfaces/center.jsx
 function useNavigation() {
-  return import_react40.default.useSyncExternalStore(navigation.subscribe, navigation.getSnapshot, navigation.getSnapshot);
+  return import_react41.default.useSyncExternalStore(navigation.subscribe, navigation.getSnapshot, navigation.getSnapshot);
 }
 function useSessionId(props) {
   const useSessions = typeof props.useSessions === "function" ? props.useSessions : (selector) => selector({});
@@ -27489,15 +27804,15 @@ function PaperCenter(props) {
   const sessionId = useSessionId(props);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
   const route = nav.route || { view: "library" };
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
     if (route.view !== "library") return;
     navigation.consumeIntent();
   }, [route.view, nav.seq]);
-  const openPaper = import_react40.default.useCallback((paperId, page2, annotationId) => {
+  const openPaper = import_react41.default.useCallback((paperId, page2, annotationId) => {
     if (!paperId) return;
     navigation.openPaper({ paperId, page: page2 || 1, annotationId: annotationId || null, source: "library" });
   }, []);
-  const openFigure = import_react40.default.useCallback((paperId, figure) => {
+  const openFigure = import_react41.default.useCallback((paperId, figure) => {
     if (!paperId || !figure) return;
     navigation.openPaper({
       paperId,
@@ -27557,7 +27872,7 @@ function PaperCenter(props) {
   }
   if (route.view === "figures") {
     return h(
-      import_react40.default.Fragment,
+      import_react41.default.Fragment,
       null,
       h(LibraryShell, {
         t,
@@ -27580,7 +27895,7 @@ function PaperCenter(props) {
     );
   }
   return h(
-    import_react40.default.Fragment,
+    import_react41.default.Fragment,
     null,
     h(LibraryShell, {
       t,
@@ -27598,7 +27913,7 @@ function PaperCenter(props) {
 }
 
 // src/surfaces/drawer.jsx
-var import_react41 = __toESM(require("react"), 1);
+var import_react42 = __toESM(require("react"), 1);
 function opId3() {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
   return "drawer-" + random;
@@ -27626,8 +27941,8 @@ function Thumb(props) {
   const paperId = props.paperId;
   const primary = props.src || (paperId ? "/pappers-hall/thumb/" + paperId + ".png" : "");
   const fallback = paperId ? "/pappers-hall/page/" + paperId + "/1.png?width=120" : "";
-  const [step, setStep] = import_react41.default.useState(primary ? 0 : fallback ? 1 : 2);
-  import_react41.default.useEffect(() => {
+  const [step, setStep] = import_react42.default.useState(primary ? 0 : fallback ? 1 : 2);
+  import_react42.default.useEffect(() => {
     setStep(primary ? 0 : fallback ? 1 : 2);
   }, [primary, fallback]);
   const src = step === 0 ? primary : step === 1 ? fallback : "";
@@ -27729,28 +28044,28 @@ function DrawerBody(props) {
   const sessionId = props.sessionId;
   const openLibrary = props.openLibrary;
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const translation = import_react41.default.useSyncExternalStore(translationStore.subscribe, translationStore.getSnapshot, translationStore.getSnapshot);
-  const [tab, setTab] = import_react41.default.useState("papers");
-  const [query, setQuery] = import_react41.default.useState("");
-  const [debounced, setDebounced] = import_react41.default.useState("");
-  const [feed, setFeed] = import_react41.default.useState({ status: "loading", data: null, error: null });
-  const [annotations, setAnnotations] = import_react41.default.useState({ status: "loading", items: [], error: null, hasMore: false });
-  const [figures, setFigures] = import_react41.default.useState({ status: "loading", items: [], error: null });
-  const [notes, setNotes] = import_react41.default.useState({ status: "idle", items: [], error: null });
-  const [noteTotal, setNoteTotal] = import_react41.default.useState(0);
-  const [filters, setFilters] = import_react41.default.useState({ quick: "all", collectionId: "", tag: "", color: "", kind: "", paperId: "" });
-  const [selected, setSelected] = import_react41.default.useState([]);
-  const [collapsed, setCollapsed] = import_react41.default.useState({});
-  const [revision, setRevision] = import_react41.default.useState(0);
-  const scrollPositions = import_react41.default.useRef({});
-  const scrollRef = import_react41.default.useRef(null);
-  const searchRef = import_react41.default.useRef(null);
+  const translation = import_react42.default.useSyncExternalStore(translationStore.subscribe, translationStore.getSnapshot, translationStore.getSnapshot);
+  const [tab, setTab] = import_react42.default.useState("papers");
+  const [query, setQuery] = import_react42.default.useState("");
+  const [debounced, setDebounced] = import_react42.default.useState("");
+  const [feed, setFeed] = import_react42.default.useState({ status: "loading", data: null, error: null });
+  const [annotations, setAnnotations] = import_react42.default.useState({ status: "loading", items: [], error: null, hasMore: false });
+  const [figures, setFigures] = import_react42.default.useState({ status: "loading", items: [], error: null });
+  const [notes, setNotes] = import_react42.default.useState({ status: "idle", items: [], error: null });
+  const [noteTotal, setNoteTotal] = import_react42.default.useState(0);
+  const [filters, setFilters] = import_react42.default.useState({ quick: "all", collectionId: "", tag: "", color: "", kind: "", paperId: "" });
+  const [selected, setSelected] = import_react42.default.useState([]);
+  const [collapsed, setCollapsed] = import_react42.default.useState({});
+  const [revision2, setRevision] = import_react42.default.useState(0);
+  const scrollPositions = import_react42.default.useRef({});
+  const scrollRef = import_react42.default.useRef(null);
+  const searchRef = import_react42.default.useRef(null);
   const selectedKeys = new Set(selected.map((item) => item.kind + ":" + item.id));
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(query.trim()), 260);
     return () => clearTimeout(timer2);
   }, [query]);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     const onKey = (event) => {
       if ((event.metaKey || event.ctrlKey) && String(event.key).toLowerCase() === "f") {
         event.preventDefault();
@@ -27764,15 +28079,15 @@ function DrawerBody(props) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     translationStore.refresh().catch(() => {
     });
   }, []);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     const timer2 = setInterval(() => setRevision((value) => value + 1), 3e4);
     return () => clearInterval(timer2);
   }, []);
-  const changeTab = import_react41.default.useCallback((next) => {
+  const changeTab = import_react42.default.useCallback((next) => {
     const node = scrollRef.current;
     if (node) scrollPositions.current[tab] = node.scrollTop;
     setTab(next);
@@ -27782,7 +28097,7 @@ function DrawerBody(props) {
       });
     }
   }, [tab]);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     let alive = true;
     Promise.resolve(defaultApi("notes.list", { limit: 1 })).then((value) => {
       if (alive) setNoteTotal(Number(value && value.total) || 0);
@@ -27791,8 +28106,8 @@ function DrawerBody(props) {
     return () => {
       alive = false;
     };
-  }, [revision]);
-  import_react41.default.useEffect(() => {
+  }, [revision2]);
+  import_react42.default.useEffect(() => {
     let alive = true;
     setFeed((previous) => ({ status: previous.data ? "refreshing" : "loading", data: previous.data, error: null }));
     const previousFeedData = feed.data;
@@ -27857,8 +28172,8 @@ function DrawerBody(props) {
     return () => {
       alive = false;
     };
-  }, [debounced, filters.quick, filters.collectionId, filters.tag, filters.folderId, filters.favorite, filters.tags, revision]);
-  import_react41.default.useEffect(() => {
+  }, [debounced, filters.quick, filters.collectionId, filters.tag, filters.folderId, filters.favorite, filters.tags, revision2]);
+  import_react42.default.useEffect(() => {
     if (tab !== "annotations") return void 0;
     let alive = true;
     setAnnotations((previous) => ({ status: "loading", items: previous.items, error: null, hasMore: previous.hasMore }));
@@ -27886,8 +28201,8 @@ function DrawerBody(props) {
     return () => {
       alive = false;
     };
-  }, [tab, debounced, filters.color, filters.kind, filters.paperId, filters.folderId, filters.tags, revision]);
-  import_react41.default.useEffect(() => {
+  }, [tab, debounced, filters.color, filters.kind, filters.paperId, filters.folderId, filters.tags, revision2]);
+  import_react42.default.useEffect(() => {
     if (tab !== "figures") return void 0;
     let alive = true;
     setFigures((previous) => ({ status: previous.items.length > 0 ? "refreshing" : "loading", items: previous.items, error: null }));
@@ -27960,8 +28275,8 @@ function DrawerBody(props) {
     return () => {
       alive = false;
     };
-  }, [tab, debounced, filters.paperId, filters.folderId, filters.tags, revision, feed.data]);
-  import_react41.default.useEffect(() => {
+  }, [tab, debounced, filters.paperId, filters.folderId, filters.tags, revision2, feed.data]);
+  import_react42.default.useEffect(() => {
     if (tab !== "notes") return void 0;
     let alive = true;
     setNotes({ status: "loading", items: [], error: null });
@@ -28003,14 +28318,14 @@ function DrawerBody(props) {
     return () => {
       alive = false;
     };
-  }, [tab, debounced, filters.folderId, filters.tags, revision]);
-  const openItem = import_react41.default.useCallback((target, page2, annotationId) => {
+  }, [tab, debounced, filters.folderId, filters.tags, revision2]);
+  const openItem = import_react42.default.useCallback((target, page2, annotationId) => {
     const paperId = target && (target.paperId || target.id);
     if (!paperId) return;
     navigation.openPaper({ paperId, page: page2 || target.page || 1, annotationId: annotationId || (target.kind === "annotation" ? target.id : null), source: "sidebar" });
     if (openLibrary) openLibrary();
   }, [openLibrary]);
-  const cite = import_react41.default.useCallback((materials) => {
+  const cite = import_react42.default.useCallback((materials) => {
     const list = (Array.isArray(materials) ? materials : [materials]).filter(Boolean);
     if (list.length === 0) return;
     defaultApi("references.commit", { ...sessionId ? { sessionId } : {}, items: list.map((m) => ({ kind: m.kind, id: m.id, ...m.page ? { page: m.page } : {} })), operationId: opId3() }).then((result) => {
@@ -28218,14 +28533,14 @@ function DrawerBody(props) {
       "div",
       { className: "ph-sidebar__foot" },
       selected.length > 0 ? h(
-        import_react41.default.Fragment,
+        import_react42.default.Fragment,
         null,
         h("span", { className: "ph-caption" }, t("drawer.selected", { count: selected.length })),
         h(Button, { size: "sm", variant: "primary", icon: "quote", onClick: citeSelection }, t("drawer.cite")),
         h(Button, { size: "sm", icon: "external", onClick: () => openLibraryView("all") }, t("drawer.openLibrary")),
         h(IconButton, { icon: "close", title: t("common.clear"), onClick: () => setSelected([]) })
       ) : h(
-        import_react41.default.Fragment,
+        import_react42.default.Fragment,
         null,
         h("span", { className: "ph-caption" }, t("drawer.stats", { papers: counts.papers, annotations: counts.annotations, figures: counts.figures })),
         h("span", { className: "ph-spacer" }),
@@ -28238,7 +28553,7 @@ function DrawerBody(props) {
 }
 
 // src/surfaces/dock.jsx
-var import_react42 = __toESM(require("react"), 1);
+var import_react43 = __toESM(require("react"), 1);
 
 // src/core/cite-token.js
 var TOKEN_PATTERN = /bundle=bn-/;
@@ -28358,7 +28673,7 @@ function bundleSummaryLabel(t, bundle) {
   return parts.join(" \xB7 ");
 }
 function usePendingSnapshot() {
-  return import_react42.default.useSyncExternalStore(pendingStore.subscribe, pendingStore.getSnapshot, pendingStore.getSnapshot);
+  return import_react43.default.useSyncExternalStore(pendingStore.subscribe, pendingStore.getSnapshot, pendingStore.getSnapshot);
 }
 function ComposerEntry(props) {
   const t = props.t;
@@ -28369,7 +28684,7 @@ function ComposerEntry(props) {
     (bundle) => !bundle.added && bundle.token && (!bundle.sessionId || bundle.sessionId === sessionId)
   );
   const pendingKey = pending.map((bundle) => bundle.bundleId).join("|");
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => {
     if (sessionId) return;
     const timers = [];
     pending.forEach((bundle) => {
@@ -28404,17 +28719,17 @@ function DockBody(props) {
   const inputActions = props.inputActions;
   const snapshot4 = usePendingSnapshot();
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [expanded, setExpanded] = import_react42.default.useState({});
-  const [busyId, setBusyId] = import_react42.default.useState(null);
-  const [errors, setErrors] = import_react42.default.useState({});
-  const insertingRef = import_react42.default.useRef({});
+  const [expanded, setExpanded] = import_react43.default.useState({});
+  const [busyId, setBusyId] = import_react43.default.useState(null);
+  const [errors, setErrors] = import_react43.default.useState({});
+  const insertingRef = import_react43.default.useRef({});
   const bundles = snapshot4.bundles.filter((bundle) => !bundle.sessionId || bundle.sessionId === props.sessionId);
-  const toggleExpanded = import_react42.default.useCallback((bundleId) => {
+  const toggleExpanded = import_react43.default.useCallback((bundleId) => {
     setExpanded((previous) => Object.assign({}, previous, { [bundleId]: !previous[bundleId] }));
   }, []);
-  import_react42.default.useEffect(() => registerComposerBridge(inputActions), [inputActions]);
-  import_react42.default.useEffect(() => installCitationTokens(), []);
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => registerComposerBridge(inputActions), [inputActions]);
+  import_react43.default.useEffect(() => installCitationTokens(), []);
+  import_react43.default.useEffect(() => {
     bundles.forEach((bundle) => {
       if (!bundle.autoInsert || bundle.added || insertingRef.current[bundle.bundleId]) return;
       if (!bundle.token) return;
@@ -28433,7 +28748,7 @@ function DockBody(props) {
       setTimeout(() => attempt(12), 150);
     });
   }, [bundles.map((bundle) => bundle.bundleId + ":" + bundle.added + ":" + Boolean(bundle.autoInsert)).join(","), t]);
-  const attemptInsert = import_react42.default.useCallback(
+  const attemptInsert = import_react43.default.useCallback(
     (bundle) => {
       if (!inputActions || typeof inputActions.captureInsertion !== "function" || typeof inputActions.insertText !== "function") return false;
       if (!bundle || !bundle.token) return false;
@@ -28448,7 +28763,7 @@ function DockBody(props) {
     },
     [inputActions]
   );
-  const insertBundle = import_react42.default.useCallback(
+  const insertBundle = import_react43.default.useCallback(
     (bundle) => {
       if (!bundle || bundle.added || busyId) return;
       if (insertingRef.current[bundle.bundleId]) return;
@@ -28601,11 +28916,11 @@ function DockBody(props) {
 }
 
 // src/surfaces/header-button.jsx
-var import_react43 = __toESM(require("react"), 1);
+var import_react44 = __toESM(require("react"), 1);
 function HeaderDrawerButton(props) {
   const t = props.t;
   const sessionId = props.sessionId;
-  const [failed, setFailed] = import_react43.default.useState(false);
+  const [failed, setFailed] = import_react44.default.useState(false);
   if (!sessionId) return null;
   return h(
     "span",
@@ -28630,7 +28945,7 @@ function HeaderDrawerButton(props) {
 }
 
 // src/surfaces/integration/turn-tail.jsx
-var import_react44 = __toESM(require("react"), 1);
+var import_react45 = __toESM(require("react"), 1);
 
 // src/surfaces/integration/input-triggers.js
 var MENTION_SOURCE = "pappers-hall-papers";
@@ -28979,15 +29294,15 @@ function ToolSourceCard(props) {
   const phase = props.phase;
   const block = props.block;
   const api = props.api;
-  const [citing, setCiting] = import_react44.default.useState("");
-  const [open, setOpen] = import_react44.default.useState(false);
-  const [citeError, setCiteError] = import_react44.default.useState("");
+  const [citing, setCiting] = import_react45.default.useState("");
+  const [open, setOpen] = import_react45.default.useState(false);
+  const [citeError, setCiteError] = import_react45.default.useState("");
   const result = phase === "result" ? parseResult(block) : null;
   const isError = phase === "result" && Boolean(block && block.isError);
   const isUnavailable = Boolean(result && result.status === "unavailable");
   const preparing = phase === "preparing";
   const running = phase === "start";
-  const args = import_react44.default.useMemo(() => {
+  const args = import_react45.default.useMemo(() => {
     if (!block) return null;
     const raw = phase === "result" ? block.call && block.call.argsRaw : block.argsRaw;
     if (typeof raw !== "string" || raw === "") return null;
@@ -29152,8 +29467,8 @@ function FigureBody(props) {
   const page2 = figure.page ?? data.page;
   const caption = firstText4(figure.caption, data.caption);
   const imageUrl = firstText4(figure.imageUrl);
-  const [imageFailed, setImageFailed] = import_react44.default.useState(false);
-  import_react44.default.useEffect(() => {
+  const [imageFailed, setImageFailed] = import_react45.default.useState(false);
+  import_react45.default.useEffect(() => {
     setImageFailed(false);
   }, [imageUrl]);
   return h(
@@ -29366,8 +29681,8 @@ function registerConversationIntegration(ctx, services) {
       const getWorkspaceId = () => {
         try {
           const state = sessions && typeof sessions.getSnapshot === "function" ? sessions.getSnapshot() : null;
-          const current = state && state.current;
-          const entry = current && state.byId ? state.byId[current] : null;
+          const current2 = state && state.current;
+          const entry = current2 && state.byId ? state.byId[current2] : null;
           return entry && entry.workspaceId ? entry.workspaceId : void 0;
         } catch (error) {
           return void 0;
@@ -29397,10 +29712,10 @@ function registerConversationIntegration(ctx, services) {
 }
 
 // src/surfaces/settings/host.jsx
-var import_react46 = __toESM(require("react"), 1);
+var import_react47 = __toESM(require("react"), 1);
 
 // src/surfaces/settings/panel.jsx
-var import_react45 = __toESM(require("react"), 1);
+var import_react46 = __toESM(require("react"), 1);
 var JOB_POLL_MS = 1500;
 function opId4(prefix) {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
@@ -29493,27 +29808,27 @@ function Card(props) {
 }
 function SettingsPanel(props) {
   const t = props.t;
-  const [state, setState] = import_react45.default.useState({ status: "loading", data: null, error: null });
-  const [jobs, setJobs] = import_react45.default.useState([]);
-  const [busy2, setBusy] = import_react45.default.useState("");
-  const [test, setTest] = import_react45.default.useState(null);
-  const [error, setError] = import_react45.default.useState("");
-  const pollRef = import_react45.default.useRef(null);
-  const load = import_react45.default.useCallback(() => {
+  const [state, setState] = import_react46.default.useState({ status: "loading", data: null, error: null });
+  const [jobs, setJobs] = import_react46.default.useState([]);
+  const [busy2, setBusy] = import_react46.default.useState("");
+  const [test, setTest] = import_react46.default.useState(null);
+  const [error, setError] = import_react46.default.useState("");
+  const pollRef = import_react46.default.useRef(null);
+  const load = import_react46.default.useCallback(() => {
     setState((previous) => ({ status: previous.data ? "refreshing" : "loading", data: previous.data, error: null }));
     defaultApi("settings.get", {}).then((value) => {
       if (value && value.ok === false) throw Object.assign(new Error(value.error && value.error.message ? value.error.message : "settings.get failed"), { code: value.error && value.error.code });
       setState({ status: "ready", data: value, error: null });
     }).catch((err) => setState({ status: "error", data: null, error: err }));
   }, []);
-  const loadJobs = import_react45.default.useCallback(() => {
+  const loadJobs = import_react46.default.useCallback(() => {
     defaultApi("jobs.list", {}).then((value) => {
       const items2 = Array.isArray(value && value.items) ? value.items : Array.isArray(value && value.jobs) ? value.jobs : [];
       setJobs(items2);
     }).catch(() => {
     });
   }, []);
-  import_react45.default.useEffect(() => {
+  import_react46.default.useEffect(() => {
     if (!props.open) return void 0;
     load();
     loadJobs();
@@ -29530,8 +29845,8 @@ function SettingsPanel(props) {
     };
   }, [props.open]);
   const runningJob = jobs.find((job) => job && (job.state === "running" || job.state === "queued"));
-  const wasRunning = import_react45.default.useRef(null);
-  import_react45.default.useEffect(() => {
+  const wasRunning = import_react46.default.useRef(null);
+  import_react46.default.useEffect(() => {
     const id = runningJob ? runningJob.id : null;
     if (wasRunning.current && !id) load();
     wasRunning.current = id;
@@ -29545,7 +29860,7 @@ function SettingsPanel(props) {
   const diagnostics = data.diagnostics || {};
   const patchSettings = (patch, label) => {
     const previous = state.data;
-    setState((current) => ({ status: current.status, data: Object.assign({}, current.data, patch.optimistic || {}), error: null }));
+    setState((current2) => ({ status: current2.status, data: Object.assign({}, current2.data, patch.optimistic || {}), error: null }));
     setBusy(label || "");
     setError("");
     defaultApi("settings.update", { patch: patch.body || {}, operationId: opId4("settings") }).then((value) => {
@@ -29647,8 +29962,8 @@ function SettingsPanel(props) {
   const ocrWithJob = Object.assign({}, ocr, { job: jobFor("ocr") });
   const status = index.embedding || index;
   const counts = Object.assign({}, diagnostics.counts || {}, status && status.counts || {});
-  const dialogRef = import_react45.default.useRef(null);
-  import_react45.default.useEffect(() => {
+  const dialogRef = import_react46.default.useRef(null);
+  import_react46.default.useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog === null) return void 0;
     try {
@@ -29699,7 +30014,7 @@ function SettingsPanel(props) {
           "div",
           { className: "ph-settings__body ph-scroll" },
           state.status === "loading" && !state.data ? h("div", { className: "ph-settings__skeleton" }, [0, 1, 2, 3].map((i) => h(Skeleton, { key: i, width: "100%", height: 72, radius: 10 }))) : state.status === "error" && !state.data ? h("div", { className: "ph-settings__error" }, h(Icon, { name: "warning", size: 18 }), h("div", null, h("div", { className: "ph-settings__errorTitle" }, t("settings.loadFailed")), h("div", { className: "ph-caption" }, describeError(t, state.error)), h(Button, { size: "sm", variant: "secondary", icon: "refresh", onClick: load }, t("common.retry")))) : h(
-            import_react45.default.Fragment,
+            import_react46.default.Fragment,
             null,
             h(
               Section,
@@ -29810,10 +30125,10 @@ function SettingsPanel(props) {
 
 // src/surfaces/settings/host.jsx
 var hostState = { open: false, hostId: null, nextId: 1, version: 0 };
-var listeners4 = /* @__PURE__ */ new Set();
+var listeners5 = /* @__PURE__ */ new Set();
 function emit4() {
   hostState = Object.assign({}, hostState, { version: hostState.version + 1 });
-  listeners4.forEach((listener) => {
+  listeners5.forEach((listener) => {
     try {
       listener();
     } catch (error) {
@@ -29821,9 +30136,9 @@ function emit4() {
   });
 }
 function subscribe(listener) {
-  listeners4.add(listener);
+  listeners5.add(listener);
   return () => {
-    listeners4.delete(listener);
+    listeners5.delete(listener);
   };
 }
 function getSnapshot() {
@@ -29839,9 +30154,9 @@ function closeSettings() {
 }
 function SettingsHost(props) {
   const t = props && props.t;
-  const [id] = import_react46.default.useState(() => hostState.nextId++);
-  const snapshot4 = import_react46.default.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-  import_react46.default.useEffect(() => {
+  const [id] = import_react47.default.useState(() => hostState.nextId++);
+  const snapshot4 = import_react47.default.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  import_react47.default.useEffect(() => {
     if (hostState.hostId === null) {
       hostState = Object.assign({}, hostState, { hostId: id });
       emit4();
@@ -29853,7 +30168,7 @@ function SettingsHost(props) {
       }
     };
   }, [id]);
-  import_react46.default.useEffect(() => bus.on("open-settings", () => openSettings()), []);
+  import_react47.default.useEffect(() => bus.on("open-settings", () => openSettings()), []);
   if (snapshot4.hostId !== id || !snapshot4.open) return null;
   return h(
     "div",
@@ -31137,6 +31452,8 @@ var ZH = {
   "notes.directive.empty": "\u8FD8\u6CA1\u6709\u6307\u4EE4",
   "notes.directive.unavailable": "\u7B14\u8BB0 Agent \u4E0D\u53EF\u7528\uFF1A{reason}",
   "notes.directive.failed": "\u6267\u884C\u6307\u4EE4\u5931\u8D25\uFF1A{message}",
+  "notes.figure.dropped": "\u5DF2\u628A\u56FE\u8868\u653E\u5165\u7B14\u8BB0",
+  "notes.figure.dropFailed": "\u653E\u5165\u56FE\u8868\u5931\u8D25\uFF1A{message}",
   "notes.action.copied": "\u5DF2\u590D\u5236",
   "notes.diagram.expand": "\u5C55\u5F00\u67E5\u770B",
   "notes.diagram.collapse": "\u6536\u8D77",
@@ -32417,6 +32734,8 @@ var EN = {
   "notes.directive.empty": "No directives yet",
   "notes.directive.unavailable": "Note agent unavailable: {reason}",
   "notes.directive.failed": "Directive run failed: {message}",
+  "notes.figure.dropped": "Figure inserted into the note",
+  "notes.figure.dropFailed": "Insert failed: {message}",
   "notes.action.copied": "Copied",
   "notes.diagram.expand": "Expand",
   "notes.diagram.collapse": "Collapse",
@@ -32431,22 +32750,22 @@ var EN = {
 };
 
 // src/surfaces/notes/workspace.jsx
-var import_react47 = __toESM(require("react"), 1);
+var import_react48 = __toESM(require("react"), 1);
 function useServiceState2(service) {
-  const subscribe2 = import_react47.default.useCallback((listener) => service.subscribe(listener), [service]);
-  const getSnapshot2 = import_react47.default.useCallback(() => service.getSnapshot(), [service]);
-  return import_react47.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
+  const subscribe2 = import_react48.default.useCallback((listener) => service.subscribe(listener), [service]);
+  const getSnapshot2 = import_react48.default.useCallback(() => service.getSnapshot(), [service]);
+  return import_react48.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
 }
 function FolderTree2(props) {
   const t = props.t;
   const tree = props.tree;
-  const [editing, setEditing] = import_react47.default.useState(null);
-  const [armedDelete, setArmedDelete] = import_react47.default.useState("");
-  const inputRef = import_react47.default.useRef(null);
-  import_react47.default.useEffect(() => {
+  const [editing, setEditing] = import_react48.default.useState(null);
+  const [armedDelete, setArmedDelete] = import_react48.default.useState("");
+  const inputRef = import_react48.default.useRef(null);
+  import_react48.default.useEffect(() => {
     if (editing && inputRef.current) inputRef.current.focus();
   }, [editing]);
-  import_react47.default.useEffect(() => {
+  import_react48.default.useEffect(() => {
     if (!armedDelete) return void 0;
     const timer2 = setTimeout(() => setArmedDelete(""), 4500);
     return () => clearTimeout(timer2);
@@ -32467,11 +32786,11 @@ function FolderTree2(props) {
     for (const node of nodes) {
       const isEditing = editing && editing.mode === "rename" && editing.id === node.id;
       rows.push(
-        import_react47.default.createElement(
+        import_react48.default.createElement(
           "div",
           { key: "f-" + node.id, className: "ph-n-tree__row" + (props.folderId === node.id ? " ph-n-tree__row--active" : ""), style: { paddingLeft: 6 + depth * 14 } },
-          import_react47.default.createElement("span", { className: "ph-n-tree__icon" }, import_react47.default.createElement(Icon, { name: depth === 0 ? "folder" : "folderOpen", size: 13 })),
-          isEditing ? import_react47.default.createElement("input", {
+          import_react48.default.createElement("span", { className: "ph-n-tree__icon" }, import_react48.default.createElement(Icon, { name: depth === 0 ? "folder" : "folderOpen", size: 13 })),
+          isEditing ? import_react48.default.createElement("input", {
             ref: inputRef,
             className: "ph-n-tree__input",
             value: editing.value,
@@ -32481,7 +32800,7 @@ function FolderTree2(props) {
               if (event.key === "Escape") setEditing(null);
             },
             onBlur: submit
-          }) : import_react47.default.createElement(
+          }) : import_react48.default.createElement(
             "button",
             {
               type: "button",
@@ -32492,23 +32811,23 @@ function FolderTree2(props) {
             },
             node.name
           ),
-          import_react47.default.createElement("span", { className: "ph-n-tree__count" }, String(node.count || 0)),
-          import_react47.default.createElement(
+          import_react48.default.createElement("span", { className: "ph-n-tree__count" }, String(node.count || 0)),
+          import_react48.default.createElement(
             "span",
             { className: "ph-n-tree__tools" },
-            import_react47.default.createElement(IconButton, {
+            import_react48.default.createElement(IconButton, {
               icon: "plus",
               size: 12,
               title: t("notes.folders.newChild"),
               onClick: () => setEditing({ mode: "create", parentId: node.id, value: "" })
             }),
-            import_react47.default.createElement(IconButton, {
+            import_react48.default.createElement(IconButton, {
               icon: "edit",
               size: 12,
               title: t("notes.folders.rename"),
               onClick: () => setEditing({ mode: "rename", id: node.id, value: node.name })
             }),
-            import_react47.default.createElement(IconButton, {
+            import_react48.default.createElement(IconButton, {
               icon: "trash",
               size: 12,
               title: armedDelete === node.id ? t("notes.folders.deleteConfirm") : t("notes.folders.delete"),
@@ -32527,22 +32846,22 @@ function FolderTree2(props) {
     }
   };
   walk(tree, 0);
-  return import_react47.default.createElement(
+  return import_react48.default.createElement(
     "div",
     { className: "ph-n-tree" },
-    import_react47.default.createElement(
+    import_react48.default.createElement(
       "button",
       { type: "button", className: "ph-n-tree__row" + (props.folderId === "" ? " ph-n-tree__row--active" : ""), onClick: () => props.onSelect("") },
-      import_react47.default.createElement("span", { className: "ph-n-tree__icon" }, import_react47.default.createElement(Icon, { name: "layers", size: 13 })),
-      import_react47.default.createElement("span", { className: "ph-n-tree__label" }, t("notes.folders.all")),
-      import_react47.default.createElement("span", { className: "ph-n-tree__count" }, String(props.total || 0))
+      import_react48.default.createElement("span", { className: "ph-n-tree__icon" }, import_react48.default.createElement(Icon, { name: "layers", size: 13 })),
+      import_react48.default.createElement("span", { className: "ph-n-tree__label" }, t("notes.folders.all")),
+      import_react48.default.createElement("span", { className: "ph-n-tree__count" }, String(props.total || 0))
     ),
     rows,
-    editing && editing.mode === "create" && !editing.parentId ? import_react47.default.createElement(
+    editing && editing.mode === "create" && !editing.parentId ? import_react48.default.createElement(
       "div",
       { className: "ph-n-tree__row" },
-      import_react47.default.createElement("span", { className: "ph-n-tree__icon" }, import_react47.default.createElement(Icon, { name: "folder", size: 13 })),
-      import_react47.default.createElement("input", {
+      import_react48.default.createElement("span", { className: "ph-n-tree__icon" }, import_react48.default.createElement(Icon, { name: "folder", size: 13 })),
+      import_react48.default.createElement("input", {
         ref: inputRef,
         className: "ph-n-tree__input",
         value: editing.value,
@@ -32554,7 +32873,7 @@ function FolderTree2(props) {
         },
         onBlur: submit
       })
-    ) : import_react47.default.createElement(
+    ) : import_react48.default.createElement(
       "button",
       {
         type: "button",
@@ -32562,39 +32881,39 @@ function FolderTree2(props) {
         onClick: () => setEditing({ mode: "create", parentId: null, value: "" }),
         title: t("notes.folders.new")
       },
-      import_react47.default.createElement("span", { className: "ph-n-tree__icon" }, import_react47.default.createElement(Icon, { name: "folderPlus", size: 13 })),
-      import_react47.default.createElement("span", { className: "ph-n-tree__label ph-n-muted" }, t("notes.folders.new"))
+      import_react48.default.createElement("span", { className: "ph-n-tree__icon" }, import_react48.default.createElement(Icon, { name: "folderPlus", size: 13 })),
+      import_react48.default.createElement("span", { className: "ph-n-tree__label ph-n-muted" }, t("notes.folders.new"))
     ),
-    tree.length === 0 ? import_react47.default.createElement("p", { className: "ph-n-folders__empty" }, t("notes.folders.empty")) : null
+    tree.length === 0 ? import_react48.default.createElement("p", { className: "ph-n-folders__empty" }, t("notes.folders.empty")) : null
   );
 }
 function NotesWorkspace(props) {
   const t = props.t;
   const api = props.api;
-  const releaseStyles = import_react47.default.useMemo(() => ensureNotesStyles(), []);
-  const service = import_react47.default.useMemo(() => createNotesService(api), [api]);
+  const releaseStyles = import_react48.default.useMemo(() => ensureNotesStyles(), []);
+  const service = import_react48.default.useMemo(() => createNotesService(api), [api]);
   const serviceState = useServiceState2(service);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [folders, setFolders] = import_react47.default.useState({ status: "idle", tree: [] });
-  const [list, setList] = import_react47.default.useState({ status: "idle", items: [], total: 0, error: null });
-  const [query, setQuery] = import_react47.default.useState("");
-  const [debounced, setDebounced] = import_react47.default.useState("");
-  const [folderId, setFolderId] = import_react47.default.useState("");
-  const [paperFilter, setPaperFilter] = import_react47.default.useState(null);
-  const [activeId, setActiveId] = import_react47.default.useState(() => String(props.initialNoteId || ""));
-  const [active, setActive] = import_react47.default.useState({ status: "idle", note: null, error: null });
-  const [foldersOpen, setFoldersOpen] = import_react47.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1250);
-  const [paperOpen, setPaperOpen] = import_react47.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1420);
-  const [refreshToken, setRefreshToken] = import_react47.default.useState(0);
-  const activeIdRef = import_react47.default.useRef(activeId);
+  const [folders, setFolders] = import_react48.default.useState({ status: "idle", tree: [] });
+  const [list, setList] = import_react48.default.useState({ status: "idle", items: [], total: 0, error: null });
+  const [query, setQuery] = import_react48.default.useState("");
+  const [debounced, setDebounced] = import_react48.default.useState("");
+  const [folderId, setFolderId] = import_react48.default.useState("");
+  const [paperFilter, setPaperFilter] = import_react48.default.useState(null);
+  const [activeId, setActiveId] = import_react48.default.useState(() => String(props.initialNoteId || ""));
+  const [active, setActive] = import_react48.default.useState({ status: "idle", note: null, error: null });
+  const [foldersOpen, setFoldersOpen] = import_react48.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1250);
+  const [paperOpen, setPaperOpen] = import_react48.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1420);
+  const [refreshToken, setRefreshToken] = import_react48.default.useState(0);
+  const activeIdRef = import_react48.default.useRef(activeId);
   activeIdRef.current = activeId;
-  import_react47.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  import_react47.default.useEffect(() => {
+  import_react48.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  import_react48.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(query), 260);
     return () => clearTimeout(timer2);
   }, [query]);
-  const refresh = import_react47.default.useCallback(() => setRefreshToken((value) => value + 1), []);
-  import_react47.default.useEffect(() => {
+  const refresh = import_react48.default.useCallback(() => setRefreshToken((value) => value + 1), []);
+  import_react48.default.useEffect(() => {
     let alive = true;
     service.probe().then((state) => {
       if (!alive || state.status === "unavailable" || state.status === "offline") return;
@@ -32609,7 +32928,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [service, refreshToken]);
-  import_react47.default.useEffect(() => {
+  import_react48.default.useEffect(() => {
     if (serviceState.status !== "ready") return void 0;
     let alive = true;
     setList((previous) => Object.assign({}, previous, { status: "loading", error: null }));
@@ -32641,7 +32960,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [debounced, folderId, paperFilter, refreshToken, service, serviceState.status]);
-  import_react47.default.useEffect(() => {
+  import_react48.default.useEffect(() => {
     if (!activeId) {
       setActive({ status: "idle", note: null, error: null });
       return void 0;
@@ -32657,7 +32976,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [activeId, refreshToken, service]);
-  const updateRow = import_react47.default.useCallback((saved) => {
+  const updateRow = import_react48.default.useCallback((saved) => {
     if (!saved) return;
     setList((previous) => {
       const items2 = previous.items.map(
@@ -32677,7 +32996,7 @@ function NotesWorkspace(props) {
     });
     setActive((previous) => previous.note && previous.note.id === saved.id ? { status: "ready", note: saved, error: null } : previous);
   }, []);
-  const createNote = import_react47.default.useCallback(
+  const createNote = import_react48.default.useCallback(
     (options) => {
       const opts = options || {};
       const paperIds = opts.paperIds || (paperFilter ? [paperFilter.id] : []);
@@ -32695,7 +33014,7 @@ function NotesWorkspace(props) {
     },
     [folderId, paperFilter, push, refresh, service, t]
   );
-  const createFolder = import_react47.default.useCallback(
+  const createFolder = import_react48.default.useCallback(
     (name, parentId) => Promise.resolve(service.createFolder({ name, parentId: parentId || void 0 })).then((folder) => {
       push("success", t("notes.folders.created"));
       refresh();
@@ -32706,14 +33025,14 @@ function NotesWorkspace(props) {
     }),
     [push, refresh, service, t]
   );
-  const renameFolder = import_react47.default.useCallback(
+  const renameFolder = import_react48.default.useCallback(
     (id, name) => Promise.resolve(service.renameFolder({ id, name })).then(() => refresh()).catch((error) => {
       push("error", t("notes.folders.renameFailed", { message: String(error && error.message || error) }));
       throw error;
     }),
     [push, refresh, service, t]
   );
-  const deleteFolder = import_react47.default.useCallback(
+  const deleteFolder = import_react48.default.useCallback(
     (id) => Promise.resolve(service.deleteFolder(id)).then(() => {
       push("success", t("notes.folders.deleted"));
       if (folderId === id) setFolderId("");
@@ -32721,7 +33040,7 @@ function NotesWorkspace(props) {
     }).catch((error) => push("error", t("notes.folders.deleteFailed", { message: String(error && error.message || error) }))),
     [folderId, push, refresh, service, t]
   );
-  const moveNote = import_react47.default.useCallback(
+  const moveNote = import_react48.default.useCallback(
     (targetFolderId) => {
       const note = active.note;
       if (!note) return Promise.resolve(null);
@@ -32745,15 +33064,15 @@ function NotesWorkspace(props) {
     },
     [active.note, folders.tree, push, service, t]
   );
-  const linkPapers = import_react47.default.useCallback(
+  const linkPapers = import_react48.default.useCallback(
     (ids) => Promise.resolve(service.link(activeIdRef.current, ids)),
     [service]
   );
-  const unlinkPapers = import_react47.default.useCallback(
+  const unlinkPapers = import_react48.default.useCallback(
     (ids) => Promise.resolve(service.unlink(activeIdRef.current, ids)),
     [service]
   );
-  const onDeleted = import_react47.default.useCallback(
+  const onDeleted = import_react48.default.useCallback(
     (deleted) => {
       setList((previous) => {
         const items2 = previous.items.filter((item) => item.id !== deleted.id);
@@ -32766,35 +33085,35 @@ function NotesWorkspace(props) {
     },
     [refresh]
   );
-  const openPaper = import_react47.default.useCallback(
+  const openPaper = import_react48.default.useCallback(
     (paperId, page2, annotationId) => {
       if (props.onOpenPaper) props.onOpenPaper(paperId, page2 || 1, annotationId || null);
     },
     [props]
   );
-  const flatFolders = import_react47.default.useMemo(() => flattenFolders(folders.tree || []), [folders.tree]);
-  const folderName = import_react47.default.useMemo(() => {
+  const flatFolders = import_react48.default.useMemo(() => flattenFolders(folders.tree || []), [folders.tree]);
+  const folderName = import_react48.default.useMemo(() => {
     if (!folderId) return "";
     const found = flatFolders.find((folder) => folder.id === folderId);
     return found ? found.name : "";
   }, [flatFolders, folderId]);
   const listTitle = paperFilter ? t("notes.fromPaperTitle", { title: paperFilter.title }) : folderName || t("notes.folders.all");
   const unavailable = serviceState.status === "unavailable" || serviceState.status === "offline";
-  return import_react47.default.createElement(
+  return import_react48.default.createElement(
     "div",
     { className: "ph-n-app" },
-    import_react47.default.createElement(
+    import_react48.default.createElement(
       "div",
       { className: "ph-n-topbar" },
-      import_react47.default.createElement(Button, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack, title: t("notes.library.back") }, t("notes.library.back")),
-      import_react47.default.createElement(
+      import_react48.default.createElement(Button, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack, title: t("notes.library.back") }, t("notes.library.back")),
+      import_react48.default.createElement(
         "div",
         { className: "ph-n-brand" },
-        import_react47.default.createElement(Icon, { name: "note", size: 18, className: "ph-n-brand__mark" }),
-        import_react47.default.createElement("h1", { className: "ph-n-brand__title" }, t("notes.library.title")),
-        import_react47.default.createElement("span", { className: "ph-n-brand__sub" }, t("notes.library.subtitle"))
+        import_react48.default.createElement(Icon, { name: "note", size: 18, className: "ph-n-brand__mark" }),
+        import_react48.default.createElement("h1", { className: "ph-n-brand__title" }, t("notes.library.title")),
+        import_react48.default.createElement("span", { className: "ph-n-brand__sub" }, t("notes.library.subtitle"))
       ),
-      import_react47.default.createElement(SearchInput, {
+      import_react48.default.createElement(SearchInput, {
         className: "ph-n-topbar__search",
         value: query,
         onChange: setQuery,
@@ -32803,54 +33122,54 @@ function NotesWorkspace(props) {
         loading: list.status === "loading",
         "aria-label": t("notes.search.placeholder")
       }),
-      import_react47.default.createElement("span", { className: "ph-n-topbar__spacer" }),
-      import_react47.default.createElement(
+      import_react48.default.createElement("span", { className: "ph-n-topbar__spacer" }),
+      import_react48.default.createElement(
         "div",
         { className: "ph-n-topbar__actions" },
-        import_react47.default.createElement(Button, { variant: "primary", size: "sm", icon: "plus", onClick: () => createNote().catch(() => {
+        import_react48.default.createElement(Button, { variant: "primary", size: "sm", icon: "plus", onClick: () => createNote().catch(() => {
         }), title: t("notes.new") }, t("notes.new")),
-        import_react47.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), active: foldersOpen, onClick: () => setFoldersOpen((value) => !value) }),
-        import_react47.default.createElement(IconButton, { icon: "panelRight", title: paperOpen ? t("notes.papers.panelClose") : t("notes.papers.panelOpen"), active: paperOpen, onClick: () => setPaperOpen((value) => !value) }),
-        import_react47.default.createElement(IconButton, { icon: "refresh", title: t("notes.refresh"), onClick: refresh }),
-        props.onOpenSettings ? import_react47.default.createElement(IconButton, { icon: "settings", title: t("settings.open"), onClick: props.onOpenSettings }) : null
+        import_react48.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), active: foldersOpen, onClick: () => setFoldersOpen((value) => !value) }),
+        import_react48.default.createElement(IconButton, { icon: "panelRight", title: paperOpen ? t("notes.papers.panelClose") : t("notes.papers.panelOpen"), active: paperOpen, onClick: () => setPaperOpen((value) => !value) }),
+        import_react48.default.createElement(IconButton, { icon: "refresh", title: t("notes.refresh"), onClick: refresh }),
+        props.onOpenSettings ? import_react48.default.createElement(IconButton, { icon: "settings", title: t("settings.open"), onClick: props.onOpenSettings }) : null
       )
     ),
-    unavailable ? import_react47.default.createElement(
+    unavailable ? import_react48.default.createElement(
       "div",
       { className: "ph-n-main__empty" },
-      import_react47.default.createElement(EmptyState, {
+      import_react48.default.createElement(EmptyState, {
         icon: "warning",
         tone: "warning",
         title: serviceState.status === "offline" ? t("notes.service.offlineTitle") : t("notes.service.unavailableTitle"),
         desc: serviceState.status === "offline" ? t("notes.service.offlineDesc") : t("notes.service.unavailableDesc"),
-        action: import_react47.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: () => service.probe().then((state) => {
+        action: import_react48.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: () => service.probe().then((state) => {
           if (state.status === "ready") refresh();
         }) }, t("notes.service.retry"))
       })
-    ) : import_react47.default.createElement(
+    ) : import_react48.default.createElement(
       "div",
       { className: "ph-n-body" },
-      import_react47.default.createElement(
+      import_react48.default.createElement(
         "div",
         { className: "ph-n-folders" + (foldersOpen ? "" : " ph-n-folders--closed") },
-        import_react47.default.createElement(
+        import_react48.default.createElement(
           "div",
           { className: "ph-n-folders__head" },
-          import_react47.default.createElement(Icon, { name: "folder", size: 13 }),
-          import_react47.default.createElement("span", null, t("notes.folders.title")),
-          import_react47.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), onClick: () => setFoldersOpen(false) })
+          import_react48.default.createElement(Icon, { name: "folder", size: 13 }),
+          import_react48.default.createElement("span", null, t("notes.folders.title")),
+          import_react48.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), onClick: () => setFoldersOpen(false) })
         ),
-        import_react47.default.createElement(
+        import_react48.default.createElement(
           "div",
           { className: "ph-n-folders__scroll ph-n-scroll" },
-          folders.status === "loading" && folders.tree.length === 0 ? import_react47.default.createElement("div", { className: "ph-n-folders__empty" }, t("common.loading")) : null,
-          folders.status === "error" ? import_react47.default.createElement(
+          folders.status === "loading" && folders.tree.length === 0 ? import_react48.default.createElement("div", { className: "ph-n-folders__empty" }, t("common.loading")) : null,
+          folders.status === "error" ? import_react48.default.createElement(
             "div",
             { className: "ph-n-folders__empty" },
             t("notes.folders.loadFailed"),
-            import_react47.default.createElement(Button, { size: "sm", variant: "ghost", icon: "refresh", onClick: refresh }, t("common.retry"))
+            import_react48.default.createElement(Button, { size: "sm", variant: "ghost", icon: "refresh", onClick: refresh }, t("common.retry"))
           ) : null,
-          import_react47.default.createElement(FolderTree2, {
+          import_react48.default.createElement(FolderTree2, {
             t,
             tree: folders.tree || [],
             folderId,
@@ -32865,43 +33184,43 @@ function NotesWorkspace(props) {
           })
         )
       ),
-      import_react47.default.createElement(
+      import_react48.default.createElement(
         "div",
         { className: "ph-n-listpane" },
-        import_react47.default.createElement(
+        import_react48.default.createElement(
           "div",
           { className: "ph-n-listpane__head" },
-          import_react47.default.createElement("span", { className: "ph-n-listpane__title", title: listTitle }, listTitle),
-          import_react47.default.createElement("span", { className: "ph-n-listpane__count" }, list.status === "ready" ? String(list.items.length) : "\u2026")
+          import_react48.default.createElement("span", { className: "ph-n-listpane__title", title: listTitle }, listTitle),
+          import_react48.default.createElement("span", { className: "ph-n-listpane__count" }, list.status === "ready" ? String(list.items.length) : "\u2026")
         ),
-        paperFilter ? import_react47.default.createElement(
+        paperFilter ? import_react48.default.createElement(
           "div",
           { className: "ph-n-listpane__filter" },
-          import_react47.default.createElement(Icon, { name: "filter", size: 12 }),
-          import_react47.default.createElement("span", { className: "ph-n-chip ph-n-chip--folder" }, import_react47.default.createElement("span", { className: "ph-n-chip__label", title: paperFilter.title }, paperFilter.title)),
-          import_react47.default.createElement(IconButton, { icon: "close", size: 12, title: t("notes.fromPaper.clear"), onClick: () => setPaperFilter(null) })
-        ) : debounced.trim() ? import_react47.default.createElement("div", { className: "ph-n-listpane__filter" }, import_react47.default.createElement(Icon, { name: "search", size: 12 }), import_react47.default.createElement("span", null, t("notes.search.results", { count: list.items.length }))) : null,
-        list.status === "error" ? import_react47.default.createElement(
+          import_react48.default.createElement(Icon, { name: "filter", size: 12 }),
+          import_react48.default.createElement("span", { className: "ph-n-chip ph-n-chip--folder" }, import_react48.default.createElement("span", { className: "ph-n-chip__label", title: paperFilter.title }, paperFilter.title)),
+          import_react48.default.createElement(IconButton, { icon: "close", size: 12, title: t("notes.fromPaper.clear"), onClick: () => setPaperFilter(null) })
+        ) : debounced.trim() ? import_react48.default.createElement("div", { className: "ph-n-listpane__filter" }, import_react48.default.createElement(Icon, { name: "search", size: 12 }), import_react48.default.createElement("span", null, t("notes.search.results", { count: list.items.length }))) : null,
+        list.status === "error" ? import_react48.default.createElement(
           "div",
           { className: "ph-n-listpane__filter" },
-          import_react47.default.createElement(Icon, { name: "warning", size: 12 }),
-          import_react47.default.createElement("span", null, t("notes.loadFailed", { message: String(list.error && list.error.message || "") })),
-          import_react47.default.createElement(IconButton, { icon: "refresh", size: 12, title: t("common.retry"), onClick: refresh })
+          import_react48.default.createElement(Icon, { name: "warning", size: 12 }),
+          import_react48.default.createElement("span", null, t("notes.loadFailed", { message: String(list.error && list.error.message || "") })),
+          import_react48.default.createElement(IconButton, { icon: "refresh", size: 12, title: t("common.retry"), onClick: refresh })
         ) : null,
-        import_react47.default.createElement(
+        import_react48.default.createElement(
           "div",
           { className: "ph-n-list ph-n-scroll" },
-          list.status === "loading" && list.items.length === 0 ? [0, 1, 2, 3].map((index) => import_react47.default.createElement("div", { key: index, className: "ph-n-skeletonrow" })) : null,
-          list.status === "ready" && list.items.length === 0 ? import_react47.default.createElement(EmptyState, {
+          list.status === "loading" && list.items.length === 0 ? [0, 1, 2, 3].map((index) => import_react48.default.createElement("div", { key: index, className: "ph-n-skeletonrow" })) : null,
+          list.status === "ready" && list.items.length === 0 ? import_react48.default.createElement(EmptyState, {
             compact: true,
             icon: "note",
             title: debounced.trim() ? t("notes.search.empty") : t("notes.empty.title"),
             desc: debounced.trim() ? t("notes.search.emptyDesc") : t("notes.empty.desc"),
-            action: import_react47.default.createElement(Button, { size: "sm", variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
+            action: import_react48.default.createElement(Button, { size: "sm", variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
             }) }, t("notes.new"))
           }) : null,
           list.items.map(
-            (item) => import_react47.default.createElement(
+            (item) => import_react48.default.createElement(
               "button",
               {
                 key: item.id,
@@ -32910,40 +33229,40 @@ function NotesWorkspace(props) {
                 onClick: () => setActiveId(item.id),
                 title: item.title || t("notes.untitled")
               },
-              import_react47.default.createElement(
+              import_react48.default.createElement(
                 "span",
                 { className: "ph-n-listrow__top" },
-                import_react47.default.createElement("span", { className: "ph-n-listrow__title" }, item.title || t("notes.untitled")),
-                import_react47.default.createElement("span", { className: "ph-n-listrow__time" }, formatNoteTime(item.updatedAt))
+                import_react48.default.createElement("span", { className: "ph-n-listrow__title" }, item.title || t("notes.untitled")),
+                import_react48.default.createElement("span", { className: "ph-n-listrow__time" }, formatNoteTime(item.updatedAt))
               ),
-              import_react47.default.createElement("span", { className: "ph-n-listrow__preview" }, String(item.preview || "").replace(/\s+/g, " ").slice(0, 160) || t("notes.empty.preview")),
-              import_react47.default.createElement(
+              import_react48.default.createElement("span", { className: "ph-n-listrow__preview" }, String(item.preview || "").replace(/\s+/g, " ").slice(0, 160) || t("notes.empty.preview")),
+              import_react48.default.createElement(
                 "span",
                 { className: "ph-n-listrow__meta" },
-                item.folder ? import_react47.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react47.default.createElement(Icon, { name: "folder", size: 10 }), import_react47.default.createElement("span", null, item.folder.name)) : null,
-                item.paperIds && item.paperIds.length > 0 ? import_react47.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react47.default.createElement(Icon, { name: "book", size: 10 }), import_react47.default.createElement("span", null, t("notes.list.paperCount", { count: item.paperIds.length }))) : null,
-                item.searchHit ? import_react47.default.createElement(Badge, { tone: "soft" }, t("notes.search.hit")) : null,
-                item.hasContentJson ? import_react47.default.createElement("span", { title: t("notes.cards.beautifiedHint") }, import_react47.default.createElement(Icon, { name: "sparkle", size: 10 })) : null
+                item.folder ? import_react48.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react48.default.createElement(Icon, { name: "folder", size: 10 }), import_react48.default.createElement("span", null, item.folder.name)) : null,
+                item.paperIds && item.paperIds.length > 0 ? import_react48.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react48.default.createElement(Icon, { name: "book", size: 10 }), import_react48.default.createElement("span", null, t("notes.list.paperCount", { count: item.paperIds.length }))) : null,
+                item.searchHit ? import_react48.default.createElement(Badge, { tone: "soft" }, t("notes.search.hit")) : null,
+                item.hasContentJson ? import_react48.default.createElement("span", { title: t("notes.cards.beautifiedHint") }, import_react48.default.createElement(Icon, { name: "sparkle", size: 10 })) : null
               )
             )
           )
         )
       ),
-      import_react47.default.createElement(
+      import_react48.default.createElement(
         "div",
         { className: "ph-n-main" },
-        active.status === "loading" ? import_react47.default.createElement("div", { className: "ph-n-editor__loading" }, import_react47.default.createElement(Icon, { name: "note", size: 14 }), import_react47.default.createElement("span", null, t("notes.loadingNote"))) : null,
-        active.status === "error" ? import_react47.default.createElement(
+        active.status === "loading" ? import_react48.default.createElement("div", { className: "ph-n-editor__loading" }, import_react48.default.createElement(Icon, { name: "note", size: 14 }), import_react48.default.createElement("span", null, t("notes.loadingNote"))) : null,
+        active.status === "error" ? import_react48.default.createElement(
           "div",
           { className: "ph-n-main__empty" },
-          import_react47.default.createElement(EmptyState, {
+          import_react48.default.createElement(EmptyState, {
             icon: "warning",
             tone: "error",
             title: t("notes.loadFailed", { message: String(active.error && active.error.message || "") }),
-            action: import_react47.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: refresh }, t("common.retry"))
+            action: import_react48.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: refresh }, t("common.retry"))
           })
         ) : null,
-        active.status === "ready" && active.note ? import_react47.default.createElement(NoteEditor, {
+        active.status === "ready" && active.note ? import_react48.default.createElement(NoteEditor, {
           t,
           api,
           service,
@@ -32959,19 +33278,19 @@ function NotesWorkspace(props) {
           onOpenPaper: openPaper,
           onLinkPapers: linkPapers,
           onUnlinkPapers: unlinkPapers
-        }) : active.status !== "loading" ? import_react47.default.createElement(
+        }) : active.status !== "loading" ? import_react48.default.createElement(
           "div",
           { className: "ph-n-main__empty" },
-          import_react47.default.createElement(EmptyState, {
+          import_react48.default.createElement(EmptyState, {
             icon: "note",
             title: t("notes.select.title"),
             desc: t("notes.select.desc"),
-            action: import_react47.default.createElement(Button, { variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
+            action: import_react48.default.createElement(Button, { variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
             }) }, t("notes.new"))
           })
         ) : null
       ),
-      paperOpen ? import_react47.default.createElement(PaperPanel, {
+      paperOpen ? import_react48.default.createElement(PaperPanel, {
         t,
         api,
         noteId: active.note ? active.note.id : null,
@@ -32998,21 +33317,21 @@ function NotesWorkspace(props) {
         onClose: () => setPaperOpen(false)
       }) : null
     ),
-    import_react47.default.createElement(
+    import_react48.default.createElement(
       "div",
       { className: "ph-n-statusbar" },
-      import_react47.default.createElement(Icon, { name: "note", size: 12 }),
-      import_react47.default.createElement("span", null, t("notes.status.counts", { count: list.total || 0, folders: flatFolders.length })),
-      import_react47.default.createElement("span", { className: "ph-n-statusbar__spacer" }),
-      import_react47.default.createElement(
+      import_react48.default.createElement(Icon, { name: "note", size: 12 }),
+      import_react48.default.createElement("span", null, t("notes.status.counts", { count: list.total || 0, folders: flatFolders.length })),
+      import_react48.default.createElement("span", { className: "ph-n-statusbar__spacer" }),
+      import_react48.default.createElement(
         "span",
         { className: serviceState.status === "ready" ? "" : "ph-n-statusbar__warn", title: serviceState.reason || "" },
         serviceState.status === "ready" ? t("notes.service.ready") : serviceState.status === "unknown" ? t("notes.service.checking") : t("notes.service.notReady")
       ),
-      import_react47.default.createElement("span", null, "\xB7"),
-      import_react47.default.createElement("span", null, t("notes.status.autosaveHint"))
+      import_react48.default.createElement("span", null, "\xB7"),
+      import_react48.default.createElement("span", null, t("notes.status.autosaveHint"))
     ),
-    import_react47.default.createElement(ToastStack, { toasts, onDismiss: dismiss2 })
+    import_react48.default.createElement(ToastStack, { toasts, onDismiss: dismiss2 })
   );
 }
 
@@ -33051,7 +33370,7 @@ function apply(ctx) {
       () => ctx.slots.register(
         { name: "sidebar.panellist", id: PANEL_ID, order: 20, label: () => t("panel.title"), locale: NS },
         withBoundary(function PanelEntry(props) {
-          return (0, import_react49.createElement)(PanelIcon, props);
+          return (0, import_react50.createElement)(PanelIcon, props);
         }, "sidebar settings host")
       )
     ),
@@ -33063,7 +33382,7 @@ function apply(ctx) {
       () => ctx.slots.register(
         { name: "shell.overlay", id: "pappers-hall-settings", order: 40, locale: NS },
         withBoundary(function SettingsOverlay(props) {
-          return (0, import_react49.createElement)(SettingsHost, { t });
+          return (0, import_react50.createElement)(SettingsHost, { t });
         }, "settings overlay")
       )
     ),
@@ -33075,7 +33394,7 @@ function apply(ctx) {
       () => ctx.slots.register(
         { name: "main", key: PANEL_ID, locale: NS },
         withBoundary(function PaperCenterSurface(props) {
-          return (0, import_react49.createElement)(PaperCenter, { ...props, t, api, pending, library });
+          return (0, import_react50.createElement)(PaperCenter, { ...props, t, api, pending, library });
         }, "paper center")
       )
     ),

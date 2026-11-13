@@ -2558,6 +2558,14 @@ button.ph-r-chip:hover { border-color: var(--dsw-alias-border-l3); color: var(--
 @media (prefers-reduced-motion: reduce) {
   .ph-r-page--active .ph-r-page__img--loaded { animation: none; }
 }
+
+.ph-r-figures { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 18px; }
+.ph-r-figcard { margin: 0; padding: 8px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 10px; background: var(--dsw-alias-bg-layer-1); cursor: grab; }
+.ph-r-figcard:active { cursor: grabbing; }
+.ph-r-figcard__media { display: block; width: 100%; padding: 0; border: 0; border-radius: 7px; overflow: hidden; background: var(--dsw-alias-bg-layer-2); cursor: zoom-in; }
+.ph-r-figcard__media img { display: block; width: 100%; max-height: 160px; object-fit: contain; }
+.ph-r-figcard figcaption { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+.ph-r-figcard__cap { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 5px 0 7px; font-size: 10.5px; line-height: 1.45; color: var(--dsw-alias-label-tertiary); }
 `
 
 /** Mounted reader instances currently holding the stylesheet. */
@@ -2596,4 +2604,3 @@ export function ensureReaderStyles() {
     }
   }
 }
-

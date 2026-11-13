@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.24.7
+
+- Reader annotations can be quoted straight into the open note as quote cards.
+- Added a reader Figures tab; figures/tables are draggable into notes and render as figure cards.
+- Added “关联到此笔记” in the reader toolbar to link the current paper to the open note.
+- Shared note-context bridge keeps the active note available across reader/notes navigation.
+
 ## 0.24.4
 
 - Fixed table crops when the caption is below the grid (nearest-cluster side detection).

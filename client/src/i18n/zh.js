@@ -1264,6 +1264,8 @@ export const ZH = {
   "notes.directive.empty": "还没有指令",
   "notes.directive.unavailable": "笔记 Agent 不可用：{reason}",
   "notes.directive.failed": "执行指令失败：{message}",
+  "notes.figure.dropped": "已把图表放入笔记",
+  "notes.figure.dropFailed": "放入图表失败：{message}",
   "notes.action.copied": "已复制",
   "notes.diagram.expand": "展开查看",
   "notes.diagram.collapse": "收起",

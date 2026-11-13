@@ -53,6 +53,8 @@ function originalTitle(paper) {
  * @param {boolean} props.loading
  * @param {Function} props.onBack
  * @param {Function} props.onCite
+ * @param {object|null} props.noteContext active note bridge
+ * @param {Function} props.onLinkNote link current paper to active note
  * @param {Function} props.onPage
  * @param {Function} props.onZoomStep
  * @param {Function} props.onZoomFit
@@ -75,6 +77,8 @@ export function ReaderToolbar(props) {
   const page = Math.max(1, Math.min(total, Math.round(num(props.page, 1))))
   const search = props.search || { open: false, query: '', hits: [], index: 0 }
   const searchInputRef = React.useRef(null)
+  const noteContext = props.noteContext || null
+  const linkedToNote = Boolean(noteContext && paper && Array.isArray(noteContext.paperIds) && noteContext.paperIds.includes(paper.id))
   const modeSlider = useSlidingThumb()
 
   React.useEffect(() => {
@@ -148,6 +152,14 @@ export function ReaderToolbar(props) {
         'div',
         { className: 'ph-r-toolbar__actions' },
         React.createElement(Btn, { size: 'sm', variant: 'soft', icon: 'quote', onClick: props.onCite, title: rt('reader.cite') }, rt('reader.cite')),
+        React.createElement(Btn, {
+          size: 'sm',
+          variant: 'soft',
+          icon: linkedToNote ? 'checkCircle' : 'link',
+          onClick: props.onLinkNote,
+          disabled: !noteContext || linkedToNote || !paper,
+          title: !noteContext ? rt('reader.linkNote.noNote') : linkedToNote ? rt('reader.linkNote.linked') : rt('reader.linkNote.hint'),
+        }, linkedToNote ? rt('reader.linkNote.linkedShort') : rt('reader.linkNote.short')),
         React.createElement(
           'a',
           {

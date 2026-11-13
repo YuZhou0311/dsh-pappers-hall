@@ -906,6 +906,7 @@ function PageViewImpl(props) {
           onDelete: () => props.onDeleteAnnotation(pagePopover.annotation),
           onCopy: props.onCopyAnnotation,
           onCite: props.onCiteAnnotation,
+          onLinkNote: props.onLinkAnnotationNote,
           onAsk: props.onAskAnnotation,
           onExplain: props.onExplainAnnotation,
           onQuickTranslate: props.onQuickTranslateAnnotation ? () => props.onQuickTranslateAnnotation(pagePopover.annotation) : undefined,

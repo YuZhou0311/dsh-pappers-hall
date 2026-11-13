@@ -74,8 +74,15 @@ class Cdp {
     this.ws = ws
     this.id = 0
     this.pending = new Map()
+    this.console = []
     ws.addEventListener('message', (event) => {
       const message = JSON.parse(String(event.data))
+      if (message.method === 'Runtime.consoleAPICalled') {
+        try { this.console.push({ type: message.params.type, args: (message.params.args || []).map((arg) => arg.value || arg.description || '').join(' ').slice(0, 500) }) } catch {}
+      }
+      if (message.method === 'Runtime.exceptionThrown') {
+        try { this.console.push({ type: 'exception', args: message.params.exceptionDetails?.text || '' }) } catch {}
+      }
       if (message.id && this.pending.has(message.id)) {
         const { resolve, reject } = this.pending.get(message.id)
         this.pending.delete(message.id)
@@ -310,6 +317,19 @@ async function main() {
       console.log('reader state:', JSON.stringify(reader).slice(0, 1500))
       writeFileSync(join(OUT, 'reader-text.txt'), reader.snippet ?? '')
       await captureButtons('reader')
+      if (STEPS.includes('reader-figures')) {
+        const tab = await evaluate(`(() => {
+          const button = [...document.querySelectorAll('.ph-r-side__tabs button, .ph-r-side__tabs [role="tab"]')].find((item) => (item.textContent || '').trim().startsWith('图表'))
+          if (!button) return { found: false, text: document.querySelector('.ph-r-side__tabs')?.innerText || '' }
+          button.click()
+          return { found: true }
+        })()`)
+        console.log('reader figures tab:', JSON.stringify(tab))
+        await sleep(1200)
+        await shot('03f-reader-figures')
+        const cards = await evaluate(`(() => ({ count: document.querySelectorAll('.ph-r-figcard').length, labels: [...document.querySelectorAll('.ph-r-figcard figcaption strong')].map((e) => (e.textContent || '').trim()), draggable: [...document.querySelectorAll('.ph-r-figcard')].every((e) => e.draggable) }))()`)
+        console.log('reader figures cards:', JSON.stringify(cards))
+      }
     }
 
     if (want('drawer') || want('all')) {
@@ -411,6 +431,110 @@ async function main() {
       })()`)
       console.log('notes opened:', opened, JSON.stringify(notes).slice(0, 500))
       await shot('13-notes')
+      if (STEPS.includes('notes-reader')) {
+        const clicked = await evaluate(`(() => {
+          const chip = document.querySelector('.ph-n-chip button, .ph-n-chip [role="button"]')
+          if (!chip) return false
+          chip.click()
+          return true
+        })()`)
+        console.log('note paper chip click:', clicked)
+        await sleep(1800)
+        await shot('13r-reader-from-note')
+        const toolbar = await evaluate(`(() => {
+          const buttons = [...document.querySelectorAll('.ph-r-toolbar__actions button')].map((button) => ({ text: (button.textContent || '').trim(), disabled: Boolean(button.disabled), title: button.getAttribute('title') || '' }))
+          return { buttons, reader: Boolean(document.querySelector('[data-ph-reader]')) }
+        })()`)
+        console.log('reader-from-note toolbar:', JSON.stringify(toolbar))
+        writeFileSync(join(OUT, 'notes-reader-toolbar.json'), JSON.stringify(toolbar, null, 2))
+        const link = await evaluate(`(() => {
+          const button = [...document.querySelectorAll('.ph-r-toolbar__actions button')].find((item) => (item.textContent || '').includes('关联到此笔记'))
+          if (!button) return { found: false }
+          if (button.disabled) return { found: true, disabled: true, title: button.getAttribute('title') || '' }
+          button.click()
+          return { found: true, disabled: false }
+        })()`)
+        console.log('reader note link click:', JSON.stringify(link))
+        await sleep(1200)
+        await shot('13s-reader-linked-note')
+        const toast = await evaluate(`(() => (document.querySelector('.ph-r-toasts, .ph-n-toasts')?.innerText || '').slice(0, 500))()`)
+        console.log('reader link toast:', JSON.stringify(toast))
+      }
+      if (STEPS.includes('notes-reader-other')) {
+        const opened = await evaluate(`(() => {
+          const row = [...document.querySelectorAll('.ph-n-paperrow')].find((item) => (item.textContent || '').includes('全球格点')) || document.querySelector('.ph-n-paperrow')
+          if (!row) return false
+          row.click()
+          return true
+        })()`)
+        console.log('other paper opened:', opened)
+        await sleep(1800)
+        await shot('13t-reader-other-paper')
+        const toolbar = await evaluate(`(() => {
+          const buttons = [...document.querySelectorAll('.ph-r-toolbar__actions button')].map((button) => ({ text: (button.textContent || '').trim(), disabled: Boolean(button.disabled), title: button.getAttribute('title') || '' }))
+          return { buttons, reader: Boolean(document.querySelector('[data-ph-reader]')) }
+        })()`)
+        console.log('reader-other toolbar:', JSON.stringify(toolbar))
+        const link = await evaluate(`(() => {
+          const button = [...document.querySelectorAll('.ph-r-toolbar__actions button')].find((item) => (item.textContent || '').trim() === '关联到此笔记')
+          if (!button) return { found: false }
+          if (button.disabled) return { found: true, disabled: true, title: button.getAttribute('title') || '' }
+          button.click()
+          return { found: true, disabled: false }
+        })()`)
+        console.log('reader-other link click:', JSON.stringify(link))
+        await sleep(1400)
+        await shot('13u-reader-other-linked')
+        const toast = await evaluate(`(() => (document.querySelector('.ph-r-toasts')?.innerText || '').slice(0, 400))()`)
+        console.log('reader-other link toast:', JSON.stringify(toast))
+        if (STEPS.includes('notes-reader-figure')) {
+          const figTab = await evaluate(`(() => {
+            const button = [...document.querySelectorAll('.ph-r-side__tabs button, .ph-r-side__tabs [role="tab"]')].find((item) => (item.textContent || '').trim().startsWith('图表'))
+            if (!button) return false
+            button.click()
+            return true
+          })()`)
+          await sleep(1200)
+          await shot('13w-reader-figures-in-note')
+          const dragged = await evaluate(`(() => {
+            const card = document.querySelector('.ph-r-figcard')
+            const target = document.querySelector('.ph-n-editor__content')
+            if (!card || !target) return { card: Boolean(card), target: Boolean(target) }
+            const dt = new DataTransfer()
+            card.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }))
+            target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }))
+            target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }))
+            card.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }))
+            return { card: true, target: true, types: [...dt.types], data: dt.getData('application/x-pappers-hall-material').slice(0, 200) }
+          })()`)
+          console.log('figure drag/drop:', JSON.stringify(dragged))
+          await sleep(1400)
+          await shot('13x-reader-figure-dropped')
+          const toast3 = await evaluate(`(() => (document.querySelector('.ph-r-toasts')?.innerText || '').slice(0, 300))()`)
+          console.log('figure drop toast:', JSON.stringify(toast3))
+        }
+        if (STEPS.includes('notes-reader-quote')) {
+          const annotTab = await evaluate(`(() => {
+            const button = [...document.querySelectorAll('.ph-r-side__tabs button, .ph-r-side__tabs [role="tab"]')].find((item) => (item.textContent || '').trim().startsWith('批注'))
+            if (!button) return false
+            button.click()
+            return true
+          })()`)
+          await sleep(900)
+          const quoted = await evaluate(`(() => {
+            const button = [...document.querySelectorAll('.ph-r-annotcard__actions button')].find((item) => (item.getAttribute('title') || '') === '引用到笔记')
+            if (!button) return { found: false, cards: document.querySelectorAll('.ph-r-annotcard').length }
+            button.click()
+            return { found: true }
+          })()`)
+          console.log('annotation quote click:', JSON.stringify(quoted), 'tab:', annotTab)
+          await sleep(1300)
+          await shot('13v-reader-annotation-quoted')
+          const toast2 = await evaluate(`(() => (document.querySelector('.ph-r-toasts')?.innerText || '').slice(0, 400))()`)
+          console.log('annotation quote toast:', JSON.stringify(toast2))
+          console.log('browser console:', JSON.stringify(cdp.console.filter((entry) => /ph-note|insert|quote|error|exception/i.test(entry.args)).slice(-20)))
+        }
+      }
       if (want('notes-diagram') || want('all')) {
         const opened = await evaluate(`(() => { const button = document.querySelector('.ph-n-doc__diagram-expand'); if (!button) return false; button.click(); return true })()`)
         await sleep(500)

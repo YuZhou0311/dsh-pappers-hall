@@ -31,6 +31,8 @@ import { AnnotationListPanel } from './annotation-layer.jsx'
 import { BilingualPanel } from './bilingual.jsx'
 import { FloatingAnnotationTools } from './floating-tools.jsx'
 import { ReaderNotesPanel } from './notes-panel.jsx'
+import { ReaderFiguresPanel } from './figures-panel.jsx'
+import { getNoteContext, subscribeNoteContext } from '../../core/note-context.js'
 import { Outline } from './outline.jsx'
 import { readFlag, writeFlag } from '../../core/notes-model.js'
 import { SlidingThumb, useSlidingThumb } from '../../core/motion.js'
@@ -343,6 +345,7 @@ function ReaderShellInner(props) {
 
   /* ------------------------------ navigation ----------------------------- */
   const [figureFocus, setFigureFocus] = React.useState(null)
+  const [noteContext, setNoteContextState] = React.useState(() => getNoteContext())
   const figureFocusTimer = React.useRef(null)
   const [page, setPage] = React.useState(() => {
     const explicit = Math.round(num(props.initialPage, 0))
@@ -796,6 +799,55 @@ function ReaderShellInner(props) {
   }, [goToPage, navSnapshot, navigation, notify, paperId, rt])
 
   React.useEffect(() => () => { if (figureFocusTimer.current) clearTimeout(figureFocusTimer.current) }, [])
+
+  React.useEffect(() => {
+    const sync = () => setNoteContextState(getNoteContext())
+    sync()
+    return subscribeNoteContext(sync)
+  }, [])
+
+  const linkCurrentPaper = React.useCallback(() => {
+    if (!noteContext || typeof noteContext.linkPaper !== 'function' || !paperId) return
+    Promise.resolve(noteContext.linkPaper(paperId))
+      .then((fresh) => {
+        if (fresh) {
+          setNoteContextState((current) => current ? { ...current, paperIds: Array.isArray(fresh.paperIds) ? fresh.paperIds : current.paperIds } : current)
+          notify('success', rt('reader.linkNote.done', { title: noteContext.title || rt('reader.linkNote.untitled') }))
+        }
+      })
+      .catch((error) => notify('error', rt('reader.linkNote.failed', { message: describeError(error) })))
+  }, [noteContext, paperId, notify, rt])
+
+  const insertFigureIntoNote = React.useCallback((material) => {
+    if (!noteContext || typeof noteContext.insertFigure !== 'function') {
+      notify('warning', rt('reader.linkNote.noNote'))
+      return
+    }
+    Promise.resolve(noteContext.insertFigure(material))
+      .then(() => notify('success', rt('reader.figures.inserted')))
+      .catch((error) => notify('error', rt('reader.figures.insertFailed', { message: describeError(error) })))
+  }, [noteContext, notify, rt])
+
+  const linkAnnotationToNote = React.useCallback((annotation) => {
+    if (!noteContext || typeof noteContext.insertQuote !== 'function') {
+      notify('warning', rt('reader.linkNote.noNote'))
+      return
+    }
+    const quote = firstText(annotation && annotation.quote)
+    if (quote === '') {
+      notify('warning', rt('reader.linkNote.emptyQuote'))
+      return
+    }
+    Promise.resolve(noteContext.insertQuote({
+      quote,
+      comment: firstText(annotation && annotation.comment),
+      paperTitle: firstText(paper && (paper.titleZh || paper.title)),
+      page: Number(annotation && annotation.page) || page,
+      annotationId: annotation && annotation.id,
+    }))
+      .then(() => notify('success', rt('reader.linkNote.quoteDone', { title: noteContext.title || rt('reader.linkNote.untitled') })))
+      .catch((error) => notify('error', rt('reader.linkNote.quoteFailed', { message: describeError(error) })))
+  }, [noteContext, notify, rt, paper, page])
 
   React.useEffect(() => {
     if (!figureFocus) return
@@ -2073,6 +2125,7 @@ function ReaderShellInner(props) {
   const sideTabs = [
     { id: 'outline', label: rt('reader.outline.title'), count: outlineItems.length || null },
     { id: 'annotations', label: rt('reader.annot.listTitle'), count: annotations.length || null },
+    { id: 'figures', label: rt('reader.figures.tab') },
     { id: 'notes', label: rt('reader.notes.tab') },
     { id: 'ai', label: 'AI' },
   ]
@@ -2085,6 +2138,7 @@ function ReaderShellInner(props) {
     onDeleteAnnotation: deleteFromPopover,
     onCopyAnnotation: copyAnnotation,
     onCiteAnnotation: citeAnnotation,
+    onLinkAnnotationNote: linkAnnotationToNote,
     onAskAnnotation: askAnnotation,
     onExplainAnnotation: explainAnnotation,
     onQuickTranslateAnnotation: quickTranslateAnnotation,
@@ -2150,6 +2204,7 @@ function ReaderShellInner(props) {
         activeId: activeAnnotationId,
         onSelect: onAnnotationSelect,
         onCite: citeAnnotation,
+        onLinkNote: linkAnnotationToNote,
         onDelete: (annotation) => deleteAnnotation(annotation).catch(() => {}),
       }),
     )
@@ -2166,6 +2221,23 @@ function ReaderShellInner(props) {
         if (props.onOpenPaper) props.onOpenPaper(targetPaperId, targetPage || 1)
       },
     })
+  } else if (sideTab === 'figures') {
+    sideBody = React.createElement('div', { className: 'ph-r-side__scroll ph-r-scroll' },
+      React.createElement(ReaderFiguresPanel, {
+        t: rt,
+        api: apiCall,
+        paperId,
+        paper,
+        onOpenFigure: (figure) => {
+          if (!figure) return
+          goToPage(Number(figure.page) || 1)
+          setFigureFocus({ figureId: String(figure.id), page: Number(figure.page) || 1, bbox: figure.bbox || null, figureLabel: figure.label || '', seq: Date.now() })
+          if (figureFocusTimer.current) clearTimeout(figureFocusTimer.current)
+          figureFocusTimer.current = setTimeout(() => setFigureFocus(null), 4600)
+        },
+        onOpenNoteInsert: insertFigureIntoNote,
+      }),
+    )
   } else {
     sideBody = React.createElement(AiPanel, {
       t: rt,
@@ -2284,6 +2356,8 @@ function ReaderShellInner(props) {
       loading: openState.status === 'loading',
       onBack: props.onBack,
       onCite: citePaperPage,
+      noteContext,
+      onLinkNote: linkCurrentPaper,
       onPage: (target) => goToPage(target),
       onZoomStep: zoomStep,
       onZoomFit: zoomFit,

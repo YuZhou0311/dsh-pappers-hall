@@ -4642,3 +4642,4 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-n-doc__diagram-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: var(--ph-fs-13); font-weight: 600; }
 .ph-n-doc__diagram-dialog-canvas { overflow: auto; max-height: calc(90vh - 110px); }
 .ph-n-doc__diagram-dialog-canvas svg { display: block; width: auto; height: auto; }
+.ph-n-editor__content[data-ph-drop] { outline: 2px dashed var(--ph-accent); outline-offset: -3px; }

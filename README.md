@@ -77,7 +77,7 @@ dsh plugin --profile desktop add dsh-pappers-hall
 
 ```sh
 npm pack
-dsh plugin --profile desktop add ./dsh-pappers-hall-0.24.4.tgz
+dsh plugin --profile desktop add ./dsh-pappers-hall-0.24.7.tgz
 ```
 
 The package is a bundle: `package.json` declares `dsh.bundle.patch`, `dsh.client`, display metadata and exported resources. The patch inserts the `pappers-hall` Host row; the Client half is loaded from the exported `./client` subpath.
@@ -124,6 +124,7 @@ npm run build
 npm run test:host
 npm run test:notes
 npm run test:ui
+npm run test:bridge
 npm run test:api
 npm run test:i18n
 npm run test:agent
@@ -140,6 +141,7 @@ npm run verify
 - `test:agent` checks note-Agent section hashing, directive parsing and basic block normalization.
 - `test:rich` checks the P0/P1 block schema, diagram validation and diagram directives.
 - `test:figures` checks table side selection, crop grouping and full caption extraction.
+- `test:bridge` checks the shared note-context bridge used by reader annotation/figure actions.
 - Browser acceptance and the fixture-based API suite need a running DSH profile, poppler and the external devkit; see the repository's internal notes and `reports/`.
 - An authenticated Web UI can be exercised with `PAPPERS_BASE=http://127.0.0.1:<port> PAPPERS_TOKEN=<printed-token> node scripts/browser-shot.mjs --steps library,reader,drawer,dock,notes,figures,settings`. Use a disposable data directory for destructive checks.
 

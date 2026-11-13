@@ -353,6 +353,7 @@ export function AnnotationPopover(props) {
       actionButton('explain', 'book', rt('reader.annot.explain'), () => props.onExplain(annotation)),
       actionButton('ask', 'note', rt('reader.annot.ask'), () => props.onAsk(annotation)),
       actionButton('cite', 'quote', rt('reader.annot.cite'), () => props.onCite(annotation)),
+      actionButton('noteLink', 'note', rt('reader.annot.quoteToNote'), () => props.onLinkNote && props.onLinkNote(annotation), { disabled: !props.onLinkNote }),
       actionButton('delete', 'trash', rt('reader.annot.delete'), () => props.onDelete(annotation)),
     ),
     translating
@@ -606,6 +607,14 @@ export function AnnotationListPanel(props) {
                     onClick: (event) => {
                       event.stopPropagation()
                       props.onCite(annotation)
+                    },
+                  }),
+                  React.createElement(IconBtn, {
+                    icon: 'note',
+                    title: rt('reader.annot.quoteToNote'),
+                    onClick: (event) => {
+                      event.stopPropagation()
+                      if (props.onLinkNote) props.onLinkNote(annotation)
                     },
                   }),
                   React.createElement(IconBtn, {

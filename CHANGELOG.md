@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.24.21
+
+- Persist the open paper/page inside the note-writing side panel as well as the inline note editor.
+
+## 0.24.20
+
+- Persist the inline note opened inside the paper library, so switching to a conversation and back restores the note editor instead of the library home.
+- Auto-open the paper sidebar from plugin startup, not only from a conversation header.
+
+## 0.24.19
+
+- Moved “关联到当前笔记” into the note-writing paper panel bar (the embedded reader beside the note); removed it from the generic reader toolbar.
+
 ## 0.24.18
 
 - “关联到此笔记” now appears only while a note is actively open beside a paper; it is hidden in the standalone reader where it had no valid target.

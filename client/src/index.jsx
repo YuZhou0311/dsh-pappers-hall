@@ -193,6 +193,23 @@ export function apply(ctx) {
     })
   }
 
+  // 5b. Make the reading sidebar visible on the main conversation surface by
+  // default. The host right sidebar may not be ready during apply, so retry.
+  ctx.effect(() => {
+    let attempts = 0
+    let timer = null
+    let cancelled = false
+    const tryOpen = () => {
+      if (cancelled || attempts >= 20) return
+      attempts += 1
+      let opened = false
+      try { opened = openPaperDrawer(ctx) } catch { opened = false }
+      if (!opened) timer = setTimeout(tryOpen, 600)
+    }
+    timer = setTimeout(tryOpen, 700)
+    return () => { cancelled = true; if (timer) clearTimeout(timer) }
+  }, 'pappers-hall: auto-open reading sidebar')
+
   // 6. Chat turn-tail source cards for Pappers-Hall tool answers.
   ctx.effect(() => registerConversationIntegration(ctx, { t, api }), 'pappers-hall: conversation integration')
 }

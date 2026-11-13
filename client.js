@@ -4357,7 +4357,7 @@ body.ph-dnd-dragging [data-ph-drag] { opacity: 0.55; }
 /* v0.22: embedded reader in the notes paper panel \u2014 continuous canvas only */
 .ph-n-embedded-reader { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--dsw-alias-bg-base); }
 .ph-n-embedded-reader__bar { flex: none; display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 2px 6px; border-bottom: 1px solid var(--dsw-alias-border-l1); }
-.ph-n-embedded-reader__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; font-weight: 600; color: var(--dsw-alias-label-secondary); }
+.ph-n-embedded-reader__title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; font-weight: 600; color: var(--dsw-alias-label-secondary); }
 .ph-n-embedded-reader__body { flex: 1 1 auto; min-height: 0; display: flex; }
 .ph-n-embedded-reader__body .ph-r-reader { height: 100%; width: 100%; --ph-r-rail: 0px; --ph-r-side: 0px; }
 .ph-n-embedded-reader .ph-r-toolbar,
@@ -22362,15 +22362,6 @@ function ReaderToolbar(props) {
         "div",
         { className: "ph-r-toolbar__actions" },
         import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite") }, rt("reader.cite")),
-        noteContext ? import_react29.default.createElement(Btn, {
-          size: "sm",
-          variant: linkedToNote ? "soft" : "primary",
-          icon: linkedToNote ? "checkCircle" : "link",
-          onClick: props.onLinkNote,
-          disabled: linkedToNote || !paper,
-          className: "ph-r-toolbar__notelink",
-          title: linkedToNote ? rt("reader.linkNote.linked") : rt("reader.linkNote.hint")
-        }, linkedToNote ? rt("reader.linkNote.linkedShort") : rt("reader.linkNote.short")) : null,
         import_react29.default.createElement(
           "a",
           {
@@ -24820,6 +24811,7 @@ function PaperPanel(props) {
   const [translation, setTranslation] = import_react32.default.useState({ status: "idle", blocks: [], reason: "" });
   const [annotations, setAnnotations] = import_react32.default.useState({ status: "idle", items: [], error: "" });
   const [busy2, setBusy] = import_react32.default.useState("");
+  const [linkedPaperIds, setLinkedPaperIds] = import_react32.default.useState(() => Array.isArray(props.linkedPaperIds) ? props.linkedPaperIds : []);
   const [selection, setSelection] = import_react32.default.useState(null);
   const [region, setRegion] = import_react32.default.useState({ status: "idle", text: "", translation: "", reason: "" });
   const [ai, setAi] = import_react32.default.useState({ status: "idle", answer: "", reason: "" });
@@ -24827,6 +24819,37 @@ function PaperPanel(props) {
   const imageWrapRef = import_react32.default.useRef(null);
   const [layer, setLayer] = import_react32.default.useState(null);
   const [renderWidth, setRenderWidth] = import_react32.default.useState(0);
+  const restoredRef = import_react32.default.useRef(false);
+  import_react32.default.useEffect(() => {
+    if (!props.noteId || restoredRef.current) return void 0;
+    restoredRef.current = true;
+    let saved = null;
+    try {
+      saved = JSON.parse(sessionStorage.getItem("pappers-hall:notes-open-paper") || "null");
+    } catch {
+      saved = null;
+    }
+    if (!saved || !saved.paperId) return void 0;
+    let alive = true;
+    Promise.resolve(api("reader.open", { id: saved.paperId })).then((data) => {
+      if (!alive) return;
+      const paper = data && data.paper || { id: saved.paperId };
+      const total = Number(data && data.version && data.version.pageCount) || Number(data && data.paper && data.paper.pageCount) || 1;
+      setOpen({ id: saved.paperId, paper, total, page: Number(saved.page) || 1 });
+      setPage(Number(saved.page) || 1);
+    }).catch(() => {
+    });
+    return () => {
+      alive = false;
+    };
+  }, [props.noteId, api]);
+  import_react32.default.useEffect(() => {
+    try {
+      if (open) sessionStorage.setItem("pappers-hall:notes-open-paper", JSON.stringify({ paperId: open.id, page: page2 }));
+      else sessionStorage.removeItem("pappers-hall:notes-open-paper");
+    } catch {
+    }
+  }, [open, page2]);
   import_react32.default.useEffect(() => {
     let alive = true;
     Promise.resolve(api("library.folders.tree", {})).then((result) => {
@@ -24964,6 +24987,31 @@ function PaperPanel(props) {
       setAi({ status: "ready", answer: String(result.answer || ""), reason: "" });
     }).catch((error) => setAi({ status: "error", answer: "", reason: String(error && error.message || error) })).then(() => setBusy(""));
   };
+  import_react32.default.useEffect(() => {
+    if (!props.noteId) {
+      setLinkedPaperIds([]);
+      return void 0;
+    }
+    let alive = true;
+    Promise.resolve(api("notes.get", { id: props.noteId })).then((data) => {
+      const note = data && (data.note || data);
+      if (alive && note && Array.isArray(note.paperIds)) setLinkedPaperIds(note.paperIds);
+    }).catch(() => {
+    });
+    return () => {
+      alive = false;
+    };
+  }, [props.noteId, api]);
+  const linkOpenPaper = () => {
+    if (!props.noteId || !open || busy2 === "link") return;
+    setBusy("link");
+    Promise.resolve(api("notes.link", { noteId: props.noteId, paperIds: [open.id] })).then((data) => {
+      const note = data && (data.note || data);
+      if (note && Array.isArray(note.paperIds)) setLinkedPaperIds(note.paperIds);
+      else setLinkedPaperIds((previous) => previous.indexOf(open.id) >= 0 ? previous : previous.concat([open.id]));
+    }).catch(() => {
+    }).then(() => setBusy(""));
+  };
   if (open) {
     return import_react32.default.createElement(
       "div",
@@ -24972,7 +25020,15 @@ function PaperPanel(props) {
         "div",
         { className: "ph-n-embedded-reader__bar" },
         import_react32.default.createElement(IconButton, { icon: "chevronLeft", title: t("notes.papers.backToList"), onClick: () => setOpen(null) }),
-        import_react32.default.createElement("span", { className: "ph-n-embedded-reader__title" }, paperTitle2(t, open.paper))
+        import_react32.default.createElement("span", { className: "ph-n-embedded-reader__title" }, paperTitle2(t, open.paper)),
+        props.noteId ? import_react32.default.createElement(Button, {
+          size: "sm",
+          variant: linkedPaperIds.indexOf(open.id) >= 0 ? "soft" : "primary",
+          icon: linkedPaperIds.indexOf(open.id) >= 0 ? "checkCircle" : "link",
+          loading: busy2 === "link",
+          disabled: linkedPaperIds.indexOf(open.id) >= 0,
+          onClick: linkOpenPaper
+        }, linkedPaperIds.indexOf(open.id) >= 0 ? t("notes.papers.linkedDone") : t("notes.papers.linkCurrent")) : null
       ),
       import_react32.default.createElement(
         "div",
@@ -27071,7 +27127,21 @@ function LibraryShell(props) {
   const [paletteOpen, setPaletteOpen] = import_react39.default.useState(false);
   const [citationOpen, setCitationOpen] = import_react39.default.useState(false);
   const [helpOpen, setHelpOpen] = import_react39.default.useState(false);
-  const [inlineNoteId, setInlineNoteId] = import_react39.default.useState(() => String(props.initialNoteId || ""));
+  const [inlineNoteId, setInlineNoteId] = import_react39.default.useState(() => {
+    if (props.initialNoteId) return String(props.initialNoteId);
+    try {
+      return String(sessionStorage.getItem("pappers-hall:inline-note") || "");
+    } catch {
+      return "";
+    }
+  });
+  import_react39.default.useEffect(() => {
+    try {
+      if (inlineNoteId) sessionStorage.setItem("pappers-hall:inline-note", inlineNoteId);
+      else sessionStorage.removeItem("pappers-hall:inline-note");
+    } catch {
+    }
+  }, [inlineNoteId]);
   const filtersKeyRef = import_react39.default.useRef(null);
   const notePrevLeftRef = import_react39.default.useRef(null);
   import_react39.default.useEffect(() => {
@@ -33679,6 +33749,27 @@ function apply(ctx) {
       }
     });
   }
+  ctx.effect(() => {
+    let attempts = 0;
+    let timer2 = null;
+    let cancelled = false;
+    const tryOpen = () => {
+      if (cancelled || attempts >= 20) return;
+      attempts += 1;
+      let opened = false;
+      try {
+        opened = openPaperDrawer(ctx);
+      } catch {
+        opened = false;
+      }
+      if (!opened) timer2 = setTimeout(tryOpen, 600);
+    };
+    timer2 = setTimeout(tryOpen, 700);
+    return () => {
+      cancelled = true;
+      if (timer2) clearTimeout(timer2);
+    };
+  }, "pappers-hall: auto-open reading sidebar");
   ctx.effect(() => registerConversationIntegration(ctx, { t, api }), "pappers-hall: conversation integration");
 }
 return module.exports;}});

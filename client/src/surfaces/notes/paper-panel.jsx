@@ -70,6 +70,7 @@ export function PaperPanel(props) {
   const [translation, setTranslation] = React.useState({ status: 'idle', blocks: [], reason: '' })
   const [annotations, setAnnotations] = React.useState({ status: 'idle', items: [], error: '' })
   const [busy, setBusy] = React.useState('')
+  const [linkedPaperIds, setLinkedPaperIds] = React.useState(() => Array.isArray(props.linkedPaperIds) ? props.linkedPaperIds : [])
   const [selection, setSelection] = React.useState(null)
   const [region, setRegion] = React.useState({ status: 'idle', text: '', translation: '', reason: '' })
   const [ai, setAi] = React.useState({ status: 'idle', answer: '', reason: '' })
@@ -77,6 +78,34 @@ export function PaperPanel(props) {
   const imageWrapRef = React.useRef(null)
   const [layer, setLayer] = React.useState(null)
   const [renderWidth, setRenderWidth] = React.useState(0)
+
+  const restoredRef = React.useRef(false)
+  React.useEffect(() => {
+    if (!props.noteId || restoredRef.current) return undefined
+    restoredRef.current = true
+    let saved = null
+    try { saved = JSON.parse(sessionStorage.getItem('pappers-hall:notes-open-paper') || 'null') } catch { saved = null }
+    if (!saved || !saved.paperId) return undefined
+    let alive = true
+    Promise.resolve(api('reader.open', { id: saved.paperId }))
+      .then((data) => {
+        if (!alive) return
+        const paper = (data && data.paper) || { id: saved.paperId }
+        const total = Number(data && data.version && data.version.pageCount) || Number(data && data.paper && data.paper.pageCount) || 1
+        setOpen({ id: saved.paperId, paper, total, page: Number(saved.page) || 1 })
+        setPage(Number(saved.page) || 1)
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [props.noteId, api])
+  React.useEffect(() => {
+    try {
+      if (open) sessionStorage.setItem('pappers-hall:notes-open-paper', JSON.stringify({ paperId: open.id, page: page }))
+      else sessionStorage.removeItem('pappers-hall:notes-open-paper')
+    } catch {
+      /* storage unavailable */
+    }
+  }, [open, page])
 
   React.useEffect(() => {
     let alive = true
@@ -238,6 +267,34 @@ export function PaperPanel(props) {
       .then(() => setBusy(''))
   }
 
+  React.useEffect(() => {
+    if (!props.noteId) {
+      setLinkedPaperIds([])
+      return undefined
+    }
+    let alive = true
+    Promise.resolve(api('notes.get', { id: props.noteId }))
+      .then((data) => {
+        const note = data && (data.note || data)
+        if (alive && note && Array.isArray(note.paperIds)) setLinkedPaperIds(note.paperIds)
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [props.noteId, api])
+
+  const linkOpenPaper = () => {
+    if (!props.noteId || !open || busy === 'link') return
+    setBusy('link')
+    Promise.resolve(api('notes.link', { noteId: props.noteId, paperIds: [open.id] }))
+      .then((data) => {
+        const note = data && (data.note || data)
+        if (note && Array.isArray(note.paperIds)) setLinkedPaperIds(note.paperIds)
+        else setLinkedPaperIds((previous) => previous.indexOf(open.id) >= 0 ? previous : previous.concat([open.id]))
+      })
+      .catch(() => {})
+      .then(() => setBusy(''))
+  }
+
   if (open) {
     // Reuse the real reader surface: continuous page canvas, native text
     // selection, quick-translation card, annotation popup and floating tools.
@@ -250,6 +307,16 @@ export function PaperPanel(props) {
         { className: 'ph-n-embedded-reader__bar' },
         React.createElement(IconButton, { icon: 'chevronLeft', title: t('notes.papers.backToList'), onClick: () => setOpen(null) }),
         React.createElement('span', { className: 'ph-n-embedded-reader__title' }, paperTitle(t, open.paper)),
+        props.noteId
+          ? React.createElement(Button, {
+              size: 'sm',
+              variant: linkedPaperIds.indexOf(open.id) >= 0 ? 'soft' : 'primary',
+              icon: linkedPaperIds.indexOf(open.id) >= 0 ? 'checkCircle' : 'link',
+              loading: busy === 'link',
+              disabled: linkedPaperIds.indexOf(open.id) >= 0,
+              onClick: linkOpenPaper,
+            }, linkedPaperIds.indexOf(open.id) >= 0 ? t('notes.papers.linkedDone') : t('notes.papers.linkCurrent'))
+          : null,
       ),
       React.createElement(
         'div',

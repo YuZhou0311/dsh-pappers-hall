@@ -502,6 +502,17 @@ async function main() {
       })()`)
       console.log('notes opened:', opened, JSON.stringify(notes).slice(0, 500))
       await shot('13-notes')
+      if (STEPS.includes('inline-note-progress')) {
+        await evaluate(`(() => { const target = [...document.querySelectorAll('button')].find((button) => (button.textContent || '').includes('新会话')); if (target) target.click(); return Boolean(target); })()`)
+        await sleep(1200)
+        await ensureConversation()
+        await sleep(1000)
+        await evaluate(`(() => { const target = [...document.querySelectorAll('button, a, [role="button"]')].find((element) => (element.textContent || '').trim() === '论文中心'); if (target) target.click(); return Boolean(target); })()`)
+        await sleep(1500)
+        const inline = await evaluate(`(() => ({ inline: Boolean(document.querySelector('.ph-n-inline')), note: (document.querySelector('.ph-n-inline__title')?.textContent || '').trim(), text: (document.querySelector('.ph-n-inline')?.innerText || '').slice(0, 160) }))()`)
+        console.log('inline note restored:', JSON.stringify(inline))
+        await shot('13t-inline-note-restored')
+      }
       if (STEPS.includes('notes-reader')) {
         const clicked = await evaluate(`(() => {
           const chip = document.querySelector('.ph-n-chip button, .ph-n-chip [role="button"]')
@@ -558,6 +569,28 @@ async function main() {
         await shot('13u-reader-other-linked')
         const toast = await evaluate(`(() => (document.querySelector('.ph-r-toasts')?.innerText || '').slice(0, 400))()`)
         console.log('reader-other link toast:', JSON.stringify(toast))
+        const barLink = await evaluate(`(() => {
+          const button = [...document.querySelectorAll('.ph-n-embedded-reader__bar button')].find((item) => (item.textContent || '').includes('关联到当前笔记'))
+          if (!button) return { found: false, text: (document.querySelector('.ph-n-embedded-reader__bar')?.innerText || '').slice(0, 200) }
+          button.click()
+          return { found: true }
+        })()`)
+        console.log('notes paper-bar link:', JSON.stringify(barLink))
+        await sleep(1300)
+        const barState = await evaluate(`(() => (document.querySelector('.ph-n-embedded-reader__bar')?.innerText || '').slice(0, 250))()`)
+        console.log('notes paper-bar after link:', JSON.stringify(barState))
+        await shot('13ta-notes-paper-link')
+        if (STEPS.includes('inline-paper-progress')) {
+          await evaluate(`(() => { const target = [...document.querySelectorAll('button')].find((button) => (button.textContent || '').includes('新会话')); if (target) target.click(); return Boolean(target); })()`)
+          await sleep(1200)
+          await ensureConversation()
+          await sleep(1000)
+          await evaluate(`(() => { const target = [...document.querySelectorAll('button, a, [role="button"]')].find((element) => (element.textContent || '').trim() === '论文中心'); if (target) target.click(); return Boolean(target); })()`)
+          await sleep(1700)
+          const restored = await evaluate(`(() => ({ note: Boolean(document.querySelector('.ph-n-inline')), paper: Boolean(document.querySelector('.ph-n-embedded-reader')), bar: (document.querySelector('.ph-n-embedded-reader__bar')?.innerText || '').slice(0, 120) }))()`)
+          console.log('notes inline paper restored:', JSON.stringify(restored))
+          await shot('13tb-inline-paper-restored')
+        }
         if (STEPS.includes('notes-reader-figure')) {
           const figTab = await evaluate(`(() => {
             const button = [...document.querySelectorAll('.ph-r-side__tabs button, .ph-r-side__tabs [role="tab"]')].find((item) => (item.textContent || '').trim().startsWith('图表'))

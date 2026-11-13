@@ -376,10 +376,21 @@ export function LibraryShell(props) {
   const [paletteOpen, setPaletteOpen] = React.useState(false)
   const [citationOpen, setCitationOpen] = React.useState(false)
   const [helpOpen, setHelpOpen] = React.useState(false)
-  const [inlineNoteId, setInlineNoteId] = React.useState(() => String(props.initialNoteId || ''))
+  const [inlineNoteId, setInlineNoteId] = React.useState(() => {
+    if (props.initialNoteId) return String(props.initialNoteId)
+    try { return String(sessionStorage.getItem('pappers-hall:inline-note') || '') } catch { return '' }
+  })
   // A paper-sidebar navigation must leave the inline note; otherwise the middle
   // pane keeps showing the note and clicks look broken. Skip the initial run so
   // an `initialNoteId` route (notes library hand-off) is not cleared on mount.
+  React.useEffect(() => {
+    try {
+      if (inlineNoteId) sessionStorage.setItem('pappers-hall:inline-note', inlineNoteId)
+      else sessionStorage.removeItem('pappers-hall:inline-note')
+    } catch {
+      /* storage unavailable */
+    }
+  }, [inlineNoteId])
   const filtersKeyRef = React.useRef(null)
   const notePrevLeftRef = React.useRef(null)
   React.useEffect(() => {

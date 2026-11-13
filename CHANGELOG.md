@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.24.9
+
+- Audited all 95 figure/table crops across 7 papers.
+- Added page-level table caption-side inference, side-by-side table bounds and narrow-caption table expansion.
+- Figure crops now skip running headers/section headings, bound against preceding tables, include full-width Nature panels, and keep text-only appendix figures.
+- Added a complete (sideways) crop for the rotated GGCM Table 2; auto-rotation remains unsupported.
+
 ## 0.24.7
 
 - Reader annotations can be quoted straight into the open note as quote cards.

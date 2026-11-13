@@ -862,7 +862,7 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
       api.updateProgress(job, index + 1, paperIds.length, 'papers')
     }
     if (job.payload?.force === true) {
-      try { store.writeSetting('figure-crop:table-side:v5', 'done') } catch {}
+      try { store.writeSetting('figure-crop:table-side:v17', 'done') } catch {}
     }
     return { results }
   }
@@ -875,7 +875,7 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
    */
   function scheduleFigureRepair() {
     try {
-      if (store.readSetting('figure-crop:table-side:v5') === 'done') return undefined
+      if (store.readSetting('figure-crop:table-side:v17') === 'done') return undefined
     } catch {}
     let rows
     try {
@@ -893,15 +893,15 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
       return undefined
     }
     if (rows.length === 0) {
-      try { store.writeSetting('figure-crop:table-side:v5', 'done') } catch {}
+      try { store.writeSetting('figure-crop:table-side:v17', 'done') } catch {}
       return undefined
     }
-    const idempotencyKey = 'figure-repair:table-side:v5'
+    const idempotencyKey = 'figure-repair:table-side:v17'
     const existing = store.db.prepare('SELECT * FROM jobs WHERE idempotency_key = ?').get(idempotencyKey)
     if (existing !== undefined) {
       if (['queued', 'running', 'retry_wait', 'paused'].includes(existing.state)) return existing.id
       if (existing.state === 'succeeded') {
-        try { store.writeSetting('figure-crop:table-side:v5', 'done') } catch {}
+        try { store.writeSetting('figure-crop:table-side:v17', 'done') } catch {}
         return undefined
       }
       try {
@@ -1193,12 +1193,15 @@ function looksLikeTableBlock(block, pageWidth) {
   if (!block || !block.bbox) return false
   const body = rawBlockText(block)
   if (body === '' || CAPTION_PATTERN.test(body)) return false
+  // Section headings ("A", "A.1", "ADDITIONAL RESULTS") can sit directly above
+  // a table and must not become the crop's first row.
+  if ((block.lines ?? []).length === 1 && (/^[A-Z](?:\.\d+)*$/.test(body) || (/^[A-Z0-9 .:&()\-]+$/.test(body) && /[A-Z]{3,}/.test(body) && /\s/.test(body)))) return false
   const width = Number(block.bbox.w) || 0
   const lineCount = Math.max(1, (block.lines ?? []).length)
   const average = body.length / lineCount
   // Long prose columns are not table cells. Short headers/cells and narrow
   // symbol columns are.
-  if (width > pageWidth * 0.42 && average > 28) return false
+  if (width > pageWidth * 0.30 && average > 28) return false
   return average <= 32 || width <= pageWidth * 0.24
 }
 
@@ -1211,14 +1214,20 @@ function overlapsCaptionColumn(block, captionLine) {
 
 /**
  * Table captions are not always above the table: many two-column papers put
- * the caption below it. Score the short-cell/text blocks immediately above and
- * below the caption, then crop the side that actually contains the grid.
+ * the caption below it. Score the short-cell/text blocks above and below the
+ * caption, then crop the side that actually contains the grid.
  */
-function tableCropFromBlocks(page, captionLine, pageWidth, pageHeight) {
+function tableSideCandidates(page, captionLine, pageWidth, pageHeight) {
   const blocks = Array.isArray(page?.blocks) ? page.blocks : []
-  if (blocks.length === 0) return null
+  if (blocks.length === 0) return { above: { cells: [], gap: Infinity }, below: { cells: [], gap: Infinity }, peerRight: pageWidth }
+  // Side-by-side table captions: do not let the left table pull in the right
+  // table when their caption lines are merged into one wide text line.
+  const peerRight = (page.lines ?? [])
+    .filter((line) => line !== captionLine && CAPTION_PATTERN.test(line.text) && Math.abs(line.yMin - captionLine.yMin) < 36 && line.xMin > captionLine.xMin + 20)
+    .reduce((right, line) => Math.min(right, line.xMin - 6), pageWidth)
   const within = (block, side) => {
     if (!block?.bbox || !overlapsCaptionColumn(block, captionLine)) return false
+    if (peerRight < pageWidth && block.bbox.x + block.bbox.w > peerRight + 2) return false
     if (side === 'above') {
       const bottom = block.bbox.y + block.bbox.h
       return bottom <= captionLine.yMin + 3 && block.bbox.y >= captionLine.yMin - pageHeight * 0.48
@@ -1230,7 +1239,7 @@ function tableCropFromBlocks(page, captionLine, pageWidth, pageHeight) {
     const out = []
     for (const cell of sorted) {
       const last = out[out.length - 1]
-      if (last === undefined || cell.bbox.y - last.bottom > 26) out.push({ cells: [cell], bottom: cell.bbox.y + cell.bbox.h })
+      if (last === undefined || cell.bbox.y - last.bottom > 30) out.push({ cells: [cell], bottom: cell.bbox.y + cell.bbox.h })
       else { last.cells.push(cell); last.bottom = Math.max(last.bottom, cell.bbox.y + cell.bbox.h) }
     }
     return out
@@ -1248,33 +1257,114 @@ function tableCropFromBlocks(page, captionLine, pageWidth, pageHeight) {
     // Above: use the group nearest the caption (last); below: nearest (first).
     return side === 'above' ? candidates[candidates.length - 1] : candidates[0]
   }
-  const above = score('above')
-  const below = score('below')
+  return { above: score('above'), below: score('below'), peerRight }
+}
+
+/** Crop the selected table side, trimming section headings above the grid. */
+function tableCropFromSides(page, sides, captionLine, pageWidth, pageHeight, preferredSide) {
+  const above = sides.above
+  const below = sides.below
   const hasAbove = above.cells.length >= 2
   const hasBelow = below.cells.length >= 2
-  // Prefer the closer grid. A caption may sit below its table while another
-  // table's body follows; the 15 pt gap above wins over the 22 pt body below.
-  const chosen = hasAbove && hasBelow
-    ? (above.gap <= below.gap + 4 ? above : below)
-    : hasAbove ? above : hasBelow ? below : null
+  let chosen = null
+  if (preferredSide === 'above' && hasAbove) chosen = above
+  else if (preferredSide === 'below' && hasBelow) chosen = below
+  else if (hasAbove && hasBelow) chosen = above.gap <= below.gap + 4 ? above : below
+  else chosen = hasAbove ? above : hasBelow ? below : null
   if (chosen === null) return null
-  const left = Math.min(...chosen.cells.map((block) => block.bbox.x)) - 4
-  const right = Math.max(...chosen.cells.map((block) => block.bbox.x + block.bbox.w)) + 4
-  const top = Math.min(...chosen.cells.map((block) => block.bbox.y)) - 4
+  // A narrow caption can sit over only the first columns of a wider table.
+  // Take every table cell on the selected side whose row band belongs to this
+  // grid; this also keeps side-by-side tables apart through `peerRight`.
+  const clusterTop = Math.min(...chosen.cells.map((block) => block.bbox.y)) - 4
+  const clusterBottom = Math.max(...chosen.cells.map((block) => block.bbox.y + block.bbox.h)) + 4
+  const withinSide = chosen === sides.above
+  const rowCells = (page.blocks ?? []).filter((block) => {
+    if (!block?.bbox || !looksLikeTableBlock(block, pageWidth)) return false
+    if (sides.peerRight < pageWidth && block.bbox.x + block.bbox.w > sides.peerRight + 2) return false
+    if (block.bbox.y < clusterTop || block.bbox.y > clusterBottom) return false
+    if (captionLine.xMin > pageWidth * 0.45 && !overlapsCaptionColumn(block, captionLine)) return false
+    if (withinSide) return block.bbox.y + block.bbox.h <= captionLine.yMin + 3
+    return block.bbox.y >= captionLine.yMax - 3
+  })
+  const expanded = rowCells.length >= chosen.cells.length ? rowCells : chosen.cells
+  const chosenCells = expanded
+  // Drop section headings that happen to sit just above the table: the real
+  // table starts at the first row with at least two cells.
+  const rowGroups = []
+  for (const cell of [...chosenCells].sort((left, right) => left.bbox.y - right.bbox.y)) {
+    const row = rowGroups[rowGroups.length - 1]
+    if (row === undefined || cell.bbox.y - row.y > 4) rowGroups.push({ y: cell.bbox.y, cells: [cell] })
+    else row.cells.push(cell)
+  }
+  const firstGridRow = rowGroups.find((row) => row.cells.length >= 2) || null
+  const cells = firstGridRow === null ? chosenCells : chosenCells.filter((cell) => cell.bbox.y >= firstGridRow.y - 2)
+  const left = Math.min(...cells.map((block) => block.bbox.x)) - 4
+  const right = Math.max(...cells.map((block) => block.bbox.x + block.bbox.w)) + 4
+  const top = Math.min(...cells.map((block) => block.bbox.y)) - 4
   const bottom = chosen === above
     ? captionLine.yMin - 3
-    : Math.max(...chosen.cells.map((block) => block.bbox.y + block.bbox.h)) + 4
-  const bbox = {
+    : Math.max(...cells.map((block) => block.bbox.y + block.bbox.h)) + 4
+  return {
     x: clampPoint(left, 0, pageWidth),
     y: clampPoint(top, 0, pageHeight),
     w: clampPoint(right - left, 40, pageWidth),
     h: clampPoint(bottom - top, 40, pageHeight),
   }
-  return bbox
+}
+
+/** Convenience wrapper used by tests and one-off callers. */
+function tableCropFromBlocks(page, captionLine, pageWidth, pageHeight) {
+  return tableCropFromSides(page, tableSideCandidates(page, captionLine, pageWidth, pageHeight), captionLine, pageWidth, pageHeight)
+}
+
+/** Infer whether this page puts table captions above or below their grids. */
+function detectTablePageStyle(page, lines, pageWidth, pageHeight) {
+  let style = null
+  for (const line of lines) {
+    if (!CAPTION_PATTERN.test(line.text) || !/^table/i.test(line.text.trim())) continue
+    const sides = tableSideCandidates(page, line, pageWidth, pageHeight)
+    const hasAbove = sides.above.cells.length >= 2
+    const hasBelow = sides.below.cells.length >= 2
+    if (hasAbove && !hasBelow) style = 'above'
+    else if (hasBelow && !hasAbove) style = 'below'
+  }
+  return style
+}
+
+/** Bounding box of a table printed sideways under a rotated caption. */
+function rotatedTableBbox(page, captionLine, pageWidth, pageHeight) {
+  const blocks = Array.isArray(page?.blocks) ? page.blocks : []
+  const captionBlock = blocks.find((block) => {
+    const b = block?.bbox
+    return b && captionLine.yMin >= b.y - 2 && captionLine.yMin <= b.y + b.h + 2 && captionLine.xMin >= b.x - 2 && captionLine.xMin <= b.x + b.w + 2 && CAPTION_PATTERN.test(rawBlockText(block))
+  })
+  if (!captionBlock || !captionBlock.bbox) return null
+  const b = captionBlock.bbox
+  if (b.h < b.w * 5 || b.h < pageHeight * 0.4 || b.w > pageWidth * 0.1) return null
+  const cells = blocks.filter((block) => {
+    const box = block?.bbox
+    if (!box || block === captionBlock) return false
+    if (box.x < b.x - 20 || box.x > pageWidth * 0.7) return false
+    if (box.w > pageWidth * 0.28) return false
+    if (box.x >= pageWidth * 0.5) return false
+    if (box.y < b.y - 20 || box.y + box.h > b.y + b.h + 20) return false
+    return rawBlockText(block).length > 0
+  })
+  if (cells.length === 0) return null
+  const left = Math.min(b.x, ...cells.map((cell) => cell.bbox.x)) - 6
+  const right = Math.max(...cells.map((cell) => cell.bbox.x + cell.bbox.w)) + 6
+  const top = Math.min(b.y, ...cells.map((cell) => cell.bbox.y)) - 6
+  const bottom = Math.max(b.y + b.h, ...cells.map((cell) => cell.bbox.y + cell.bbox.h)) + 6
+  return {
+    x: clampPoint(left, 0, pageWidth),
+    y: clampPoint(top, 0, pageHeight),
+    w: clampPoint(right - left, 40, pageWidth),
+    h: clampPoint(bottom - top, 40, pageHeight),
+  }
 }
 
 /** Bottom of the nearest body/author text block above a figure caption. */
-function figureTopFromBlocks(page, captionLine, pageWidth) {
+function figureTopFromBlocks(page, captionLine, pageWidth, pageHeight) {
   const blocks = Array.isArray(page?.blocks) ? page.blocks : []
   let best = null
   for (const block of blocks) {
@@ -1284,17 +1374,111 @@ function figureTopFromBlocks(page, captionLine, pageWidth) {
     if (!overlapsCaptionColumn(block, captionLine)) continue
     const bottom = block.bbox.y + block.bbox.h
     if (bottom > captionLine.yMin + 2) continue
+    if (captionLine.yMin - bottom <= 24) continue
     const lines = Math.max(1, (block.lines ?? []).length)
     const average = body.length / lines
-    const bodyLike = block.bbox.w > pageWidth * 0.35 && average > 25
+    const bodyLike = block.bbox.w > pageWidth * 0.35 && average > 35 && (lines >= 2 || block.bbox.y < pageHeight * 0.3)
     if (!bodyLike) continue
     if (best === null || bottom > best) best = bottom
+  }
+  // A section heading between the body and the figure is part of the page
+  // chrome, not the figure: start below it.
+  for (const block of blocks) {
+    if (!block?.bbox || !overlapsCaptionColumn(block, captionLine)) continue
+    const body = rawBlockText(block)
+    const heading = body.length < 90 && (block.lines ?? []).length <= 2 && /^(?:\d+(?:\.\d+)*|[A-Z](?:\.\d+)*)\s+[A-Z]/.test(body)
+    if (!heading) continue
+    const bottom = block.bbox.y + block.bbox.h
+    if (bottom <= captionLine.yMin + 2 && best !== null && bottom > best) best = bottom
   }
   return best === null ? null : best + 6
 }
 
+/** Bounds of the nearest short-label cluster above a figure caption. */
+function figureLabelBounds(page, captionLine, pageWidth, pageHeight) {
+  const cells = []
+  for (const block of Array.isArray(page?.blocks) ? page.blocks : []) {
+    if (!block?.bbox) continue
+    const body = rawBlockText(block)
+    if (body === '' || CAPTION_PATTERN.test(body)) continue
+    if (!overlapsCaptionColumn(block, captionLine)) continue
+    const bottom = block.bbox.y + block.bbox.h
+    if (bottom > captionLine.yMin + 2) continue
+    if (block.bbox.y < captionLine.yMin - pageHeight * 0.42) continue
+    if (block.bbox.w > pageWidth * 0.35 && body.length / Math.max(1, (block.lines ?? []).length) > 30) continue
+    cells.push(block)
+  }
+  if (cells.length === 0) return null
+  cells.sort((left, right) => left.bbox.y - right.bbox.y)
+  const groups = []
+  for (const cell of cells) {
+    const last = groups[groups.length - 1]
+    if (last === undefined || cell.bbox.y - last.bottom > 20) groups.push({ top: cell.bbox.y, bottom: cell.bbox.y + cell.bbox.h, left: cell.bbox.x, right: cell.bbox.x + cell.bbox.w })
+    else {
+      last.bottom = Math.max(last.bottom, cell.bbox.y + cell.bbox.h)
+      last.left = Math.min(last.left, cell.bbox.x)
+      last.right = Math.max(last.right, cell.bbox.x + cell.bbox.w)
+    }
+  }
+  const group = groups[groups.length - 1]
+  if (group === undefined || group.bottom - group.top < pageHeight * 0.04) return null
+  return group
+}
+
+/** Top of a text-only figure block that ends right above its caption. *//** Top of a text-only figure block that ends right above its caption. */
+function figureTextTop(page, captionLine, pageWidth, pageHeight) {
+  for (const block of Array.isArray(page?.blocks) ? page.blocks : []) {
+    if (!block?.bbox) continue
+    const body = rawBlockText(block)
+    if (body === '' || CAPTION_PATTERN.test(body)) continue
+    if (!overlapsCaptionColumn(block, captionLine)) continue
+    const bottom = block.bbox.y + block.bbox.h
+    if (bottom > captionLine.yMin + 2) continue
+    if (captionLine.yMin - bottom > 24) continue
+    if (block.bbox.h >= pageHeight * 0.35) return block.bbox.y
+  }
+  return null
+}
+
+/** Does the figure span both columns even though its caption is one column? */
+function figureSpansPage(page, captionLine, pageWidth, pageHeight) {
+  if (captionLine.xMin > pageWidth * 0.4) return false
+  const leftCaption = captionLine.xMin < pageWidth * 0.45
+  const otherLeft = leftCaption ? pageWidth * 0.5 : 0
+  const otherRight = leftCaption ? pageWidth : pageWidth * 0.5
+  const bandTop = Math.max(0, captionLine.yMin - pageHeight * 0.7)
+  for (const block of Array.isArray(page?.blocks) ? page.blocks : []) {
+    if (!block?.bbox) continue
+    if (block.bbox.y < pageHeight * 0.08) continue
+    if (block.bbox.y + block.bbox.h < bandTop || block.bbox.y >= captionLine.yMin - 2) continue
+    const right = block.bbox.x + block.bbox.w
+    if (block.bbox.x >= otherRight || right <= otherLeft) continue
+    const body = rawBlockText(block)
+    if (CAPTION_PATTERN.test(body)) continue
+    const lineCount = Math.max(1, (block.lines ?? []).length)
+    if (block.bbox.w > pageWidth * 0.3 && body.length / lineCount > 30) return false
+    if (lineCount >= 4 && block.bbox.w > pageWidth * 0.2) return false
+  }
+  return true
+}
+
+/** Top of the printable content band, below any running header. */
+function pageContentTop(page, pageWidth, pageHeight) {
+  let bottom = pageHeight * 0.03
+  for (const block of Array.isArray(page?.blocks) ? page.blocks : []) {
+    if (!block?.bbox) continue
+    if (block.bbox.y > pageHeight * 0.1) continue
+    if (block.bbox.w < pageWidth * 0.08) continue
+    bottom = Math.max(bottom, block.bbox.y + block.bbox.h + 4)
+  }
+  return Math.min(bottom, pageHeight * 0.12)
+}
+
 /**
  * Detect figure/table caption candidates in parsed `-bbox-layout` pages.
+
+
+
 
  *
  * Figures take the region above their caption. Tables choose the grid side by
@@ -1310,8 +1494,10 @@ export function detectFigureCandidates(layoutPages) {
     const pageHeight = page.height ?? 792
     if (pageHeight <= 0 || pageWidth <= 0) continue
     const lines = [...(page.lines ?? [])].filter((line) => Number.isFinite(line.yMin) && Number.isFinite(line.yMax)).sort((left, right) => left.yMin - right.yMin)
-    let previousCaptionBottom = 0
     let pageFigures = 0
+    let tablePageStyle
+    const priorCaptions = []
+    const priorRegions = []
     for (let index = 0; index < lines.length; index += 1) {
       const line = lines[index]
       const match = CAPTION_PATTERN.exec(line.text)
@@ -1328,8 +1514,14 @@ export function detectFigureCandidates(layoutPages) {
       let bbox
       if (kind === 'table') {
         // Captions can be below the grid (common in two-column papers) or above
-        // it. Pick the block cluster that actually looks like table cells.
-        bbox = tableCropFromBlocks(page, line, pageWidth, pageHeight)
+        // it. Pick the block cluster that actually looks like table cells; an
+        // unambiguous table elsewhere on the page settles the page style.
+        bbox = rotatedTableBbox(page, line, pageWidth, pageHeight)
+        if (bbox === null) {
+          if (tablePageStyle === undefined) tablePageStyle = detectTablePageStyle(page, lines, pageWidth, pageHeight)
+          const sides = tableSideCandidates(page, line, pageWidth, pageHeight)
+          bbox = tableCropFromSides(page, sides, line, pageWidth, pageHeight, tablePageStyle)
+        }
         if (bbox === null) {
           // Fallback: conventional caption-above-table crop.
           const nextCaptionTop = findNextCaptionTop(lines, index + 1)
@@ -1342,19 +1534,44 @@ export function detectFigureCandidates(layoutPages) {
           }
         }
       } else {
-        const marginTop = pageHeight * 0.03
+        const marginTop = pageContentTop(page, pageWidth, pageHeight)
         const minimumHeight = pageHeight * 0.3
         // Use the nearest body/author block above the caption as the top edge;
         // otherwise a page-top title/authors can leak into the figure crop.
-        const blockTop = figureTopFromBlocks(page, line, pageWidth)
-        let top = blockTop !== null ? blockTop : Math.max(marginTop, line.yMin - Math.max(minimumHeight, pageHeight * 0.55))
-        top = Math.max(top, previousCaptionBottom + 4)
+        const blockTop = figureTopFromBlocks(page, line, pageWidth, pageHeight)
+        const textTop = figureTextTop(page, line, pageWidth, pageHeight)
+        const labelBounds = figureLabelBounds(page, line, pageWidth, pageHeight)
+        let top = textTop !== null ? textTop : blockTop !== null ? blockTop : Math.max(marginTop, line.yMin - Math.max(minimumHeight, pageHeight * 0.55))
+        if (textTop === null && labelBounds !== null) top = Math.max(top, labelBounds.top)
+        top = Math.max(top, marginTop)
+        // A previous caption in the same horizontal band blocks the crop: a table
+        // above this figure must not be pulled into the figure image.
+        for (const prior of priorCaptions) {
+          if (prior.bottom > line.yMin + 2) continue
+          const overlap = Math.min(prior.right, line.xMax) - Math.max(prior.left, line.xMin)
+          if (overlap > 12) top = Math.max(top, prior.bottom + 4)
+        }
+        for (const prior of priorRegions) {
+          if (prior.bottom > line.yMin + 2) continue
+          const overlap = Math.min(prior.right, line.xMax) - Math.max(prior.left, line.xMin)
+          if (overlap > 12) top = Math.max(top, prior.bottom + 4)
+        }
+        // If the top edge lands inside a caption/body line, start below it.
+        for (const block of page.blocks ?? []) {
+          if (!block?.bbox) continue
+          const body = rawBlockText(block)
+          if (!CAPTION_PATTERN.test(body)) continue
+          if (block.bbox.y < top && block.bbox.y + block.bbox.h > top) top = Math.max(top, block.bbox.y + block.bbox.h + 4)
+        }
         if (line.yMin - top < pageHeight * 0.12 && blockTop === null) top = Math.max(marginTop, line.yMin - minimumHeight)
-        // Keep the figure crop inside its caption column; wide caption bands
-        // still get the full text width.
-        const wide = line.xMax - line.xMin > pageWidth * 0.6
-        const x = wide ? pageWidth * 0.04 : Math.max(0, line.xMin - 4)
-        const width = wide ? pageWidth * 0.92 : Math.max(40, line.xMax - line.xMin + 8)
+        // Keep the figure crop inside its caption column unless the other
+        // column is empty above the caption (multi-panel full-width figures
+        // often have a narrow caption in one column).
+        const wide = figureSpansPage(page, line, pageWidth, pageHeight)
+        const captionWidth = line.xMax - line.xMin
+        const expandColumn = !wide && line.xMin < pageWidth * 0.12 && captionWidth < pageWidth * 0.32
+        let x = wide ? pageWidth * 0.04 : expandColumn ? Math.min(Math.max(0, line.xMin - 4), columnLeft(line, pageWidth)) : Math.max(0, line.xMin - 4)
+        let width = wide ? pageWidth * 0.92 : expandColumn ? Math.max(40, columnWidth(line, pageWidth)) : Math.max(40, captionWidth + 8)
         bbox = {
           x: clampPoint(x, 0, pageWidth),
           y: clampPoint(top, 0, pageHeight),
@@ -1364,7 +1581,8 @@ export function detectFigureCandidates(layoutPages) {
       }
       if (bbox.w < 40 || bbox.h < 40) continue
       candidates.push({ page: page.page, kind, label, caption, bbox, pageWidth, pageHeight })
-      previousCaptionBottom = Math.max(previousCaptionBottom, kind === 'table' ? line.yMax + bbox.h + 4 : line.yMax + 4)
+      priorCaptions.push({ left: Math.max(0, line.xMin - 8), right: Math.min(pageWidth, line.xMax + 8), bottom: line.yMax })
+      if (kind === 'table') priorRegions.push({ left: bbox.x, right: bbox.x + bbox.w, bottom: bbox.y + bbox.h })
       pageFigures += 1
     }
   }

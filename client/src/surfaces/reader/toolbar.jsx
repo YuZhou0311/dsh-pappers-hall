@@ -8,7 +8,6 @@
  */
 import React from 'react'
 import { Btn, Icon, IconBtn, arrayOf, cx, firstText, num } from './shared.jsx'
-import { SlidingThumb, useSlidingThumb } from '../../core/motion.js'
 
 /** Build a single-line author list. */
 function authorLine(authors) {
@@ -79,7 +78,6 @@ export function ReaderToolbar(props) {
   const searchInputRef = React.useRef(null)
   const noteContext = props.noteContext || null
   const linkedToNote = Boolean(noteContext && paper && Array.isArray(noteContext.paperIds) && noteContext.paperIds.includes(paper.id))
-  const modeSlider = useSlidingThumb()
 
   React.useEffect(() => {
     if (!search.open) return
@@ -105,12 +103,6 @@ export function ReaderToolbar(props) {
   const venue = firstText(paper && paper.venue, paper && paper.containerTitle)
   if (venue) metaParts.push(venue)
   if (paper && paper.pageCount) metaParts.push(rt('reader.pagesCount', { count: paper.pageCount }))
-
-  const modeItems = [
-    { id: 'source', label: rt('reader.mode.source') },
-    { id: 'compare', label: rt('reader.mode.compare') },
-    { id: 'translation', label: rt('reader.mode.translation') },
-  ]
 
   return React.createElement(
     'div',
@@ -151,19 +143,6 @@ export function ReaderToolbar(props) {
       React.createElement(
         'div',
         { className: 'ph-r-toolbar__actions' },
-        React.createElement(Btn, { size: 'sm', variant: 'soft', icon: 'quote', onClick: props.onCite, title: rt('reader.cite') }, rt('reader.cite')),
-        React.createElement(
-          'a',
-          {
-            className: 'ph-r-btn ph-r-btn--ghost ph-r-btn--sm',
-            href: '/pappers-hall/pdf/' + encodeURIComponent(String((paper && paper.id) || '')),
-            target: '_blank',
-            rel: 'noopener noreferrer',
-            title: rt('reader.openPdf'),
-          },
-          React.createElement(Icon, { name: 'external', size: 14 }),
-          React.createElement('span', { className: 'ph-r-btn__label' }, rt('reader.openPdf')),
-        ),
         React.createElement(
           Btn,
           {
@@ -244,29 +223,18 @@ export function ReaderToolbar(props) {
         React.createElement(IconBtn, { icon: 'fit', title: rt('reader.zoomFit'), onClick: props.onZoomFit }),
       ),
       React.createElement('span', { className: 'ph-r-toolbar__meta-sep' }, ''),
+      React.createElement(Btn, { size: 'sm', variant: 'soft', icon: 'quote', onClick: props.onCite, title: rt('reader.cite'), className: 'ph-r-toolbar__cite' }, rt('reader.cite')),
       React.createElement(
-        'div',
+        'a',
         {
-          className: cx('ph-r-segment', modeSlider.rect && 'ph-r-segment--sliding'),
-          ref: modeSlider.ref,
-          role: 'group',
-          'aria-label': rt('reader.mode.label'),
+          className: 'ph-r-btn ph-r-btn--ghost ph-r-btn--sm ph-r-toolbar__pdf',
+          href: '/pappers-hall/pdf/' + encodeURIComponent(String((paper && paper.id) || '')),
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          title: rt('reader.openPdf'),
         },
-        React.createElement(SlidingThumb, { rect: modeSlider.rect, inset: 2, popKey: props.mode }),
-        modeItems.map((item) =>
-          React.createElement(
-            'button',
-            {
-              key: item.id,
-              type: 'button',
-              'data-ph-active': props.mode === item.id ? 'true' : undefined,
-              className: cx('ph-r-segment__item', props.mode === item.id && 'ph-r-segment__item--active'),
-              onClick: () => props.onMode(item.id),
-              'aria-pressed': props.mode === item.id ? 'true' : 'false',
-            },
-            item.label,
-          ),
-        ),
+        React.createElement(Icon, { name: 'external', size: 14 }),
+        React.createElement('span', { className: 'ph-r-btn__label' }, rt('reader.openPdf')),
       ),
       React.createElement('span', { className: 'ph-r-toolbar__spacer' }),
       search.open

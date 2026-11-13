@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.24.23
+
+- Removed the 原文/对照/仅译文 mode switch from the reader toolbar; the translation assistant and side translation tools remain.
+- Moved 引用到对话 and 打开 PDF into the tool row’s former mode-switch position.
+
 ## 0.24.22
 
 - Linking a paper from the note side panel refreshes the open note live (no reopen needed).

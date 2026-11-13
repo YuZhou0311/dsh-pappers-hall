@@ -22314,7 +22314,6 @@ function ReaderToolbar(props) {
   const searchInputRef = import_react29.default.useRef(null);
   const noteContext = props.noteContext || null;
   const linkedToNote = Boolean(noteContext && paper && Array.isArray(noteContext.paperIds) && noteContext.paperIds.includes(paper.id));
-  const modeSlider = useSlidingThumb();
   import_react29.default.useEffect(() => {
     if (!search.open) return;
     const timer2 = setTimeout(() => {
@@ -22337,11 +22336,6 @@ function ReaderToolbar(props) {
   const venue = firstText3(paper && paper.venue, paper && paper.containerTitle);
   if (venue) metaParts.push(venue);
   if (paper && paper.pageCount) metaParts.push(rt("reader.pagesCount", { count: paper.pageCount }));
-  const modeItems = [
-    { id: "source", label: rt("reader.mode.source") },
-    { id: "compare", label: rt("reader.mode.compare") },
-    { id: "translation", label: rt("reader.mode.translation") }
-  ];
   return import_react29.default.createElement(
     "div",
     { className: "ph-r-toolbar", role: "toolbar", "aria-label": rt("reader.mode.label") },
@@ -22381,19 +22375,6 @@ function ReaderToolbar(props) {
       import_react29.default.createElement(
         "div",
         { className: "ph-r-toolbar__actions" },
-        import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite") }, rt("reader.cite")),
-        import_react29.default.createElement(
-          "a",
-          {
-            className: "ph-r-btn ph-r-btn--ghost ph-r-btn--sm",
-            href: "/pappers-hall/pdf/" + encodeURIComponent(String(paper && paper.id || "")),
-            target: "_blank",
-            rel: "noopener noreferrer",
-            title: rt("reader.openPdf")
-          },
-          import_react29.default.createElement(Icon2, { name: "external", size: 14 }),
-          import_react29.default.createElement("span", { className: "ph-r-btn__label" }, rt("reader.openPdf"))
-        ),
         import_react29.default.createElement(
           Btn,
           {
@@ -22472,29 +22453,18 @@ function ReaderToolbar(props) {
         import_react29.default.createElement(IconBtn, { icon: "fit", title: rt("reader.zoomFit"), onClick: props.onZoomFit })
       ),
       import_react29.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
+      import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite"), className: "ph-r-toolbar__cite" }, rt("reader.cite")),
       import_react29.default.createElement(
-        "div",
+        "a",
         {
-          className: cx("ph-r-segment", modeSlider.rect && "ph-r-segment--sliding"),
-          ref: modeSlider.ref,
-          role: "group",
-          "aria-label": rt("reader.mode.label")
+          className: "ph-r-btn ph-r-btn--ghost ph-r-btn--sm ph-r-toolbar__pdf",
+          href: "/pappers-hall/pdf/" + encodeURIComponent(String(paper && paper.id || "")),
+          target: "_blank",
+          rel: "noopener noreferrer",
+          title: rt("reader.openPdf")
         },
-        import_react29.default.createElement(SlidingThumb, { rect: modeSlider.rect, inset: 2, popKey: props.mode }),
-        modeItems.map(
-          (item) => import_react29.default.createElement(
-            "button",
-            {
-              key: item.id,
-              type: "button",
-              "data-ph-active": props.mode === item.id ? "true" : void 0,
-              className: cx("ph-r-segment__item", props.mode === item.id && "ph-r-segment__item--active"),
-              onClick: () => props.onMode(item.id),
-              "aria-pressed": props.mode === item.id ? "true" : "false"
-            },
-            item.label
-          )
-        )
+        import_react29.default.createElement(Icon2, { name: "external", size: 14 }),
+        import_react29.default.createElement("span", { className: "ph-r-btn__label" }, rt("reader.openPdf"))
       ),
       import_react29.default.createElement("span", { className: "ph-r-toolbar__spacer" }),
       search.open ? import_react29.default.createElement(

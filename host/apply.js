@@ -609,6 +609,8 @@ async function applyHostNow(ctx, config) {
           if (maintenanceJobId !== undefined) logger.info(`pappers-hall: v0.2 backfill job ${maintenanceJobId} queued`)
           const figureJobId = ingest.scheduleFigureRecovery()
           if (figureJobId !== undefined) logger.info(`pappers-hall: figure recovery job ${figureJobId} queued`)
+          const repairJobId = ingest.scheduleFigureRepair()
+          if (repairJobId !== undefined) logger.info(`pappers-hall: figure crop repair job ${repairJobId} queued`)
         } catch (error) {
           logger.warn(`pappers-hall: v0.2 backfill scheduling failed: ${String(error?.message ?? error)}`)
         }

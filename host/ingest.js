@@ -14,7 +14,7 @@
  * @module pappers-hall/host/ingest
  */
 import { statSync } from 'node:fs'
-import { copyFile, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { copyFile, readFile, readdir, rename, rm, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { buildOutline, buildReaderStructure, extractAbstract, LAYOUT_VERSION } from './layout.js'
 import { flattenLayoutPages, PdfToolError } from './pdf.js'
@@ -649,6 +649,69 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
   }
 
   /** Render/crop/hash every detected figure of one paper. */
+  /** Drop resized figure caches so a repaired bbox is served immediately. */
+  async function clearFigureCaches(figureId) {
+    try {
+      for (const name of await readdir(layout.figuresCacheDir)) {
+        if (name.startsWith(`${figureId}-w`)) await unlink(path.join(layout.figuresCacheDir, name)).catch(() => {})
+      }
+    } catch {}
+  }
+
+  /**
+   * Re-crop existing figure ids in place. This is used by the one-time table-crop
+   * repair: figure ids stay stable for annotations/notes, only bbox/crop changes.
+   */
+  async function repairFigureCrops(paperId, version, filePath, flatPages) {
+    const layoutByPage = new Map(flatPages.map((page) => [page.page, page]))
+    const candidates = detectFigureCandidates(flatPages).slice(0, maxFiguresPerPaper)
+    const rows = store.figureRowsForPaper(paperId)
+    const byKey = new Map()
+    for (const row of rows) byKey.set(`${Number(row.page)}|${String(row.label ?? '')}`, row)
+    let updated = 0
+    for (const candidate of candidates) {
+      const row = byKey.get(`${candidate.page}|${candidate.label}`)
+      if (!row || typeof row.file_name !== 'string' || row.file_name === '') continue
+      const layoutPage = layoutByPage.get(candidate.page)
+      const pageSize = { width: layoutPage?.width ?? candidate.pageWidth, height: layoutPage?.height ?? candidate.pageHeight }
+      try {
+        const rendered = await pdf.renderCrop({
+          filePath,
+          page: candidate.page,
+          bbox: candidate.bbox,
+          pageSize,
+          outputPath: path.join(layout.figuresDir, row.file_name),
+          dpi: figureDpi,
+        })
+        if (typeof row.thumb_name === 'string' && row.thumb_name !== '') {
+          await pdf.renderCrop({
+            filePath,
+            page: candidate.page,
+            bbox: candidate.bbox,
+            pageSize,
+            outputPath: path.join(layout.figuresDir, row.thumb_name),
+            targetWidth: 320,
+          })
+        }
+        let dhash = null
+        try { dhash = await pdf.cropDhash({ filePath, page: candidate.page, bbox: candidate.bbox, pageSize }) } catch {}
+        store.updateFigureCrop(row.id, {
+          caption: candidate.caption,
+          bboxJson: JSON.stringify({ ...candidate.bbox, pageWidth: candidate.pageWidth, pageHeight: candidate.pageHeight }),
+          width: rendered.width,
+          height: rendered.height,
+          dhash,
+          status: 'ready',
+        })
+        await clearFigureCaches(row.id)
+        updated += 1
+      } catch (error) {
+        logger?.warn?.(`pappers-hall: figure repair crop failed for ${row.id}: ${String(error?.message ?? error)}`)
+      }
+    }
+    return updated
+  }
+
   async function buildFigures(item, version, filePath, candidates, layoutByPage) {
     const figures = []
     for (const candidate of candidates) {
@@ -769,8 +832,9 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
         api.updateProgress(job, index + 1, paperIds.length, 'papers')
         continue
       }
+      const force = job.payload?.force === true
       const existing = Number(store.db.prepare('SELECT COUNT(*) AS count FROM figures WHERE paper_id = ?').get(paperId)?.count ?? 0)
-      if (existing > 0) {
+      if (existing > 0 && !force) {
         results.push({ paperId, ok: true, skipped: true, figures: existing })
         api.updateProgress(job, index + 1, paperIds.length, 'papers')
         continue
@@ -780,10 +844,16 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
         const flatPages = flattenLayoutPages(layoutDocument.pages)
         const layoutByPage = new Map(flatPages.map((page) => [page.page, page]))
         const candidates = detectFigureCandidates(flatPages).slice(0, maxFiguresPerPaper)
-        const figures = candidates.length === 0 ? [] : await buildFigures({ paperId, versionId: version.id }, version, version.file_path, candidates, layoutByPage)
-        store.replaceFigures(paperId, version.id, figures)
-        search.indexFigures(paperId)
-        results.push({ paperId, ok: true, figures: figures.length })
+        if (force && existing > 0) {
+          const updated = await repairFigureCrops(paperId, version, version.file_path, flatPages)
+          search.indexFigures(paperId)
+          results.push({ paperId, ok: true, repaired: updated, figures: existing })
+        } else {
+          const figures = candidates.length === 0 ? [] : await buildFigures({ paperId, versionId: version.id }, version, version.file_path, candidates, layoutByPage)
+          store.replaceFigures(paperId, version.id, figures)
+          search.indexFigures(paperId)
+          results.push({ paperId, ok: true, figures: figures.length })
+        }
       } catch (error) {
         if (error?.name === 'AbortError' || error?.code === 'cancelled') throw error
         results.push({ paperId, ok: false, reason: String(error?.message ?? error) })
@@ -791,7 +861,66 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
       }
       api.updateProgress(job, index + 1, paperIds.length, 'papers')
     }
+    if (job.payload?.force === true) {
+      try { store.writeSetting('figure-crop:table-side:v5', 'done') } catch {}
+    }
     return { results }
+  }
+
+  /**
+   * One-time repair for the old table-crop heuristic (captions below tables were
+   * cropped as if the table body were below the caption). Existing figure ids are
+   * kept so annotations and note references stay valid.
+   * @returns {string|undefined} job id.
+   */
+  function scheduleFigureRepair() {
+    try {
+      if (store.readSetting('figure-crop:table-side:v5') === 'done') return undefined
+    } catch {}
+    let rows
+    try {
+      rows = store.db
+        .prepare(
+          `SELECT p.id AS id FROM papers p
+           WHERE p.state = 'active'
+             AND EXISTS (SELECT 1 FROM paper_versions v WHERE v.paper_id = p.id)
+             AND EXISTS (SELECT 1 FROM figures f WHERE f.paper_id = p.id)
+           LIMIT 500`,
+        )
+        .all()
+    } catch (error) {
+      logger?.warn?.(`pappers-hall: figure repair scan failed: ${String(error?.message ?? error)}`)
+      return undefined
+    }
+    if (rows.length === 0) {
+      try { store.writeSetting('figure-crop:table-side:v5', 'done') } catch {}
+      return undefined
+    }
+    const idempotencyKey = 'figure-repair:table-side:v5'
+    const existing = store.db.prepare('SELECT * FROM jobs WHERE idempotency_key = ?').get(idempotencyKey)
+    if (existing !== undefined) {
+      if (['queued', 'running', 'retry_wait', 'paused'].includes(existing.state)) return existing.id
+      if (existing.state === 'succeeded') {
+        try { store.writeSetting('figure-crop:table-side:v5', 'done') } catch {}
+        return undefined
+      }
+      try {
+        queue.retry(existing.id)
+        return existing.id
+      } catch {
+        return undefined
+      }
+    }
+    const job = queue.enqueue({
+      kind: 'figure-recovery',
+      payload: { paperIds: rows.map((row) => row.id), force: true },
+      idempotencyKey,
+      total: rows.length,
+      unit: 'papers',
+      maxAttempts: 2,
+    })
+    logger?.info?.(`pappers-hall: scheduled table-crop repair for ${rows.length} paper(s)`)
+    return job.id
   }
 
   /**
@@ -1043,6 +1172,7 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
     ensureStructure,
     scheduleMaintenance,
     scheduleFigureRecovery,
+    scheduleFigureRepair,
     refreshDerivedFromStoredLayout,
     /** Exposed for tests and maintenance: compute caption candidates without IO. */
     detectFigureCandidates,
@@ -1053,12 +1183,123 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
 /* Figure detection                                                     */
 /* ------------------------------------------------------------------ */
 
+/** Plain text of one raw layout block. */
+function rawBlockText(block) {
+  return (block?.lines ?? []).map((line) => line.text ?? '').join(' ').replace(/\s+/g, ' ').trim()
+}
+
+/** Does a block look like a table cell/header rather than prose? */
+function looksLikeTableBlock(block, pageWidth) {
+  if (!block || !block.bbox) return false
+  const body = rawBlockText(block)
+  if (body === '' || CAPTION_PATTERN.test(body)) return false
+  const width = Number(block.bbox.w) || 0
+  const lineCount = Math.max(1, (block.lines ?? []).length)
+  const average = body.length / lineCount
+  // Long prose columns are not table cells. Short headers/cells and narrow
+  // symbol columns are.
+  if (width > pageWidth * 0.42 && average > 28) return false
+  return average <= 32 || width <= pageWidth * 0.24
+}
+
+/** Horizontal overlap between a block and the caption band. */
+function overlapsCaptionColumn(block, captionLine) {
+  const b = block?.bbox
+  if (!b) return false
+  return b.x < captionLine.xMax && b.x + b.w > captionLine.xMin
+}
+
+/**
+ * Table captions are not always above the table: many two-column papers put
+ * the caption below it. Score the short-cell/text blocks immediately above and
+ * below the caption, then crop the side that actually contains the grid.
+ */
+function tableCropFromBlocks(page, captionLine, pageWidth, pageHeight) {
+  const blocks = Array.isArray(page?.blocks) ? page.blocks : []
+  if (blocks.length === 0) return null
+  const within = (block, side) => {
+    if (!block?.bbox || !overlapsCaptionColumn(block, captionLine)) return false
+    if (side === 'above') {
+      const bottom = block.bbox.y + block.bbox.h
+      return bottom <= captionLine.yMin + 3 && block.bbox.y >= captionLine.yMin - pageHeight * 0.48
+    }
+    return block.bbox.y >= captionLine.yMax - 3 && block.bbox.y <= captionLine.yMax + pageHeight * 0.55
+  }
+  const groups = (cells) => {
+    const sorted = [...cells].sort((left, right) => left.bbox.y - right.bbox.y)
+    const out = []
+    for (const cell of sorted) {
+      const last = out[out.length - 1]
+      if (last === undefined || cell.bbox.y - last.bottom > 26) out.push({ cells: [cell], bottom: cell.bbox.y + cell.bbox.h })
+      else { last.cells.push(cell); last.bottom = Math.max(last.bottom, cell.bbox.y + cell.bbox.h) }
+    }
+    return out
+  }
+  const score = (side) => {
+    const cells = blocks.filter((block) => within(block, side) && looksLikeTableBlock(block, pageWidth))
+    const candidates = groups(cells).map((group) => {
+      const distinctColumns = new Set(group.cells.map((block) => Math.round(block.bbox.x / 14))).size
+      const top = Math.min(...group.cells.map((block) => block.bbox.y))
+      const bottom = Math.max(...group.cells.map((block) => block.bbox.y + block.bbox.h))
+      const gap = side === 'above' ? captionLine.yMin - bottom : top - captionLine.yMax
+      return { cells: group.cells, score: group.cells.length + distinctColumns * 0.35, gap }
+    }).filter((group) => group.cells.length >= 2)
+    if (candidates.length === 0) return { cells: [], score: 0, gap: Infinity }
+    // Above: use the group nearest the caption (last); below: nearest (first).
+    return side === 'above' ? candidates[candidates.length - 1] : candidates[0]
+  }
+  const above = score('above')
+  const below = score('below')
+  const hasAbove = above.cells.length >= 2
+  const hasBelow = below.cells.length >= 2
+  // Prefer the closer grid. A caption may sit below its table while another
+  // table's body follows; the 15 pt gap above wins over the 22 pt body below.
+  const chosen = hasAbove && hasBelow
+    ? (above.gap <= below.gap + 4 ? above : below)
+    : hasAbove ? above : hasBelow ? below : null
+  if (chosen === null) return null
+  const left = Math.min(...chosen.cells.map((block) => block.bbox.x)) - 4
+  const right = Math.max(...chosen.cells.map((block) => block.bbox.x + block.bbox.w)) + 4
+  const top = Math.min(...chosen.cells.map((block) => block.bbox.y)) - 4
+  const bottom = chosen === above
+    ? captionLine.yMin - 3
+    : Math.max(...chosen.cells.map((block) => block.bbox.y + block.bbox.h)) + 4
+  const bbox = {
+    x: clampPoint(left, 0, pageWidth),
+    y: clampPoint(top, 0, pageHeight),
+    w: clampPoint(right - left, 40, pageWidth),
+    h: clampPoint(bottom - top, 40, pageHeight),
+  }
+  return bbox
+}
+
+/** Bottom of the nearest body/author text block above a figure caption. */
+function figureTopFromBlocks(page, captionLine, pageWidth) {
+  const blocks = Array.isArray(page?.blocks) ? page.blocks : []
+  let best = null
+  for (const block of blocks) {
+    if (!block?.bbox) continue
+    const body = rawBlockText(block)
+    if (body === '' || CAPTION_PATTERN.test(body)) continue
+    if (!overlapsCaptionColumn(block, captionLine)) continue
+    const bottom = block.bbox.y + block.bbox.h
+    if (bottom > captionLine.yMin + 2) continue
+    const lines = Math.max(1, (block.lines ?? []).length)
+    const average = body.length / lines
+    const bodyLike = block.bbox.w > pageWidth * 0.35 && average > 25
+    if (!bodyLike) continue
+    if (best === null || bottom > best) best = bottom
+  }
+  return best === null ? null : best + 6
+}
+
 /**
  * Detect figure/table caption candidates in parsed `-bbox-layout` pages.
+
  *
- * Figures take the region above their caption (at least 30% of the page height,
- * bounded by the previous caption); tables conventionally take the region below
- * their caption. Coordinates stay in PDF points; the crop render converts them.
+ * Figures take the region above their caption. Tables choose the grid side by
+ * scoring table-like blocks above and below the caption. Coordinates stay in
+ * PDF points; the crop render converts them.
  * @param {Array<{page:number,width:number|null,height:number|null,lines:object[]}>} layoutPages parsed pages.
  * @returns {Array<{page:number,kind:string,label:string,caption:string,bbox:object,pageWidth:number,pageHeight:number}>} candidates.
  */
@@ -1083,26 +1324,37 @@ export function detectFigureCandidates(layoutPages) {
       if (!looksLikeCaption) continue
       if (pageFigures >= 6) break
       const label = `${kind === 'table' ? 'Table' : kind === 'algorithm' ? 'Algorithm' : 'Figure'}${match[2] === undefined ? '' : ` ${match[2]}`}`
-      const caption = collectCaptionText(lines, index, line, pageWidth)
+      const caption = captionFromBlocks(page, line) || collectCaptionText(lines, index, line, pageWidth)
       let bbox
       if (kind === 'table') {
-        // Table body sits below its caption.
-        const nextCaptionTop = findNextCaptionTop(lines, index + 1)
-        const bottom = Math.min(nextCaptionTop ?? pageHeight - pageHeight * 0.03, line.yMax + pageHeight * 0.5)
-        bbox = {
-          x: clampPoint(Math.min(line.xMin - 4, pageWidth * 0.04), 0, pageWidth),
-          y: clampPoint(line.yMax + 3, 0, pageHeight),
-          w: clampPoint(columnWidth(line, pageWidth), 40, pageWidth),
-          h: clampPoint(bottom - line.yMax - 3, 40, pageHeight),
+        // Captions can be below the grid (common in two-column papers) or above
+        // it. Pick the block cluster that actually looks like table cells.
+        bbox = tableCropFromBlocks(page, line, pageWidth, pageHeight)
+        if (bbox === null) {
+          // Fallback: conventional caption-above-table crop.
+          const nextCaptionTop = findNextCaptionTop(lines, index + 1)
+          const bottom = Math.min(nextCaptionTop ?? pageHeight - pageHeight * 0.03, line.yMax + pageHeight * 0.5)
+          bbox = {
+            x: clampPoint(Math.min(line.xMin - 4, pageWidth * 0.04), 0, pageWidth),
+            y: clampPoint(line.yMax + 3, 0, pageHeight),
+            w: clampPoint(columnWidth(line, pageWidth), 40, pageWidth),
+            h: clampPoint(bottom - line.yMax - 3, 40, pageHeight),
+          }
         }
       } else {
-        const minimumHeight = pageHeight * 0.3
         const marginTop = pageHeight * 0.03
-        let top = Math.max(marginTop, line.yMin - Math.max(minimumHeight, pageHeight * 0.55))
+        const minimumHeight = pageHeight * 0.3
+        // Use the nearest body/author block above the caption as the top edge;
+        // otherwise a page-top title/authors can leak into the figure crop.
+        const blockTop = figureTopFromBlocks(page, line, pageWidth)
+        let top = blockTop !== null ? blockTop : Math.max(marginTop, line.yMin - Math.max(minimumHeight, pageHeight * 0.55))
         top = Math.max(top, previousCaptionBottom + 4)
-        if (line.yMin - top < pageHeight * 0.12) top = Math.max(marginTop, line.yMin - minimumHeight)
-        const width = columnWidth(line, pageWidth)
-        const x = columnLeft(line, pageWidth)
+        if (line.yMin - top < pageHeight * 0.12 && blockTop === null) top = Math.max(marginTop, line.yMin - minimumHeight)
+        // Keep the figure crop inside its caption column; wide caption bands
+        // still get the full text width.
+        const wide = line.xMax - line.xMin > pageWidth * 0.6
+        const x = wide ? pageWidth * 0.04 : Math.max(0, line.xMin - 4)
+        const width = wide ? pageWidth * 0.92 : Math.max(40, line.xMax - line.xMin + 8)
         bbox = {
           x: clampPoint(x, 0, pageWidth),
           y: clampPoint(top, 0, pageHeight),
@@ -1117,6 +1369,20 @@ export function detectFigureCandidates(layoutPages) {
     }
   }
   return candidates
+}
+
+/** Prefer the full caption block (it already contains all wrapped lines). */
+function captionFromBlocks(page, captionLine) {
+  for (const block of Array.isArray(page?.blocks) ? page.blocks : []) {
+    const b = block?.bbox
+    if (!b) continue
+    if (captionLine.yMin < b.y - 2 || captionLine.yMin > b.y + b.h + 2) continue
+    if (captionLine.xMin < b.x - 2 || captionLine.xMin > b.x + b.w + 2) continue
+    const body = rawBlockText(block)
+    if (!CAPTION_PATTERN.test(body)) continue
+    return body.slice(0, 1200)
+  }
+  return ''
 }
 
 /** Collect the caption line plus adjacent continuation lines in the same column. */

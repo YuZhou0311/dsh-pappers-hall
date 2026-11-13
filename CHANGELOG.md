@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.24.4
+
+- Fixed table crops when the caption is below the grid (nearest-cluster side detection).
+- Fixed figure crops leaking page titles/authors; figure top now follows the nearest body block.
+- Fixed truncated captions by reading the full caption block.
+- Added one-time in-place figure repair preserving figure ids and dHash-versioned image URLs.
+
 ## 0.24.3
 
 - Added a note-canvas budget to the note Agent: diagrams are limited to fit a card (9 architecture/flow nodes, 12 mind-map nodes, 5 levels), with explicit split/summarize guidance.

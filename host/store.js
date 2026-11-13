@@ -351,8 +351,8 @@ function toFigureRef(row) {
     page: Number(row.page),
     width: row.width === null || row.width === undefined ? null : Number(row.width),
     height: row.height === null || row.height === undefined ? null : Number(row.height),
-    imageUrl: hasImage ? `/pappers-hall/figure/${row.id}.png` : null,
-    thumbnailUrl: hasImage ? `/pappers-hall/figure/${row.id}.png?width=320` : null,
+    imageUrl: hasImage ? `/pappers-hall/figure/${row.id}.png?v=${encodeURIComponent(row.dhash || row.id)}` : null,
+    thumbnailUrl: hasImage ? `/pappers-hall/figure/${row.id}.png?width=320&v=${encodeURIComponent(row.dhash || row.id)}` : null,
     dhash: row.dhash ?? null,
     source: row.source ?? 'caption',
     ...(bbox === null ? {} : { bbox }),
@@ -2015,8 +2015,8 @@ export function createStore({ db, layout, fts5, config = {}, logger, manifest = 
           page: Number(row.page),
           label: row.label ?? null,
           caption: row.caption ?? null,
-          captionThumbUrl: `/pappers-hall/figure/${row.id}.png?width=320`,
-          imageUrl: `/pappers-hall/figure/${row.id}.png`,
+          captionThumbUrl: `/pappers-hall/figure/${row.id}.png?width=320&v=${encodeURIComponent(row.dhash || row.id)}`,
+          imageUrl: `/pappers-hall/figure/${row.id}.png?v=${encodeURIComponent(row.dhash || row.id)}`,
         }))
       const collections = this.libraryCollectionsList().items
       const tags = this.tagsList().items
@@ -4951,6 +4951,26 @@ export function createStore({ db, layout, fts5, config = {}, logger, manifest = 
       return db.prepare('SELECT * FROM figures WHERE id = ?').get(figureId)
     },
 
+    /** @internal all figure rows for one paper (figure repair, no search join). */
+    figureRowsForPaper(paperId) {
+      return db.prepare('SELECT * FROM figures WHERE paper_id = ? ORDER BY page, id').all(paperId)
+    },
+
+    /** @internal update a figure crop in place without changing its id. */
+    updateFigureCrop(figureId, patch = {}) {
+      const column = (name) => {
+        if (name === 'bboxJson') return 'bbox_json'
+        if (name === 'fileName') return 'file_name'
+        if (name === 'thumbName') return 'thumb_name'
+        return name
+      }
+      const allowed = ['page', 'label', 'caption', 'bboxJson', 'width', 'height', 'fileName', 'thumbName', 'dhash', 'source', 'status']
+      const entries = allowed.filter((name) => Object.prototype.hasOwnProperty.call(patch, name))
+      if (entries.length === 0) return 0
+      const statement = db.prepare(`UPDATE figures SET ${entries.map((name) => `${column(name)} = ?`).join(', ')} WHERE id = ?`)
+      return Number(statement.run(...entries.map((name) => patch[name]), figureId)?.changes ?? 0)
+    },
+
     /** @internal all figure rows with dhash for visual search. */
     figureRowsWithHash() {
       return db.prepare("SELECT * FROM figures WHERE dhash IS NOT NULL AND dhash <> ''").all()
@@ -5077,7 +5097,7 @@ function resolveBundleItem(db, kind, id, page, options = {}) {
       id,
       page: page ?? Number(row.page),
       snapshot: { kind, id, paperId: row.paper_id, page: Number(row.page), label: row.label ?? null },
-      material: { kind: 'figure', id, title: paper.title, paperId: row.paper_id, page: Number(row.page), label: row.label ?? null, caption: row.caption ?? null, imageUrl: `/pappers-hall/figure/${id}.png` },
+      material: { kind: 'figure', id, title: paper.title, paperId: row.paper_id, page: Number(row.page), label: row.label ?? null, caption: row.caption ?? null, imageUrl: `/pappers-hall/figure/${id}.png?v=${encodeURIComponent(row.dhash || id)}` },
     }
   }
   if (kind === 'annotation') {

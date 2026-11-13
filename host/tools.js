@@ -732,7 +732,7 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
             width: figureRow.width === null ? null : Number(figureRow.width),
             height: figureRow.height === null ? null : Number(figureRow.height),
             dhash: figureRow.dhash ?? null,
-            imageUrl: `/pappers-hall/figure/${figureRow.id}.png`,
+            imageUrl: `/pappers-hall/figure/${figureRow.id}.png?v=${encodeURIComponent(figureRow.dhash || figureRow.id)}`,
           },
           paper: { id: paper.id, title: paper.title, titleZh: paper.titleZh },
           page: Number(figureRow.page),

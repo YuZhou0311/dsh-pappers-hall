@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0
+
+- First public pre-release of the Pappers-Hall research workbench.
+- Paper center, reader, notes, translation, annotations, figure/table extraction, conversation sidebar and note ↔ reader bridge.
+
 ## Unreleased
 
 - Added bilingual issue forms, discussion and download links, software citation metadata, release-note categories and a GitHub-ready social preview image.

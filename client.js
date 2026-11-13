@@ -4718,6 +4718,23 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-n-doc__calendar-date { min-width: 72px; color: var(--ph-accent-text); font-size: var(--ph-fs-11); font-weight: 600; }
 .ph-n-doc__calendar-event strong { color: var(--ph-ink); }
 .ph-n-doc__calendar-event span:last-child { color: var(--ph-ink-3); }
+/* Large diagrams and paper figures must stay readable inside a note card. */
+.ph-n-doc__diagram-canvas { max-height: 460px; overflow: auto; overscroll-behavior: contain; }
+.ph-n-doc__diagram-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ph-n-doc__diagram-expand { flex: none; padding: 2px 7px; border: 1px solid var(--ph-line-soft); border-radius: 7px; background: var(--ph-surface-2); color: var(--ph-ink-3); font: inherit; font-size: 10px; cursor: pointer; }
+.ph-n-doc__diagram-expand:hover { color: var(--ph-ink); border-color: var(--ph-line); }
+.ph-n-doc__diagram.is-expanded { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(94vw, 1500px); max-height: 90vh; z-index: 1300; margin: 0; padding: 16px; overflow: auto; background: var(--ph-bg); border: 1px solid var(--ph-line); box-shadow: 0 24px 90px rgba(0,0,0,.32); }
+.ph-n-doc__diagram.is-expanded .ph-n-doc__diagram-canvas { max-height: calc(90vh - 90px); overflow: auto; }
+.ph-n-doc__diagram.is-expanded svg { height: auto; max-width: none; }
+.ph-n-doc__figure-media { max-height: 68vh; overflow: hidden; }
+.ph-n-doc__figure-img { max-height: 68vh; object-fit: contain; background: var(--ph-surface-2); }
+.ph-n-doc__tablewrap { max-width: 100%; }
+.ph-n-doc__diagram-dialog { width: min(94vw, 1500px); max-width: 94vw; max-height: 90vh; padding: 0; border: 1px solid var(--ph-line); border-radius: 14px; background: var(--ph-bg); color: var(--ph-ink); box-shadow: 0 24px 90px rgba(0,0,0,.4); }
+.ph-n-doc__diagram-dialog::backdrop { background: rgba(8, 10, 14, 0.64); backdrop-filter: blur(5px); }
+.ph-n-doc__diagram-dialog-body { padding: 14px; overflow: auto; max-height: 90vh; }
+.ph-n-doc__diagram-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: var(--ph-fs-13); font-weight: 600; }
+.ph-n-doc__diagram-dialog-canvas { overflow: auto; max-height: calc(90vh - 110px); }
+.ph-n-doc__diagram-dialog-canvas svg { display: block; width: auto; height: auto; }
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -11876,8 +11893,48 @@ function DiagramBlock(props) {
   const block = props.block;
   const nodes = block.nodes || [];
   const edges = block.edges || [];
+  const dialogRef = import_react13.default.useRef(null);
   if (nodes.length < 2) return null;
-  const title2 = block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__diagram-title" }, block.title) : null;
+  const openDialog = () => {
+    const dialog = dialogRef.current;
+    if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+  };
+  const closeDialog = () => {
+    const dialog = dialogRef.current;
+    if (dialog && typeof dialog.close === "function") dialog.close();
+  };
+  const title2 = import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__diagram-title" },
+    block.title || props.t("notes.diagram.label"),
+    import_react13.default.createElement("button", {
+      type: "button",
+      className: "ph-n-doc__diagram-expand",
+      onClick: openDialog
+    }, props.t("notes.diagram.expand"))
+  );
+  const makeDialog = (svgNode, caption) => import_react13.default.createElement(
+    "dialog",
+    {
+      ref: dialogRef,
+      className: "ph-n-doc__diagram-dialog",
+      onClick: (event) => {
+        if (event.target === event.currentTarget) closeDialog();
+      }
+    },
+    import_react13.default.createElement(
+      "div",
+      { className: "ph-n-doc__diagram-dialog-body" },
+      import_react13.default.createElement(
+        "div",
+        { className: "ph-n-doc__diagram-dialog-head" },
+        import_react13.default.createElement("span", null, block.title || props.t("notes.diagram.label")),
+        import_react13.default.createElement("button", { type: "button", className: "ph-n-doc__diagram-expand", onClick: closeDialog }, props.t("notes.diagram.collapse"))
+      ),
+      import_react13.default.createElement("div", { className: "ph-n-doc__diagram-dialog-canvas" }, svgNode),
+      caption ? import_react13.default.createElement("div", { className: "ph-n-doc__diagram-caption" }, caption) : null
+    )
+  );
   if (block.layout === "mindmap") {
     const byId = new Map(nodes.map((node) => [node.id, node]));
     const incoming = new Map(nodes.map((node) => [node.id, 0]));
@@ -11940,11 +11997,18 @@ function DiagramBlock(props) {
         import_react13.default.createElement("text", { x: 74, y: 35, textAnchor: "middle", className: "ph-n-doc__diagram-detail" }, (node.detail || "").slice(0, 24))
       );
     });
+    const cardSvg2 = import_react13.default.createElement("svg", { viewBox: "0 0 840 " + height2, role: "img", "aria-label": block.title || "mind map" }, lines2, boxes2);
+    const dialogSvg2 = import_react13.default.createElement("svg", { viewBox: "0 0 840 " + height2, role: "img", "aria-label": block.title || "mind map", style: { width: "840px", minWidth: "840px", height: "auto", maxWidth: "none" } }, lines2, boxes2);
     return import_react13.default.createElement(
-      "div",
-      { className: "ph-n-doc__diagram" },
-      title2,
-      import_react13.default.createElement("svg", { viewBox: "0 0 840 " + height2, role: "img", "aria-label": block.title || "mind map" }, lines2, boxes2)
+      import_react13.default.Fragment,
+      null,
+      import_react13.default.createElement(
+        "div",
+        { className: "ph-n-doc__diagram" },
+        title2,
+        import_react13.default.createElement("div", { className: "ph-n-doc__diagram-canvas" }, cardSvg2)
+      ),
+      makeDialog(dialogSvg2)
     );
   }
   const { rows } = layoutLayered(nodes, edges);
@@ -11989,18 +12053,20 @@ function DiagramBlock(props) {
       import_react13.default.createElement("text", { x: 70, y: 36, textAnchor: "middle", className: "ph-n-doc__diagram-detail" }, (node.detail || "").slice(0, 22))
     );
   });
+  const defs = import_react13.default.createElement("defs", null, import_react13.default.createElement("marker", { id: "ph-diagram-arrow", markerWidth: 8, markerHeight: 8, refX: 7, refY: 4, orient: "auto" }, import_react13.default.createElement("path", { d: "M0,0 L8,4 L0,8 Z", fill: "var(--ph-line-strong)" })));
+  const cardSvg = import_react13.default.createElement("svg", { viewBox: "0 0 " + width + " " + height, role: "img", "aria-label": block.title || "diagram" }, defs, lines, boxes);
+  const dialogSvg = import_react13.default.createElement("svg", { viewBox: "0 0 " + width + " " + height, role: "img", "aria-label": block.title || "diagram", style: { width: Math.min(width, 2600) + "px", minWidth: Math.min(width, 2600) + "px", height: "auto", maxWidth: "none" } }, defs, lines, boxes);
   return import_react13.default.createElement(
-    "div",
-    { className: "ph-n-doc__diagram" },
-    title2,
+    import_react13.default.Fragment,
+    null,
     import_react13.default.createElement(
-      "svg",
-      { viewBox: "0 0 " + width + " " + height, role: "img", "aria-label": block.title || "diagram" },
-      import_react13.default.createElement("defs", null, import_react13.default.createElement("marker", { id: "ph-diagram-arrow", markerWidth: 8, markerHeight: 8, refX: 7, refY: 4, orient: "auto" }, import_react13.default.createElement("path", { d: "M0,0 L8,4 L0,8 Z", fill: "var(--ph-line-strong)" }))),
-      lines,
-      boxes
+      "div",
+      { className: "ph-n-doc__diagram" },
+      title2,
+      import_react13.default.createElement("div", { className: "ph-n-doc__diagram-canvas" }, cardSvg),
+      block.caption ? import_react13.default.createElement("div", { className: "ph-n-doc__diagram-caption" }, block.caption) : null
     ),
-    block.caption ? import_react13.default.createElement("div", { className: "ph-n-doc__diagram-caption" }, block.caption) : null
+    makeDialog(dialogSvg, block.caption)
   );
 }
 function Block(props) {
@@ -12181,7 +12247,7 @@ function Block(props) {
       ))
     );
   }
-  if (block.type === "diagram") return import_react13.default.createElement(DiagramBlock, { block });
+  if (block.type === "diagram") return import_react13.default.createElement(DiagramBlock, { block, t });
   if (block.type === "divider") return import_react13.default.createElement("hr", { className: "ph-n-doc__divider" });
   if (block.type === "figure") return import_react13.default.createElement(FigureBlock, { t: props.t, block, onOpenFigure: props.onOpenFigure });
   if (block.type === "columns") return import_react13.default.createElement(ColumnsBlock, { t: props.t, block, onOpenFigure: props.onOpenFigure });
@@ -31072,6 +31138,9 @@ var ZH = {
   "notes.directive.unavailable": "\u7B14\u8BB0 Agent \u4E0D\u53EF\u7528\uFF1A{reason}",
   "notes.directive.failed": "\u6267\u884C\u6307\u4EE4\u5931\u8D25\uFF1A{message}",
   "notes.action.copied": "\u5DF2\u590D\u5236",
+  "notes.diagram.expand": "\u5C55\u5F00\u67E5\u770B",
+  "notes.diagram.collapse": "\u6536\u8D77",
+  "notes.diagram.label": "\u793A\u610F\u56FE",
   "notes.gallery.preview": "\u9884\u89C8\u56FE\u7247",
   "notes.gallery.close": "\u5173\u95ED",
   "notes.block.source": "\u6765\u6E90",
@@ -32349,6 +32418,9 @@ var EN = {
   "notes.directive.unavailable": "Note agent unavailable: {reason}",
   "notes.directive.failed": "Directive run failed: {message}",
   "notes.action.copied": "Copied",
+  "notes.diagram.expand": "Expand",
+  "notes.diagram.collapse": "Collapse",
+  "notes.diagram.label": "Diagram",
   "notes.gallery.preview": "Preview image",
   "notes.gallery.close": "Close",
   "notes.block.source": "source",

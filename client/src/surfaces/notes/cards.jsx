@@ -787,8 +787,43 @@ function DiagramBlock(props) {
   const block = props.block
   const nodes = block.nodes || []
   const edges = block.edges || []
+  const dialogRef = React.useRef(null)
   if (nodes.length < 2) return null
-  const title = block.title ? React.createElement('div', { className: 'ph-n-doc__diagram-title' }, block.title) : null
+  const openDialog = () => {
+    const dialog = dialogRef.current
+    if (dialog && typeof dialog.showModal === 'function') dialog.showModal()
+  }
+  const closeDialog = () => { const dialog = dialogRef.current; if (dialog && typeof dialog.close === 'function') dialog.close() }
+  const title = React.createElement(
+    'div',
+    { className: 'ph-n-doc__diagram-title' },
+    block.title || props.t('notes.diagram.label'),
+    React.createElement('button', {
+      type: 'button',
+      className: 'ph-n-doc__diagram-expand',
+      onClick: openDialog,
+    }, props.t('notes.diagram.expand')),
+  )
+  const makeDialog = (svgNode, caption) => React.createElement(
+    'dialog',
+    {
+      ref: dialogRef,
+      className: 'ph-n-doc__diagram-dialog',
+      onClick: (event) => { if (event.target === event.currentTarget) closeDialog() },
+    },
+    React.createElement(
+      'div',
+      { className: 'ph-n-doc__diagram-dialog-body' },
+      React.createElement(
+        'div',
+        { className: 'ph-n-doc__diagram-dialog-head' },
+        React.createElement('span', null, block.title || props.t('notes.diagram.label')),
+        React.createElement('button', { type: 'button', className: 'ph-n-doc__diagram-expand', onClick: closeDialog }, props.t('notes.diagram.collapse')),
+      ),
+      React.createElement('div', { className: 'ph-n-doc__diagram-dialog-canvas' }, svgNode),
+      caption ? React.createElement('div', { className: 'ph-n-doc__diagram-caption' }, caption) : null,
+    ),
+  )
   if (block.layout === 'mindmap') {
     const byId = new Map(nodes.map((node) => [node.id, node]))
     const incoming = new Map(nodes.map((node) => [node.id, 0]))
@@ -848,11 +883,18 @@ function DiagramBlock(props) {
         React.createElement('text', { x: 74, y: 35, textAnchor: 'middle', className: 'ph-n-doc__diagram-detail' }, (node.detail || '').slice(0, 24)),
       )
     })
+    const cardSvg = React.createElement('svg', { viewBox: '0 0 840 ' + height, role: 'img', 'aria-label': block.title || 'mind map' }, lines, boxes)
+    const dialogSvg = React.createElement('svg', { viewBox: '0 0 840 ' + height, role: 'img', 'aria-label': block.title || 'mind map', style: { width: '840px', minWidth: '840px', height: 'auto', maxWidth: 'none' } }, lines, boxes)
     return React.createElement(
-      'div',
-      { className: 'ph-n-doc__diagram' },
-      title,
-      React.createElement('svg', { viewBox: '0 0 840 ' + height, role: 'img', 'aria-label': block.title || 'mind map' }, lines, boxes),
+      React.Fragment,
+      null,
+      React.createElement(
+        'div',
+        { className: 'ph-n-doc__diagram' },
+        title,
+        React.createElement('div', { className: 'ph-n-doc__diagram-canvas' }, cardSvg),
+      ),
+      makeDialog(dialogSvg),
     )
   }
   const { rows } = layoutLayered(nodes, edges)
@@ -899,18 +941,20 @@ function DiagramBlock(props) {
       React.createElement('text', { x: 70, y: 36, textAnchor: 'middle', className: 'ph-n-doc__diagram-detail' }, (node.detail || '').slice(0, 22)),
     )
   })
+  const defs = React.createElement('defs', null, React.createElement('marker', { id: 'ph-diagram-arrow', markerWidth: 8, markerHeight: 8, refX: 7, refY: 4, orient: 'auto' }, React.createElement('path', { d: 'M0,0 L8,4 L0,8 Z', fill: 'var(--ph-line-strong)' })))
+  const cardSvg = React.createElement('svg', { viewBox: '0 0 ' + width + ' ' + height, role: 'img', 'aria-label': block.title || 'diagram' }, defs, lines, boxes)
+  const dialogSvg = React.createElement('svg', { viewBox: '0 0 ' + width + ' ' + height, role: 'img', 'aria-label': block.title || 'diagram', style: { width: Math.min(width, 2600) + 'px', minWidth: Math.min(width, 2600) + 'px', height: 'auto', maxWidth: 'none' } }, defs, lines, boxes)
   return React.createElement(
-    'div',
-    { className: 'ph-n-doc__diagram' },
-    title,
+    React.Fragment,
+    null,
     React.createElement(
-      'svg',
-      { viewBox: '0 0 ' + width + ' ' + height, role: 'img', 'aria-label': block.title || 'diagram' },
-      React.createElement('defs', null, React.createElement('marker', { id: 'ph-diagram-arrow', markerWidth: 8, markerHeight: 8, refX: 7, refY: 4, orient: 'auto' }, React.createElement('path', { d: 'M0,0 L8,4 L0,8 Z', fill: 'var(--ph-line-strong)' }))),
-      lines,
-      boxes,
+      'div',
+      { className: 'ph-n-doc__diagram' },
+      title,
+      React.createElement('div', { className: 'ph-n-doc__diagram-canvas' }, cardSvg),
+      block.caption ? React.createElement('div', { className: 'ph-n-doc__diagram-caption' }, block.caption) : null,
     ),
-    block.caption ? React.createElement('div', { className: 'ph-n-doc__diagram-caption' }, block.caption) : null,
+    makeDialog(dialogSvg, block.caption),
   )
 }
 
@@ -1095,7 +1139,7 @@ function Block(props) {
       )),
     )
   }
-  if (block.type === 'diagram') return React.createElement(DiagramBlock, { block })
+  if (block.type === 'diagram') return React.createElement(DiagramBlock, { block, t })
   if (block.type === 'divider') return React.createElement('hr', { className: 'ph-n-doc__divider' })
   if (block.type === 'figure') return React.createElement(FigureBlock, { t: props.t, block: block, onOpenFigure: props.onOpenFigure })
   if (block.type === 'columns') return React.createElement(ColumnsBlock, { t: props.t, block: block, onOpenFigure: props.onOpenFigure })

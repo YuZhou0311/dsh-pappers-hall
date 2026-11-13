@@ -4632,6 +4632,23 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-n-doc__calendar-date { min-width: 72px; color: var(--ph-accent-text); font-size: var(--ph-fs-11); font-weight: 600; }
 .ph-n-doc__calendar-event strong { color: var(--ph-ink); }
 .ph-n-doc__calendar-event span:last-child { color: var(--ph-ink-3); }
+/* Large diagrams and paper figures must stay readable inside a note card. */
+.ph-n-doc__diagram-canvas { max-height: 460px; overflow: auto; overscroll-behavior: contain; }
+.ph-n-doc__diagram-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ph-n-doc__diagram-expand { flex: none; padding: 2px 7px; border: 1px solid var(--ph-line-soft); border-radius: 7px; background: var(--ph-surface-2); color: var(--ph-ink-3); font: inherit; font-size: 10px; cursor: pointer; }
+.ph-n-doc__diagram-expand:hover { color: var(--ph-ink); border-color: var(--ph-line); }
+.ph-n-doc__diagram.is-expanded { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(94vw, 1500px); max-height: 90vh; z-index: 1300; margin: 0; padding: 16px; overflow: auto; background: var(--ph-bg); border: 1px solid var(--ph-line); box-shadow: 0 24px 90px rgba(0,0,0,.32); }
+.ph-n-doc__diagram.is-expanded .ph-n-doc__diagram-canvas { max-height: calc(90vh - 90px); overflow: auto; }
+.ph-n-doc__diagram.is-expanded svg { height: auto; max-width: none; }
+.ph-n-doc__figure-media { max-height: 68vh; overflow: hidden; }
+.ph-n-doc__figure-img { max-height: 68vh; object-fit: contain; background: var(--ph-surface-2); }
+.ph-n-doc__tablewrap { max-width: 100%; }
+.ph-n-doc__diagram-dialog { width: min(94vw, 1500px); max-width: 94vw; max-height: 90vh; padding: 0; border: 1px solid var(--ph-line); border-radius: 14px; background: var(--ph-bg); color: var(--ph-ink); box-shadow: 0 24px 90px rgba(0,0,0,.4); }
+.ph-n-doc__diagram-dialog::backdrop { background: rgba(8, 10, 14, 0.64); backdrop-filter: blur(5px); }
+.ph-n-doc__diagram-dialog-body { padding: 14px; overflow: auto; max-height: 90vh; }
+.ph-n-doc__diagram-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: var(--ph-fs-13); font-weight: 600; }
+.ph-n-doc__diagram-dialog-canvas { overflow: auto; max-height: calc(90vh - 110px); }
+.ph-n-doc__diagram-dialog-canvas svg { display: block; width: auto; height: auto; }
 `
 
 export function installStyles(ctx) {

@@ -411,6 +411,13 @@ async function main() {
       })()`)
       console.log('notes opened:', opened, JSON.stringify(notes).slice(0, 500))
       await shot('13-notes')
+      if (want('notes-diagram') || want('all')) {
+        const opened = await evaluate(`(() => { const button = document.querySelector('.ph-n-doc__diagram-expand'); if (!button) return false; button.click(); return true })()`)
+        await sleep(500)
+        console.log('diagram expanded:', opened, await evaluate(`Boolean(document.querySelector('.ph-n-doc__diagram-dialog[open]'))`))
+        await shot('13g-notes-diagram-expanded')
+        await evaluate(`(() => { const button = document.querySelector('.ph-n-doc__diagram-expand'); if (button) button.click(); return Boolean(button) })()`)
+      }
       if (want('notes-lightbox') || want('all')) {
         const opened = await evaluate(`(() => { const media = document.querySelector('.ph-n-doc__gallery-media'); if (!media) return false; media.click(); return true })()`)
         await sleep(500)

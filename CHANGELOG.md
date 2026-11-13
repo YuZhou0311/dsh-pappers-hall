@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.24.2
+
+- Large diagrams now render as a readable card preview with a top-right “展开” dialog that uses natural SVG width and scrolling.
+- Diagram cards cap their viewport and scroll instead of shrinking text or clipping the graph.
+- Large paper figures cap at 68vh with object-fit contain; gallery images keep thumbnails + lightbox.
+
 ## 0.24.1
 
 - Added Avatar and Calendar event blocks to complete the safe P2 note vocabulary.

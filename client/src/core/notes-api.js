@@ -12,12 +12,11 @@
  *   - `not_running`/`network` stays a separate `offline` state so the UI can say
  *     "插件未运行" rather than blaming the notes service;
  *   - a revision mismatch surfaces as `conflict` with `currentRevision`;
- *   - AI beautification is ALWAYS `ai.ask` (paper-grounded) or `ai.complete`
- *     (generic) + client-side JSON parsing: the Host never rewrites `contentMd`,
- *     and `notes.update` only writes `contentJson`;
- *   - v2 beautification is incremental: only the eligible sections are sent, the
- *     result is merged into the previous v2 structure, and figure blocks are
- *     validated against real `figures.list` candidates (no invented images).
+ *   - AI beautification runs through the Host's dedicated note Agent
+ *     (`notes.agent.run`): the Agent's own tools build/validate the layout, and
+ *     the Client only persists the returned `contentJson`. `contentMd` is never
+ *     rewritten. The legacy client-side formatter remains as `beautifyLegacy`
+ *     for old hosts/tests but is not called by the UI;
  *
  * No new dependencies; every method degrades to a typed error the UI renders.
  */
@@ -168,6 +167,41 @@ export function createNotesService(api) {
         throw next
       }
       throw error
+    })
+  }
+
+  /**
+   * Run the Host's dedicated note Agent. All layout/directive work happens as
+   * tool calls on the Host; the Client only supplies the note id and pass
+   * options and later persists the returned contentJson.
+   */
+  function runNoteAgent(options) {
+    const opts = options || {}
+    const note = opts.note
+    if (!note || typeof note.id !== 'string' || note.id === '') {
+      const error = new Error('notes.agent.run requires a saved note')
+      error.code = 'invalid'
+      throw error
+    }
+    const params = {
+      noteId: note.id,
+      mode: opts.mode === 'directives' ? 'directives' : (opts.mode || 'manual'),
+      direction: opts.direction || 'scientific',
+      layout: opts.layout || 'auto',
+      useFigures: opts.useFigures === true,
+      sessionId: opts.sessionId || undefined,
+      paperId: opts.paperId || undefined,
+      contextText: opts.contextText || '',
+      sectionIds: Array.isArray(opts.sections) ? opts.sections.map((section) => String(section.id)).filter(Boolean) : undefined,
+      baseContentJson: opts.baseContentJson || null,
+    }
+    return aiCall('notes.agent.run', params).then((result) => {
+      if (!result || result.status !== 'ok' || !result.contentJson) {
+        const error = new Error((result && result.reason) || 'note agent returned no layout')
+        error.code = (result && result.status) || 'shape'
+        throw error
+      }
+      return result
     })
   }
 
@@ -396,6 +430,9 @@ export function createNotesService(api) {
     },
 
     /**
+     * Legacy client-side formatter, retained for compatibility. The UI calls
+     * the Host note Agent via `beautify`/`runDirectives` instead.
+     *
      * Ask the model to re-lay-out the finished sections as a varied, continuous
      * v2 document (styles + sparse figures/columns/tables).
      *
@@ -416,7 +453,7 @@ export function createNotesService(api) {
      * @param {string} [options.contextText] unfinished previous section(s), context only
      * @param {string} [options.sessionId]
      */
-    beautify(options) {
+    beautifyLegacy(options) {
       const opts = options || {}
       const direction = DIRECTION_PROMPTS[opts.direction] ? opts.direction : 'plain'
       const layout = LAYOUT_PROMPTS[opts.layout] ? opts.layout : 'auto'
@@ -640,6 +677,20 @@ export function createNotesService(api) {
           calls,
         }
       })
+    },
+
+    /**
+     * Run the dedicated Host note Agent for a normal beautification pass.
+     * All content comes from Agent tool calls; the old client-side JSON prompt
+     * path remains only as `beautifyLegacy`.
+     */
+    beautify(options) {
+      return runNoteAgent(options)
+    },
+
+    /** Execute the inline directives in the note; layout is a light side effect. */
+    runDirectives(options) {
+      return runNoteAgent(Object.assign({}, options || {}, { mode: 'directives' }))
     },
 
     /** The format version written with every beautified note. */

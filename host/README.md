@@ -24,6 +24,7 @@ this package owns the whole Host domain and can be exercised without DSH through
 | `jobs.js` | Persistent job queue: lease, retry/backoff, pause/resume/cancel/retry, checkpoints, stale recovery |
 | `ingest.js` | PDF and bibliography import pipeline, caption detection, figure crop/hash, per-paper state machine |
 | `api.js` | JSON API dispatch (`/pappers-hall/api`) and binary asset routes (page/figure/thumb/pdf) |
+| `note-agent.js` | Dedicated note Agent: scoped five-tool DSH Agent, section hashing, inline directives, figure/table/web-image/source actions, local assets |
 | `ai.js` | Direct LLM channel (v0.2): `ai.status`/`ai.ask`/`translate.blocks|title|text`/query expansion/rerank, sessionId, timeout, concurrency, SQLite cache, hashed event log |
 | `tools.js` | `papers_*` Agent tool definitions (real ImageBlock through `ctx.attachments`) |
 | `selftest.mjs` | Standalone end-to-end selftest with a fake Cordis context |

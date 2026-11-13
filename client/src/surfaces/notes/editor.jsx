@@ -24,6 +24,7 @@ import { Icon } from '../../core/icons.jsx'
 import { Badge, Button, EmptyState, IconButton, Spinner } from '../../core/primitives.jsx'
 import {
   AUTO_MIN_CHARS,
+  countDirectives,
   AUTOFIX_INTRO_FLAG,
   DEFAULT_AUTOFIX_DIRECTION,
   clearDraft,
@@ -153,6 +154,8 @@ export function NoteEditor(props) {
   const [draftFound, setDraftFound] = React.useState(null)
   const [incompleteIds, setIncompleteIds] = React.useState(() => (note ? resolveIncompleteSections(note.id, sectionizeMarkdown(note.contentMd)) : []))
   const [beautifyOpen, setBeautifyOpen] = React.useState(false)
+  const [directiveMenuOpen, setDirectiveMenuOpen] = React.useState(false)
+  const [directiveRunning, setDirectiveRunning] = React.useState(false)
   const [beautifySelection, setBeautifySelection] = React.useState(null)
   const [historyOpen, setHistoryOpen] = React.useState(false)
   const [linkOpen, setLinkOpen] = React.useState(false)
@@ -506,6 +509,66 @@ export function NoteEditor(props) {
       }).catch(() => {})
     }
   }, [aiStatus, compact, service])
+
+  const directiveCount = countDirectives(content)
+  const directiveItems = [
+    { id: 'figure', icon: 'figure', label: t('notes.directive.insertFigure'), run: () => insertDirective('{{figure: Figure 1}}') },
+    { id: 'table', icon: 'table', label: t('notes.directive.insertTable'), run: () => insertDirective('{{table: 指标 | 数值}}') },
+    { id: 'web-image', icon: 'image', label: t('notes.directive.insertWebImage'), run: () => insertDirective('{{web-image: 关键词}}') },
+    { id: 'web', icon: 'link', label: t('notes.directive.insertWebSource'), run: () => insertDirective('{{web: 关键词或网址}}') },
+    { id: 'stats', icon: 'table', label: t('notes.directive.insertStats'), run: () => insertDirective('{{stats: 关键数字}}') },
+    { id: 'callout', icon: 'info', label: t('notes.directive.insertCallout'), run: () => insertDirective('{{callout: 需要强调的结论}}') },
+    directiveCount > 0 ? { id: 'run', icon: 'sparkle', label: t('notes.directive.run', { count: directiveCount }), run: runDirectives } : null,
+  ].filter(Boolean)
+
+  function insertDirective(snippet) {
+    const textarea = textareaRef.current
+    const source = localRef.current.content || ''
+    const start = textarea && typeof textarea.selectionStart === 'number' ? textarea.selectionStart : source.length
+    const end = textarea && typeof textarea.selectionEnd === 'number' ? textarea.selectionEnd : start
+    const prefix = start > 0 && !/\s/.test(source[start - 1]) ? ' ' : ''
+    const suffix = end < source.length && !/\s/.test(source[end]) ? ' ' : ''
+    const next = source.slice(0, start) + prefix + snippet + suffix + source.slice(end)
+    applyLocal({ content: next })
+    requestAnimationFrame(() => {
+      const current = textareaRef.current
+      if (!current) return
+      const caret = start + prefix.length + snippet.length
+      current.focus()
+      current.setSelectionRange(caret, caret)
+    })
+  }
+
+  function runDirectives() {
+    if (!note || directiveRunning) return
+    if (directiveCount === 0) {
+      if (props.notify) props.notify('info', t('notes.directive.empty'))
+      return
+    }
+    cancelPendingAuto()
+    setDirectiveRunning(true)
+    const current = noteRef.current
+    const flushFirst = dirtyRef.current ? flush() : Promise.resolve(null)
+    flushFirst
+      .then(() => service.runDirectives({
+        note: noteRef.current || current,
+        sessionId: props.sessionId,
+        paperId: props.paperId || '',
+        baseContentJson: contentJsonRef.current,
+      }))
+      .then((result) => saveContentJson(result.contentJson, { switchView: true }).then(() => result))
+      .then((result) => {
+        if (props.notify) props.notify('success', t('notes.directive.done', { count: directiveCount, tools: Number(result.calls) || 0 }))
+      })
+      .catch((error) => {
+        const code = String((error && error.code) || '')
+        const message = code === 'unavailable'
+          ? t('notes.directive.unavailable', { reason: String((error && (error.reason || error.message)) || '') })
+          : t('notes.directive.failed', { message: String((error && error.message) || error) })
+        if (props.notify) props.notify('error', message)
+      })
+      .then(() => { if (mountedRef.current) setDirectiveRunning(false) })
+  }
 
   const reloadNote = React.useCallback(() => {
     if (!noteId) return
@@ -933,6 +996,17 @@ export function NoteEditor(props) {
         React.createElement(
           'div',
           { className: 'ph-n-editor__actions' },
+          React.createElement('div', { className: 'ph-n-directivewrap' },
+            React.createElement(Button, {
+              size: 'sm',
+              variant: 'ghost',
+              icon: 'listOrdered',
+              onClick: () => setDirectiveMenuOpen((value) => !value),
+              loading: directiveRunning,
+              title: t('notes.directive.title'),
+            }, compact ? (directiveCount > 0 ? String(directiveCount) : '') : t('notes.directive.button') + (directiveCount > 0 ? ' ' + directiveCount : '')),
+            directiveMenuOpen ? React.createElement(Menu, { items: directiveItems, onClose: () => setDirectiveMenuOpen(false) }) : null,
+          ),
           React.createElement(Button, {
             size: 'sm',
             variant: 'soft',

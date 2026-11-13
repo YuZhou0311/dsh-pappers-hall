@@ -104,7 +104,7 @@ function dispatchNoteDelete(params, store, notes) {
  * @param {object} [services.notes] notes workbench service (v0.17).
  * @returns {{handlers:Map<string,Function>, call:(method:string, params?:object)=>Promise<object>, envelope:(method:string,params?:object)=>Promise<object>, methods:string[]}} API facade.
  */
-export function createApi({ store, search, ingest, queue, settings, models, ocr, notes, layout }) {
+export function createApi({ store, search, ingest, queue, settings, models, ocr, notes, noteAgent, layout }) {
   const handlers = new Map([
     // ---- read-only -------------------------------------------------
     ['status', () => store.status()],
@@ -194,6 +194,10 @@ export function createApi({ store, search, ingest, queue, settings, models, ocr,
     ['notes.delete', (params) => dispatchNoteDelete(params, store, notes)],
     // ---- v0.17 notes workbench ---------------------------------------
     ['notes.list', (params) => notes.list(params)],
+    ['notes.agent.run', async (params) => {
+      if (noteAgent === undefined || typeof noteAgent.run !== 'function') throw new DomainError('unavailable', 'note agent is not available in this Host')
+      return noteAgent.run(params ?? {})
+    }],
     ['notes.get', (params) => notes.get(params)],
     ['notes.update', (params) => notes.update(params)],
     ['notes.restore', (params) => notes.restore(params)],
@@ -344,7 +348,7 @@ export function toErrorPayload(error) {
   }
   const message = error instanceof Error ? error.message : String(error)
   const code = typeof error?.code === 'string' && /^[a-z_]+$/.test(error.code) ? error.code : 'internal'
-  return { code, message }
+  return { code, message, ...(error?.detail === undefined ? {} : { detail: error.detail }) }
 }
 
 /** Map one domain error code to an HTTP status code. */
@@ -699,6 +703,16 @@ export function createWebHandler({ api, store, pdf, layout, logger, bodyLimitByt
         return
       }
       await serveFile(req, res, path.join(layout.tmpDir, 'pdf-previews', match[1] + '.png'), 'image/png')
+      return
+    }
+    if (kind === 'note-asset') {
+      const match = /^([a-f0-9]{16,40})\.(png|jpg|webp|gif)$/i.exec(segments[2] ?? '')
+      if (segments.length !== 3 || match === null) {
+        sendJson(res, 400, { ok: false, error: { code: 'invalid', message: 'invalid note asset path' } })
+        return
+      }
+      const mediaType = match[2].toLowerCase() === 'jpg' ? 'image/jpeg' : 'image/' + match[2].toLowerCase()
+      await serveFile(req, res, path.join(layout.noteAssetsDir, match[1] + '.' + match[2].toLowerCase()), mediaType)
       return
     }
     if (kind === 'figure') {

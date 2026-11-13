@@ -4535,6 +4535,32 @@ body.ph-dnd-dragging [data-ph-drag] { opacity: 0.55; }
   background: var(--ph-bg, var(--dsw-alias-bg-base, #ffffff));
   color: var(--ph-ink, var(--dsw-alias-label-primary, inherit));
 }
+
+/* ---- note agent: richer block vocabulary -------------------------------- */
+.ph-n-doc__webimage { margin: 10px 0 14px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); overflow: hidden; background: var(--ph-bg); }
+.ph-n-doc__webimage img { display: block; width: 100%; max-height: 420px; object-fit: contain; background: var(--ph-surface-2); }
+.ph-n-doc__webimage-cap { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; padding: 8px 11px; font-size: var(--ph-fs-11); color: var(--ph-ink-3); border-top: 1px solid var(--ph-line-soft); }
+.ph-n-doc__webimage-credit { color: var(--ph-ink-3); }
+.ph-n-doc__webimage-cap a { color: var(--ph-accent-text); text-decoration: none; }
+.ph-n-doc__sources { display: flex; flex-direction: column; gap: 5px; margin: 10px 0 14px; padding: 10px 12px; border-left: 3px solid var(--ph-accent); border-radius: 0 var(--ph-r-sm) var(--ph-r-sm) 0; background: var(--ph-surface-2); }
+.ph-n-doc__sources-title { font-size: var(--ph-fs-11); font-weight: var(--ph-fw-semi); color: var(--ph-ink-2); letter-spacing: 0.02em; }
+.ph-n-doc__source { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px; font-size: var(--ph-fs-12); color: var(--ph-accent-text); text-decoration: none; }
+.ph-n-doc__source:hover { text-decoration: underline; }
+.ph-n-doc__source-note { color: var(--ph-ink-3); font-size: var(--ph-fs-11); }
+.ph-n-doc__timeline { list-style: none; margin: 10px 0 14px; padding: 0 0 0 18px; border-left: 2px solid var(--ph-line); display: flex; flex-direction: column; gap: 10px; }
+.ph-n-doc__timeline-item { position: relative; display: flex; gap: 10px; align-items: baseline; }
+.ph-n-doc__timeline-item::before { content: ''; position: absolute; left: -25px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--ph-accent); box-shadow: 0 0 0 3px var(--ph-bg); }
+.ph-n-doc__timeline-when { flex: none; min-width: 64px; font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+.ph-n-doc__timeline-body { display: flex; flex-direction: column; gap: 2px; font-size: var(--ph-fs-13); }
+.ph-n-doc__timeline-body strong { font-weight: var(--ph-fw-semi); }
+.ph-n-doc__compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 10px 0 14px; }
+.ph-n-doc__compare-col { padding: 10px 12px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); }
+.ph-n-doc__compare-title { margin-bottom: 6px; font-size: var(--ph-fs-12); font-weight: var(--ph-fw-semi); color: var(--ph-ink-2); }
+.ph-n-doc__compare-col ul { margin: 0; padding-left: 16px; font-size: var(--ph-fs-13); line-height: 1.55; }
+.ph-n-doc__steps { margin: 10px 0 14px; padding-left: 20px; font-size: var(--ph-fs-13); line-height: 1.6; }
+.ph-n-doc__steps li { margin: 4px 0; padding-left: 2px; }
+
+.ph-n-directivewrap { position: relative; display: inline-flex; }
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -6988,6 +7014,9 @@ function isSectionLikelyIncomplete(section) {
   if (text2.length < 8) return true;
   return /(?:TODO|待补充|待补|待完善|待续|未完|继续补充|…|\.\.\.)[。.!！?？；;\s]*$/.test(text2.slice(-48));
 }
+function countDirectives(contentMd) {
+  return (String(contentMd == null ? "" : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps)\s*:/gi) || []).length;
+}
 function sectionsForSelection(sections, start, end) {
   const list = arrayOf2(sections);
   const from = Math.max(0, Number(start) || 0);
@@ -7092,6 +7121,50 @@ function normalizeBlock(raw, options) {
   }
   if (type === "figure" || type === "image") {
     return normalizeFigureBlock(raw, options ? options.allowedFigures : void 0);
+  }
+  if (type === "web-image" || type === "web_image") {
+    const src = firstText2(raw.src, raw.url);
+    if (!/^\/pappers-hall\/note-asset\/[a-f0-9]{16,40}\.(?:png|jpg|jpeg|webp|gif)$/i.test(src)) return null;
+    return {
+      type: "web-image",
+      src: src.slice(0, 1200),
+      alt: firstText2(raw.alt, raw.caption).slice(0, 300),
+      caption: firstText2(raw.caption).slice(0, 600),
+      credit: firstText2(raw.credit, raw.creator).slice(0, 180),
+      sourceUrl: firstText2(raw.sourceUrl).slice(0, 1e3),
+      license: firstText2(raw.license).slice(0, 80)
+    };
+  }
+  if (type === "sources" || type === "source-list" || type === "source") {
+    const items2 = arrayOf2(raw.items || raw.sources).map((item) => {
+      const url = firstText2(item && (item.url || item.href));
+      if (!/^https?:\/\//i.test(url)) return null;
+      return { title: firstText2(item.title, item.label, url).slice(0, 200), url: url.slice(0, 1e3), note: firstText2(item.note, item.snippet).slice(0, 300) };
+    }).filter(Boolean).slice(0, 10);
+    return items2.length > 0 ? { type: "sources", items: items2 } : null;
+  }
+  if (type === "timeline") {
+    const items2 = arrayOf2(raw.items).map((item) => {
+      const title2 = firstText2(item && (item.title || item.label)).slice(0, 160);
+      const text2 = firstText2(item && (item.text || item.desc)).slice(0, 500);
+      if (!title2 && !text2) return null;
+      return { when: firstText2(item && (item.when || item.time)).slice(0, 80), title: title2, text: text2 };
+    }).filter(Boolean).slice(0, 12);
+    return items2.length > 0 ? { type: "timeline", items: items2 } : null;
+  }
+  if (type === "compare" || type === "comparison") {
+    const left = arrayOf2(raw.left || raw.leftItems).map((item) => firstText2(item && typeof item === "object" ? item.text : item)).filter(Boolean).slice(0, 8);
+    const right = arrayOf2(raw.right || raw.rightItems).map((item) => firstText2(item && typeof item === "object" ? item.text : item)).filter(Boolean).slice(0, 8);
+    if (left.length === 0 && right.length === 0) return null;
+    return { type: "compare", leftTitle: firstText2(raw.leftTitle).slice(0, 120), rightTitle: firstText2(raw.rightTitle).slice(0, 120), left, right };
+  }
+  if (type === "steps") {
+    const items2 = arrayOf2(raw.items).map((item) => {
+      if (typeof item === "string") return item.trim().slice(0, 600);
+      if (item && typeof item === "object") return firstText2(item.text, item.title).slice(0, 600);
+      return "";
+    }).filter(Boolean).slice(0, 15);
+    return items2.length > 0 ? { type: "steps", items: items2 } : null;
   }
   if (type === "columns" || type === "two-columns" || type === "twocolumns") {
     if (options && options.depth > 0) return null;
@@ -7736,6 +7809,35 @@ function createNotesService(api) {
       throw error;
     });
   }
+  function runNoteAgent(options) {
+    const opts = options || {};
+    const note = opts.note;
+    if (!note || typeof note.id !== "string" || note.id === "") {
+      const error = new Error("notes.agent.run requires a saved note");
+      error.code = "invalid";
+      throw error;
+    }
+    const params = {
+      noteId: note.id,
+      mode: opts.mode === "directives" ? "directives" : opts.mode || "manual",
+      direction: opts.direction || "scientific",
+      layout: opts.layout || "auto",
+      useFigures: opts.useFigures === true,
+      sessionId: opts.sessionId || void 0,
+      paperId: opts.paperId || void 0,
+      contextText: opts.contextText || "",
+      sectionIds: Array.isArray(opts.sections) ? opts.sections.map((section) => String(section.id)).filter(Boolean) : void 0,
+      baseContentJson: opts.baseContentJson || null
+    };
+    return aiCall("notes.agent.run", params).then((result) => {
+      if (!result || result.status !== "ok" || !result.contentJson) {
+        const error = new Error(result && result.reason || "note agent returned no layout");
+        error.code = result && result.status || "shape";
+        throw error;
+      }
+      return result;
+    });
+  }
   const service = {
     /** Current service state: `{status:'unknown'|'ready'|'unavailable'|'offline', reason}`. */
     getSnapshot() {
@@ -7944,6 +8046,9 @@ function createNotesService(api) {
       });
     },
     /**
+     * Legacy client-side formatter, retained for compatibility. The UI calls
+     * the Host note Agent via `beautify`/`runDirectives` instead.
+     *
      * Ask the model to re-lay-out the finished sections as a varied, continuous
      * v2 document (styles + sparse figures/columns/tables).
      *
@@ -7964,7 +8069,7 @@ function createNotesService(api) {
      * @param {string} [options.contextText] unfinished previous section(s), context only
      * @param {string} [options.sessionId]
      */
-    beautify(options) {
+    beautifyLegacy(options) {
       const opts = options || {};
       const direction = DIRECTION_PROMPTS[opts.direction] ? opts.direction : "plain";
       const layout = LAYOUT_PROMPTS[opts.layout] ? opts.layout : "auto";
@@ -8168,6 +8273,18 @@ function createNotesService(api) {
           calls
         };
       });
+    },
+    /**
+     * Run the dedicated Host note Agent for a normal beautification pass.
+     * All content comes from Agent tool calls; the old client-side JSON prompt
+     * path remains only as `beautifyLegacy`.
+     */
+    beautify(options) {
+      return runNoteAgent(options);
+    },
+    /** Execute the inline directives in the note; layout is a light side effect. */
+    runDirectives(options) {
+      return runNoteAgent(Object.assign({}, options || {}, { mode: "directives" }));
     },
     /** The format version written with every beautified note. */
     formatVersion: NOTES_FORMAT_VERSION
@@ -10540,6 +10657,7 @@ function ColumnsBlock(props) {
   );
 }
 function Block(props) {
+  const t = props.t;
   const block = props.block;
   if (!block || !block.type) return null;
   if (block.type === "heading") return import_react13.default.createElement("h4", { className: "ph-n-doc__h" }, block.text);
@@ -10612,12 +10730,76 @@ function Block(props) {
       )
     );
   }
+  if (block.type === "web-image") {
+    return import_react13.default.createElement(
+      "figure",
+      { className: "ph-n-doc__webimage" },
+      import_react13.default.createElement("img", { src: block.src, alt: block.alt || block.caption || "", loading: "lazy", decoding: "async" }),
+      block.caption || block.credit || block.sourceUrl ? import_react13.default.createElement(
+        "figcaption",
+        { className: "ph-n-doc__webimage-cap" },
+        block.caption ? import_react13.default.createElement("span", null, block.caption) : null,
+        block.credit ? import_react13.default.createElement("span", { className: "ph-n-doc__webimage-credit" }, block.credit + (block.license ? " \xB7 " + block.license : "")) : null,
+        block.sourceUrl ? import_react13.default.createElement("a", { href: block.sourceUrl, target: "_blank", rel: "noreferrer noopener" }, t("notes.block.source")) : null
+      ) : null
+    );
+  }
+  if (block.type === "sources") {
+    return import_react13.default.createElement(
+      "div",
+      { className: "ph-n-doc__sources" },
+      import_react13.default.createElement("div", { className: "ph-n-doc__sources-title" }, t("notes.block.sources")),
+      (block.items || []).map((item, index) => import_react13.default.createElement(
+        "a",
+        { key: index, href: item.url, target: "_blank", rel: "noreferrer noopener", className: "ph-n-doc__source" },
+        import_react13.default.createElement(Icon, { name: "link", size: 12 }),
+        import_react13.default.createElement("span", null, item.title || item.url),
+        item.note ? import_react13.default.createElement("span", { className: "ph-n-doc__source-note" }, item.note) : null
+      ))
+    );
+  }
+  if (block.type === "timeline") {
+    return import_react13.default.createElement(
+      "ol",
+      { className: "ph-n-doc__timeline" },
+      (block.items || []).map((item, index) => import_react13.default.createElement(
+        "li",
+        { key: index, className: "ph-n-doc__timeline-item" },
+        item.when ? import_react13.default.createElement("span", { className: "ph-n-doc__timeline-when" }, item.when) : null,
+        import_react13.default.createElement(
+          "span",
+          { className: "ph-n-doc__timeline-body" },
+          item.title ? import_react13.default.createElement("strong", null, item.title) : null,
+          item.text ? import_react13.default.createElement("span", null, item.text) : null
+        )
+      ))
+    );
+  }
+  if (block.type === "compare") {
+    return import_react13.default.createElement(
+      "div",
+      { className: "ph-n-doc__compare" },
+      [["left", block.leftTitle], ["right", block.rightTitle]].map(([side, title2]) => import_react13.default.createElement(
+        "div",
+        { key: side, className: "ph-n-doc__compare-col" },
+        title2 ? import_react13.default.createElement("div", { className: "ph-n-doc__compare-title" }, title2) : null,
+        import_react13.default.createElement("ul", null, (block[side] || []).map((item, index) => import_react13.default.createElement("li", { key: index }, item)))
+      ))
+    );
+  }
+  if (block.type === "steps") {
+    return import_react13.default.createElement(
+      "ol",
+      { className: "ph-n-doc__steps" },
+      (block.items || []).map((item, index) => import_react13.default.createElement("li", { key: index }, item))
+    );
+  }
   if (block.type === "figure") return import_react13.default.createElement(FigureBlock, { t: props.t, block, onOpenFigure: props.onOpenFigure });
   if (block.type === "columns") return import_react13.default.createElement(ColumnsBlock, { t: props.t, block, onOpenFigure: props.onOpenFigure });
   return null;
 }
 function isWideBlock(block) {
-  return Boolean(block && (block.type === "table" || block.type === "figure" || block.type === "columns"));
+  return Boolean(block && (block.type === "table" || block.type === "figure" || block.type === "columns" || block.type === "web-image" || block.type === "timeline" || block.type === "compare" || block.type === "sources"));
 }
 function headingLabel(row) {
   return row.heading || row.section.heading || "";
@@ -11295,6 +11477,8 @@ function NoteEditor(props) {
   const [draftFound, setDraftFound] = import_react15.default.useState(null);
   const [incompleteIds, setIncompleteIds] = import_react15.default.useState(() => note ? resolveIncompleteSections(note.id, sectionizeMarkdown(note.contentMd)) : []);
   const [beautifyOpen, setBeautifyOpen] = import_react15.default.useState(false);
+  const [directiveMenuOpen, setDirectiveMenuOpen] = import_react15.default.useState(false);
+  const [directiveRunning, setDirectiveRunning] = import_react15.default.useState(false);
   const [beautifySelection, setBeautifySelection] = import_react15.default.useState(null);
   const [historyOpen, setHistoryOpen] = import_react15.default.useState(false);
   const [linkOpen, setLinkOpen] = import_react15.default.useState(false);
@@ -11603,6 +11787,58 @@ function NoteEditor(props) {
       });
     }
   }, [aiStatus, compact, service]);
+  const directiveCount = countDirectives(content);
+  const directiveItems = [
+    { id: "figure", icon: "figure", label: t("notes.directive.insertFigure"), run: () => insertDirective("{{figure: Figure 1}}") },
+    { id: "table", icon: "table", label: t("notes.directive.insertTable"), run: () => insertDirective("{{table: \u6307\u6807 | \u6570\u503C}}") },
+    { id: "web-image", icon: "image", label: t("notes.directive.insertWebImage"), run: () => insertDirective("{{web-image: \u5173\u952E\u8BCD}}") },
+    { id: "web", icon: "link", label: t("notes.directive.insertWebSource"), run: () => insertDirective("{{web: \u5173\u952E\u8BCD\u6216\u7F51\u5740}}") },
+    { id: "stats", icon: "table", label: t("notes.directive.insertStats"), run: () => insertDirective("{{stats: \u5173\u952E\u6570\u5B57}}") },
+    { id: "callout", icon: "info", label: t("notes.directive.insertCallout"), run: () => insertDirective("{{callout: \u9700\u8981\u5F3A\u8C03\u7684\u7ED3\u8BBA}}") },
+    directiveCount > 0 ? { id: "run", icon: "sparkle", label: t("notes.directive.run", { count: directiveCount }), run: runDirectives } : null
+  ].filter(Boolean);
+  function insertDirective(snippet) {
+    const textarea = textareaRef.current;
+    const source = localRef.current.content || "";
+    const start = textarea && typeof textarea.selectionStart === "number" ? textarea.selectionStart : source.length;
+    const end = textarea && typeof textarea.selectionEnd === "number" ? textarea.selectionEnd : start;
+    const prefix = start > 0 && !/\s/.test(source[start - 1]) ? " " : "";
+    const suffix = end < source.length && !/\s/.test(source[end]) ? " " : "";
+    const next = source.slice(0, start) + prefix + snippet + suffix + source.slice(end);
+    applyLocal({ content: next });
+    requestAnimationFrame(() => {
+      const current = textareaRef.current;
+      if (!current) return;
+      const caret = start + prefix.length + snippet.length;
+      current.focus();
+      current.setSelectionRange(caret, caret);
+    });
+  }
+  function runDirectives() {
+    if (!note || directiveRunning) return;
+    if (directiveCount === 0) {
+      if (props.notify) props.notify("info", t("notes.directive.empty"));
+      return;
+    }
+    cancelPendingAuto();
+    setDirectiveRunning(true);
+    const current = noteRef.current;
+    const flushFirst = dirtyRef.current ? flush() : Promise.resolve(null);
+    flushFirst.then(() => service.runDirectives({
+      note: noteRef.current || current,
+      sessionId: props.sessionId,
+      paperId: props.paperId || "",
+      baseContentJson: contentJsonRef.current
+    })).then((result) => saveContentJson(result.contentJson, { switchView: true }).then(() => result)).then((result) => {
+      if (props.notify) props.notify("success", t("notes.directive.done", { count: directiveCount, tools: Number(result.calls) || 0 }));
+    }).catch((error) => {
+      const code = String(error && error.code || "");
+      const message = code === "unavailable" ? t("notes.directive.unavailable", { reason: String(error && (error.reason || error.message) || "") }) : t("notes.directive.failed", { message: String(error && error.message || error) });
+      if (props.notify) props.notify("error", message);
+    }).then(() => {
+      if (mountedRef.current) setDirectiveRunning(false);
+    });
+  }
   const reloadNote = import_react15.default.useCallback(() => {
     if (!noteId) return;
     const current = noteRef.current;
@@ -11969,6 +12205,19 @@ function NoteEditor(props) {
         import_react15.default.createElement(
           "div",
           { className: "ph-n-editor__actions" },
+          import_react15.default.createElement(
+            "div",
+            { className: "ph-n-directivewrap" },
+            import_react15.default.createElement(Button, {
+              size: "sm",
+              variant: "ghost",
+              icon: "listOrdered",
+              onClick: () => setDirectiveMenuOpen((value) => !value),
+              loading: directiveRunning,
+              title: t("notes.directive.title")
+            }, compact ? directiveCount > 0 ? String(directiveCount) : "" : t("notes.directive.button") + (directiveCount > 0 ? " " + directiveCount : "")),
+            directiveMenuOpen ? import_react15.default.createElement(Menu, { items: directiveItems, onClose: () => setDirectiveMenuOpen(false) }) : null
+          ),
           import_react15.default.createElement(Button, {
             size: "sm",
             variant: "soft",
@@ -29359,6 +29608,21 @@ var ZH = {
   "notes.empty": "\u8FD8\u6CA1\u6709\u7B14\u8BB0",
   "notes.error.load": "\u7B14\u8BB0\u52A0\u8F7D\u5931\u8D25",
   "notes.unavailable": "\u7B14\u8BB0\u670D\u52A1\u672A\u5C31\u7EEA",
+  "notes.directive.button": "\u6307\u4EE4",
+  "notes.directive.title": "\u5728\u7B14\u8BB0\u4E2D\u63D2\u5165\u52A8\u4F5C\u6307\u4EE4\uFF0C\u4F8B\u5982 {{figure: Figure 1}}",
+  "notes.directive.insertFigure": "\u63D2\u5165\u8BBA\u6587\u914D\u56FE",
+  "notes.directive.insertTable": "\u63D2\u5165\u7EDF\u8BA1\u8868",
+  "notes.directive.insertWebImage": "\u63D2\u5165\u8054\u7F51\u56FE\u7247",
+  "notes.directive.insertWebSource": "\u63D2\u5165\u7F51\u7EDC\u6765\u6E90",
+  "notes.directive.insertStats": "\u63D2\u5165\u5173\u952E\u6570\u5B57",
+  "notes.directive.insertCallout": "\u63D2\u5165\u5F3A\u8C03\u5757",
+  "notes.directive.run": "\u6267\u884C\u6307\u4EE4\uFF08{count}\uFF09",
+  "notes.directive.done": "\u5DF2\u5B8C\u6210 {count} \u6761\u6307\u4EE4\uFF0CAgent \u8C03\u7528 {tools} \u6B21\u5DE5\u5177",
+  "notes.directive.empty": "\u8FD8\u6CA1\u6709\u6307\u4EE4",
+  "notes.directive.unavailable": "\u7B14\u8BB0 Agent \u4E0D\u53EF\u7528\uFF1A{reason}",
+  "notes.directive.failed": "\u6267\u884C\u6307\u4EE4\u5931\u8D25\uFF1A{message}",
+  "notes.block.source": "\u6765\u6E90",
+  "notes.block.sources": "\u53C2\u8003\u6765\u6E90",
   "notes.figure.label": "\u56FE {label}",
   "notes.figure.open": "\u5728\u9605\u8BFB\u5668\u4E2D\u6253\u5F00\u8BE5\u56FE",
   "notes.figure.openShort": "\u5728\u9605\u8BFB\u5668\u6253\u5F00"
@@ -30610,6 +30874,21 @@ var EN = {
   "notes.empty": "No notes yet",
   "notes.error.load": "Could not load notes",
   "notes.unavailable": "The notes service is not ready",
+  "notes.directive.button": "Directives",
+  "notes.directive.title": "Insert an action directive, e.g. {{figure: Figure 1}}",
+  "notes.directive.insertFigure": "Insert paper figure",
+  "notes.directive.insertTable": "Insert data table",
+  "notes.directive.insertWebImage": "Insert web image",
+  "notes.directive.insertWebSource": "Insert web source",
+  "notes.directive.insertStats": "Insert key numbers",
+  "notes.directive.insertCallout": "Insert callout",
+  "notes.directive.run": "Run directives ({count})",
+  "notes.directive.done": "Ran {count} directives with {tools} agent tool calls",
+  "notes.directive.empty": "No directives yet",
+  "notes.directive.unavailable": "Note agent unavailable: {reason}",
+  "notes.directive.failed": "Directive run failed: {message}",
+  "notes.block.source": "source",
+  "notes.block.sources": "Sources",
   "notes.figure.label": "Fig. {label}",
   "notes.figure.open": "Open this figure in the reader",
   "notes.figure.openShort": "Open in reader"

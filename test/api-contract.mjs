@@ -18,10 +18,10 @@ function walk(dir) {
 const used = new Set()
 for (const file of walk(SRC)) {
   const text = readFileSync(file, 'utf8')
-  for (const match of text.matchAll(/\b(?:defaultApi|api)\(['"]([a-z][a-z0-9_.]+)['"]/g)) used.add(match[1])
+  for (const match of text.matchAll(/\b(?:defaultApi|api|aiCall)\(['"]([a-z][a-z0-9_.]+)['"]/g)) used.add(match[1])
 }
 const api = readFileSync(path.join(ROOT, 'host', 'api.js'), 'utf8')
-const declared = new Set([...api.matchAll(/\['([a-z][a-z0-9_.]+)',\s*\(/g)].map((match) => match[1]))
+const declared = new Set([...api.matchAll(/\['([a-z][a-z0-9_.]+)',\s*(?:async\s*)?\(/g)].map((match) => match[1]))
 const missing = [...used].filter((method) => !declared.has(method)).sort()
 const unused = [...declared].filter((method) => !used.has(method)).sort()
 const report = {

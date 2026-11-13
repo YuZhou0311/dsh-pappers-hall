@@ -99,6 +99,7 @@ function ColumnsBlock(props) {
 
 /** One content block. */
 function Block(props) {
+  const t = props.t
   const block = props.block
   if (!block || !block.type) return null
   if (block.type === 'heading') return React.createElement('h4', { className: 'ph-n-doc__h' }, block.text)
@@ -173,6 +174,70 @@ function Block(props) {
       ),
     )
   }
+  if (block.type === 'web-image') {
+    return React.createElement(
+      'figure',
+      { className: 'ph-n-doc__webimage' },
+      React.createElement('img', { src: block.src, alt: block.alt || block.caption || '', loading: 'lazy', decoding: 'async' }),
+      (block.caption || block.credit || block.sourceUrl)
+        ? React.createElement(
+            'figcaption',
+            { className: 'ph-n-doc__webimage-cap' },
+            block.caption ? React.createElement('span', null, block.caption) : null,
+            block.credit ? React.createElement('span', { className: 'ph-n-doc__webimage-credit' }, block.credit + (block.license ? ' · ' + block.license : '')) : null,
+            block.sourceUrl ? React.createElement('a', { href: block.sourceUrl, target: '_blank', rel: 'noreferrer noopener' }, t('notes.block.source')) : null,
+          )
+        : null,
+    )
+  }
+  if (block.type === 'sources') {
+    return React.createElement(
+      'div',
+      { className: 'ph-n-doc__sources' },
+      React.createElement('div', { className: 'ph-n-doc__sources-title' }, t('notes.block.sources')),
+      (block.items || []).map((item, index) => React.createElement(
+        'a',
+        { key: index, href: item.url, target: '_blank', rel: 'noreferrer noopener', className: 'ph-n-doc__source' },
+        React.createElement(Icon, { name: 'link', size: 12 }),
+        React.createElement('span', null, item.title || item.url),
+        item.note ? React.createElement('span', { className: 'ph-n-doc__source-note' }, item.note) : null,
+      )),
+    )
+  }
+  if (block.type === 'timeline') {
+    return React.createElement(
+      'ol',
+      { className: 'ph-n-doc__timeline' },
+      (block.items || []).map((item, index) => React.createElement(
+        'li',
+        { key: index, className: 'ph-n-doc__timeline-item' },
+        item.when ? React.createElement('span', { className: 'ph-n-doc__timeline-when' }, item.when) : null,
+        React.createElement('span', { className: 'ph-n-doc__timeline-body' },
+          item.title ? React.createElement('strong', null, item.title) : null,
+          item.text ? React.createElement('span', null, item.text) : null,
+        ),
+      )),
+    )
+  }
+  if (block.type === 'compare') {
+    return React.createElement(
+      'div',
+      { className: 'ph-n-doc__compare' },
+      [['left', block.leftTitle], ['right', block.rightTitle]].map(([side, title]) => React.createElement(
+        'div',
+        { key: side, className: 'ph-n-doc__compare-col' },
+        title ? React.createElement('div', { className: 'ph-n-doc__compare-title' }, title) : null,
+        React.createElement('ul', null, (block[side] || []).map((item, index) => React.createElement('li', { key: index }, item))),
+      )),
+    )
+  }
+  if (block.type === 'steps') {
+    return React.createElement(
+      'ol',
+      { className: 'ph-n-doc__steps' },
+      (block.items || []).map((item, index) => React.createElement('li', { key: index }, item)),
+    )
+  }
   if (block.type === 'figure') return React.createElement(FigureBlock, { t: props.t, block: block, onOpenFigure: props.onOpenFigure })
   if (block.type === 'columns') return React.createElement(ColumnsBlock, { t: props.t, block: block, onOpenFigure: props.onOpenFigure })
   return null
@@ -180,7 +245,7 @@ function Block(props) {
 
 /** Wide blocks must not be split/flowed by the two-column section layout. */
 function isWideBlock(block) {
-  return Boolean(block && (block.type === 'table' || block.type === 'figure' || block.type === 'columns'))
+  return Boolean(block && (block.type === 'table' || block.type === 'figure' || block.type === 'columns' || block.type === 'web-image' || block.type === 'timeline' || block.type === 'compare' || block.type === 'sources'))
 }
 
 /** Section heading label: the stored heading, the Markdown heading, or neutral. */

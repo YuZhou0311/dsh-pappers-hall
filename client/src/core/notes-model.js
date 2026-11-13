@@ -179,6 +179,43 @@ export function isSectionLikelyIncomplete(section) {
 }
 
 /** Sections overlapping the `[start, end)` textarea selection. */
+/** Inline directive kinds the note Agent understands. */
+export const DIRECTIVE_KINDS = ['figure', 'table', 'web-image', 'web', 'stats', 'callout', 'timeline', 'compare', 'steps']
+
+/**
+ * Find `{{kind: argument}}` directives in the user's Markdown and attach each
+ * to the section containing it. The markers stay in `contentMd`; the Agent
+ * converts them into structured blocks.
+ * @param {string} contentMd
+ * @param {Array} [sections] result of {@link sectionizeMarkdown}
+ * @returns {Array<{id:string,kind:string,argument:string,start:number,sectionId:string,raw:string}>}
+ */
+export function extractDirectives(contentMd, sections) {
+  const source = String(contentMd == null ? '' : contentMd)
+  const list = Array.isArray(sections) ? sections : sectionizeMarkdown(source)
+  const pattern = /\{\{\s*(figure|table|web-image|web|stats|callout|timeline|compare|steps)\s*:\s*([\s\S]*?)\}\}/gi
+  const out = []
+  let match
+  while ((match = pattern.exec(source)) !== null) {
+    const start = match.index
+    const section = [...list].reverse().find((candidate) => candidate.start <= start)
+    out.push({
+      id: 'd' + out.length,
+      kind: match[1].toLowerCase(),
+      argument: String(match[2] || '').trim().slice(0, 500),
+      start,
+      sectionId: section ? section.id : (list[0] ? list[0].id : ''),
+      raw: String(match[0] || '').slice(0, 700),
+    })
+  }
+  return out
+}
+
+/** Count inline directives without building the full list. */
+export function countDirectives(contentMd) {
+  return (String(contentMd == null ? '' : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps)\s*:/gi) || []).length
+}
+
 export function sectionsForSelection(sections, start, end) {
   const list = arrayOf(sections)
   const from = Math.max(0, Number(start) || 0)
@@ -309,6 +346,52 @@ export function normalizeBlock(raw, options) {
   }
   if (type === 'figure' || type === 'image') {
     return normalizeFigureBlock(raw, options ? options.allowedFigures : undefined)
+  }
+  if (type === 'web-image' || type === 'web_image') {
+    const src = firstText(raw.src, raw.url)
+    // Note-agent images are cached locally; remote URLs would be blocked by the
+    // host page's image policy and render as broken media.
+    if (!/^\/pappers-hall\/note-asset\/[a-f0-9]{16,40}\.(?:png|jpg|jpeg|webp|gif)$/i.test(src)) return null
+    return {
+      type: 'web-image',
+      src: src.slice(0, 1200),
+      alt: firstText(raw.alt, raw.caption).slice(0, 300),
+      caption: firstText(raw.caption).slice(0, 600),
+      credit: firstText(raw.credit, raw.creator).slice(0, 180),
+      sourceUrl: firstText(raw.sourceUrl).slice(0, 1000),
+      license: firstText(raw.license).slice(0, 80),
+    }
+  }
+  if (type === 'sources' || type === 'source-list' || type === 'source') {
+    const items = arrayOf(raw.items || raw.sources).map((item) => {
+      const url = firstText(item && (item.url || item.href))
+      if (!/^https?:\/\//i.test(url)) return null
+      return { title: firstText(item.title, item.label, url).slice(0, 200), url: url.slice(0, 1000), note: firstText(item.note, item.snippet).slice(0, 300) }
+    }).filter(Boolean).slice(0, 10)
+    return items.length > 0 ? { type: 'sources', items } : null
+  }
+  if (type === 'timeline') {
+    const items = arrayOf(raw.items).map((item) => {
+      const title = firstText(item && (item.title || item.label)).slice(0, 160)
+      const text = firstText(item && (item.text || item.desc)).slice(0, 500)
+      if (!title && !text) return null
+      return { when: firstText(item && (item.when || item.time)).slice(0, 80), title, text }
+    }).filter(Boolean).slice(0, 12)
+    return items.length > 0 ? { type: 'timeline', items } : null
+  }
+  if (type === 'compare' || type === 'comparison') {
+    const left = arrayOf(raw.left || raw.leftItems).map((item) => firstText(item && typeof item === 'object' ? item.text : item)).filter(Boolean).slice(0, 8)
+    const right = arrayOf(raw.right || raw.rightItems).map((item) => firstText(item && typeof item === 'object' ? item.text : item)).filter(Boolean).slice(0, 8)
+    if (left.length === 0 && right.length === 0) return null
+    return { type: 'compare', leftTitle: firstText(raw.leftTitle).slice(0, 120), rightTitle: firstText(raw.rightTitle).slice(0, 120), left, right }
+  }
+  if (type === 'steps') {
+    const items = arrayOf(raw.items).map((item) => {
+      if (typeof item === 'string') return item.trim().slice(0, 600)
+      if (item && typeof item === 'object') return firstText(item.text, item.title).slice(0, 600)
+      return ''
+    }).filter(Boolean).slice(0, 15)
+    return items.length > 0 ? { type: 'steps', items } : null
   }
   if (type === 'columns' || type === 'two-columns' || type === 'twocolumns') {
     if (options && options.depth > 0) return null

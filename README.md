@@ -10,9 +10,31 @@ The plugin is a normal DSH bundle: enabling it adds Host services/tools and Clie
 - **Reader** — original PDF pages, text layer and selection, highlights/area notes, translation, page outline, figure list, citation export.
 - **Side-by-side notes** — write a note while reading an imported paper or a local PDF; auto-beautify uses the configured model and never overwrites the original Markdown.
 - **Notes library** — notes tree in the paper-library sidebar, folders, paper↔note links, full-text search.
+- **Note Agent** — a lightweight DSH Agent restricted to five note tools lays out a note and executes inline directives such as `{{figure: ...}}`, `{{table: ...}}` and `{{web-image: ...}}`, or natural-language requests such as “这里加一张论文图” while writing.
 - **Conversation references** — cite papers, figures, annotations or notes into the draft; a source-aware bundle token lets the Agent read the exact material.
 - **Local PDF reading** — inspect, batch-read, OCR (when enabled), and view figure/table pages without importing first.
-- **Agent tools** — 14 consolidated tools covering search, reading, figures, folders, annotations, batch changes and notes.
+- **Agent tools** — 14 consolidated research tools, plus a separate isolated note Agent used only while editing notes.
+- **Richer note blocks** — web images with attribution, source lists, timelines, comparisons, stats, callouts and numbered steps.
+
+## Inline directives and the note Agent
+
+Open a saved note in the notes workbench (or the reader's notes tab) and either press **Directives** (指令) in the editor toolbar, or type a directive directly in the Markdown:
+
+```text
+{{figure: Figure 3}}       find a real figure from a linked paper
+{{table: 指标 | 数值}}      build a table from the content or web sources
+{{web-image: ENSO satellite}}  search and cache a licensed web image
+{{web: ENSO latest}}       add a citeable web source
+{{stats: ...}}             key-number cards
+{{callout: ...}}           emphasized conclusion
+{{timeline: ...}}          chronology
+{{compare: ...}}           side-by-side comparison
+{{steps: ...}}             numbered actions
+```
+
+Natural-language requests such as “这里加一张论文图” or “加一个统计表” also work when written in the note. The **Directives** menu runs the note Agent over all markers; the normal **AI beautify** action uses the same Agent for layout.
+
+The note Agent is a separate, short-lived DSH Agent session. It is restricted to five note-only tools (`read`, `set section`, `insert action`, `web search`, `finish`); every global tool is hidden. It can read the current note, use only real linked-paper figures, download attributed web images into the plugin data directory, and call `note_finish`. It cannot edit `content_md`, other notes, the library, tags, files or the general Agent surface. If the Agent is unavailable, the old client-side formatter is **not** used; the UI reports the reason.
 
 ## Requirements
 
@@ -46,7 +68,7 @@ dsh plugin --profile desktop add dsh-pappers-hall
 
 ```sh
 npm pack
-dsh plugin --profile desktop add ./dsh-pappers-hall-0.21.0.tgz
+dsh plugin --profile desktop add ./dsh-pappers-hall-0.22.0.tgz
 ```
 
 The package is a bundle: `package.json` declares `dsh.bundle.patch`, `dsh.client`, display metadata and exported resources. The patch inserts the `pappers-hall` Host row; the Client half is loaded from the exported `./client` subpath.
@@ -95,6 +117,7 @@ npm run test:notes
 npm run test:ui
 npm run test:api
 npm run test:i18n
+npm run test:agent
 npm run verify
 ```
 
@@ -103,6 +126,7 @@ npm run verify
 - `test:ui` checks the UI control inventory and accessibility contract.
 - `test:api` checks that every Client JSON API method has a Host handler.
 - `test:i18n` checks literal UI translation keys against both dictionaries (reader fallback keys excluded).
+- `test:agent` checks note-Agent section hashing, directive parsing and block normalization.
 - Browser acceptance and the fixture-based API suite need a running DSH profile, poppler and the external devkit; see the repository's internal notes and `reports/`.
 - An authenticated Web UI can be exercised with `PAPPERS_BASE=http://127.0.0.1:<port> PAPPERS_TOKEN=<printed-token> node scripts/browser-shot.mjs --steps library,reader,drawer,dock,notes,figures,settings`. Use a disposable data directory for destructive checks.
 

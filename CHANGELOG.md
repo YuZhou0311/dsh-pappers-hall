@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.22.0
+
+- Added a dedicated note beautification Agent built on the DSH Agent runtime.
+- The Agent is restricted to five note-only tools: read, set section, insert action block, web search, finish.
+- Every layout, figure, table, web image and source is created through an Agent tool call; `content_md` is never changed.
+- Added inline action directives: `{{figure: ...}}`, `{{table: ...}}`, `{{web-image: ...}}`, `{{web: ...}}`, `{{stats: ...}}`, `{{callout: ...}}`, `{{timeline: ...}}`, `{{compare: ...}}`, `{{steps: ...}}`.
+- Added a directive toolbar with templates and an execute-directives action.
+- Added richer note blocks: web image with attribution, source list, timeline, comparison and numbered steps.
+- Web image search uses Openverse with license/creator attribution and a local bounded asset cache.
+
+
 ## 0.21.0
 
 - Standardized as a public DSH bundle with `engines.dsh` and `dsh.manifestVersion`.

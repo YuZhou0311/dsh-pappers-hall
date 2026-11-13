@@ -38,6 +38,7 @@ import { createSearch } from './search.js'
 import { createStore, emptyManifest, manifestIndex } from './store.js'
 import { createNotes } from './notes.js'
 import { buildToolDefinitions, prunePdfPreviewCache } from './tools.js'
+import { createNoteAgent } from './note-agent.js'
 
 /** Plugin id used by `status`, the Loader row and the Client. */
 export const PLUGIN_ID = 'dsh-pappers-hall'
@@ -380,6 +381,7 @@ async function applyHostNow(ctx, config) {
   // degrade honestly when the optional local model is absent.
   const notes = createNotes({ db, logger })
   notes.attach({ embedding })
+  const noteAgent = createNoteAgent({ ctx, notes, store, ai, layout, logger, config: resolved })
   const classify = createClassify({ db, embedding, ai, config: resolved, logger })
   const search = createSearch({
     db,
@@ -416,7 +418,7 @@ async function applyHostNow(ctx, config) {
   } catch (error) {
     logger?.warn?.(`pappers-hall: embedding auto-index failed: ${String(error?.message ?? error)}`)
   }
-  const api = createApi({ store, search, ingest, queue, settings, models, ocr, notes, layout })
+  const api = createApi({ store, search, ingest, queue, settings, models, ocr, notes, noteAgent, layout })
   const webHandler = createWebHandler({
     api,
     store,

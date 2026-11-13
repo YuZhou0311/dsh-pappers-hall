@@ -12,12 +12,40 @@
  *          seq:number}`.
  */
 
+const ROUTE_STORAGE_KEY = 'pappers-hall:navigation-route'
+
+/** Remember the route in sessionStorage so a panel remount keeps the reading
+ * position instead of dropping the user back on the library home. */
+function readStoredRoute() {
+  try {
+    if (typeof sessionStorage === 'undefined') return null
+    const raw = sessionStorage.getItem(ROUTE_STORAGE_KEY)
+    if (!raw) return null
+    const route = JSON.parse(raw)
+    if (!route || typeof route !== 'object') return null
+    if (!['library', 'reader', 'notes', 'figures'].includes(route.view)) return null
+    return route
+  } catch {
+    return null
+  }
+}
+
+function storeRoute(route) {
+  try {
+    if (typeof sessionStorage === 'undefined') return
+    sessionStorage.setItem(ROUTE_STORAGE_KEY, JSON.stringify(route))
+  } catch {
+    /* storage can be unavailable in a locked-down webview */
+  }
+}
+
 function createStore() {
-  let state = { route: { view: 'library' }, intent: null, seq: 0 }
+  let state = { route: readStoredRoute() || { view: 'library' }, intent: null, seq: 0 }
   const listeners = new Set()
 
   function publish(next) {
     state = next
+    storeRoute(state.route)
     listeners.forEach((listener) => {
       try {
         listener()
@@ -92,6 +120,14 @@ function createStore() {
         seq: nextSeq,
       })
     },
+    /** Remember the live reader page without creating a navigation intent. */
+    rememberPage(page) {
+      const value = Number(page)
+      if (!Number.isFinite(value) || value < 1 || state.route.view !== 'reader') return
+      if (state.route.page === value) return
+      state = Object.assign({}, state, { route: Object.assign({}, state.route, { page: value }) })
+      storeRoute(state.route)
+    },
     /** Show the standalone notes library (optionally focusing one note). */
     openNotes(payload = {}) {
       const nextSeq = state.seq + 1
@@ -145,6 +181,7 @@ function createStore() {
     /** Test helper: restore the initial library route without listeners. */
     reset() {
       state = { route: { view: 'library' }, intent: null, seq: state.seq + 1 }
+      try { if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(ROUTE_STORAGE_KEY) } catch {}
     },
   }
 }

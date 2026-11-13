@@ -83,6 +83,7 @@ export function PaperCenter(props) {
         // v0.17: the reader notes tab can hand the current note to the library.
         onOpenNoteLibrary: (noteId) => navigation.openNotes({ noteId: noteId || null }),
         onOpenPaper: (paperId, page) => navigation.openPaper({ paperId: paperId, page: page || 1, source: 'reader' }),
+        onPageChange: (nextPage) => navigation.rememberPage(nextPage),
         onToast: push,
         sessionId: sessionId,
         paper: summary || undefined,

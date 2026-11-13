@@ -11,16 +11,10 @@ export function HeaderDrawerButton(props) {
   const sessionId = props.sessionId
   const [failed, setFailed] = React.useState(false)
   // The conversation drawer is the default reading surface in a chat. Open it
-  // once per browser session so switching back from notes/papers does not leave
-  // the user in a bare chat with a hidden sidebar.
+  // whenever a conversation header mounts so returning from notes/papers does
+  // not leave the user in a bare chat with a hidden sidebar.
   React.useEffect(() => {
     if (!sessionId || !props.openDrawer) return undefined
-    try {
-      if (window.sessionStorage.getItem('ph-drawer-autopen') === '1') return undefined
-      window.sessionStorage.setItem('ph-drawer-autopen', '1')
-    } catch {
-      /* storage can be unavailable in a locked-down webview */
-    }
     const timer = setTimeout(() => {
       try { props.openDrawer() } catch { /* host sidebar may not be ready yet */ }
     }, 450)

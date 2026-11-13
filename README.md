@@ -77,7 +77,7 @@ dsh plugin --profile desktop add dsh-pappers-hall
 
 ```sh
 npm pack
-dsh plugin --profile desktop add ./dsh-pappers-hall-0.24.16.tgz
+dsh plugin --profile desktop add ./dsh-pappers-hall-0.24.17.tgz
 ```
 
 The package is a bundle: `package.json` declares `dsh.bundle.patch`, `dsh.client`, display metadata and exported resources. The patch inserts the `pappers-hall` Host row; the Client half is loaded from the exported `./client` subpath.

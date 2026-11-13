@@ -6594,11 +6594,33 @@ function providerLabel(t, provider) {
 }
 
 // src/core/navigation.js
+var ROUTE_STORAGE_KEY = "pappers-hall:navigation-route";
+function readStoredRoute() {
+  try {
+    if (typeof sessionStorage === "undefined") return null;
+    const raw = sessionStorage.getItem(ROUTE_STORAGE_KEY);
+    if (!raw) return null;
+    const route = JSON.parse(raw);
+    if (!route || typeof route !== "object") return null;
+    if (!["library", "reader", "notes", "figures"].includes(route.view)) return null;
+    return route;
+  } catch {
+    return null;
+  }
+}
+function storeRoute(route) {
+  try {
+    if (typeof sessionStorage === "undefined") return;
+    sessionStorage.setItem(ROUTE_STORAGE_KEY, JSON.stringify(route));
+  } catch {
+  }
+}
 function createStore2() {
-  let state = { route: { view: "library" }, intent: null, seq: 0 };
+  let state = { route: readStoredRoute() || { view: "library" }, intent: null, seq: 0 };
   const listeners6 = /* @__PURE__ */ new Set();
   function publish3(next) {
     state = next;
+    storeRoute(state.route);
     listeners6.forEach((listener) => {
       try {
         listener();
@@ -6669,6 +6691,14 @@ function createStore2() {
         seq: nextSeq
       });
     },
+    /** Remember the live reader page without creating a navigation intent. */
+    rememberPage(page2) {
+      const value = Number(page2);
+      if (!Number.isFinite(value) || value < 1 || state.route.view !== "reader") return;
+      if (state.route.page === value) return;
+      state = Object.assign({}, state, { route: Object.assign({}, state.route, { page: value }) });
+      storeRoute(state.route);
+    },
     /** Show the standalone notes library (optionally focusing one note). */
     openNotes(payload = {}) {
       const nextSeq = state.seq + 1;
@@ -6722,6 +6752,10 @@ function createStore2() {
     /** Test helper: restore the initial library route without listeners. */
     reset() {
       state = { route: { view: "library" }, intent: null, seq: state.seq + 1 };
+      try {
+        if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(ROUTE_STORAGE_KEY);
+      } catch {
+      }
     }
   };
 }
@@ -22842,6 +22876,9 @@ function ReaderShellInner(props) {
   pageRef.current = page2;
   const totalRef = import_react31.default.useRef(total);
   totalRef.current = total;
+  import_react31.default.useEffect(() => {
+    if (typeof props.onPageChange === "function") props.onPageChange(page2);
+  }, [page2, props.onPageChange]);
   const goToPage = import_react31.default.useCallback((target, options) => {
     const next = clamp(Math.round(num(target, 1)), 1, totalRef.current);
     setPage(next);
@@ -27864,6 +27901,7 @@ function PaperCenter(props) {
         // v0.17: the reader notes tab can hand the current note to the library.
         onOpenNoteLibrary: (noteId) => navigation.openNotes({ noteId: noteId || null }),
         onOpenPaper: (paperId, page2) => navigation.openPaper({ paperId, page: page2 || 1, source: "reader" }),
+        onPageChange: (nextPage) => navigation.rememberPage(nextPage),
         onToast: push,
         sessionId,
         paper: summary || void 0,
@@ -29040,11 +29078,6 @@ function HeaderDrawerButton(props) {
   const [failed, setFailed] = import_react44.default.useState(false);
   import_react44.default.useEffect(() => {
     if (!sessionId || !props.openDrawer) return void 0;
-    try {
-      if (window.sessionStorage.getItem("ph-drawer-autopen") === "1") return void 0;
-      window.sessionStorage.setItem("ph-drawer-autopen", "1");
-    } catch {
-    }
     const timer2 = setTimeout(() => {
       try {
         props.openDrawer();

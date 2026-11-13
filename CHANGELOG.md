@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.24.17
+
+- Persist the last paper-center route and reader page across panel remounts; returning from a conversation resumes the paper/page instead of the library home.
+- The conversation drawer opens automatically when a conversation header mounts, so the reading sidebar is visible by default.
+
 ## 0.24.16
 
 - Conversation-sidebar paper cards now open the paper reader inline: translation, annotations, AI and figure tools stay in the right sidebar.

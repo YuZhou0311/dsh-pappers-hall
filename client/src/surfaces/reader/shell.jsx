@@ -360,6 +360,10 @@ function ReaderShellInner(props) {
   const totalRef = React.useRef(total)
   totalRef.current = total
 
+  React.useEffect(() => {
+    if (typeof props.onPageChange === 'function') props.onPageChange(page)
+  }, [page, props.onPageChange])
+
   const goToPage = React.useCallback((target, options) => {
     const next = clamp(Math.round(num(target, 1)), 1, totalRef.current)
     setPage(next)

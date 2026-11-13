@@ -332,6 +332,33 @@ async function main() {
       }
     }
 
+    if (STEPS.includes('route-progress')) {
+      const nextPage = await evaluate(`(() => {
+        const buttons = [...document.querySelectorAll('.ph-r-toolbar button, .ph-r-pager button')]
+        const button = buttons.find((item) => /下一页|next page/i.test((item.getAttribute('title') || '') + ' ' + (item.getAttribute('aria-label') || '') + ' ' + (item.textContent || '')))
+        if (!button) return false
+        button.click()
+        return true
+      })()`)
+      await sleep(600)
+      const pageAfter = await evaluate(`(() => ({ input: document.querySelector('.ph-r-pager__input')?.value || '', route: sessionStorage.getItem('pappers-hall:navigation-route') }))()`)
+      console.log('reader page before switching:', JSON.stringify(pageAfter))
+      await evaluate(`(() => { const target = [...document.querySelectorAll('button')].find((button) => (button.textContent || '').includes('新会话')); if (target) target.click(); return Boolean(target); })()`)
+      await sleep(1400)
+      await ensureConversation()
+      await sleep(1200)
+      const centerClick = await evaluate(`(() => {
+        const target = [...document.querySelectorAll('button, a, [role="button"]')].find((element) => (element.textContent || '').trim() === '论文中心')
+        if (!target) return false
+        target.click()
+        return true
+      })()`)
+      await sleep(1400)
+      const restored = await evaluate(`(() => ({ reader: Boolean(document.querySelector('.ph-r-reader')), input: document.querySelector('.ph-r-pager__input')?.value || '', title: (document.querySelector('.ph-r-toolbar__title')?.textContent || '').trim(), route: sessionStorage.getItem('pappers-hall:navigation-route') }))()`)
+      console.log('paper center restored:', centerClick, JSON.stringify(restored))
+      await shot('03b-reader-restored')
+    }
+
     if (want('drawer') || want('all')) {
       // Return to a conversation: the sidebar's 新会话 button creates/focuses one.
       const toConversation = await evaluate(`(() => {

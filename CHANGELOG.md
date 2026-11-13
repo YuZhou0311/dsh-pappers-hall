@@ -7,7 +7,9 @@
 - Every layout, figure, table, web image and source is created through an Agent tool call; `content_md` is never changed.
 - Added inline action directives: `{{figure: ...}}`, `{{table: ...}}`, `{{web-image: ...}}`, `{{web: ...}}`, `{{stats: ...}}`, `{{callout: ...}}`, `{{timeline: ...}}`, `{{compare: ...}}`, `{{steps: ...}}`.
 - Added a directive toolbar with templates and an execute-directives action.
-- Added richer note blocks: web image with attribution, source list, timeline, comparison and numbered steps.
+- Added richer note blocks: web image with attribution, source list, timeline (vertical/horizontal), comparison and numbered steps.
+- Added P0/P1 expression blocks: Markdown, card grids, bar/line/donut charts, image galleries, tabs, disclosures, checklists, status badges, progress bars, alerts, empty states, quotes, action links and table captions/alignment.
+- Added validated architecture/flow/mind-map SVG diagrams with `{{architecture: ...}}`, `{{flowchart: ...}}`, `{{mindmap: ...}}` directives and natural-language diagram requests.
 - Web image search uses Openverse with license/creator attribution and a local bounded asset cache.
 
 

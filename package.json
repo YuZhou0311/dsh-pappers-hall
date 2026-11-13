@@ -1,6 +1,6 @@
 {
   "name": "dsh-pappers-hall",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "Pappers-Hall: a native DSH paper center with library, PDF reader, notes, annotations, figures and conversation references.",
   "license": "MIT",
   "author": "Pappers-Hall contributors",
@@ -78,7 +78,8 @@
     "prepack": "npm run build:client",
     "test:api": "node test/api-contract.mjs",
     "test:i18n": "node test/i18n-contract.mjs",
-    "test:agent": "node test/note-agent.mjs"
+    "test:agent": "node test/note-agent.mjs",
+    "test:rich": "node test/note-rich.mjs"
   },
   "packageManager": "npm@11.20.0",
   "repository": {

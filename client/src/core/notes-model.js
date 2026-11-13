@@ -10,9 +10,10 @@
  *   - Markdown sectionisation (headings first, whole document otherwise) with a
  *     stable per-section `hash` used for the "already beautified" protection;
  *   - the `contentJson` **v2** document schema (section styles plain/accent/
- *     columns/figure; blocks heading/paragraph/bullets/table/quote/callout/
- *     figure/columns) plus defensive parsing of the model's JSON answer and a
- *     v1 → v2 upgrade path;
+ *     columns/figure; basic blocks plus markdown/cards/chart/gallery/tabs/
+ *     disclosure/tasks/status/progress/alert/empty/quotes/actions and
+ *     architecture/flow/mind-map diagrams) plus defensive parsing of the
+ *     model's JSON answer and a v1 → v2 upgrade path;
  *   - the local safety net: autosave drafts, incomplete-section marks and
  *     one-shot UI flags kept in localStorage so no keystroke is ever lost.
  *
@@ -180,7 +181,7 @@ export function isSectionLikelyIncomplete(section) {
 
 /** Sections overlapping the `[start, end)` textarea selection. */
 /** Inline directive kinds the note Agent understands. */
-export const DIRECTIVE_KINDS = ['figure', 'table', 'web-image', 'web', 'stats', 'callout', 'timeline', 'compare', 'steps']
+export const DIRECTIVE_KINDS = ['figure', 'table', 'web-image', 'web', 'stats', 'callout', 'timeline', 'compare', 'steps', 'markdown', 'cards', 'chart', 'gallery', 'tabs', 'disclosure', 'tasks', 'status', 'progress', 'alert', 'divider', 'empty', 'quotes', 'actions', 'diagram', 'architecture', 'flowchart', 'mindmap']
 
 /**
  * Find `{{kind: argument}}` directives in the user's Markdown and attach each
@@ -193,7 +194,7 @@ export const DIRECTIVE_KINDS = ['figure', 'table', 'web-image', 'web', 'stats', 
 export function extractDirectives(contentMd, sections) {
   const source = String(contentMd == null ? '' : contentMd)
   const list = Array.isArray(sections) ? sections : sectionizeMarkdown(source)
-  const pattern = /\{\{\s*(figure|table|web-image|web|stats|callout|timeline|compare|steps)\s*:\s*([\s\S]*?)\}\}/gi
+  const pattern = /\{\{\s*(figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|diagram|architecture|flowchart|mindmap)\s*:\s*([\s\S]*?)\}\}/gi
   const out = []
   let match
   while ((match = pattern.exec(source)) !== null) {
@@ -213,7 +214,7 @@ export function extractDirectives(contentMd, sections) {
 
 /** Count inline directives without building the full list. */
 export function countDirectives(contentMd) {
-  return (String(contentMd == null ? '' : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps)\s*:/gi) || []).length
+  return (String(contentMd == null ? '' : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|diagram|architecture|flowchart|mindmap)\s*:/gi) || []).length
 }
 
 export function sectionsForSelection(sections, start, end) {
@@ -234,6 +235,16 @@ const MAX_TABLE_ROWS = 40
 const MAX_CELL_TEXT = 300
 const MAX_COLUMNS = 2
 const MAX_NESTED_BLOCKS = 14
+const MAX_CARDS = 6
+const MAX_CHART_POINTS = 12
+const MAX_GALLERY_ITEMS = 8
+const MAX_TABS = 4
+const MAX_TASKS = 20
+const MAX_DIAGRAM_NODES = 24
+const MAX_DIAGRAM_EDGES = 32
+const MAX_QUOTES = 8
+const MAX_STATUS_ITEMS = 4
+const MAX_MARKDOWN = 6000
 /** Accepted callout tones. */
 const CALLOUT_TONES = new Set(['info', 'warn', 'success', 'neutral'])
 /** Accepted beautify directions / layouts. */
@@ -280,6 +291,130 @@ function normalizeColumnsBlock(raw, options) {
     built.push({ blocks })
   }
   return { type: 'columns', columns: built }
+}
+
+/** Safe note-asset URL (agent-downloaded image). */
+function isNoteAsset(src) {
+  return /^\/pappers-hall\/note-asset\/[a-f0-9]{16,40}\.(?:png|jpg|jpeg|webp|gif)$/i.test(String(src || ''))
+}
+
+/** Shared gallery item: a real figure candidate or a local note asset. */
+function normalizeMediaItem(item, options) {
+  if (!item || typeof item !== 'object') return null
+  const figureId = firstText(item.figureId, item.figure_id)
+  if (figureId && FIGURE_ID_PATTERN.test(figureId)) {
+    const allowed = options ? options.allowedFigures : undefined
+    const candidate = allowed ? allowed.get(figureId) : null
+    if (allowed && !candidate) return null
+    const source = candidate || item
+    const paperId = firstText(source.paperId, item.paperId)
+    if (!paperId) return null
+    return {
+      kind: 'figure',
+      figureId,
+      paperId,
+      page: Math.max(1, Math.round(Number(source.page ?? item.page) || 1)),
+      imageUrl: firstText(source.imageUrl, item.imageUrl) || '/pappers-hall/figure/' + figureId + '.png',
+      label: firstText(source.label, item.label).slice(0, 24),
+      caption: firstText(source.caption, item.caption).slice(0, 600),
+      alt: firstText(item.alt).slice(0, 200),
+    }
+  }
+  const src = firstText(item.src, item.imageUrl, item.url)
+  if (!isNoteAsset(src)) return null
+  return {
+    kind: 'image',
+    src,
+    alt: firstText(item.alt, item.caption).slice(0, 300),
+    caption: firstText(item.caption).slice(0, 600),
+    credit: firstText(item.credit, item.creator).slice(0, 180),
+    sourceUrl: firstText(item.sourceUrl).slice(0, 1000),
+    license: firstText(item.license).slice(0, 80),
+  }
+}
+
+/** Normalise one chart data set; rejects non-numeric or empty data. */
+function normalizeChartBlock(raw) {
+  const variant = ['bar', 'line', 'donut'].includes(String(raw.variant || '').toLowerCase())
+    ? String(raw.variant).toLowerCase()
+    : 'bar'
+  const rows = arrayOf(raw.data || raw.items || raw.points)
+    .map((item) => {
+      if (Array.isArray(item)) return { label: String(item[0] == null ? '' : item[0]).trim().slice(0, 40), value: Number(item[1]) }
+      if (!item || typeof item !== 'object') return null
+      return { label: firstText(item.label, item.name).slice(0, 40), value: Number(item.value) }
+    })
+    .filter((item) => item && item.label && Number.isFinite(item.value))
+    .slice(0, MAX_CHART_POINTS)
+  let labels = arrayOf(raw.labels).map((value) => String(value == null ? '' : value).trim().slice(0, 40))
+  let values = arrayOf(raw.values).map((value) => Number(value))
+  if (rows.length === 0 && labels.length > 0 && values.length > 0) {
+    labels = labels.slice(0, Math.min(labels.length, values.length, MAX_CHART_POINTS))
+    rows.push(...labels.map((label, index) => ({ label, value: values[index] })))
+  }
+  const data = rows.filter((item) => Number.isFinite(item.value))
+  if (data.length === 0) return null
+  return {
+    type: 'chart',
+    variant,
+    title: firstText(raw.title).slice(0, 120),
+    unit: firstText(raw.unit).slice(0, 24),
+    data,
+  }
+}
+
+/** Normalise nodes/edges for the SVG diagram renderer. */
+function normalizeDiagramBlock(raw) {
+  const allowedLayouts = ['architecture', 'flow', 'mindmap']
+  const layout = allowedLayouts.includes(String(raw.layout || '').toLowerCase())
+    ? String(raw.layout).toLowerCase()
+    : 'architecture'
+  const nodes = []
+  const byId = new Map()
+  for (const item of arrayOf(raw.nodes).slice(0, MAX_DIAGRAM_NODES)) {
+    if (!item || typeof item !== 'object') continue
+    const id = firstText(item.id, item.key).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24)
+    if (!id || byId.has(id)) continue
+    const label = firstText(item.label, item.title, id).slice(0, 100)
+    if (!label) continue
+    const node = {
+      id,
+      label,
+      detail: firstText(item.detail, item.desc).slice(0, 180),
+      group: firstText(item.group, item.column).slice(0, 40),
+      tone: ['blue', 'green', 'amber', 'violet', 'neutral'].includes(String(item.tone || '')) ? String(item.tone) : '',
+      ...(firstText(item.parent) ? { parent: firstText(item.parent).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) } : {}),
+    }
+    nodes.push(node)
+    byId.set(id, node)
+  }
+  if (nodes.length === 0) return null
+  const edges = []
+  for (const item of arrayOf(raw.edges).slice(0, MAX_DIAGRAM_EDGES)) {
+    if (!item || typeof item !== 'object') continue
+    const from = firstText(item.from, item.source).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24)
+    const to = firstText(item.to, item.target).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24)
+    if (!byId.has(from) || !byId.has(to) || from === to) continue
+    edges.push({ from, to, label: firstText(item.label).slice(0, 80) })
+  }
+  // A mind map may be authored as a tree via parent ids instead of edges.
+  if (layout === 'mindmap' && edges.length === 0) {
+    for (const node of nodes) if (node.parent && byId.has(node.parent) && node.parent !== node.id) edges.push({ from: node.parent, to: node.id, label: '' })
+  }
+  // A mind map may be authored as a tree via parent ids instead of edges.
+  if (layout === 'mindmap' && edges.length === 0) {
+    for (const node of nodes) if (node.parent && byId.has(node.parent) && node.parent !== node.id) edges.push({ from: node.parent, to: node.id, label: '' })
+  }
+  if (layout === 'mindmap' && nodes.length < 2) return null
+  if (layout !== 'mindmap' && nodes.length < 2) return null
+  return {
+    type: 'diagram',
+    layout,
+    title: firstText(raw.title).slice(0, 140),
+    caption: firstText(raw.caption).slice(0, 500),
+    nodes,
+    edges,
+  }
 }
 
 /** Normalise one block; returns null for anything unusable. */
@@ -342,7 +477,8 @@ export function normalizeBlock(raw, options) {
       .slice(0, MAX_TABLE_ROWS)
     if (rows.length === 0) return null
     const width = Math.max(headers.length, ...rows.map((row) => row.length))
-    return { type: 'table', headers, rows, width }
+    const align = ['left', 'center', 'right'].includes(String(raw.align || '').toLowerCase()) ? String(raw.align).toLowerCase() : ''
+    return { type: 'table', headers, rows, width, caption: firstText(raw.caption).slice(0, 200), align }
   }
   if (type === 'figure' || type === 'image') {
     return normalizeFigureBlock(raw, options ? options.allowedFigures : undefined)
@@ -377,7 +513,8 @@ export function normalizeBlock(raw, options) {
       if (!title && !text) return null
       return { when: firstText(item && (item.when || item.time)).slice(0, 80), title, text }
     }).filter(Boolean).slice(0, 12)
-    return items.length > 0 ? { type: 'timeline', items } : null
+    const orientation = String(raw.orientation || raw.layout || '').toLowerCase() === 'horizontal' ? 'horizontal' : 'vertical'
+    return items.length > 0 ? { type: 'timeline', orientation, items } : null
   }
   if (type === 'compare' || type === 'comparison') {
     const left = arrayOf(raw.left || raw.leftItems).map((item) => firstText(item && typeof item === 'object' ? item.text : item)).filter(Boolean).slice(0, 8)
@@ -392,6 +529,120 @@ export function normalizeBlock(raw, options) {
       return ''
     }).filter(Boolean).slice(0, 15)
     return items.length > 0 ? { type: 'steps', items } : null
+  }
+  if (type === 'markdown' || type === 'md' || type === 'richtext') {
+    const text = firstText(raw.text, raw.markdown)
+    return text ? { type: 'markdown', text: text.slice(0, MAX_MARKDOWN) } : null
+  }
+  if (type === 'cards' || type === 'card-grid' || type === 'features') {
+    const items = arrayOf(raw.items || raw.cards).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const title = firstText(item.title, item.label).slice(0, 100)
+      const text = firstText(item.text, item.desc, item.body).slice(0, 700)
+      if (!title && !text) return null
+      const tone = ['blue', 'green', 'amber', 'violet', 'neutral'].includes(String(item.tone || '')) ? String(item.tone) : ''
+      return { title, text, eyebrow: firstText(item.eyebrow, item.kicker).slice(0, 60), ...(tone ? { tone } : {}) }
+    }).filter(Boolean).slice(0, MAX_CARDS)
+    if (items.length === 0) return null
+    const layout = ['grid', 'list'].includes(String(raw.layout || '').toLowerCase()) ? String(raw.layout).toLowerCase() : 'grid'
+    return { type: 'cards', layout, items }
+  }
+  if (type === 'chart' || type === 'plot') {
+    return normalizeChartBlock(raw)
+  }
+  if (type === 'gallery' || type === 'image-gallery' || type === 'figures') {
+    const items = arrayOf(raw.items || raw.images).map((item) => normalizeMediaItem(item, options)).filter(Boolean).slice(0, MAX_GALLERY_ITEMS)
+    if (items.length === 0) return null
+    return { type: 'gallery', title: firstText(raw.title).slice(0, 140), items }
+  }
+  if (type === 'tabs') {
+    if (options && options.depth > 0) return null
+    const tabs = arrayOf(raw.tabs || raw.items).map((item, index) => {
+      if (!item || typeof item !== 'object') return null
+      const blocks = normalizeBlocks(arrayOf(item.blocks || item.content).slice(0, MAX_NESTED_BLOCKS), {
+        allowedFigures: options ? options.allowedFigures : undefined,
+        depth: (options && options.depth ? options.depth : 0) + 1,
+      })
+      if (blocks.length === 0) return null
+      return { id: firstText(item.id, 't' + index).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24), label: firstText(item.label, item.title, 'Tab ' + (index + 1)).slice(0, 60), blocks }
+    }).filter(Boolean).slice(0, MAX_TABS)
+    if (tabs.length < 2) return null
+    return { type: 'tabs', tabs }
+  }
+  if (type === 'disclosure' || type === 'details' || type === 'accordion') {
+    if (options && options.depth > 0) return null
+    const blocks = normalizeBlocks(arrayOf(raw.blocks || raw.content).slice(0, MAX_NESTED_BLOCKS), {
+      allowedFigures: options ? options.allowedFigures : undefined,
+      depth: (options && options.depth ? options.depth : 0) + 1,
+    })
+    if (blocks.length === 0) return null
+    return { type: 'disclosure', title: firstText(raw.title, raw.label).slice(0, 160), open: raw.open === true, blocks }
+  }
+  if (type === 'tasks' || type === 'checklist' || type === 'todo') {
+    const items = arrayOf(raw.items || raw.tasks).map((item) => {
+      if (typeof item === 'string') return { text: item.trim().slice(0, 500), done: false }
+      if (!item || typeof item !== 'object') return null
+      const text = firstText(item.text, item.title).slice(0, 500)
+      return text ? { text, done: item.done === true } : null
+    }).filter(Boolean).slice(0, MAX_TASKS)
+    if (items.length === 0) return null
+    return { type: 'tasks', title: firstText(raw.title).slice(0, 120), items }
+  }
+  if (type === 'status' || type === 'badges') {
+    const items = arrayOf(raw.items).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const label = firstText(item.label, item.title).slice(0, 80)
+      const value = firstText(item.value, item.text).slice(0, 100)
+      if (!label && !value) return null
+      const toneRaw = String(item.tone || item.status || '').toLowerCase()
+      const tone = ['neutral', 'info', 'success', 'warn', 'danger'].includes(toneRaw) ? toneRaw : 'neutral'
+      return { label, value, tone }
+    }).filter(Boolean).slice(0, MAX_STATUS_ITEMS)
+    return items.length > 0 ? { type: 'status', items } : null
+  }
+  if (type === 'progress') {
+    const items = arrayOf(raw.items).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const label = firstText(item.label, item.title).slice(0, 100)
+      const max = Math.max(1, Math.min(1e9, Number(item.max) || 100))
+      const value = Math.max(0, Math.min(max, Number(item.value) || 0))
+      const toneRaw = String(item.tone || '').toLowerCase()
+      const tone = ['blue', 'green', 'amber', 'red'].includes(toneRaw) ? toneRaw : 'blue'
+      return label ? { label, value, max, tone } : null
+    }).filter(Boolean).slice(0, MAX_STATUS_ITEMS)
+    return items.length > 0 ? { type: 'progress', items } : null
+  }
+  if (type === 'alert') {
+    const toneRaw = String(raw.tone || '').toLowerCase()
+    const tone = ['info', 'warn', 'success', 'danger'].includes(toneRaw) ? toneRaw : 'info'
+    return { type: 'alert', tone, title: firstText(raw.title).slice(0, 120), text: firstText(raw.text).slice(0, MAX_BLOCK_TEXT) }
+  }
+  if (type === 'divider' || type === 'hr') return { type: 'divider' }
+  if (type === 'empty' || type === 'empty-state') {
+    return { type: 'empty', title: firstText(raw.title).slice(0, 120), text: firstText(raw.text).slice(0, 400) }
+  }
+  if (type === 'quotes' || type === 'reviews' || type === 'testimonials') {
+    const items = arrayOf(raw.items).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const text = firstText(item.text, item.quote).slice(0, 700)
+      if (!text) return null
+      return { text, source: firstText(item.source, item.author, item.name).slice(0, 160), note: firstText(item.note, item.role).slice(0, 160) }
+    }).filter(Boolean).slice(0, MAX_QUOTES)
+    return items.length > 0 ? { type: 'quotes', items } : null
+  }
+  if (type === 'actions' || type === 'followups' || type === 'links') {
+    const items = arrayOf(raw.items || raw.actions).map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const label = firstText(item.label, item.title).slice(0, 100)
+      const url = firstText(item.url, item.href)
+      if (!label || !/^https?:\/\//i.test(url)) return null
+      return { label, url: url.slice(0, 1000), note: firstText(item.note).slice(0, 200) }
+    }).filter(Boolean).slice(0, 6)
+    return items.length > 0 ? { type: 'actions', items } : null
+  }
+  if (type === 'diagram' || type === 'architecture' || type === 'flowchart' || type === 'mindmap' || type === 'mind-map') {
+    const layout = type === 'mindmap' || type === 'mind-map' ? 'mindmap' : type === 'flowchart' ? 'flow' : type === 'architecture' ? 'architecture' : undefined
+    return normalizeDiagramBlock({ ...raw, layout: raw.layout || layout })
   }
   if (type === 'columns' || type === 'two-columns' || type === 'twocolumns') {
     if (options && options.depth > 0) return null

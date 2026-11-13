@@ -518,6 +518,13 @@ export function NoteEditor(props) {
     { id: 'web', icon: 'link', label: t('notes.directive.insertWebSource'), run: () => insertDirective('{{web: 关键词或网址}}') },
     { id: 'stats', icon: 'table', label: t('notes.directive.insertStats'), run: () => insertDirective('{{stats: 关键数字}}') },
     { id: 'callout', icon: 'info', label: t('notes.directive.insertCallout'), run: () => insertDirective('{{callout: 需要强调的结论}}') },
+    { id: 'architecture', icon: 'grid', label: t('notes.directive.insertArchitecture'), run: () => insertDirective('{{architecture: 系统组成与数据流}}') },
+    { id: 'mindmap', icon: 'layers', label: t('notes.directive.insertMindmap'), run: () => insertDirective('{{mindmap: 研究问题拆解}}') },
+    { id: 'chart', icon: 'chart', label: t('notes.directive.insertChart'), run: () => insertDirective('{{chart: 指标 | 数值}}') },
+    { id: 'cards', icon: 'collection', label: t('notes.directive.insertCards'), run: () => insertDirective('{{cards: 要点一 | 要点二}}') },
+    { id: 'gallery', icon: 'image', label: t('notes.directive.insertGallery'), run: () => insertDirective('{{gallery: Figure 1, Figure 2}}') },
+    { id: 'tasks', icon: 'check', label: t('notes.directive.insertTasks'), run: () => insertDirective('{{tasks: 阅读与实验清单}}') },
+    { id: 'quotes', icon: 'quote', label: t('notes.directive.insertQuotes'), run: () => insertDirective('{{quotes: 关键引文与出处}}') },
     directiveCount > 0 ? { id: 'run', icon: 'sparkle', label: t('notes.directive.run', { count: directiveCount }), run: runDirectives } : null,
   ].filter(Boolean)
 

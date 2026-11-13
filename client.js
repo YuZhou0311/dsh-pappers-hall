@@ -4561,6 +4561,114 @@ body.ph-dnd-dragging [data-ph-drag] { opacity: 0.55; }
 .ph-n-doc__steps li { margin: 4px 0; padding-left: 2px; }
 
 .ph-n-directivewrap { position: relative; display: inline-flex; }
+
+/* ---- note agent: P0/P1 rich blocks -------------------------------------- */
+.ph-n-doc__md { margin: 6px 0 10px; font-size: var(--ph-fs-13); line-height: 1.66; color: var(--ph-ink); }
+.ph-n-doc__md .ph-ai-md__p { margin: 0 0 8px; }
+.ph-n-doc__md .ph-ai-md__p:last-child { margin-bottom: 0; }
+.ph-n-doc__md .ph-ai-md__h { margin: 12px 0 6px; }
+.ph-n-doc__md .ph-ai-md__list { margin: 6px 0 8px; padding-left: 20px; }
+.ph-n-doc__md .ph-ai-md__pre { margin: 8px 0 10px; }
+.ph-n-doc__md .ph-ai-md__tablewrap { margin: 8px 0 10px; }
+.ph-n-doc__cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 10px 0 14px; }
+.ph-n-doc__cards--list { grid-template-columns: minmax(0, 1fr); }
+.ph-n-doc__card { min-width: 0; padding: 12px 13px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); }
+.ph-n-doc__card-eyebrow { margin-bottom: 3px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; color: var(--ph-ink-3); text-transform: uppercase; }
+.ph-n-doc__card-title { font-size: var(--ph-fs-13); font-weight: var(--ph-fw-semi); color: var(--ph-ink); }
+.ph-n-doc__card-text { margin-top: 4px; font-size: var(--ph-fs-12); line-height: 1.55; color: var(--ph-ink-2); }
+.ph-n-doc__card--blue { border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary, #0071e3) 22%, var(--ph-line-soft)); background: color-mix(in srgb, var(--dsw-alias-state-business-primary, #0071e3) 5%, var(--ph-surface-1)); }
+.ph-n-doc__card--green { border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary, #16a34a) 22%, var(--ph-line-soft)); background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #16a34a) 5%, var(--ph-surface-1)); }
+.ph-n-doc__card--amber { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 22%, var(--ph-line-soft)); background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 5%, var(--ph-surface-1)); }
+.ph-n-doc__card--violet { border-color: color-mix(in srgb, #7c3aed 22%, var(--ph-line-soft)); background: color-mix(in srgb, #7c3aed 5%, var(--ph-surface-1)); }
+
+.ph-n-doc__chart { margin: 10px 0 14px; padding: 12px 12px 6px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); --ph-chart-0: color-mix(in srgb, var(--dsw-alias-state-business-primary, #0071e3) 78%, var(--ph-ink)); --ph-chart-1: color-mix(in srgb, var(--dsw-alias-state-success-primary, #16a34a) 72%, var(--ph-ink)); --ph-chart-2: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 78%, var(--ph-ink)); --ph-chart-3: color-mix(in srgb, #7c3aed 70%, var(--ph-ink)); --ph-chart-4: color-mix(in srgb, #db2777 70%, var(--ph-ink)); --ph-chart-5: color-mix(in srgb, #0891b2 70%, var(--ph-ink)); }
+.ph-n-doc__chart-title { margin-bottom: 6px; font-size: var(--ph-fs-12); font-weight: var(--ph-fw-semi); color: var(--ph-ink-2); }
+.ph-n-doc__chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.ph-n-doc__chart-label { font-size: 10px; fill: var(--ph-ink-3); }
+.ph-n-doc__chart-value { font-size: 10px; font-weight: 600; fill: var(--ph-ink-2); }
+.ph-n-doc__chart-donut { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ph-n-doc__chart-donut svg { width: 240px; max-width: 55%; }
+.ph-n-doc__chart-total { font-size: 24px; font-weight: 650; fill: var(--ph-ink); }
+.ph-n-doc__chart-total-label { font-size: 10px; fill: var(--ph-ink-3); }
+.ph-n-doc__chart-legend { display: flex; flex-direction: column; gap: 5px; min-width: 170px; flex: 1; }
+.ph-n-doc__chart-legend-row { display: flex; align-items: baseline; gap: 6px; font-size: var(--ph-fs-11); }
+.ph-n-doc__chart-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.ph-n-doc__chart-legend-label { color: var(--ph-ink-2); }
+.ph-n-doc__chart-legend-value { margin-left: auto; color: var(--ph-ink); font-weight: 600; }
+
+.ph-n-doc__gallery { margin: 10px 0 14px; }
+.ph-n-doc__gallery-title { margin-bottom: 6px; font-size: var(--ph-fs-12); font-weight: var(--ph-fw-semi); color: var(--ph-ink-2); }
+.ph-n-doc__gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+.ph-n-doc__gallery-item { margin: 0; min-width: 0; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); overflow: hidden; background: var(--ph-surface-1); }
+.ph-n-doc__gallery-media { display: block; width: 100%; padding: 0; border: 0; background: var(--ph-surface-2); cursor: default; }
+.ph-n-doc__gallery-media img { display: block; width: 100%; height: 150px; object-fit: cover; }
+button.ph-n-doc__gallery-media { cursor: zoom-in; }
+.ph-n-doc__gallery-item figcaption { padding: 7px 9px 3px; font-size: var(--ph-fs-10); line-height: 1.45; color: var(--ph-ink-3); }
+.ph-n-doc__gallery-credit { display: flex; gap: 6px; padding: 2px 9px 7px; font-size: 9.5px; color: var(--ph-ink-4); }
+.ph-n-doc__gallery-credit a { color: var(--ph-accent-text); text-decoration: none; }
+
+.ph-n-doc__tabs { margin: 10px 0 14px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); overflow: hidden; }
+.ph-n-doc__tabs-bar { display: flex; flex-wrap: wrap; gap: 2px; padding: 5px 6px 0; border-bottom: 1px solid var(--ph-line-soft); background: var(--ph-surface-2); }
+.ph-n-doc__tab { padding: 5px 10px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--ph-ink-3); font: inherit; font-size: var(--ph-fs-11); cursor: pointer; }
+.ph-n-doc__tab.is-active { color: var(--ph-ink); border-bottom-color: var(--ph-accent); }
+.ph-n-doc__tabpanel { padding: 10px 12px 4px; }
+.ph-n-doc__disclosure { margin: 10px 0 14px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); }
+.ph-n-doc__disclosure-button { display: flex; align-items: center; gap: 7px; width: 100%; padding: 9px 11px; border: 0; background: transparent; color: var(--ph-ink); font: inherit; font-size: var(--ph-fs-12); font-weight: var(--ph-fw-semi); text-align: left; cursor: pointer; }
+.ph-n-doc__disclosure-caret { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 5px; background: var(--ph-surface-3); color: var(--ph-ink-2); font-size: 13px; line-height: 1; }
+.ph-n-doc__disclosure-body { padding: 0 12px 6px; border-top: 1px solid var(--ph-line-soft); }
+.ph-n-doc__tasks { margin: 10px 0 14px; padding: 10px 12px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); }
+.ph-n-doc__tasks-title { margin-bottom: 6px; font-size: var(--ph-fs-12); font-weight: var(--ph-fw-semi); color: var(--ph-ink-2); }
+.ph-n-doc__task { display: flex; align-items: flex-start; gap: 7px; padding: 3px 0; font-size: var(--ph-fs-12); color: var(--ph-ink-2); cursor: pointer; }
+.ph-n-doc__task input { margin: 2px 0 0; accent-color: var(--ph-accent); }
+.ph-n-doc__task.is-done span { color: var(--ph-ink-4); text-decoration: line-through; }
+.ph-n-doc__status { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; }
+.ph-n-doc__status-item { display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 9px; border: 1px solid var(--ph-line-soft); border-radius: 999px; font-size: var(--ph-fs-11); background: var(--ph-surface-1); }
+.ph-n-doc__status-label { color: var(--ph-ink-3); }
+.ph-n-doc__status-item strong { font-size: var(--ph-fs-12); font-weight: 600; color: var(--ph-ink); }
+.ph-n-doc__status-item--success { border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary, #16a34a) 30%, var(--ph-line-soft)); background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #16a34a) 6%, var(--ph-surface-1)); }
+.ph-n-doc__status-item--warn { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 30%, var(--ph-line-soft)); background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 6%, var(--ph-surface-1)); }
+.ph-n-doc__status-item--danger { border-color: color-mix(in srgb, #dc2626 30%, var(--ph-line-soft)); background: color-mix(in srgb, #dc2626 6%, var(--ph-surface-1)); }
+.ph-n-doc__status-item--info { border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary, #0071e3) 30%, var(--ph-line-soft)); background: color-mix(in srgb, var(--dsw-alias-state-business-primary, #0071e3) 6%, var(--ph-surface-1)); }
+.ph-n-doc__progress { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 14px; }
+.ph-n-doc__progress-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 3px; font-size: var(--ph-fs-11); color: var(--ph-ink-2); }
+.ph-n-doc__progress-track { height: 7px; border-radius: 999px; background: var(--ph-surface-3); overflow: hidden; }
+.ph-n-doc__progress-fill { height: 100%; border-radius: inherit; background: var(--ph-chart-0, var(--ph-accent)); }
+.ph-n-doc__progress-fill--green { background: var(--dsw-alias-state-success-primary, #16a34a); }
+.ph-n-doc__progress-fill--amber { background: var(--dsw-alias-state-warn-primary, #d97706); }
+.ph-n-doc__progress-fill--red { background: #dc2626; }
+.ph-n-doc__alert { display: flex; gap: 8px; margin: 10px 0 14px; padding: 9px 11px; border: 1px solid var(--ph-line-soft); border-left: 3px solid var(--ph-accent); border-radius: var(--ph-r-sm); background: var(--ph-surface-2); font-size: var(--ph-fs-12); color: var(--ph-ink-2); }
+.ph-n-doc__alert strong { display: block; margin-bottom: 2px; color: var(--ph-ink); }
+.ph-n-doc__alert--warn { border-left-color: var(--dsw-alias-state-warn-primary, #d97706); }
+.ph-n-doc__alert--success { border-left-color: var(--dsw-alias-state-success-primary, #16a34a); }
+.ph-n-doc__alert--danger { border-left-color: #dc2626; }
+.ph-n-doc__empty { display: flex; flex-direction: column; gap: 3px; align-items: center; margin: 10px 0 14px; padding: 22px 12px; border: 1px dashed var(--ph-line); border-radius: var(--ph-r-md); text-align: center; font-size: var(--ph-fs-12); color: var(--ph-ink-3); }
+.ph-n-doc__empty strong { color: var(--ph-ink-2); }
+.ph-n-doc__quotes { display: grid; gap: 8px; margin: 10px 0 14px; }
+.ph-n-doc__quote-card { margin: 0; padding: 10px 12px; border-left: 3px solid var(--ph-line-strong); background: var(--ph-surface-1); border-radius: 0 var(--ph-r-sm) var(--ph-r-sm) 0; }
+.ph-n-doc__quote-card blockquote { margin: 0; font-size: var(--ph-fs-13); line-height: 1.6; color: var(--ph-ink-2); }
+.ph-n-doc__quote-card figcaption { margin-top: 5px; font-size: var(--ph-fs-10); color: var(--ph-ink-3); }
+.ph-n-doc__divider { margin: 16px 0; border: 0; border-top: 1px solid var(--ph-line-soft); }
+.ph-n-doc__timeline--horizontal { display: flex; flex-direction: row; align-items: stretch; gap: 0; padding: 0; border: 0; overflow-x: auto; }
+.ph-n-doc__timeline--horizontal .ph-n-doc__timeline-item { flex: 1; min-width: 140px; flex-direction: column; gap: 4px; padding: 12px 10px 8px; border-top: 2px solid var(--ph-line); }
+.ph-n-doc__timeline--horizontal .ph-n-doc__timeline-item::before { left: 10px; top: -5px; }
+.ph-n-doc__diagram { margin: 10px 0 14px; padding: 10px; border: 1px solid var(--ph-line-soft); border-radius: var(--ph-r-md); background: var(--ph-surface-1); }
+.ph-n-doc__diagram-title { margin-bottom: 4px; font-size: var(--ph-fs-12); font-weight: var(--ph-fw-semi); color: var(--ph-ink-2); }
+.ph-n-doc__diagram svg { display: block; width: 100%; height: auto; }
+.ph-n-doc__diagram-box { fill: var(--ph-surface-2); stroke: var(--ph-line); stroke-width: 1; }
+.ph-n-doc__diagram-box.is-root { fill: color-mix(in srgb, var(--ph-accent) 13%, var(--ph-surface-1)); stroke: color-mix(in srgb, var(--ph-accent) 55%, var(--ph-line)); }
+.ph-n-doc__diagram-box.is-blue { fill: color-mix(in srgb, var(--dsw-alias-state-business-primary, #0071e3) 9%, var(--ph-surface-1)); }
+.ph-n-doc__diagram-box.is-green { fill: color-mix(in srgb, var(--dsw-alias-state-success-primary, #16a34a) 9%, var(--ph-surface-1)); }
+.ph-n-doc__diagram-box.is-amber { fill: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #d97706) 9%, var(--ph-surface-1)); }
+.ph-n-doc__diagram-box.is-violet { fill: color-mix(in srgb, #7c3aed 9%, var(--ph-surface-1)); }
+.ph-n-doc__diagram-label { font-size: 11px; font-weight: 600; fill: var(--ph-ink); }
+.ph-n-doc__diagram-detail { font-size: 8.5px; fill: var(--ph-ink-3); }
+.ph-n-doc__diagram-edge-label { font-size: 9px; fill: var(--ph-ink-3); }
+.ph-n-doc__diagram-caption { margin-top: 5px; font-size: var(--ph-fs-10); color: var(--ph-ink-3); }
+.ph-n-doc__actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; }
+.ph-n-doc__action { display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 10px; border: 1px solid var(--ph-line-soft); border-radius: 999px; background: var(--ph-surface-1); font-size: var(--ph-fs-11); color: var(--ph-accent-text); text-decoration: none; }
+.ph-n-doc__action:hover { background: var(--ph-surface-2); border-color: var(--ph-line); }
+.ph-n-doc__action span { color: var(--ph-ink-3); font-size: 9.5px; }
+.ph-n-doc__table-caption { caption-side: top; margin-bottom: 5px; font-size: var(--ph-fs-10); color: var(--ph-ink-3); text-align: left; }
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -7015,7 +7123,7 @@ function isSectionLikelyIncomplete(section) {
   return /(?:TODO|待补充|待补|待完善|待续|未完|继续补充|…|\.\.\.)[。.!！?？；;\s]*$/.test(text2.slice(-48));
 }
 function countDirectives(contentMd) {
-  return (String(contentMd == null ? "" : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps)\s*:/gi) || []).length;
+  return (String(contentMd == null ? "" : contentMd).match(/\{\{\s*(?:figure|table|web-image|web|stats|callout|timeline|compare|steps|markdown|cards|chart|gallery|tabs|disclosure|tasks|status|progress|alert|divider|empty|quotes|actions|diagram|architecture|flowchart|mindmap)\s*:/gi) || []).length;
 }
 function sectionsForSelection(sections, start, end) {
   const list = arrayOf2(sections);
@@ -7033,6 +7141,16 @@ var MAX_TABLE_ROWS = 40;
 var MAX_CELL_TEXT = 300;
 var MAX_COLUMNS = 2;
 var MAX_NESTED_BLOCKS = 14;
+var MAX_CARDS = 6;
+var MAX_CHART_POINTS = 12;
+var MAX_GALLERY_ITEMS = 8;
+var MAX_TABS = 4;
+var MAX_TASKS = 20;
+var MAX_DIAGRAM_NODES = 24;
+var MAX_DIAGRAM_EDGES = 32;
+var MAX_QUOTES = 8;
+var MAX_STATUS_ITEMS = 4;
+var MAX_MARKDOWN = 6e3;
 var CALLOUT_TONES = /* @__PURE__ */ new Set(["info", "warn", "success", "neutral"]);
 var BEAUTIFY_DIRECTIONS = ["plain", "vivid", "scientific"];
 var BEAUTIFY_LAYOUTS = ["auto", "bullets", "table"];
@@ -7068,6 +7186,113 @@ function normalizeColumnsBlock(raw, options) {
     built.push({ blocks });
   }
   return { type: "columns", columns: built };
+}
+function isNoteAsset(src) {
+  return /^\/pappers-hall\/note-asset\/[a-f0-9]{16,40}\.(?:png|jpg|jpeg|webp|gif)$/i.test(String(src || ""));
+}
+function normalizeMediaItem(item, options) {
+  if (!item || typeof item !== "object") return null;
+  const figureId = firstText2(item.figureId, item.figure_id);
+  if (figureId && FIGURE_ID_PATTERN.test(figureId)) {
+    const allowed = options ? options.allowedFigures : void 0;
+    const candidate = allowed ? allowed.get(figureId) : null;
+    if (allowed && !candidate) return null;
+    const source = candidate || item;
+    const paperId = firstText2(source.paperId, item.paperId);
+    if (!paperId) return null;
+    return {
+      kind: "figure",
+      figureId,
+      paperId,
+      page: Math.max(1, Math.round(Number(source.page ?? item.page) || 1)),
+      imageUrl: firstText2(source.imageUrl, item.imageUrl) || "/pappers-hall/figure/" + figureId + ".png",
+      label: firstText2(source.label, item.label).slice(0, 24),
+      caption: firstText2(source.caption, item.caption).slice(0, 600),
+      alt: firstText2(item.alt).slice(0, 200)
+    };
+  }
+  const src = firstText2(item.src, item.imageUrl, item.url);
+  if (!isNoteAsset(src)) return null;
+  return {
+    kind: "image",
+    src,
+    alt: firstText2(item.alt, item.caption).slice(0, 300),
+    caption: firstText2(item.caption).slice(0, 600),
+    credit: firstText2(item.credit, item.creator).slice(0, 180),
+    sourceUrl: firstText2(item.sourceUrl).slice(0, 1e3),
+    license: firstText2(item.license).slice(0, 80)
+  };
+}
+function normalizeChartBlock(raw) {
+  const variant = ["bar", "line", "donut"].includes(String(raw.variant || "").toLowerCase()) ? String(raw.variant).toLowerCase() : "bar";
+  const rows = arrayOf2(raw.data || raw.items || raw.points).map((item) => {
+    if (Array.isArray(item)) return { label: String(item[0] == null ? "" : item[0]).trim().slice(0, 40), value: Number(item[1]) };
+    if (!item || typeof item !== "object") return null;
+    return { label: firstText2(item.label, item.name).slice(0, 40), value: Number(item.value) };
+  }).filter((item) => item && item.label && Number.isFinite(item.value)).slice(0, MAX_CHART_POINTS);
+  let labels = arrayOf2(raw.labels).map((value) => String(value == null ? "" : value).trim().slice(0, 40));
+  let values = arrayOf2(raw.values).map((value) => Number(value));
+  if (rows.length === 0 && labels.length > 0 && values.length > 0) {
+    labels = labels.slice(0, Math.min(labels.length, values.length, MAX_CHART_POINTS));
+    rows.push(...labels.map((label, index) => ({ label, value: values[index] })));
+  }
+  const data = rows.filter((item) => Number.isFinite(item.value));
+  if (data.length === 0) return null;
+  return {
+    type: "chart",
+    variant,
+    title: firstText2(raw.title).slice(0, 120),
+    unit: firstText2(raw.unit).slice(0, 24),
+    data
+  };
+}
+function normalizeDiagramBlock(raw) {
+  const allowedLayouts = ["architecture", "flow", "mindmap"];
+  const layout = allowedLayouts.includes(String(raw.layout || "").toLowerCase()) ? String(raw.layout).toLowerCase() : "architecture";
+  const nodes = [];
+  const byId = /* @__PURE__ */ new Map();
+  for (const item of arrayOf2(raw.nodes).slice(0, MAX_DIAGRAM_NODES)) {
+    if (!item || typeof item !== "object") continue;
+    const id = firstText2(item.id, item.key).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 24);
+    if (!id || byId.has(id)) continue;
+    const label = firstText2(item.label, item.title, id).slice(0, 100);
+    if (!label) continue;
+    const node = {
+      id,
+      label,
+      detail: firstText2(item.detail, item.desc).slice(0, 180),
+      group: firstText2(item.group, item.column).slice(0, 40),
+      tone: ["blue", "green", "amber", "violet", "neutral"].includes(String(item.tone || "")) ? String(item.tone) : "",
+      ...firstText2(item.parent) ? { parent: firstText2(item.parent).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 24) } : {}
+    };
+    nodes.push(node);
+    byId.set(id, node);
+  }
+  if (nodes.length === 0) return null;
+  const edges = [];
+  for (const item of arrayOf2(raw.edges).slice(0, MAX_DIAGRAM_EDGES)) {
+    if (!item || typeof item !== "object") continue;
+    const from = firstText2(item.from, item.source).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 24);
+    const to = firstText2(item.to, item.target).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 24);
+    if (!byId.has(from) || !byId.has(to) || from === to) continue;
+    edges.push({ from, to, label: firstText2(item.label).slice(0, 80) });
+  }
+  if (layout === "mindmap" && edges.length === 0) {
+    for (const node of nodes) if (node.parent && byId.has(node.parent) && node.parent !== node.id) edges.push({ from: node.parent, to: node.id, label: "" });
+  }
+  if (layout === "mindmap" && edges.length === 0) {
+    for (const node of nodes) if (node.parent && byId.has(node.parent) && node.parent !== node.id) edges.push({ from: node.parent, to: node.id, label: "" });
+  }
+  if (layout === "mindmap" && nodes.length < 2) return null;
+  if (layout !== "mindmap" && nodes.length < 2) return null;
+  return {
+    type: "diagram",
+    layout,
+    title: firstText2(raw.title).slice(0, 140),
+    caption: firstText2(raw.caption).slice(0, 500),
+    nodes,
+    edges
+  };
 }
 function normalizeBlock(raw, options) {
   if (!raw || typeof raw !== "object") return null;
@@ -7117,7 +7342,8 @@ function normalizeBlock(raw, options) {
     const rows = arrayOf2(raw.rows).map((row) => arrayOf2(row).map((cell) => String(cell == null ? "" : cell).trim().slice(0, MAX_CELL_TEXT)).slice(0, MAX_TABLE_HEADERS)).filter((row) => row.length > 0).slice(0, MAX_TABLE_ROWS);
     if (rows.length === 0) return null;
     const width = Math.max(headers.length, ...rows.map((row) => row.length));
-    return { type: "table", headers, rows, width };
+    const align = ["left", "center", "right"].includes(String(raw.align || "").toLowerCase()) ? String(raw.align).toLowerCase() : "";
+    return { type: "table", headers, rows, width, caption: firstText2(raw.caption).slice(0, 200), align };
   }
   if (type === "figure" || type === "image") {
     return normalizeFigureBlock(raw, options ? options.allowedFigures : void 0);
@@ -7150,7 +7376,8 @@ function normalizeBlock(raw, options) {
       if (!title2 && !text2) return null;
       return { when: firstText2(item && (item.when || item.time)).slice(0, 80), title: title2, text: text2 };
     }).filter(Boolean).slice(0, 12);
-    return items2.length > 0 ? { type: "timeline", items: items2 } : null;
+    const orientation = String(raw.orientation || raw.layout || "").toLowerCase() === "horizontal" ? "horizontal" : "vertical";
+    return items2.length > 0 ? { type: "timeline", orientation, items: items2 } : null;
   }
   if (type === "compare" || type === "comparison") {
     const left = arrayOf2(raw.left || raw.leftItems).map((item) => firstText2(item && typeof item === "object" ? item.text : item)).filter(Boolean).slice(0, 8);
@@ -7165,6 +7392,120 @@ function normalizeBlock(raw, options) {
       return "";
     }).filter(Boolean).slice(0, 15);
     return items2.length > 0 ? { type: "steps", items: items2 } : null;
+  }
+  if (type === "markdown" || type === "md" || type === "richtext") {
+    const text2 = firstText2(raw.text, raw.markdown);
+    return text2 ? { type: "markdown", text: text2.slice(0, MAX_MARKDOWN) } : null;
+  }
+  if (type === "cards" || type === "card-grid" || type === "features") {
+    const items2 = arrayOf2(raw.items || raw.cards).map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const title2 = firstText2(item.title, item.label).slice(0, 100);
+      const text2 = firstText2(item.text, item.desc, item.body).slice(0, 700);
+      if (!title2 && !text2) return null;
+      const tone = ["blue", "green", "amber", "violet", "neutral"].includes(String(item.tone || "")) ? String(item.tone) : "";
+      return { title: title2, text: text2, eyebrow: firstText2(item.eyebrow, item.kicker).slice(0, 60), ...tone ? { tone } : {} };
+    }).filter(Boolean).slice(0, MAX_CARDS);
+    if (items2.length === 0) return null;
+    const layout = ["grid", "list"].includes(String(raw.layout || "").toLowerCase()) ? String(raw.layout).toLowerCase() : "grid";
+    return { type: "cards", layout, items: items2 };
+  }
+  if (type === "chart" || type === "plot") {
+    return normalizeChartBlock(raw);
+  }
+  if (type === "gallery" || type === "image-gallery" || type === "figures") {
+    const items2 = arrayOf2(raw.items || raw.images).map((item) => normalizeMediaItem(item, options)).filter(Boolean).slice(0, MAX_GALLERY_ITEMS);
+    if (items2.length === 0) return null;
+    return { type: "gallery", title: firstText2(raw.title).slice(0, 140), items: items2 };
+  }
+  if (type === "tabs") {
+    if (options && options.depth > 0) return null;
+    const tabs = arrayOf2(raw.tabs || raw.items).map((item, index) => {
+      if (!item || typeof item !== "object") return null;
+      const blocks = normalizeBlocks(arrayOf2(item.blocks || item.content).slice(0, MAX_NESTED_BLOCKS), {
+        allowedFigures: options ? options.allowedFigures : void 0,
+        depth: (options && options.depth ? options.depth : 0) + 1
+      });
+      if (blocks.length === 0) return null;
+      return { id: firstText2(item.id, "t" + index).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 24), label: firstText2(item.label, item.title, "Tab " + (index + 1)).slice(0, 60), blocks };
+    }).filter(Boolean).slice(0, MAX_TABS);
+    if (tabs.length < 2) return null;
+    return { type: "tabs", tabs };
+  }
+  if (type === "disclosure" || type === "details" || type === "accordion") {
+    if (options && options.depth > 0) return null;
+    const blocks = normalizeBlocks(arrayOf2(raw.blocks || raw.content).slice(0, MAX_NESTED_BLOCKS), {
+      allowedFigures: options ? options.allowedFigures : void 0,
+      depth: (options && options.depth ? options.depth : 0) + 1
+    });
+    if (blocks.length === 0) return null;
+    return { type: "disclosure", title: firstText2(raw.title, raw.label).slice(0, 160), open: raw.open === true, blocks };
+  }
+  if (type === "tasks" || type === "checklist" || type === "todo") {
+    const items2 = arrayOf2(raw.items || raw.tasks).map((item) => {
+      if (typeof item === "string") return { text: item.trim().slice(0, 500), done: false };
+      if (!item || typeof item !== "object") return null;
+      const text2 = firstText2(item.text, item.title).slice(0, 500);
+      return text2 ? { text: text2, done: item.done === true } : null;
+    }).filter(Boolean).slice(0, MAX_TASKS);
+    if (items2.length === 0) return null;
+    return { type: "tasks", title: firstText2(raw.title).slice(0, 120), items: items2 };
+  }
+  if (type === "status" || type === "badges") {
+    const items2 = arrayOf2(raw.items).map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const label = firstText2(item.label, item.title).slice(0, 80);
+      const value = firstText2(item.value, item.text).slice(0, 100);
+      if (!label && !value) return null;
+      const toneRaw = String(item.tone || item.status || "").toLowerCase();
+      const tone = ["neutral", "info", "success", "warn", "danger"].includes(toneRaw) ? toneRaw : "neutral";
+      return { label, value, tone };
+    }).filter(Boolean).slice(0, MAX_STATUS_ITEMS);
+    return items2.length > 0 ? { type: "status", items: items2 } : null;
+  }
+  if (type === "progress") {
+    const items2 = arrayOf2(raw.items).map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const label = firstText2(item.label, item.title).slice(0, 100);
+      const max = Math.max(1, Math.min(1e9, Number(item.max) || 100));
+      const value = Math.max(0, Math.min(max, Number(item.value) || 0));
+      const toneRaw = String(item.tone || "").toLowerCase();
+      const tone = ["blue", "green", "amber", "red"].includes(toneRaw) ? toneRaw : "blue";
+      return label ? { label, value, max, tone } : null;
+    }).filter(Boolean).slice(0, MAX_STATUS_ITEMS);
+    return items2.length > 0 ? { type: "progress", items: items2 } : null;
+  }
+  if (type === "alert") {
+    const toneRaw = String(raw.tone || "").toLowerCase();
+    const tone = ["info", "warn", "success", "danger"].includes(toneRaw) ? toneRaw : "info";
+    return { type: "alert", tone, title: firstText2(raw.title).slice(0, 120), text: firstText2(raw.text).slice(0, MAX_BLOCK_TEXT) };
+  }
+  if (type === "divider" || type === "hr") return { type: "divider" };
+  if (type === "empty" || type === "empty-state") {
+    return { type: "empty", title: firstText2(raw.title).slice(0, 120), text: firstText2(raw.text).slice(0, 400) };
+  }
+  if (type === "quotes" || type === "reviews" || type === "testimonials") {
+    const items2 = arrayOf2(raw.items).map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const text2 = firstText2(item.text, item.quote).slice(0, 700);
+      if (!text2) return null;
+      return { text: text2, source: firstText2(item.source, item.author, item.name).slice(0, 160), note: firstText2(item.note, item.role).slice(0, 160) };
+    }).filter(Boolean).slice(0, MAX_QUOTES);
+    return items2.length > 0 ? { type: "quotes", items: items2 } : null;
+  }
+  if (type === "actions" || type === "followups" || type === "links") {
+    const items2 = arrayOf2(raw.items || raw.actions).map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const label = firstText2(item.label, item.title).slice(0, 100);
+      const url = firstText2(item.url, item.href);
+      if (!label || !/^https?:\/\//i.test(url)) return null;
+      return { label, url: url.slice(0, 1e3), note: firstText2(item.note).slice(0, 200) };
+    }).filter(Boolean).slice(0, 6);
+    return items2.length > 0 ? { type: "actions", items: items2 } : null;
+  }
+  if (type === "diagram" || type === "architecture" || type === "flowchart" || type === "mindmap" || type === "mind-map") {
+    const layout = type === "mindmap" || type === "mind-map" ? "mindmap" : type === "flowchart" ? "flow" : type === "architecture" ? "architecture" : void 0;
+    return normalizeDiagramBlock({ ...raw, layout: raw.layout || layout });
   }
   if (type === "columns" || type === "two-columns" || type === "twocolumns") {
     if (options && options.depth > 0) return null;
@@ -10682,6 +11023,458 @@ function ColumnsBlock(props) {
     )
   );
 }
+function NestedBlocks(props) {
+  const list = Array.isArray(props.blocks) ? props.blocks : [];
+  return import_react13.default.createElement(
+    import_react13.default.Fragment,
+    null,
+    list.map((block, index) => import_react13.default.createElement(Block, { key: index, block, t: props.t, onOpenFigure: props.onOpenFigure }))
+  );
+}
+function MarkdownBlock(props) {
+  return import_react13.default.createElement("div", { className: "ph-n-doc__md" }, import_react13.default.createElement(Markdown, { text: props.block.text, keyPrefix: "note-md" }));
+}
+function CardsBlock(props) {
+  const block = props.block;
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__cards ph-n-doc__cards--" + (block.layout || "grid") },
+    (block.items || []).map((item, index) => import_react13.default.createElement(
+      "div",
+      { key: index, className: "ph-n-doc__card" + (item.tone ? " ph-n-doc__card--" + item.tone : "") },
+      item.eyebrow ? import_react13.default.createElement("div", { className: "ph-n-doc__card-eyebrow" }, item.eyebrow) : null,
+      item.title ? import_react13.default.createElement("div", { className: "ph-n-doc__card-title" }, item.title) : null,
+      item.text ? import_react13.default.createElement("div", { className: "ph-n-doc__card-text" }, item.text) : null
+    ))
+  );
+}
+function ChartBlock(props) {
+  const block = props.block;
+  const data = (block.data || []).filter((item) => Number.isFinite(Number(item.value))).slice(0, 12);
+  if (data.length === 0) return null;
+  const values = data.map((item) => Number(item.value));
+  const width = 640;
+  const height = 240;
+  const pad = { top: 20, right: 16, bottom: 42, left: 40 };
+  const plotW = width - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+  const title2 = block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__chart-title" }, block.title) : null;
+  if (block.variant === "donut") {
+    const positive = values.filter((value) => value > 0);
+    if (positive.length === 0) return null;
+    const total = positive.reduce((sum, value) => sum + value, 0);
+    const radius = 74;
+    const stroke = 26;
+    const circumference = 2 * Math.PI * radius;
+    let offset = 0;
+    const circles = positive.map((value, index) => {
+      const fraction = value / total;
+      const dash = fraction * circumference;
+      const circle = import_react13.default.createElement("circle", {
+        key: index,
+        cx: 150,
+        cy: 116,
+        r: radius,
+        fill: "none",
+        stroke: "var(--ph-chart-" + index % 6 + ")",
+        strokeWidth: stroke,
+        strokeDasharray: dash + " " + (circumference - dash),
+        strokeDashoffset: -offset,
+        transform: "rotate(-90 150 116)"
+      });
+      offset += dash;
+      return circle;
+    });
+    const legend = data.map((item, index) => import_react13.default.createElement(
+      "div",
+      { key: index, className: "ph-n-doc__chart-legend-row" },
+      import_react13.default.createElement("span", { className: "ph-n-doc__chart-dot", style: { background: "var(--ph-chart-" + index % 6 + ")" } }),
+      import_react13.default.createElement("span", { className: "ph-n-doc__chart-legend-label" }, item.label),
+      import_react13.default.createElement("span", { className: "ph-n-doc__chart-legend-value" }, item.value + (block.unit ? " " + block.unit : ""))
+    ));
+    return import_react13.default.createElement(
+      "div",
+      { className: "ph-n-doc__chart" },
+      title2,
+      import_react13.default.createElement(
+        "div",
+        { className: "ph-n-doc__chart-donut" },
+        import_react13.default.createElement(
+          "svg",
+          { viewBox: "0 0 300 240", role: "img", "aria-label": block.title || "chart" },
+          circles,
+          import_react13.default.createElement("text", { x: 150, y: 112, textAnchor: "middle", className: "ph-n-doc__chart-total" }, String(Math.round(total))),
+          import_react13.default.createElement("text", { x: 150, y: 134, textAnchor: "middle", className: "ph-n-doc__chart-total-label" }, block.unit || "total")
+        ),
+        import_react13.default.createElement("div", { className: "ph-n-doc__chart-legend" }, legend)
+      )
+    );
+  }
+  const max = Math.max(...values.map((value) => Math.max(0, value)), 1);
+  const min = Math.min(0, ...values);
+  const range = max - min || 1;
+  const y = (value) => pad.top + plotH - (value - min) / range * plotH;
+  const slot = plotW / data.length;
+  const barW = Math.max(12, Math.min(46, slot * 0.55));
+  const bars = block.variant === "bar" ? data.map((item, index) => import_react13.default.createElement("rect", {
+    key: index,
+    x: pad.left + slot * index + (slot - barW) / 2,
+    y: y(Math.max(0, Number(item.value))),
+    width: barW,
+    height: Math.max(1, pad.top + plotH - y(Math.max(0, Number(item.value)))),
+    rx: 3,
+    fill: "var(--ph-chart-" + index % 6 + ")"
+  })) : [];
+  const points = data.map((item, index) => pad.left + slot * index + slot / 2 + "," + y(Number(item.value))).join(" ");
+  const line = block.variant === "line" ? import_react13.default.createElement(
+    import_react13.default.Fragment,
+    null,
+    import_react13.default.createElement("polyline", { points, fill: "none", stroke: "var(--ph-chart-0)", strokeWidth: 2.5, strokeLinejoin: "round", strokeLinecap: "round" }),
+    data.map((item, index) => import_react13.default.createElement("circle", { key: index, cx: pad.left + slot * index + slot / 2, cy: y(Number(item.value)), r: 3.2, fill: "var(--ph-chart-0)" }))
+  ) : null;
+  const labels = data.map((item, index) => import_react13.default.createElement("text", {
+    key: index,
+    x: pad.left + slot * index + slot / 2,
+    y: height - 16,
+    textAnchor: "middle",
+    className: "ph-n-doc__chart-label"
+  }, String(item.label).slice(0, 8)));
+  const valueLabels = data.map((item, index) => import_react13.default.createElement("text", {
+    key: index,
+    x: pad.left + slot * index + slot / 2,
+    y: Math.max(12, y(Number(item.value)) - 6),
+    textAnchor: "middle",
+    className: "ph-n-doc__chart-value"
+  }, String(item.value)));
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__chart" },
+    title2,
+    import_react13.default.createElement(
+      "svg",
+      { viewBox: "0 0 640 240", role: "img", "aria-label": block.title || "chart" },
+      import_react13.default.createElement("line", { x1: pad.left, y1: pad.top + plotH, x2: width - pad.right, y2: pad.top + plotH, stroke: "var(--ph-line)", strokeWidth: 1 }),
+      bars,
+      line,
+      labels,
+      valueLabels
+    )
+  );
+}
+function GalleryBlock(props) {
+  const items2 = props.block.items || [];
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__gallery" },
+    props.block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__gallery-title" }, props.block.title) : null,
+    import_react13.default.createElement(
+      "div",
+      { className: "ph-n-doc__gallery-grid" },
+      items2.map((item, index) => {
+        const src = item.kind === "figure" ? item.imageUrl || "/pappers-hall/figure/" + item.figureId + ".png" : item.src;
+        const caption = item.caption || item.alt || "";
+        const img = import_react13.default.createElement("img", { src, alt: caption, loading: "lazy", decoding: "async" });
+        const media = item.kind === "figure" && typeof props.onOpenFigure === "function" ? import_react13.default.createElement("button", {
+          type: "button",
+          className: "ph-n-doc__gallery-media",
+          title: props.t("notes.figure.open"),
+          onClick: () => props.onOpenFigure(item.paperId, item.page, item.figureId)
+        }, img) : import_react13.default.createElement("div", { className: "ph-n-doc__gallery-media" }, img);
+        return import_react13.default.createElement(
+          "figure",
+          { key: index, className: "ph-n-doc__gallery-item" },
+          media,
+          caption ? import_react13.default.createElement("figcaption", null, caption) : null,
+          item.kind === "image" && (item.credit || item.sourceUrl) ? import_react13.default.createElement(
+            "div",
+            { className: "ph-n-doc__gallery-credit" },
+            item.credit ? import_react13.default.createElement("span", null, item.credit + (item.license ? " \xB7 " + item.license : "")) : null,
+            item.sourceUrl ? import_react13.default.createElement("a", { href: item.sourceUrl, target: "_blank", rel: "noreferrer noopener" }, props.t("notes.block.source")) : null
+          ) : null
+        );
+      })
+    )
+  );
+}
+function TabsBlock(props) {
+  const tabs = props.block.tabs || [];
+  const [active, setActive] = import_react13.default.useState(0);
+  const current = tabs[Math.min(active, tabs.length - 1)];
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__tabs" },
+    import_react13.default.createElement(
+      "div",
+      { className: "ph-n-doc__tabs-bar", role: "tablist" },
+      tabs.map((tab, index) => import_react13.default.createElement(
+        "button",
+        {
+          key: tab.id || index,
+          type: "button",
+          role: "tab",
+          "aria-selected": index === active,
+          className: "ph-n-doc__tab" + (index === active ? " is-active" : ""),
+          onClick: () => setActive(index)
+        },
+        tab.label
+      ))
+    ),
+    import_react13.default.createElement("div", { className: "ph-n-doc__tabpanel", role: "tabpanel" }, current ? import_react13.default.createElement(NestedBlocks, { blocks: current.blocks, t: props.t, onOpenFigure: props.onOpenFigure }) : null)
+  );
+}
+function DisclosureBlock(props) {
+  const [open, setOpen] = import_react13.default.useState(props.block.open === true);
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__disclosure" + (open ? " is-open" : "") },
+    import_react13.default.createElement(
+      "button",
+      { type: "button", className: "ph-n-doc__disclosure-button", "aria-expanded": open, onClick: () => setOpen((value) => !value) },
+      import_react13.default.createElement("span", { className: "ph-n-doc__disclosure-caret" }, open ? "\u2212" : "+"),
+      import_react13.default.createElement("span", null, props.block.title || "Details")
+    ),
+    open ? import_react13.default.createElement("div", { className: "ph-n-doc__disclosure-body" }, import_react13.default.createElement(NestedBlocks, { blocks: props.block.blocks, t: props.t, onOpenFigure: props.onOpenFigure })) : null
+  );
+}
+function TasksBlock(props) {
+  const items2 = props.block.items || [];
+  const [done, setDone] = import_react13.default.useState(() => items2.map((item) => item.done === true));
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__tasks" },
+    props.block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__tasks-title" }, props.block.title) : null,
+    items2.map((item, index) => import_react13.default.createElement(
+      "label",
+      { key: index, className: "ph-n-doc__task" + (done[index] ? " is-done" : "") },
+      import_react13.default.createElement("input", {
+        type: "checkbox",
+        checked: Boolean(done[index]),
+        onChange: () => setDone((current) => current.map((value, itemIndex) => itemIndex === index ? !value : value))
+      }),
+      import_react13.default.createElement("span", null, item.text)
+    ))
+  );
+}
+function StatusBlock(props) {
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__status" },
+    (props.block.items || []).map((item, index) => import_react13.default.createElement(
+      "div",
+      { key: index, className: "ph-n-doc__status-item ph-n-doc__status-item--" + item.tone },
+      item.label ? import_react13.default.createElement("span", { className: "ph-n-doc__status-label" }, item.label) : null,
+      item.value ? import_react13.default.createElement("strong", null, item.value) : null
+    ))
+  );
+}
+function ProgressBlock(props) {
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__progress" },
+    (props.block.items || []).map((item, index) => {
+      const fraction = Math.max(0, Math.min(1, Number(item.value) / Math.max(1, Number(item.max) || 100)));
+      return import_react13.default.createElement(
+        "div",
+        { key: index, className: "ph-n-doc__progress-item" },
+        import_react13.default.createElement(
+          "div",
+          { className: "ph-n-doc__progress-head" },
+          import_react13.default.createElement("span", null, item.label),
+          import_react13.default.createElement("span", null, String(item.value) + " / " + String(item.max))
+        ),
+        import_react13.default.createElement("div", { className: "ph-n-doc__progress-track" }, import_react13.default.createElement("div", { className: "ph-n-doc__progress-fill ph-n-doc__progress-fill--" + item.tone, style: { width: (fraction * 100).toFixed(1) + "%" } }))
+      );
+    })
+  );
+}
+function AlertBlock(props) {
+  const tone = props.block.tone || "info";
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__alert ph-n-doc__alert--" + tone },
+    import_react13.default.createElement(Icon, { name: tone === "warn" || tone === "danger" ? "warning" : tone === "success" ? "checkCircle" : "info", size: 14 }),
+    import_react13.default.createElement("div", null, props.block.title ? import_react13.default.createElement("strong", null, props.block.title) : null, props.block.text ? import_react13.default.createElement("div", null, props.block.text) : null)
+  );
+}
+function EmptyBlock(props) {
+  return import_react13.default.createElement("div", { className: "ph-n-doc__empty" }, import_react13.default.createElement("strong", null, props.block.title || ""), import_react13.default.createElement("span", null, props.block.text || ""));
+}
+function QuotesBlock(props) {
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__quotes" },
+    (props.block.items || []).map((item, index) => import_react13.default.createElement(
+      "figure",
+      { key: index, className: "ph-n-doc__quote-card" },
+      import_react13.default.createElement("blockquote", null, item.text),
+      item.source || item.note ? import_react13.default.createElement("figcaption", null, item.source || "", item.note ? " \xB7 " + item.note : "") : null
+    ))
+  );
+}
+function layoutLayered(nodes, edges) {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const incoming = new Map(nodes.map((node) => [node.id, 0]));
+  const outgoing = new Map(nodes.map((node) => [node.id, []]));
+  for (const edge of edges) {
+    if (!byId.has(edge.from) || !byId.has(edge.to)) continue;
+    incoming.set(edge.to, (incoming.get(edge.to) || 0) + 1);
+    outgoing.get(edge.from).push(edge.to);
+  }
+  const levels = /* @__PURE__ */ new Map();
+  const queue = nodes.filter((node) => (incoming.get(node.id) || 0) === 0).map((node) => node.id);
+  if (queue.length === 0) queue.push(nodes[0].id);
+  for (const id of queue) levels.set(id, 0);
+  let cursor = 0;
+  while (cursor < queue.length) {
+    const id = queue[cursor];
+    cursor += 1;
+    const level = levels.get(id) || 0;
+    for (const next of outgoing.get(id) || []) {
+      if (levels.has(next)) continue;
+      levels.set(next, level + 1);
+      queue.push(next);
+    }
+  }
+  for (const node of nodes) if (!levels.has(node.id)) levels.set(node.id, 0);
+  const rows = [];
+  for (const node of nodes) {
+    const level = levels.get(node.id) || 0;
+    if (!rows[level]) rows[level] = [];
+    rows[level].push(node);
+  }
+  return { rows, byId };
+}
+function DiagramBlock(props) {
+  const block = props.block;
+  const nodes = block.nodes || [];
+  const edges = block.edges || [];
+  if (nodes.length < 2) return null;
+  const title2 = block.title ? import_react13.default.createElement("div", { className: "ph-n-doc__diagram-title" }, block.title) : null;
+  if (block.layout === "mindmap") {
+    const byId = new Map(nodes.map((node) => [node.id, node]));
+    const incoming = new Map(nodes.map((node) => [node.id, 0]));
+    const outgoing = new Map(nodes.map((node) => [node.id, []]));
+    for (const edge of edges) {
+      if (!byId.has(edge.from) || !byId.has(edge.to)) continue;
+      incoming.set(edge.to, (incoming.get(edge.to) || 0) + 1);
+      outgoing.get(edge.from).push(edge.to);
+    }
+    const root = nodes.find((node) => (incoming.get(node.id) || 0) === 0) || nodes[0];
+    const branches = (outgoing.get(root.id) || []).filter((id) => byId.has(id)).slice(0, 8);
+    const right = branches.filter((_, index) => index % 2 === 0);
+    const left = branches.filter((_, index) => index % 2 === 1);
+    const width2 = 840;
+    const height2 = Math.max(300, Math.max(right.length, left.length, 1) * 82 + 70);
+    const rootPoint = { x: 420, y: height2 / 2 };
+    const positions2 = /* @__PURE__ */ new Map([[root.id, rootPoint]]);
+    const placeColumn = (ids, x, gap) => {
+      const total = (ids.length - 1) * gap;
+      ids.forEach((id, index) => positions2.set(id, { x, y: height2 / 2 - total / 2 + index * gap }));
+    };
+    placeColumn(right, 600, 82);
+    placeColumn(left, 240, 82);
+    const sideOf = /* @__PURE__ */ new Map();
+    right.forEach((id) => sideOf.set(id, "right"));
+    left.forEach((id) => sideOf.set(id, "left"));
+    for (const id of branches) {
+      const side = sideOf.get(id);
+      const parentPoint = positions2.get(id);
+      if (!parentPoint) continue;
+      const children = (outgoing.get(id) || []).filter((child) => child !== root.id && byId.has(child) && !branches.includes(child)).slice(0, 4);
+      children.forEach((child, index) => {
+        const offset = (index - (children.length - 1) / 2) * 64;
+        positions2.set(child, { x: side === "left" ? 80 : 760, y: parentPoint.y + 58 + offset });
+      });
+    }
+    for (const node of nodes) if (!positions2.has(node.id)) positions2.set(node.id, { x: 420, y: height2 / 2 + positions2.size * 20 });
+    const lines2 = edges.map((edge, index) => {
+      const from = positions2.get(edge.from);
+      const to = positions2.get(edge.to);
+      if (!from || !to) return null;
+      const midX = (from.x + to.x) / 2;
+      return import_react13.default.createElement("path", {
+        key: "e" + index,
+        d: "M " + from.x + " " + from.y + " C " + midX + " " + from.y + ", " + midX + " " + to.y + ", " + to.x + " " + to.y,
+        fill: "none",
+        stroke: "var(--ph-line-strong)",
+        strokeWidth: 1.4
+      });
+    });
+    const boxes2 = nodes.map((node) => {
+      const point = positions2.get(node.id);
+      const isRoot = node.id === root.id;
+      const label = String(node.label);
+      return import_react13.default.createElement(
+        "g",
+        { key: node.id, transform: "translate(" + (point.x - 74) + "," + (point.y - 24) + ")" },
+        import_react13.default.createElement("rect", { width: 148, height: 48, rx: 12, className: "ph-n-doc__diagram-box" + (isRoot ? " is-root" : "") + (node.tone ? " is-" + node.tone : "") }),
+        import_react13.default.createElement("text", { x: 74, y: 21, textAnchor: "middle", className: "ph-n-doc__diagram-label" }, label.length > 20 ? label.slice(0, 19) + "\u2026" : label),
+        import_react13.default.createElement("text", { x: 74, y: 35, textAnchor: "middle", className: "ph-n-doc__diagram-detail" }, (node.detail || "").slice(0, 24))
+      );
+    });
+    return import_react13.default.createElement(
+      "div",
+      { className: "ph-n-doc__diagram" },
+      title2,
+      import_react13.default.createElement("svg", { viewBox: "0 0 840 " + height2, role: "img", "aria-label": block.title || "mind map" }, lines2, boxes2)
+    );
+  }
+  const { rows } = layoutLayered(nodes, edges);
+  const columns = rows;
+  const width = Math.max(840, columns.length * 190);
+  const maxRows = Math.max(1, ...columns.map((column) => column.length));
+  const height = Math.max(210, maxRows * 78 + 52);
+  const positions = /* @__PURE__ */ new Map();
+  columns.forEach((column, columnIndex) => {
+    const x = 70 + columnIndex * ((width - 140) / Math.max(1, columns.length - 1));
+    column.forEach((node, rowIndex) => {
+      const y = 44 + (height - 88) / (column.length + 1) * (rowIndex + 1);
+      positions.set(node.id, { x, y });
+    });
+  });
+  const lines = edges.map((edge, index) => {
+    const from = positions.get(edge.from);
+    const to = positions.get(edge.to);
+    if (!from || !to) return null;
+    const sameColumn = Math.abs(from.x - to.x) < 1;
+    const startX = sameColumn ? from.x : from.x + 70;
+    const startY = sameColumn ? from.y + 24 : from.y;
+    const endX = sameColumn ? to.x : to.x - 70;
+    const endY = sameColumn ? to.y - 24 : to.y;
+    const midX = sameColumn ? from.x : (startX + endX) / 2;
+    return import_react13.default.createElement(
+      "g",
+      { key: "e" + index },
+      import_react13.default.createElement("path", { d: "M " + startX + " " + startY + " C " + midX + " " + startY + ", " + midX + " " + endY + ", " + endX + " " + endY, fill: "none", stroke: "var(--ph-line-strong)", strokeWidth: 1.3, markerEnd: "url(#ph-diagram-arrow)" }),
+      edge.label ? import_react13.default.createElement("text", { x: midX, y: (startY + endY) / 2 - 4, textAnchor: "middle", className: "ph-n-doc__diagram-edge-label" }, edge.label.slice(0, 18)) : null
+    );
+  });
+  const boxes = nodes.map((node) => {
+    const point = positions.get(node.id);
+    if (!point) return null;
+    const label = String(node.label);
+    return import_react13.default.createElement(
+      "g",
+      { key: node.id, transform: "translate(" + (point.x - 70) + "," + (point.y - 24) + ")" },
+      import_react13.default.createElement("rect", { width: 140, height: 48, rx: 10, className: "ph-n-doc__diagram-box" + (node.tone ? " is-" + node.tone : "") }),
+      import_react13.default.createElement("text", { x: 70, y: 20, textAnchor: "middle", className: "ph-n-doc__diagram-label" }, label.length > 18 ? label.slice(0, 17) + "\u2026" : label),
+      import_react13.default.createElement("text", { x: 70, y: 36, textAnchor: "middle", className: "ph-n-doc__diagram-detail" }, (node.detail || "").slice(0, 22))
+    );
+  });
+  return import_react13.default.createElement(
+    "div",
+    { className: "ph-n-doc__diagram" },
+    title2,
+    import_react13.default.createElement(
+      "svg",
+      { viewBox: "0 0 " + width + " " + height, role: "img", "aria-label": block.title || "diagram" },
+      import_react13.default.createElement("defs", null, import_react13.default.createElement("marker", { id: "ph-diagram-arrow", markerWidth: 8, markerHeight: 8, refX: 7, refY: 4, orient: "auto" }, import_react13.default.createElement("path", { d: "M0,0 L8,4 L0,8 Z", fill: "var(--ph-line-strong)" }))),
+      lines,
+      boxes
+    ),
+    block.caption ? import_react13.default.createElement("div", { className: "ph-n-doc__diagram-caption" }, block.caption) : null
+  );
+}
 function Block(props) {
   const t = props.t;
   const block = props.block;
@@ -10717,7 +11510,7 @@ function Block(props) {
       import_react13.default.createElement(
         "tr",
         null,
-        Array.from({ length: width }, (_, index) => import_react13.default.createElement("th", { key: index }, block.headers[index] || ""))
+        Array.from({ length: width }, (_, index) => import_react13.default.createElement("th", { key: index, style: block.align ? { textAlign: block.align } : void 0 }, block.headers[index] || ""))
       )
     ) : null;
     return import_react13.default.createElement(
@@ -10726,6 +11519,7 @@ function Block(props) {
       import_react13.default.createElement(
         "table",
         { className: "ph-n-doc__table" },
+        block.caption ? import_react13.default.createElement("caption", { className: "ph-n-doc__table-caption" }, block.caption) : null,
         head,
         import_react13.default.createElement(
           "tbody",
@@ -10734,7 +11528,7 @@ function Block(props) {
             (row, rowIndex) => import_react13.default.createElement(
               "tr",
               { key: rowIndex },
-              Array.from({ length: width }, (_, cellIndex) => import_react13.default.createElement("td", { key: cellIndex }, row[cellIndex] || ""))
+              Array.from({ length: width }, (_, cellIndex) => import_react13.default.createElement("td", { key: cellIndex, style: block.align ? { textAlign: block.align } : void 0 }, row[cellIndex] || ""))
             )
           )
         )
@@ -10787,7 +11581,7 @@ function Block(props) {
   if (block.type === "timeline") {
     return import_react13.default.createElement(
       "ol",
-      { className: "ph-n-doc__timeline" },
+      { className: "ph-n-doc__timeline" + (block.orientation === "horizontal" ? " ph-n-doc__timeline--horizontal" : "") },
       (block.items || []).map((item, index) => import_react13.default.createElement(
         "li",
         { key: index, className: "ph-n-doc__timeline-item" },
@@ -10820,12 +11614,33 @@ function Block(props) {
       (block.items || []).map((item, index) => import_react13.default.createElement("li", { key: index }, item))
     );
   }
+  if (block.type === "markdown") return import_react13.default.createElement(MarkdownBlock, { block });
+  if (block.type === "cards") return import_react13.default.createElement(CardsBlock, { block });
+  if (block.type === "chart") return import_react13.default.createElement(ChartBlock, { block });
+  if (block.type === "gallery") return import_react13.default.createElement(GalleryBlock, { block, t, onOpenFigure: props.onOpenFigure });
+  if (block.type === "tabs") return import_react13.default.createElement(TabsBlock, { block, t, onOpenFigure: props.onOpenFigure });
+  if (block.type === "disclosure") return import_react13.default.createElement(DisclosureBlock, { block, t, onOpenFigure: props.onOpenFigure });
+  if (block.type === "tasks") return import_react13.default.createElement(TasksBlock, { block });
+  if (block.type === "status") return import_react13.default.createElement(StatusBlock, { block });
+  if (block.type === "progress") return import_react13.default.createElement(ProgressBlock, { block });
+  if (block.type === "alert") return import_react13.default.createElement(AlertBlock, { block });
+  if (block.type === "empty") return import_react13.default.createElement(EmptyBlock, { block });
+  if (block.type === "quotes") return import_react13.default.createElement(QuotesBlock, { block });
+  if (block.type === "actions") {
+    return import_react13.default.createElement(
+      "div",
+      { className: "ph-n-doc__actions" },
+      (block.items || []).map((item, index) => import_react13.default.createElement("a", { key: index, className: "ph-n-doc__action", href: item.url, target: "_blank", rel: "noreferrer noopener" }, item.label, item.note ? import_react13.default.createElement("span", null, item.note) : null))
+    );
+  }
+  if (block.type === "diagram") return import_react13.default.createElement(DiagramBlock, { block });
+  if (block.type === "divider") return import_react13.default.createElement("hr", { className: "ph-n-doc__divider" });
   if (block.type === "figure") return import_react13.default.createElement(FigureBlock, { t: props.t, block, onOpenFigure: props.onOpenFigure });
   if (block.type === "columns") return import_react13.default.createElement(ColumnsBlock, { t: props.t, block, onOpenFigure: props.onOpenFigure });
   return null;
 }
 function isWideBlock(block) {
-  return Boolean(block && (block.type === "table" || block.type === "figure" || block.type === "columns" || block.type === "web-image" || block.type === "timeline" || block.type === "compare" || block.type === "sources"));
+  return Boolean(block && ["table", "figure", "columns", "web-image", "timeline", "compare", "sources", "chart", "gallery", "tabs", "diagram", "cards", "quotes"].includes(block.type));
 }
 function headingLabel(row) {
   return row.heading || row.section.heading || "";
@@ -11821,6 +12636,13 @@ function NoteEditor(props) {
     { id: "web", icon: "link", label: t("notes.directive.insertWebSource"), run: () => insertDirective("{{web: \u5173\u952E\u8BCD\u6216\u7F51\u5740}}") },
     { id: "stats", icon: "table", label: t("notes.directive.insertStats"), run: () => insertDirective("{{stats: \u5173\u952E\u6570\u5B57}}") },
     { id: "callout", icon: "info", label: t("notes.directive.insertCallout"), run: () => insertDirective("{{callout: \u9700\u8981\u5F3A\u8C03\u7684\u7ED3\u8BBA}}") },
+    { id: "architecture", icon: "grid", label: t("notes.directive.insertArchitecture"), run: () => insertDirective("{{architecture: \u7CFB\u7EDF\u7EC4\u6210\u4E0E\u6570\u636E\u6D41}}") },
+    { id: "mindmap", icon: "layers", label: t("notes.directive.insertMindmap"), run: () => insertDirective("{{mindmap: \u7814\u7A76\u95EE\u9898\u62C6\u89E3}}") },
+    { id: "chart", icon: "chart", label: t("notes.directive.insertChart"), run: () => insertDirective("{{chart: \u6307\u6807 | \u6570\u503C}}") },
+    { id: "cards", icon: "collection", label: t("notes.directive.insertCards"), run: () => insertDirective("{{cards: \u8981\u70B9\u4E00 | \u8981\u70B9\u4E8C}}") },
+    { id: "gallery", icon: "image", label: t("notes.directive.insertGallery"), run: () => insertDirective("{{gallery: Figure 1, Figure 2}}") },
+    { id: "tasks", icon: "check", label: t("notes.directive.insertTasks"), run: () => insertDirective("{{tasks: \u9605\u8BFB\u4E0E\u5B9E\u9A8C\u6E05\u5355}}") },
+    { id: "quotes", icon: "quote", label: t("notes.directive.insertQuotes"), run: () => insertDirective("{{quotes: \u5173\u952E\u5F15\u6587\u4E0E\u51FA\u5904}}") },
     directiveCount > 0 ? { id: "run", icon: "sparkle", label: t("notes.directive.run", { count: directiveCount }), run: runDirectives } : null
   ].filter(Boolean);
   function insertDirective(snippet) {
@@ -29642,6 +30464,13 @@ var ZH = {
   "notes.directive.insertWebImage": "\u63D2\u5165\u8054\u7F51\u56FE\u7247",
   "notes.directive.insertWebSource": "\u63D2\u5165\u7F51\u7EDC\u6765\u6E90",
   "notes.directive.insertStats": "\u63D2\u5165\u5173\u952E\u6570\u5B57",
+  "notes.directive.insertArchitecture": "\u63D2\u5165\u67B6\u6784\u56FE\u6307\u4EE4",
+  "notes.directive.insertMindmap": "\u63D2\u5165\u601D\u7EF4\u5BFC\u56FE\u6307\u4EE4",
+  "notes.directive.insertChart": "\u63D2\u5165\u56FE\u8868\u6307\u4EE4",
+  "notes.directive.insertCards": "\u63D2\u5165\u8981\u70B9\u5361\u7247\u6307\u4EE4",
+  "notes.directive.insertGallery": "\u63D2\u5165\u56FE\u7247\u7EC4\u6307\u4EE4",
+  "notes.directive.insertTasks": "\u63D2\u5165\u4EFB\u52A1\u6E05\u5355\u6307\u4EE4",
+  "notes.directive.insertQuotes": "\u63D2\u5165\u5F15\u6587\u6307\u4EE4",
   "notes.directive.insertCallout": "\u63D2\u5165\u5F3A\u8C03\u5757",
   "notes.directive.run": "\u6267\u884C\u6307\u4EE4\uFF08{count}\uFF09",
   "notes.directive.done": "\u5DF2\u5B8C\u6210 {count} \u6761\u6307\u4EE4\uFF0CAgent \u8C03\u7528 {tools} \u6B21\u5DE5\u5177",
@@ -30908,6 +31737,13 @@ var EN = {
   "notes.directive.insertWebImage": "Insert web image",
   "notes.directive.insertWebSource": "Insert web source",
   "notes.directive.insertStats": "Insert key numbers",
+  "notes.directive.insertArchitecture": "Insert architecture diagram",
+  "notes.directive.insertMindmap": "Insert mind map",
+  "notes.directive.insertChart": "Insert chart",
+  "notes.directive.insertCards": "Insert key-point cards",
+  "notes.directive.insertGallery": "Insert image gallery",
+  "notes.directive.insertTasks": "Insert task list",
+  "notes.directive.insertQuotes": "Insert quotes",
   "notes.directive.insertCallout": "Insert callout",
   "notes.directive.run": "Run directives ({count})",
   "notes.directive.done": "Ran {count} directives with {tools} agent tool calls",

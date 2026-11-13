@@ -411,6 +411,13 @@ async function main() {
       })()`)
       console.log('notes opened:', opened, JSON.stringify(notes).slice(0, 500))
       await shot('13-notes')
+      if (want('notes-scroll') || want('all')) {
+        for (const [name, ratio] of [['13b-notes-middle', 0.42], ['13c-notes-lower', 0.7], ['13d-notes-bottom', 1]]) {
+          await evaluate(`(() => { const el = document.querySelector('.ph-n-editor__cards'); if (el) el.scrollTop = el.scrollHeight * ${ratio}; return Boolean(el) })()`)
+          await sleep(350)
+          await shot(name)
+        }
+      }
     }
 
     if (want('figures') || want('all')) {

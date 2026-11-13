@@ -14,7 +14,8 @@ The plugin is a normal DSH bundle: enabling it adds Host services/tools and Clie
 - **Conversation references** — cite papers, figures, annotations or notes into the draft; a source-aware bundle token lets the Agent read the exact material.
 - **Local PDF reading** — inspect, batch-read, OCR (when enabled), and view figure/table pages without importing first.
 - **Agent tools** — 14 consolidated research tools, plus a separate isolated note Agent used only while editing notes.
-- **Richer note blocks** — web images with attribution, source lists, timelines, comparisons, stats, callouts and numbered steps.
+- **Richer note blocks** — Markdown, cards, bar/line/donut charts, image galleries, tabs, disclosures, task checklists, status/progress, alerts, quotes, action links, timelines and architecture/flow/mind-map diagrams.
+- **Diagram directives** — `{{architecture: ...}}`, `{{mindmap: ...}}`, `{{chart: ...}}` and similar natural-language requests are rendered as validated SVG blocks, never ASCII art.
 
 ## Inline directives and the note Agent
 
@@ -30,6 +31,13 @@ Open a saved note in the notes workbench (or the reader's notes tab) and either 
 {{timeline: ...}}          chronology
 {{compare: ...}}           side-by-side comparison
 {{steps: ...}}             numbered actions
+{{architecture: ...}}      architecture/flow diagram
+{{mindmap: ...}}           mind map
+{{chart: ...}}             bar/line/donut chart
+{{cards: ...}}             key-point cards
+{{gallery: ...}}           image gallery
+{{tasks: ...}}             reading/experiment checklist
+{{quotes: ...}}             quotes with attributions
 ```
 
 Natural-language requests such as “这里加一张论文图” or “加一个统计表” also work when written in the note. The **Directives** menu runs the note Agent over all markers; the normal **AI beautify** action uses the same Agent for layout.
@@ -68,7 +76,7 @@ dsh plugin --profile desktop add dsh-pappers-hall
 
 ```sh
 npm pack
-dsh plugin --profile desktop add ./dsh-pappers-hall-0.22.0.tgz
+dsh plugin --profile desktop add ./dsh-pappers-hall-0.23.0.tgz
 ```
 
 The package is a bundle: `package.json` declares `dsh.bundle.patch`, `dsh.client`, display metadata and exported resources. The patch inserts the `pappers-hall` Host row; the Client half is loaded from the exported `./client` subpath.
@@ -118,6 +126,7 @@ npm run test:ui
 npm run test:api
 npm run test:i18n
 npm run test:agent
+npm run test:rich
 npm run verify
 ```
 
@@ -126,7 +135,8 @@ npm run verify
 - `test:ui` checks the UI control inventory and accessibility contract.
 - `test:api` checks that every Client JSON API method has a Host handler.
 - `test:i18n` checks literal UI translation keys against both dictionaries (reader fallback keys excluded).
-- `test:agent` checks note-Agent section hashing, directive parsing and block normalization.
+- `test:agent` checks note-Agent section hashing, directive parsing and basic block normalization.
+- `test:rich` checks the P0/P1 block schema, diagram validation and diagram directives.
 - Browser acceptance and the fixture-based API suite need a running DSH profile, poppler and the external devkit; see the repository's internal notes and `reports/`.
 - An authenticated Web UI can be exercised with `PAPPERS_BASE=http://127.0.0.1:<port> PAPPERS_TOKEN=<printed-token> node scripts/browser-shot.mjs --steps library,reader,drawer,dock,notes,figures,settings`. Use a disposable data directory for destructive checks.
 

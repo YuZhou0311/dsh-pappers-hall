@@ -5446,6 +5446,25 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   letter-spacing: 0;
 }
 
+
+/* Composer citation: one inline chip drawn on the paragraph that holds only the
+   reference mention. The editor's DOM is never restructured, so typing in the
+   next paragraph keeps the chip intact. */
+.ph-citeblock {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 0 1px;
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--ph-accent) 26%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ph-accent) 8%, transparent);
+  color: color-mix(in srgb, var(--ph-accent) 78%, var(--ph-ink));
+  font-size: var(--ph-fs-12);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -29817,6 +29836,28 @@ function decorateTextNode(node, surface) {
   }
   return true;
 }
+var MENTION_ONLY = /^@论文中心\s+\S.*$/;
+function scanComposerChips() {
+  if (typeof document === "undefined") return;
+  const composer2 = document.querySelector(COMPOSER_SELECTOR);
+  if (!composer2) return;
+  composer2.querySelectorAll('[data-ph-citeblock="1"]').forEach((element2) => {
+    const text2 = String(element2.textContent || "").trim();
+    if (!MENTION_ONLY.test(text2)) {
+      element2.classList.remove("ph-citeblock");
+      element2.removeAttribute("data-ph-citeblock");
+    }
+  });
+  const paragraphs = composer2.querySelectorAll("p, div[data-lexical-text], span[data-lexical-text]");
+  paragraphs.forEach((element2) => {
+    const text2 = String(element2.textContent || "").trim();
+    if (!MENTION_ONLY.test(text2)) return;
+    if (element2.getAttribute("data-ph-citeblock") === "1") return;
+    element2.classList.add("ph-citeblock");
+    element2.setAttribute("data-ph-citeblock", "1");
+    element2.setAttribute("title", "Pappers-Hall \u5F15\u7528\u6750\u6599");
+  });
+}
 function scanTokens() {
   if (typeof document === "undefined") return;
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
@@ -29849,6 +29890,10 @@ function schedule() {
       scanTokens();
     } catch (error) {
     }
+    try {
+      scanComposerChips();
+    } catch (error) {
+    }
   });
 }
 function installCitationTokens() {
@@ -29863,6 +29908,10 @@ function installCitationTokens() {
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     timer = setInterval(schedule, 1500);
     schedule();
+    try {
+      scanComposerChips();
+    } catch (error) {
+    }
   }
   return () => {
     installed3 = Math.max(0, installed3 - 1);

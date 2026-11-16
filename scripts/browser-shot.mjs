@@ -362,6 +362,47 @@ async function main() {
       const text = await evaluate(`(() => { const c = document.querySelector('[data-composer-input="true"]'); return c ? { text: c.innerText.slice(0, 200), html: c.innerHTML.slice(0, 400) } : null })()`)
       console.log('insertQuote probe:', JSON.stringify(result), 'composer:', JSON.stringify(text))
     }
+    if (STEPS.includes('probe-wrap-chip')) {
+      await evaluate(`(() => {
+        const node = document.querySelector('.ph-composer-entry')
+        const key = Object.keys(node || {}).find((k) => k.startsWith('__reactFiber'))
+        let fiber = node && node[key]
+        let actions = null
+        for (let i = 0; i < 40 && fiber; i += 1) {
+          if (fiber.memoizedProps && fiber.memoizedProps.inputActions) { actions = fiber.memoizedProps.inputActions; break }
+          fiber = fiber.return
+        }
+        if (actions) actions.setDraft('@论文中心 2 篇论文\\n\\n这句是用户补充')
+        return Boolean(actions)
+      })()`)
+      await sleep(900)
+      const state = await evaluate(`(() => {
+        const composer = document.querySelector('[data-composer-input="true"]')
+        const block = composer ? composer.querySelector('[data-ph-citeblock="1"]') : null
+        return { text: (composer?.innerText || '').slice(0, 100), blocks: block ? 1 : 0, style: block ? getComputedStyle(block).backgroundColor : null }
+      })()`)
+      console.log('composer chip:', JSON.stringify(state))
+      await shot('probe-composer-chip')
+      const typed = await evaluate(`(() => {
+        const composer = document.querySelector('[data-composer-input="true"]')
+        if (!composer) return false
+        composer.focus()
+        const selection = window.getSelection()
+        selection.selectAllChildren(composer)
+        selection.collapseToEnd()
+        document.execCommand('insertText', false, '继续打字')
+        return true
+      })()`)
+      await sleep(800)
+      const after = await evaluate(`(() => {
+        const composer = document.querySelector('[data-composer-input="true"]')
+        const block = composer ? composer.querySelector('[data-ph-citeblock="1"]') : null
+        return { text: (composer?.innerText || '').slice(0, 120), blocks: block ? 1 : 0 }
+      })()`)
+      console.log('composer chip after typing:', typed, JSON.stringify(after))
+      await shot('probe-composer-chip-typing')
+    }
+
     if (want('library') || want('all')) {
       const clicked = await evaluate(`(() => {
         const candidates = [...document.querySelectorAll('button, a, [role="button"]')]
@@ -574,12 +615,13 @@ async function main() {
         await sleep(2200)
         const draft = await evaluate(`(() => {
           const composer = document.querySelector('[data-composer-input="true"]')
-          const chips = [...document.querySelectorAll('[data-composer-input="true"] .ph-citetoken')]
+          const block = composer ? composer.querySelector('[data-ph-citeblock="1"]') : null
           return {
             rawText: (composer?.innerText || '').slice(0, 160),
-            chipCount: chips.length,
-            chipLabel: chips[0] ? chips[0].getAttribute('data-ph-citetoken-label') : null,
-            chipWidth: chips[0] ? Math.round(chips[0].getBoundingClientRect().width) : 0,
+            chipCount: block ? 1 : 0,
+            chipText: block ? (block.textContent || '').trim() : null,
+            chipBg: block ? getComputedStyle(block).backgroundColor : null,
+            chipWidth: block ? Math.round(block.getBoundingClientRect().width) : 0,
           }
         })()`)
         console.log('cite auto draft:', cited, JSON.stringify(draft))
@@ -595,7 +637,7 @@ async function main() {
         const twice = await evaluate(`(() => {
           const composer = document.querySelector('[data-composer-input="true"]')
           const text = composer ? composer.innerText : ''
-          const tokenCount = text.split('@论文中心(').length - 1
+          const tokenCount = text.split('@论文中心').length - 1
           return { tokenCount: tokenCount, length: text.length, head: text.slice(0, 120) }
         })()`)
         console.log('second cite draft:', JSON.stringify(twice))

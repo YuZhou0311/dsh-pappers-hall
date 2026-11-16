@@ -102,6 +102,40 @@ function decorateTextNode(node, surface) {
   return true
 }
 
+/**
+ * Draw the composer citation as one chip.
+ *
+ * The composer is a Lexical editor, so its DOM must not be restructured — an
+ * earlier attempt to wrap the token text corrupted the draft. Instead this
+ * marks the *paragraph* that consists only of the mention: the citation is
+ * inserted with a trailing blank line, so the user keeps typing in the next
+ * paragraph and the chip survives while the box stays untouched.
+ */
+const MENTION_ONLY = /^@论文中心\s+\S.*$/
+
+function scanComposerChips() {
+  if (typeof document === 'undefined') return
+  const composer = document.querySelector(COMPOSER_SELECTOR)
+  if (!composer) return
+  // Drop stale marks first: a paragraph that gained more text is no longer a chip.
+  composer.querySelectorAll('[data-ph-citeblock="1"]').forEach((element) => {
+    const text = String(element.textContent || '').trim()
+    if (!MENTION_ONLY.test(text)) {
+      element.classList.remove('ph-citeblock')
+      element.removeAttribute('data-ph-citeblock')
+    }
+  })
+  const paragraphs = composer.querySelectorAll('p, div[data-lexical-text], span[data-lexical-text]')
+  paragraphs.forEach((element) => {
+    const text = String(element.textContent || '').trim()
+    if (!MENTION_ONLY.test(text)) return
+    if (element.getAttribute('data-ph-citeblock') === '1') return
+    element.classList.add('ph-citeblock')
+    element.setAttribute('data-ph-citeblock', '1')
+    element.setAttribute('title', 'Pappers-Hall 引用材料')
+  })
+}
+
 /** Rewrite tokens in both the composer and read-only history. */
 function scanTokens() {
   if (typeof document === 'undefined') return
@@ -133,6 +167,7 @@ function schedule() {
   frame = requestAnimationFrame(() => {
     frame = null
     try { scanTokens() } catch (error) { /* ignore */ }
+    try { scanComposerChips() } catch (error) { /* ignore */ }
   })
 }
 
@@ -147,6 +182,7 @@ export function installCitationTokens() {
     observer.observe(document.body, { childList: true, subtree: true, characterData: true })
     timer = setInterval(schedule, 1500)
     schedule()
+    try { scanComposerChips() } catch (error) { /* ignore */ }
   }
   return () => {
     installed = Math.max(0, installed - 1)

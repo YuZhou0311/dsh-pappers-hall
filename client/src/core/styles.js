@@ -5360,6 +5360,25 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   letter-spacing: 0;
 }
 
+
+/* Composer citation: one inline chip drawn on the paragraph that holds only the
+   reference mention. The editor's DOM is never restructured, so typing in the
+   next paragraph keeps the chip intact. */
+.ph-citeblock {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 0 1px;
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--ph-accent) 26%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--ph-accent) 8%, transparent);
+  color: color-mix(in srgb, var(--ph-accent) 78%, var(--ph-ink));
+  font-size: var(--ph-fs-12);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
 `
 
 export function installStyles(ctx) {

@@ -5259,7 +5259,7 @@ function describeBundle(materials) {
  * bundle id to `papers_search` / `papers_get_passage` / `papers_get_figure`.
  * @param {string} bundleId bundle id (`bn-...`).
  * @param {object[]} materials resolved bundle materials.
- * @returns {string} token such as `⟦Pappers-Hall 2 篇论文 + 1 张图 · bundle=bn-ab12cd34ef56⟧`.
+ * @returns {string} token such as `@论文中心(2 篇论文 + 1 张图 · bn-ab12cd34ef56)`.
  */
 export function buildBundleToken(bundleId, materials) {
   const counts = { paper: 0, figure: 0, annotation: 0, note: 0 }
@@ -5282,11 +5282,11 @@ export function buildBundleToken(bundleId, materials) {
     parts.push(`${counts.note} 条笔记${shortTitle ? `《${shortTitle}》` : ''}`)
   }
   const summary = parts.length === 0 ? `${materials.length} 项材料` : parts.join(' + ')
-  // Always keep the bundle suffix intact: truncating the whole string could cut
-  // `bundle=bn-…`, which is the only handle the model has to the materials.
-  const prefix = '⟦Pappers-Hall '
-  const suffix = ` · bundle=${bundleId}⟧`
-  const room = Math.max(1, 120 - prefix.length - suffix.length)
+  // Compact mention form: no box glyphs, reads as a normal @-reference in the
+  // draft, and still carries the bundle id the model needs. Keep the id intact.
+  const prefix = '@论文中心('
+  const suffix = ` · ${bundleId})`
+  const room = Math.max(1, 100 - prefix.length - suffix.length)
   const clipped = summary.length > room ? summary.slice(0, Math.max(1, room - 1)) + '…' : summary
   return `${prefix}${clipped}${suffix}`
 }

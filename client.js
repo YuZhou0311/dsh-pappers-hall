@@ -2578,41 +2578,59 @@ button.ph-iconbtn { font: inherit; }
 @keyframes ph-refcard-in { from { opacity: 0; transform: translateY(4px) scale(0.995); } to { opacity: 1; transform: none; } }
 @keyframes ph-refcard-expand { from { opacity: 0; } to { opacity: 1; } }
 
-/* composer token pill: only adds a class, never changes text */
+/* Citation tokens: one chip for the composer and one for read-only history.
+   The raw protocol text stays in the DOM (copy + model), the visible label is
+   the compact summary carried by data-ph-citetoken-label. */
 [data-composer-input='true'] .ph-citetoken,
-[data-composer-input='true'] [data-ph-citetoken='1'] {
+[data-composer-input='true'] [data-ph-citetoken='1'],
+.ph-citetoken-history {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   max-width: 100%;
-  padding: 1px 8px;
+  padding: 1px 7px;
   margin: 0 1px;
-  border-radius: var(--ph-r-sm);
-  background: var(--ph-accent-soft) !important;
-  border: 1px solid var(--ph-accent-line) !important;
-  color: color-mix(in srgb, var(--ph-accent) 86%, var(--ph-ink)) !important;
-  font-size: var(--ph-fs-12) !important;
-  line-height: 1.55 !important;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ph-accent) 7%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--ph-accent) 22%, transparent) !important;
+  color: color-mix(in srgb, var(--ph-accent) 82%, var(--ph-ink)) !important;
+  font-size: 0 !important;
+  line-height: 1.5 !important;
   font-family: inherit !important;
-  font-weight: var(--ph-fw-medium) !important;
   letter-spacing: 0 !important;
   white-space: nowrap;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
-  cursor: text;
   vertical-align: baseline;
+  cursor: text;
 }
 [data-composer-input='true'] .ph-citetoken::before,
-[data-composer-input='true'] [data-ph-citetoken='1']::before {
+[data-composer-input='true'] [data-ph-citetoken='1']::before,
+.ph-citetoken-history::before {
   content: '';
-  width: 12px;
-  height: 12px;
+  display: inline-block;
+  width: 11px;
+  height: 11px;
   flex: none;
   background: currentColor;
   -webkit-mask: var(--ph-citetoken-mask) center / contain no-repeat;
   mask: var(--ph-citetoken-mask) center / contain no-repeat;
 }
-[data-composer-input='true'] .ph-citetoken:hover { background: var(--ph-accent-soft-2) !important; }
+[data-composer-input='true'] .ph-citetoken::after,
+[data-composer-input='true'] [data-ph-citetoken='1']::after,
+.ph-citetoken-history::after {
+  content: attr(data-ph-citetoken-label);
+  font-family: var(--ph-font-ui);
+  font-size: var(--ph-fs-12);
+  line-height: 1.5;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-composer-input='true'] .ph-citetoken:hover,
+.ph-citetoken-history:hover {
+  background: color-mix(in srgb, var(--ph-accent) 11%, transparent) !important;
+}
 :root,
 body {
   --ph-citetoken-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5V5.5A1.5 1.5 0 0 1 5.5 4H19v15.5'/%3E%3Cpath d='M4 19.5A1.5 1.5 0 0 1 5.5 18H19'/%3E%3Cpath d='M8 8h7M8 11.5h5'/%3E%3C/svg%3E");
@@ -5428,38 +5446,6 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   letter-spacing: 0;
 }
 
-/* History citation chip: keeps the message text, replaces only the raw protocol
-   token with a readable reference label. */
-.ph-citetoken-history {
-  display: inline;
-  padding: 1px 6px;
-  border-radius: 5px;
-  border: 1px solid var(--ph-accent-line);
-  background: var(--ph-accent-soft);
-  color: var(--ph-accent-text);
-  font-size: 0;
-  white-space: nowrap;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-}
-.ph-citetoken-history::before {
-  content: '';
-  display: inline-block;
-  width: 11px;
-  height: 11px;
-  margin-right: 4px;
-  vertical-align: -1px;
-  background: currentColor;
-  -webkit-mask: var(--ph-citetoken-mask) center / contain no-repeat;
-  mask: var(--ph-citetoken-mask) center / contain no-repeat;
-}
-.ph-citetoken-history::after {
-  content: attr(data-ph-citetoken-label);
-  font-family: var(--ph-font-ui);
-  font-size: var(--ph-fs-12);
-  line-height: 1.5;
-  letter-spacing: 0;
-}
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -7611,6 +7597,327 @@ function metaLine(t, paper) {
   return parts.join(" \xB7 ");
 }
 
+// src/core/dnd.js
+var MATERIAL_MIME2 = "application/x-pappers-hall-material";
+function opId2() {
+  const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+  return "dnd-" + random;
+}
+function materialsFromEvent(event) {
+  const transfer = event && event.dataTransfer;
+  if (!transfer) return null;
+  let raw = "";
+  try {
+    raw = transfer.getData(MATERIAL_MIME2);
+  } catch {
+    return null;
+  }
+  if (!raw) return null;
+  try {
+    const payload = JSON.parse(raw);
+    return (Array.isArray(payload && payload.materials) ? payload.materials : []).filter((m) => m && m.kind && m.id).slice(0, 50);
+  } catch {
+    return null;
+  }
+}
+function plainSummary(t, materials) {
+  const counts = {};
+  materials.forEach((material) => {
+    counts[material.kind] = (counts[material.kind] || 0) + 1;
+  });
+  return t("dnd.summary") + " \xB7 " + Object.keys(counts).map((kind) => t("dnd.kind." + kind) + " " + counts[kind]).join(" \xB7 ");
+}
+function dragProps(t, materials, options) {
+  const list = (Array.isArray(materials) ? materials : [materials]).filter((m) => m && m.id);
+  if (list.length === 0) return {};
+  return {
+    draggable: true,
+    onDragStart: (event) => {
+      try {
+        event.dataTransfer.setData(MATERIAL_MIME2, JSON.stringify({ version: 1, materials: list, source: options && options.source || "library" }));
+        event.dataTransfer.setData("text/plain", plainSummary(t, list));
+        event.dataTransfer.effectAllowed = "copy";
+        if (typeof document !== "undefined") document.body.classList.add("ph-dnd-dragging");
+        bus.emit("dnd-start", { materials: list });
+      } catch (error) {
+        console.warn("[pappers-hall] dragstart failed", error);
+      }
+    },
+    onDragEnd: () => {
+      if (typeof document !== "undefined") document.body.classList.remove("ph-dnd-dragging");
+      bus.emit("dnd-end");
+    },
+    "data-ph-drag": "material"
+  };
+}
+var composer = null;
+function registerComposerBridge(actions) {
+  composer = actions && typeof actions.captureInsertion === "function" && typeof actions.insertText === "function" ? actions : null;
+  return () => {
+    composer = null;
+  };
+}
+function insertTokenIntoComposer(token, options) {
+  if (!composer || !token) return false;
+  try {
+    const span = composer.captureInsertion();
+    const trailing = options && options.newline === false ? "" : "\n\n";
+    return composer.insertText(String(token) + trailing, span) !== false;
+  } catch (error) {
+    console.warn("[pappers-hall] composer insertion failed", error);
+    return false;
+  }
+}
+function composerHasToken(token) {
+  if (!token) return false;
+  try {
+    const node = typeof document !== "undefined" ? document.querySelector('[data-composer-input="true"]') : null;
+    if (!node) return false;
+    return String(node.innerText || "").includes(String(token));
+  } catch {
+    return false;
+  }
+}
+function removeTokenFromComposer(token) {
+  if (!composer || typeof composer.setDraft !== "function" || !token) return false;
+  let text2 = "";
+  try {
+    const node = typeof document !== "undefined" ? document.querySelector('[data-composer-input="true"]') : null;
+    text2 = node ? String(node.innerText || "") : "";
+  } catch {
+    text2 = "";
+  }
+  if (!text2.includes(token)) return false;
+  const next = text2.replace(token, "").replace(/\n{3,}/g, "\n\n").replace(/^\s+|\s+$/g, "");
+  try {
+    composer.setDraft(next);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function commitItem(material) {
+  const item = { kind: material.kind, id: String(material.id) };
+  if (material.page) item.page = Number(material.page);
+  if (material.annotationId) item.annotationId = material.annotationId;
+  return item;
+}
+async function deliverMaterials(materials, options) {
+  const list = (Array.isArray(materials) ? materials : []).filter((m) => m && m.kind && m.id);
+  if (list.length === 0) return { ok: false, reason: "empty" };
+  const opts = options || {};
+  try {
+    const result = await defaultApi("references.commit", {
+      items: list.map(commitItem),
+      ...opts.sessionId ? { sessionId: opts.sessionId } : {},
+      operationId: opId2()
+    });
+    pendingStore.add(
+      result,
+      list.map((material) => ({ kind: material.kind, id: material.id, page: material.page, title: material.title || material.quote })),
+      { sessionId: opts.sessionId || null, autoInsert: Boolean(opts.sessionId), targetLabel: opts.targetLabel || "" }
+    );
+    if (!opts.sessionId) {
+      const inserted = insertTokenIntoComposer(result.token);
+      if (inserted) pendingStore.markAdded(result.bundleId);
+      return { ok: true, inserted, bundleId: result.bundleId, result };
+    }
+    return { ok: true, inserted: false, queued: true, bundleId: result.bundleId, result };
+  } catch (error) {
+    return { ok: false, reason: error && error.message ? error.message : String(error), error };
+  }
+}
+var overlay = null;
+function ensureOverlay() {
+  if (typeof document === "undefined") return null;
+  if (overlay && overlay.isConnected) return overlay;
+  overlay = document.createElement("div");
+  overlay.className = "ph-dropoverlay";
+  overlay.setAttribute("aria-hidden", "true");
+  overlay.innerHTML = '<div class="ph-dropoverlay__card"><span class="ph-dropoverlay__icon"></span><span class="ph-dropoverlay__text"></span><span class="ph-dropoverlay__hint"></span></div>';
+  document.body.appendChild(overlay);
+  return overlay;
+}
+function setOverlay(visible, text2, hint) {
+  const node = ensureOverlay();
+  if (!node) return;
+  node.querySelector(".ph-dropoverlay__text").textContent = text2 || "";
+  node.querySelector(".ph-dropoverlay__hint").textContent = hint || "";
+  node.classList.toggle("ph-dropoverlay--visible", Boolean(visible));
+}
+function pluginSurface(target) {
+  if (!target || typeof target.closest !== "function") return null;
+  if (target.closest(".ph-dropoverlay")) return "overlay";
+  if (target.closest(".ph-center")) return "center";
+  if (target.closest(".ph-drawer")) return "drawer";
+  if (target.closest(".ph-toolcard")) return "toolcard";
+  return null;
+}
+function sessionRowOf(target) {
+  if (!target || typeof target.closest !== "function") return null;
+  return target.closest('[data-row-key^="session:"]');
+}
+function newSessionButtonOf(target) {
+  if (!target || typeof target.closest !== "function") return null;
+  return target.closest('button[aria-label*="\u65B0\u5EFA\u4F1A\u8BDD"], button[aria-label*="New chat"], button[aria-label*="New conversation"]');
+}
+function sessionIdOfRow(row) {
+  const key = row && row.getAttribute ? row.getAttribute("data-row-key") : "";
+  return key && key.indexOf("session:") === 0 ? key.slice("session:".length) : "";
+}
+function labelOfRow(row) {
+  return row ? (row.textContent || "").replace(/\s+/g, " ").trim().slice(0, 40) : "";
+}
+var installed2 = false;
+function installDragToConversation(options) {
+  if (installed2 || typeof document === "undefined") return () => {
+  };
+  installed2 = true;
+  const opts = options || {};
+  const t = opts.t || ((key) => key);
+  let highlighted = null;
+  function clearHighlight() {
+    if (highlighted && highlighted.classList) highlighted.classList.remove("ph-dnd-target");
+    highlighted = null;
+  }
+  function resolveTarget(event) {
+    if (!event.dataTransfer || Array.prototype.indexOf.call(event.dataTransfer.types, MATERIAL_MIME2) < 0) return null;
+    if (pluginSurface(event.target)) return null;
+    const row = sessionRowOf(event.target);
+    if (row) return { kind: "session", node: row, sessionId: sessionIdOfRow(row), label: labelOfRow(row) };
+    const newButton = newSessionButtonOf(event.target);
+    if (newButton) return { kind: "new", node: newButton, label: t("dnd.newSession") };
+    return { kind: "composer", node: null, label: t("dnd.composer") };
+  }
+  const onDragStart = () => document.body.classList.add("ph-dnd-dragging");
+  const onDragEnd = () => {
+    document.body.classList.remove("ph-dnd-dragging");
+    clearHighlight();
+    setOverlay(false);
+  };
+  const onDragOver = (event) => {
+    const target = resolveTarget(event);
+    if (!target) {
+      clearHighlight();
+      setOverlay(false);
+      return;
+    }
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    if (highlighted !== target.node) {
+      clearHighlight();
+      highlighted = target.node;
+      if (highlighted && highlighted.classList) highlighted.classList.add("ph-dnd-target");
+    }
+    setOverlay(true, t("dnd.drop"), target.kind === "session" ? t("dnd.dropSession", { title: target.label || "" }) : target.kind === "new" ? t("dnd.dropNew") : t("dnd.dropHint"));
+  };
+  const onDragLeave = (event) => {
+    if (!event.relatedTarget) {
+      clearHighlight();
+      setOverlay(false);
+    }
+  };
+  const onDrop = (event) => {
+    const target = resolveTarget(event);
+    if (!target) {
+      setOverlay(false);
+      clearHighlight();
+      if (event.dataTransfer && Array.prototype.indexOf.call(event.dataTransfer.types, MATERIAL_MIME2) >= 0 && pluginSurface(event.target)) {
+        event.preventDefault();
+        notify("info", t("dnd.wrongTarget"), null, 2600);
+      }
+      return;
+    }
+    event.preventDefault();
+    setOverlay(false);
+    clearHighlight();
+    document.body.classList.remove("ph-dnd-dragging");
+    const materials = materialsFromEvent(event);
+    if (!materials || materials.length === 0) {
+      notify("warning", t("dnd.unrecognized"), null, 2400);
+      return;
+    }
+    if (target.kind === "session" && target.sessionId) {
+      deliverMaterials(materials, { sessionId: target.sessionId, targetLabel: target.label }).then((result) => {
+        if (!result.ok) {
+          notify("error", t("dnd.failed", { message: result.reason || "" }), null, 3600);
+          return;
+        }
+        let navigated = false;
+        if (opts.uiWorkspace && typeof opts.uiWorkspace.openSession === "function") {
+          try {
+            opts.uiWorkspace.openSession(target.sessionId);
+            navigated = true;
+          } catch (error) {
+            console.warn("[pappers-hall] openSession failed", error);
+          }
+        }
+        if (!navigated && target.node && typeof target.node.click === "function") {
+          try {
+            target.node.click();
+          } catch (error) {
+            console.warn("[pappers-hall] session row click failed", error);
+          }
+        }
+        notify("success", t("dnd.queuedSession", { title: target.label || "" }), {
+          label: t("common.undo"),
+          onClick: () => {
+            pendingStore.remove(result.bundleId);
+            notify("info", t("dnd.undone"), null, 2200);
+          }
+        }, 9e3);
+      });
+      return;
+    }
+    if (target.kind === "new" && opts.uiWorkspace && typeof opts.uiWorkspace.startSession === "function") {
+      deliverMaterials(materials, { targetLabel: target.label }).then((result) => {
+        if (!result.ok) {
+          notify("error", t("dnd.failed", { message: result.reason || "" }), null, 3600);
+          return;
+        }
+        const token = result.result && result.result.token ? result.result.token : "";
+        const workspaceId = typeof opts.getWorkspaceId === "function" ? opts.getWorkspaceId() : void 0;
+        try {
+          opts.uiWorkspace.startSession(workspaceId, { prompt: token, whenDraftExists: "append" });
+          pendingStore.remove(result.bundleId);
+          notify("success", t("dnd.startedNew"), null, 4e3);
+        } catch (error) {
+          notify("warning", t("dnd.failed", { message: error.message || "" }), null, 3600);
+        }
+      });
+      return;
+    }
+    deliverMaterials(materials, {}).then((result) => {
+      if (!result.ok) {
+        notify("error", t("dnd.failed", { message: result.reason || "" }), null, 3600);
+        return;
+      }
+      notify(result.inserted ? "success" : "warning", result.inserted ? t("dnd.inserted", { count: materials.length }) : t("dnd.queued", { count: materials.length }), {
+        label: t("common.undo"),
+        onClick: () => {
+          pendingStore.remove(result.bundleId);
+          notify("info", t("dnd.undone"), null, 2200);
+        }
+      }, 9e3);
+    });
+  };
+  document.addEventListener("dragstart", onDragStart, true);
+  document.addEventListener("dragend", onDragEnd, true);
+  document.addEventListener("dragover", onDragOver, true);
+  document.addEventListener("dragleave", onDragLeave, true);
+  document.addEventListener("drop", onDrop, true);
+  return () => {
+    installed2 = false;
+    document.removeEventListener("dragstart", onDragStart, true);
+    document.removeEventListener("dragend", onDragEnd, true);
+    document.removeEventListener("dragover", onDragOver, true);
+    document.removeEventListener("dragleave", onDragLeave, true);
+    document.removeEventListener("drop", onDrop, true);
+    if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    overlay = null;
+  };
+}
+
 // src/core/reference-actions.js
 function itemOf(material) {
   const kind = String(material && material.kind || "paper");
@@ -7647,7 +7954,7 @@ async function commitReferenceBatchNow(materials, options) {
   if (fresh.length === 0) throw new Error("no materials selected");
   const snapshot4 = pendingStore.getSnapshot();
   const reusable = snapshot4.bundles.filter(
-    (bundle) => !bundle.added && bundle.token && (!opts.sessionId || !bundle.sessionId || bundle.sessionId === opts.sessionId)
+    (bundle) => bundle.token && (!bundle.added || composerHasToken(bundle.token)) && (!opts.sessionId || !bundle.sessionId || bundle.sessionId === opts.sessionId)
   );
   const primary = reusable[0] || null;
   const combined = uniqueItems(
@@ -7661,8 +7968,11 @@ async function commitReferenceBatchNow(materials, options) {
         items: combined,
         ...opts.operationId ? { operationId: opts.operationId } : {}
       });
-      pendingStore.add(result2, combined, { sessionId: opts.sessionId });
-      reusable.slice(1).forEach((bundle) => pendingStore.remove(bundle.bundleId));
+      reusable.forEach((bundle) => {
+        if (bundle.token) removeTokenFromComposer(bundle.token);
+        pendingStore.remove(bundle.bundleId);
+      });
+      pendingStore.add(result2, combined, { sessionId: opts.sessionId, autoInsert: true });
       return { result: result2, created: false, previous: primary };
     } catch (error) {
       console.warn("[pappers-hall] references.append failed, committing a new set", error);
@@ -7673,11 +7983,34 @@ async function commitReferenceBatchNow(materials, options) {
     items: fresh,
     ...opts.operationId ? { operationId: opts.operationId } : {}
   });
-  pendingStore.add(result, materials, { sessionId: opts.sessionId });
   reusable.forEach((bundle) => {
+    if (bundle.token) removeTokenFromComposer(bundle.token);
     if (bundle.bundleId !== result.bundleId) pendingStore.remove(bundle.bundleId);
   });
+  pendingStore.add(result, materials, { sessionId: opts.sessionId, autoInsert: true });
   return { result, created: true, previous: null };
+}
+async function dropPendingReferences(bundleId) {
+  const snapshot4 = pendingStore.getSnapshot();
+  const bundles = snapshot4.bundles.filter((bundle) => bundle.bundleId === bundleId);
+  if (bundles.length === 0) return { ok: true, removed: 0 };
+  for (const bundle of bundles) {
+    if (bundle.token) removeTokenFromComposer(bundle.token);
+  }
+  pendingStore.remove(bundleId);
+  return { ok: true, removed: bundles.length };
+}
+async function dropPendingMaterial(bundleId, index, options) {
+  const opts = options || {};
+  const snapshot4 = pendingStore.getSnapshot();
+  const bundle = snapshot4.bundles.find((entry) => entry.bundleId === bundleId);
+  if (!bundle) return { ok: true };
+  const survivors = (bundle.materials || []).filter((material, materialIndex) => materialIndex !== index);
+  if (bundle.token) removeTokenFromComposer(bundle.token);
+  pendingStore.remove(bundleId);
+  if (survivors.length === 0) return { ok: true, remaining: 0 };
+  await commitReferenceBatch(survivors, { sessionId: opts.sessionId || bundle.sessionId || void 0 });
+  return { ok: true, remaining: survivors.length };
 }
 
 // src/surfaces/library/collections.jsx
@@ -21642,301 +21975,6 @@ function ReaderNotesPanel(props) {
 
 // src/surfaces/reader/figures-panel.jsx
 var import_react27 = __toESM(require("react"), 1);
-
-// src/core/dnd.js
-var MATERIAL_MIME2 = "application/x-pappers-hall-material";
-function opId2() {
-  const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
-  return "dnd-" + random;
-}
-function materialsFromEvent(event) {
-  const transfer = event && event.dataTransfer;
-  if (!transfer) return null;
-  let raw = "";
-  try {
-    raw = transfer.getData(MATERIAL_MIME2);
-  } catch {
-    return null;
-  }
-  if (!raw) return null;
-  try {
-    const payload = JSON.parse(raw);
-    return (Array.isArray(payload && payload.materials) ? payload.materials : []).filter((m) => m && m.kind && m.id).slice(0, 50);
-  } catch {
-    return null;
-  }
-}
-function plainSummary(t, materials) {
-  const counts = {};
-  materials.forEach((material) => {
-    counts[material.kind] = (counts[material.kind] || 0) + 1;
-  });
-  return t("dnd.summary") + " \xB7 " + Object.keys(counts).map((kind) => t("dnd.kind." + kind) + " " + counts[kind]).join(" \xB7 ");
-}
-function dragProps(t, materials, options) {
-  const list = (Array.isArray(materials) ? materials : [materials]).filter((m) => m && m.id);
-  if (list.length === 0) return {};
-  return {
-    draggable: true,
-    onDragStart: (event) => {
-      try {
-        event.dataTransfer.setData(MATERIAL_MIME2, JSON.stringify({ version: 1, materials: list, source: options && options.source || "library" }));
-        event.dataTransfer.setData("text/plain", plainSummary(t, list));
-        event.dataTransfer.effectAllowed = "copy";
-        if (typeof document !== "undefined") document.body.classList.add("ph-dnd-dragging");
-        bus.emit("dnd-start", { materials: list });
-      } catch (error) {
-        console.warn("[pappers-hall] dragstart failed", error);
-      }
-    },
-    onDragEnd: () => {
-      if (typeof document !== "undefined") document.body.classList.remove("ph-dnd-dragging");
-      bus.emit("dnd-end");
-    },
-    "data-ph-drag": "material"
-  };
-}
-var composer = null;
-function registerComposerBridge(actions) {
-  composer = actions && typeof actions.captureInsertion === "function" && typeof actions.insertText === "function" ? actions : null;
-  return () => {
-    composer = null;
-  };
-}
-function insertTokenIntoComposer(token, options) {
-  if (!composer || !token) return false;
-  try {
-    const span = composer.captureInsertion();
-    const trailing = options && options.newline === false ? "" : "\n\n";
-    return composer.insertText(String(token) + trailing, span) !== false;
-  } catch (error) {
-    console.warn("[pappers-hall] composer insertion failed", error);
-    return false;
-  }
-}
-function commitItem(material) {
-  const item = { kind: material.kind, id: String(material.id) };
-  if (material.page) item.page = Number(material.page);
-  if (material.annotationId) item.annotationId = material.annotationId;
-  return item;
-}
-async function deliverMaterials(materials, options) {
-  const list = (Array.isArray(materials) ? materials : []).filter((m) => m && m.kind && m.id);
-  if (list.length === 0) return { ok: false, reason: "empty" };
-  const opts = options || {};
-  try {
-    const result = await defaultApi("references.commit", {
-      items: list.map(commitItem),
-      ...opts.sessionId ? { sessionId: opts.sessionId } : {},
-      operationId: opId2()
-    });
-    pendingStore.add(
-      result,
-      list.map((material) => ({ kind: material.kind, id: material.id, page: material.page, title: material.title || material.quote })),
-      { sessionId: opts.sessionId || null, autoInsert: Boolean(opts.sessionId), targetLabel: opts.targetLabel || "" }
-    );
-    if (!opts.sessionId) {
-      const inserted = insertTokenIntoComposer(result.token);
-      if (inserted) pendingStore.markAdded(result.bundleId);
-      return { ok: true, inserted, bundleId: result.bundleId, result };
-    }
-    return { ok: true, inserted: false, queued: true, bundleId: result.bundleId, result };
-  } catch (error) {
-    return { ok: false, reason: error && error.message ? error.message : String(error), error };
-  }
-}
-var overlay = null;
-function ensureOverlay() {
-  if (typeof document === "undefined") return null;
-  if (overlay && overlay.isConnected) return overlay;
-  overlay = document.createElement("div");
-  overlay.className = "ph-dropoverlay";
-  overlay.setAttribute("aria-hidden", "true");
-  overlay.innerHTML = '<div class="ph-dropoverlay__card"><span class="ph-dropoverlay__icon"></span><span class="ph-dropoverlay__text"></span><span class="ph-dropoverlay__hint"></span></div>';
-  document.body.appendChild(overlay);
-  return overlay;
-}
-function setOverlay(visible, text2, hint) {
-  const node = ensureOverlay();
-  if (!node) return;
-  node.querySelector(".ph-dropoverlay__text").textContent = text2 || "";
-  node.querySelector(".ph-dropoverlay__hint").textContent = hint || "";
-  node.classList.toggle("ph-dropoverlay--visible", Boolean(visible));
-}
-function pluginSurface(target) {
-  if (!target || typeof target.closest !== "function") return null;
-  if (target.closest(".ph-dropoverlay")) return "overlay";
-  if (target.closest(".ph-center")) return "center";
-  if (target.closest(".ph-drawer")) return "drawer";
-  if (target.closest(".ph-toolcard")) return "toolcard";
-  return null;
-}
-function sessionRowOf(target) {
-  if (!target || typeof target.closest !== "function") return null;
-  return target.closest('[data-row-key^="session:"]');
-}
-function newSessionButtonOf(target) {
-  if (!target || typeof target.closest !== "function") return null;
-  return target.closest('button[aria-label*="\u65B0\u5EFA\u4F1A\u8BDD"], button[aria-label*="New chat"], button[aria-label*="New conversation"]');
-}
-function sessionIdOfRow(row) {
-  const key = row && row.getAttribute ? row.getAttribute("data-row-key") : "";
-  return key && key.indexOf("session:") === 0 ? key.slice("session:".length) : "";
-}
-function labelOfRow(row) {
-  return row ? (row.textContent || "").replace(/\s+/g, " ").trim().slice(0, 40) : "";
-}
-var installed2 = false;
-function installDragToConversation(options) {
-  if (installed2 || typeof document === "undefined") return () => {
-  };
-  installed2 = true;
-  const opts = options || {};
-  const t = opts.t || ((key) => key);
-  let highlighted = null;
-  function clearHighlight() {
-    if (highlighted && highlighted.classList) highlighted.classList.remove("ph-dnd-target");
-    highlighted = null;
-  }
-  function resolveTarget(event) {
-    if (!event.dataTransfer || Array.prototype.indexOf.call(event.dataTransfer.types, MATERIAL_MIME2) < 0) return null;
-    if (pluginSurface(event.target)) return null;
-    const row = sessionRowOf(event.target);
-    if (row) return { kind: "session", node: row, sessionId: sessionIdOfRow(row), label: labelOfRow(row) };
-    const newButton = newSessionButtonOf(event.target);
-    if (newButton) return { kind: "new", node: newButton, label: t("dnd.newSession") };
-    return { kind: "composer", node: null, label: t("dnd.composer") };
-  }
-  const onDragStart = () => document.body.classList.add("ph-dnd-dragging");
-  const onDragEnd = () => {
-    document.body.classList.remove("ph-dnd-dragging");
-    clearHighlight();
-    setOverlay(false);
-  };
-  const onDragOver = (event) => {
-    const target = resolveTarget(event);
-    if (!target) {
-      clearHighlight();
-      setOverlay(false);
-      return;
-    }
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
-    if (highlighted !== target.node) {
-      clearHighlight();
-      highlighted = target.node;
-      if (highlighted && highlighted.classList) highlighted.classList.add("ph-dnd-target");
-    }
-    setOverlay(true, t("dnd.drop"), target.kind === "session" ? t("dnd.dropSession", { title: target.label || "" }) : target.kind === "new" ? t("dnd.dropNew") : t("dnd.dropHint"));
-  };
-  const onDragLeave = (event) => {
-    if (!event.relatedTarget) {
-      clearHighlight();
-      setOverlay(false);
-    }
-  };
-  const onDrop = (event) => {
-    const target = resolveTarget(event);
-    if (!target) {
-      setOverlay(false);
-      clearHighlight();
-      if (event.dataTransfer && Array.prototype.indexOf.call(event.dataTransfer.types, MATERIAL_MIME2) >= 0 && pluginSurface(event.target)) {
-        event.preventDefault();
-        notify("info", t("dnd.wrongTarget"), null, 2600);
-      }
-      return;
-    }
-    event.preventDefault();
-    setOverlay(false);
-    clearHighlight();
-    document.body.classList.remove("ph-dnd-dragging");
-    const materials = materialsFromEvent(event);
-    if (!materials || materials.length === 0) {
-      notify("warning", t("dnd.unrecognized"), null, 2400);
-      return;
-    }
-    if (target.kind === "session" && target.sessionId) {
-      deliverMaterials(materials, { sessionId: target.sessionId, targetLabel: target.label }).then((result) => {
-        if (!result.ok) {
-          notify("error", t("dnd.failed", { message: result.reason || "" }), null, 3600);
-          return;
-        }
-        let navigated = false;
-        if (opts.uiWorkspace && typeof opts.uiWorkspace.openSession === "function") {
-          try {
-            opts.uiWorkspace.openSession(target.sessionId);
-            navigated = true;
-          } catch (error) {
-            console.warn("[pappers-hall] openSession failed", error);
-          }
-        }
-        if (!navigated && target.node && typeof target.node.click === "function") {
-          try {
-            target.node.click();
-          } catch (error) {
-            console.warn("[pappers-hall] session row click failed", error);
-          }
-        }
-        notify("success", t("dnd.queuedSession", { title: target.label || "" }), {
-          label: t("common.undo"),
-          onClick: () => {
-            pendingStore.remove(result.bundleId);
-            notify("info", t("dnd.undone"), null, 2200);
-          }
-        }, 9e3);
-      });
-      return;
-    }
-    if (target.kind === "new" && opts.uiWorkspace && typeof opts.uiWorkspace.startSession === "function") {
-      deliverMaterials(materials, { targetLabel: target.label }).then((result) => {
-        if (!result.ok) {
-          notify("error", t("dnd.failed", { message: result.reason || "" }), null, 3600);
-          return;
-        }
-        const token = result.result && result.result.token ? result.result.token : "";
-        const workspaceId = typeof opts.getWorkspaceId === "function" ? opts.getWorkspaceId() : void 0;
-        try {
-          opts.uiWorkspace.startSession(workspaceId, { prompt: token, whenDraftExists: "append" });
-          pendingStore.remove(result.bundleId);
-          notify("success", t("dnd.startedNew"), null, 4e3);
-        } catch (error) {
-          notify("warning", t("dnd.failed", { message: error.message || "" }), null, 3600);
-        }
-      });
-      return;
-    }
-    deliverMaterials(materials, {}).then((result) => {
-      if (!result.ok) {
-        notify("error", t("dnd.failed", { message: result.reason || "" }), null, 3600);
-        return;
-      }
-      notify(result.inserted ? "success" : "warning", result.inserted ? t("dnd.inserted", { count: materials.length }) : t("dnd.queued", { count: materials.length }), {
-        label: t("common.undo"),
-        onClick: () => {
-          pendingStore.remove(result.bundleId);
-          notify("info", t("dnd.undone"), null, 2200);
-        }
-      }, 9e3);
-    });
-  };
-  document.addEventListener("dragstart", onDragStart, true);
-  document.addEventListener("dragend", onDragEnd, true);
-  document.addEventListener("dragover", onDragOver, true);
-  document.addEventListener("dragleave", onDragLeave, true);
-  document.addEventListener("drop", onDrop, true);
-  return () => {
-    installed2 = false;
-    document.removeEventListener("dragstart", onDragStart, true);
-    document.removeEventListener("dragend", onDragEnd, true);
-    document.removeEventListener("dragover", onDragOver, true);
-    document.removeEventListener("dragleave", onDragLeave, true);
-    document.removeEventListener("drop", onDrop, true);
-    if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-    overlay = null;
-  };
-}
-
-// src/surfaces/reader/figures-panel.jsx
 function ReaderFiguresPanel(props) {
   const t = props.t;
   const [state, setState] = import_react27.default.useState({ status: "loading", items: [], error: null });
@@ -29722,54 +29760,30 @@ function DrawerBody(props) {
 var import_react44 = __toESM(require("react"), 1);
 
 // src/core/cite-token.js
-var TOKEN_PATTERN = /bundle=bn-/;
-var TOKEN_BLOCK = /^\s*⟦Pappers-Hall[^⟧]*⟧\s*$/;
 var COMPOSER_SELECTOR = '[data-composer-input="true"]';
-function ownsTokenDirectly(element2) {
-  if (!element2 || element2.nodeType !== 1) return false;
-  for (let i = 0; i < element2.childNodes.length; i += 1) {
-    const child = element2.childNodes[i];
-    if (child && child.nodeType === 3 && TOKEN_PATTERN.test(child.nodeValue || "")) return true;
-  }
-  return false;
-}
-function tokenOwner(node, composer2) {
-  let element2 = node && node.nodeType === 3 ? node.parentElement : node;
-  let fallback = null;
-  while (element2 && element2 !== composer2) {
-    if (ownsTokenDirectly(element2)) return element2;
-    if (!fallback && element2.tagName === "SPAN") fallback = element2;
-    element2 = element2.parentElement;
-  }
-  return fallback && fallback !== composer2 ? fallback : null;
-}
-function isPureToken(element2) {
-  if (!element2 || element2.nodeType !== 1) return false;
-  const text2 = element2.textContent || "";
-  return TOKEN_BLOCK.test(text2) && TOKEN_PATTERN.test(text2);
-}
-var HISTORY_TOKEN = /⟦Pappers-Hall[\s\S]*?⟧/g;
-var PLUGIN_CHROME = ".ph-app, .ph-center, .ph-sidebar, .ph-settings, .ph-dock, .ph-refcard, .ph-citetoken-history";
-function historyLabel(tokenText) {
-  const inner = String(tokenText || "").replace(/^⟦Pappers-Hall\s*/, "").replace(/⟧$/, "");
-  const summary = inner.replace(/\s*·\s*bundle=bn-[a-f0-9]+/i, "").replace(/\s+/g, " ").trim();
+var TOKEN_IN_TEXT = /@论文中心\([^)\n]{1,120}?bn-[a-f0-9]{12}\)|⟦Pappers-Hall[\s\S]*?⟧/g;
+var PLUGIN_CHROME = ".ph-app, .ph-center, .ph-sidebar, .ph-settings, .ph-dock, .ph-refcard";
+function tokenLabel(tokenText) {
+  const raw = String(tokenText || "");
+  const inner = raw.startsWith("@\u8BBA\u6587\u4E2D\u5FC3(") ? raw.replace(/^@论文中心\(/, "").replace(/\)$/, "") : raw.replace(/^⟦Pappers-Hall\s*/, "").replace(/⟧$/, "");
+  const summary = inner.replace(/\s*·\s*(bundle=)?bn-[a-f0-9]+/i, "").replace(/\s+/g, " ").trim();
   if (summary === "") return "\u5F15\u7528\u6750\u6599";
   return summary.length > 46 ? summary.slice(0, 45) + "\u2026" : summary;
 }
-function decorateTextNode(node) {
+function decorateTextNode(node, surface) {
   const text2 = node.nodeValue || "";
-  if (!text2.includes("\u27E6Pappers-Hall") || !text2.includes("bundle=bn-")) return false;
+  if (!/bn-[a-f0-9]{12}/.test(text2)) return false;
+  if (!text2.includes("@\u8BBA\u6587\u4E2D\u5FC3(") && !text2.includes("\u27E6Pappers-Hall")) return false;
   const parent = node.parentElement;
-  if (!parent || parent.closest(COMPOSER_SELECTOR) || parent.closest(PLUGIN_CHROME)) return false;
-  if (parent.closest('[data-ph-citetoken-history="1"]')) return false;
-  HISTORY_TOKEN.lastIndex = 0;
+  if (!parent) return false;
+  if (parent.closest(PLUGIN_CHROME)) return false;
+  if (parent.closest(COMPOSER_SELECTOR)) return false;
+  if (parent.closest('[data-ph-citetoken="1"], .ph-citetoken-history')) return false;
+  TOKEN_IN_TEXT.lastIndex = 0;
   const spans = [];
   let match;
-  while ((match = HISTORY_TOKEN.exec(text2)) !== null) spans.push({ start: match.index, end: match.index + match[0].length, token: match[0] });
+  while ((match = TOKEN_IN_TEXT.exec(text2)) !== null) spans.push({ start: match.index, end: match.index + match[0].length, token: match[0] });
   if (spans.length === 0) return false;
-  const owner = parent;
-  const ownerText = owner.textContent || "";
-  if (!ownerText.includes("\u27E6Pappers-Hall")) return false;
   const pieces = [];
   let cursor = 0;
   for (const span of spans) {
@@ -29784,10 +29798,17 @@ function decorateTextNode(node) {
     let next;
     if (piece.token !== void 0) {
       next = document.createElement("span");
-      next.className = "ph-citetoken-history";
-      next.setAttribute("data-ph-citetoken-history", "1");
-      next.setAttribute("data-ph-citetoken-label", historyLabel(piece.token));
-      next.setAttribute("title", "Pappers-Hall \u5F15\u7528\u6750\u6599\uFF08\u539F\u6587\u4ECD\u4FDD\u7559\uFF0C\u53EF\u590D\u5236\uFF09");
+      const label = tokenLabel(piece.token);
+      if (surface === "composer") {
+        next.className = "ph-citetoken";
+        next.setAttribute("data-ph-citetoken", "1");
+        next.setAttribute("title", "Pappers-Hall \u5F15\u7528 \xB7 " + label);
+      } else {
+        next.className = "ph-citetoken-history";
+        next.setAttribute("data-ph-citetoken-history", "1");
+        next.setAttribute("title", "Pappers-Hall \u5F15\u7528\u6750\u6599\uFF08\u539F\u6587\u4FDD\u7559\uFF0C\u53EF\u590D\u5236\uFF09");
+      }
+      next.setAttribute("data-ph-citetoken-label", label);
       next.textContent = piece.token;
     } else {
       next = document.createTextNode(piece.text);
@@ -29797,76 +29818,38 @@ function decorateTextNode(node) {
   }
   return true;
 }
-function scanHistory() {
+function scanTokens() {
   if (typeof document === "undefined") return;
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
   const queue2 = [];
   let node = walker.nextNode();
   while (node) {
     const text2 = node.nodeValue || "";
-    if (text2.includes("\u27E6Pappers-Hall") && text2.includes("bundle=bn-")) queue2.push(node);
+    if (/bn-[a-f0-9]{12}/.test(text2) && (text2.includes("@\u8BBA\u6587\u4E2D\u5FC3(") || text2.includes("\u27E6Pappers-Hall"))) {
+      const parent = node.parentElement;
+      if (parent && !parent.closest(COMPOSER_SELECTOR)) queue2.push({ node, surface: "history" });
+    }
     node = walker.nextNode();
   }
-  for (const target of queue2) {
+  for (const entry of queue2) {
     try {
-      decorateTextNode(target);
+      decorateTextNode(entry.node, entry.surface);
     } catch (error) {
     }
   }
-}
-function clearTokenMark(element2) {
-  if (!element2 || !element2.classList) return;
-  element2.classList.remove("ph-citetoken");
-  element2.removeAttribute("data-ph-citetoken");
-  if (element2.getAttribute("title") === "\u5DF2\u5F15\u7528 Pappers-Hall \u6750\u6599") element2.removeAttribute("title");
-}
-function scan() {
-  if (typeof document === "undefined") return;
-  const composers = document.querySelectorAll(COMPOSER_SELECTOR);
-  composers.forEach((composer2) => {
-    composer2.querySelectorAll(".ph-citetoken").forEach((element2) => {
-      if (!isPureToken(element2)) clearTokenMark(element2);
-    });
-    const walker = document.createTreeWalker(composer2, NodeFilter.SHOW_TEXT, null);
-    let node = walker.nextNode();
-    while (node) {
-      if (TOKEN_PATTERN.test(node.nodeValue || "")) {
-        const owner = tokenOwner(node, composer2);
-        if (owner && isPureToken(owner)) {
-          if (!owner.classList.contains("ph-citetoken")) {
-            owner.classList.add("ph-citetoken");
-            owner.setAttribute("data-ph-citetoken", "1");
-            owner.setAttribute("title", "\u5DF2\u5F15\u7528 Pappers-Hall \u6750\u6599");
-          }
-        } else if (owner) {
-          clearTokenMark(owner);
-        }
-      }
-      node = walker.nextNode();
-    }
-  });
 }
 var installed3 = 0;
 var observer = null;
 var timer = null;
 var frame = null;
-var historyFrame = null;
 function schedule() {
   if (frame != null) return;
   frame = requestAnimationFrame(() => {
     frame = null;
     try {
-      scan();
+      scanTokens();
     } catch (error) {
     }
-    if (historyFrame != null) return;
-    historyFrame = requestAnimationFrame(() => {
-      historyFrame = null;
-      try {
-        scanHistory();
-      } catch (error) {
-      }
-    });
   });
 }
 function installCitationTokens() {
@@ -29881,7 +29864,6 @@ function installCitationTokens() {
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     timer = setInterval(schedule, 1500);
     schedule();
-    scanHistory();
   }
   return () => {
     installed3 = Math.max(0, installed3 - 1);
@@ -29897,10 +29879,6 @@ function installCitationTokens() {
     if (frame != null) {
       cancelAnimationFrame(frame);
       frame = null;
-    }
-    if (historyFrame != null) {
-      cancelAnimationFrame(historyFrame);
-      historyFrame = null;
     }
   };
 }
@@ -29923,41 +29901,17 @@ function usePendingSnapshot() {
 }
 function ComposerEntry(props) {
   const t = props.t;
-  const inputActions = props.inputActions;
-  const sessionId = props.sessionId;
-  const snapshot4 = usePendingSnapshot();
-  const pending = snapshot4.bundles.filter(
-    (bundle) => !bundle.added && bundle.token && (!bundle.sessionId || bundle.sessionId === sessionId)
-  );
-  const [adding, setAdding] = import_react44.default.useState(false);
-  const materialCount = pending.reduce((sum, bundle) => sum + (Array.isArray(bundle.materials) ? bundle.materials.length : 0), 0);
-  const addPending = () => {
-    if (pending.length === 0) {
-      if (props.openPapers) props.openPapers();
-      return;
-    }
-    if (adding) return;
-    setAdding(true);
-    const allMaterials = pending.flatMap((bundle) => bundle.materials || []);
-    commitReferenceBatch(allMaterials, { sessionId }).then(({ result }) => {
-      if (insertTokenIntoComposer(result.token)) pendingStore.markAdded(result.bundleId);
-      else notify("warning", t("dnd.pendingInsert"), { label: t("dnd.addManual") }, 6e3);
-    }).catch((error) => notify("error", t("dock.failed") + " \xB7 " + String(error && error.message || error), null, 5e3)).then(() => setAdding(false));
-  };
-  const hasRefs = pending.length > 0;
   return h(
     "button",
     {
       type: "button",
-      className: "ph-composer-entry" + (hasRefs ? " ph-composer-entry--refs" : ""),
-      title: hasRefs ? t("composer.refsHint", { count: materialCount }) : t("composer.papers"),
-      "aria-label": hasRefs ? t("composer.refsHint", { count: materialCount }) : t("composer.papers"),
-      disabled: adding,
-      onClick: addPending
+      className: "ph-composer-entry",
+      title: t("composer.papers"),
+      "aria-label": t("composer.papers"),
+      onClick: () => props.openPapers && props.openPapers()
     },
-    h(Icon, { name: hasRefs ? "quote" : "book", size: 14 }),
-    h("span", { className: "ph-composer-entry__label" }, hasRefs ? t("composer.refs", { count: materialCount }) : t("composer.papers")),
-    adding ? h("span", { className: "ph-spinner ph-spinner--inline", "aria-hidden": "true" }) : null
+    h(Icon, { name: "book", size: 14 }),
+    h("span", { className: "ph-composer-entry__label" }, t("composer.papers"))
   );
 }
 function DockBody(props) {
@@ -29981,17 +29935,18 @@ function DockBody(props) {
       if (!bundle.token) return;
       insertingRef.current[bundle.bundleId] = true;
       const attempt = (retries) => {
-        if (insertTokenIntoComposer(bundle.token)) {
+        if (insertTokenIntoComposer(bundle.token) && composerHasToken(bundle.token)) {
           pendingStore.markAdded(bundle.bundleId);
+          insertingRef.current[bundle.bundleId] = false;
           return;
         }
-        if (retries > 0) setTimeout(() => attempt(retries - 1), 300);
+        if (retries > 0) setTimeout(() => attempt(retries - 1), 260);
         else {
           insertingRef.current[bundle.bundleId] = false;
           notify("warning", t("dnd.pendingInsert"), { label: t("dnd.addManual"), onClick: () => insertBundle(bundle) }, 9e3);
         }
       };
-      setTimeout(() => attempt(12), 150);
+      setTimeout(() => attempt(14), 180);
     });
   }, [bundles.map((bundle) => bundle.bundleId + ":" + bundle.added + ":" + Boolean(bundle.autoInsert)).join(","), t]);
   const attemptInsert = import_react44.default.useCallback(
@@ -30024,7 +29979,7 @@ function DockBody(props) {
       });
       insertingRef.current[bundle.bundleId] = true;
       setBusyId(bundle.bundleId);
-      const first = attemptInsert(bundle);
+      const first = attemptInsert(bundle) && composerHasToken(bundle.token);
       if (first) {
         pendingStore.markAdded(bundle.bundleId);
         setBusyId(null);
@@ -30032,7 +29987,7 @@ function DockBody(props) {
         return;
       }
       setTimeout(() => {
-        const second = attemptInsert(bundle);
+        const second = attemptInsert(bundle) && composerHasToken(bundle.token);
         if (second) {
           pendingStore.markAdded(bundle.bundleId);
         } else {
@@ -30044,6 +29999,11 @@ function DockBody(props) {
     },
     [attemptInsert, busyId, inputActions, push, t]
   );
+  const clearAllReferences = import_react44.default.useCallback(async () => {
+    const tokens = snapshot4.bundles.map((bundle) => bundle.token).filter(Boolean);
+    tokens.forEach((token) => removeTokenFromComposer(token));
+    pendingStore.clear();
+  }, [snapshot4.bundles]);
   if (bundles.length === 0) {
     return h(
       "div",
@@ -30117,11 +30077,13 @@ function DockBody(props) {
                 className: "ph-refcard__undo",
                 title: t("dock.card.undo"),
                 onClick: () => {
-                  pendingStore.remove(bundle.bundleId);
-                  push("info", t("dock.card.removed"), null, 2e3);
+                  dropPendingReferences(bundle.bundleId).then(() => push("info", t("dock.card.removed"), null, 2e3)).catch(() => push("error", t("dock.failed"), null, 3e3));
                 }
               }) : null,
-              h(IconButton, { icon: "close", className: "ph-refcard__remove", title: t("dock.remove"), onClick: () => pendingStore.remove(bundle.bundleId) }),
+              h(IconButton, { icon: "close", className: "ph-refcard__remove", title: t("dock.remove"), onClick: () => {
+                dropPendingReferences(bundle.bundleId).catch(() => {
+                });
+              } }),
               h(
                 "button",
                 {
@@ -30149,7 +30111,10 @@ function DockBody(props) {
                   h("span", { className: "ph-refcard__materialIcon" }, h(Icon, { name: materialIcon(material.kind), size: 13 })),
                   h("span", { className: "ph-refcard__materialTitle", title: material.title || material.figureLabel || material.id }, material.title || material.figureLabel || material.id),
                   h("span", { className: "ph-refcard__materialMeta" }, material.page ? t("reader.pages", { page: material.page }) : t("dock.item." + (material.kind || "paper"))),
-                  h(IconButton, { icon: "close", className: "ph-refcard__materialRemove", title: t("dock.remove"), onClick: () => pendingStore.removeMaterial(bundle.bundleId, index) })
+                  h(IconButton, { icon: "close", className: "ph-refcard__materialRemove", title: t("dock.remove"), onClick: () => {
+                    dropPendingMaterial(bundle.bundleId, index).catch(() => {
+                    });
+                  } })
                 )
               )
             ),
@@ -30158,8 +30123,8 @@ function DockBody(props) {
               { className: "ph-refcard__foot" },
               h("span", { className: "ph-refcard__hint" }, t("dock.card.hint")),
               h("button", { type: "button", className: "ph-linkbtn", onClick: () => {
-                pendingStore.clear();
-                push("info", t("dock.card.cleared"), null, 2e3);
+                clearAllReferences().then(() => push("info", t("dock.card.cleared"), null, 2e3)).catch(() => {
+                });
               } }, t("dock.card.clear"))
             )
           ) : null
@@ -30167,8 +30132,8 @@ function DockBody(props) {
       }),
       hiddenCount > 0 ? h("div", { className: "ph-dock__more" }, t("dock.card.more", { count: hiddenCount })) : null,
       bundles.length > 1 ? h("button", { type: "button", className: "ph-dock__clearAll", onClick: () => {
-        pendingStore.clear();
-        push("info", t("dock.card.cleared"), null, 2e3);
+        clearAllReferences().then(() => push("info", t("dock.card.cleared"), null, 2e3)).catch(() => {
+        });
       } }, t("dock.clearAll")) : null,
       toasts.length > 0 ? h(
         "div",

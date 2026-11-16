@@ -86,6 +86,48 @@ export function insertTokenIntoComposer(token, options) {
   }
 }
 
+/** Whether the composer currently contains this citation token. */
+export function composerHasToken(token) {
+  if (!token) return false
+  try {
+    const node = typeof document !== 'undefined' ? document.querySelector('[data-composer-input="true"]') : null
+    if (!node) return false
+    return String(node.innerText || '').includes(String(token))
+  } catch {
+    return false
+  }
+}
+
+/** Strip one citation token back out of the composer draft. */
+export function removeTokenFromComposer(token) {
+  if (!composer || typeof composer.setDraft !== 'function' || !token) return false
+  let text = ''
+  try {
+    const node = typeof document !== 'undefined' ? document.querySelector('[data-composer-input="true"]') : null
+    text = node ? String(node.innerText || '') : ''
+  } catch {
+    text = ''
+  }
+  if (!text.includes(token)) return false
+  const next = text.replace(token, '').replace(/\n{3,}/g, '\n\n').replace(/^\s+|\s+$/g, '')
+  try {
+    composer.setDraft(next)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Replace the whole composer draft (used when a reference token is rebuilt). */
+export function readComposerText() {
+  try {
+    const node = typeof document !== 'undefined' ? document.querySelector('[data-composer-input="true"]') : null
+    return node ? String(node.innerText || '') : ''
+  } catch {
+    return ''
+  }
+}
+
 function commitItem(material) {
   const item = { kind: material.kind, id: String(material.id) }
   if (material.page) item.page = Number(material.page)

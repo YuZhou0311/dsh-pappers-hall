@@ -57,7 +57,7 @@ export const ROUTE_PREFIX = '/pappers-hall'
 /**
  * Fixed system-prompt guidance for reference-bundle tokens.
  *
- * The Client inserts a token like `⟦Pappers-Hall 2 篇论文 · bundle=bn-…⟧` into the
+ * The Client inserts a compact token like `@论文中心(2 篇论文 · bn-…)` into the
  * chat draft; this section teaches the model to turn that token into the
  * `scope=reference_bundle` tool call instead of guessing or scanning the whole
  * library. Registered through the optional `systemPrompt` service and disposed
@@ -65,9 +65,9 @@ export const ROUTE_PREFIX = '/pappers-hall'
  */
 export const MATERIALS_PROMPT =
   'Pappers-Hall materials can appear in the conversation as a token like ' +
-  '`⟦Pappers-Hall 2 篇论文 + 1 张图 · bundle=bn-xxxxxxxxxxxx⟧` or ' +
-  '`⟦Pappers-Hall 1 条笔记《标题》 · bundle=bn-xxxxxxxxxxxx⟧`. When such a token is present, ' +
-  'call papers_search with scope:"reference_bundle" and bundle_id set to the `bn-…` value inside the token, ' +
+  '`@论文中心(2 篇论文 + 1 张图 · bn-xxxxxxxxxxxx)` or ' +
+  '`@论文中心(1 条笔记《标题》 · bn-xxxxxxxxxxxx)`. When such a token is present, ' +
+  'call papers_search with scope:"reference_bundle" and bundle_id set to the `bn-…` id inside the token, ' +
   'and read only that material set. For notes use kinds:["note"]: bundle-scoped results include the note id, ' +
   'title, snippet and text, so do not guess which note was attached and do not scan the whole note library; ' +
   'use notes_get with the returned note id if the full note is needed. For papers use papers_get_passage or ' +

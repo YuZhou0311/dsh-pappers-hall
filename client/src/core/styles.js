@@ -2492,41 +2492,59 @@ button.ph-iconbtn { font: inherit; }
 @keyframes ph-refcard-in { from { opacity: 0; transform: translateY(4px) scale(0.995); } to { opacity: 1; transform: none; } }
 @keyframes ph-refcard-expand { from { opacity: 0; } to { opacity: 1; } }
 
-/* composer token pill: only adds a class, never changes text */
+/* Citation tokens: one chip for the composer and one for read-only history.
+   The raw protocol text stays in the DOM (copy + model), the visible label is
+   the compact summary carried by data-ph-citetoken-label. */
 [data-composer-input='true'] .ph-citetoken,
-[data-composer-input='true'] [data-ph-citetoken='1'] {
+[data-composer-input='true'] [data-ph-citetoken='1'],
+.ph-citetoken-history {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   max-width: 100%;
-  padding: 1px 8px;
+  padding: 1px 7px;
   margin: 0 1px;
-  border-radius: var(--ph-r-sm);
-  background: var(--ph-accent-soft) !important;
-  border: 1px solid var(--ph-accent-line) !important;
-  color: color-mix(in srgb, var(--ph-accent) 86%, var(--ph-ink)) !important;
-  font-size: var(--ph-fs-12) !important;
-  line-height: 1.55 !important;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ph-accent) 7%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--ph-accent) 22%, transparent) !important;
+  color: color-mix(in srgb, var(--ph-accent) 82%, var(--ph-ink)) !important;
+  font-size: 0 !important;
+  line-height: 1.5 !important;
   font-family: inherit !important;
-  font-weight: var(--ph-fw-medium) !important;
   letter-spacing: 0 !important;
   white-space: nowrap;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
-  cursor: text;
   vertical-align: baseline;
+  cursor: text;
 }
 [data-composer-input='true'] .ph-citetoken::before,
-[data-composer-input='true'] [data-ph-citetoken='1']::before {
+[data-composer-input='true'] [data-ph-citetoken='1']::before,
+.ph-citetoken-history::before {
   content: '';
-  width: 12px;
-  height: 12px;
+  display: inline-block;
+  width: 11px;
+  height: 11px;
   flex: none;
   background: currentColor;
   -webkit-mask: var(--ph-citetoken-mask) center / contain no-repeat;
   mask: var(--ph-citetoken-mask) center / contain no-repeat;
 }
-[data-composer-input='true'] .ph-citetoken:hover { background: var(--ph-accent-soft-2) !important; }
+[data-composer-input='true'] .ph-citetoken::after,
+[data-composer-input='true'] [data-ph-citetoken='1']::after,
+.ph-citetoken-history::after {
+  content: attr(data-ph-citetoken-label);
+  font-family: var(--ph-font-ui);
+  font-size: var(--ph-fs-12);
+  line-height: 1.5;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-composer-input='true'] .ph-citetoken:hover,
+.ph-citetoken-history:hover {
+  background: color-mix(in srgb, var(--ph-accent) 11%, transparent) !important;
+}
 :root,
 body {
   --ph-citetoken-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5V5.5A1.5 1.5 0 0 1 5.5 4H19v15.5'/%3E%3Cpath d='M4 19.5A1.5 1.5 0 0 1 5.5 18H19'/%3E%3Cpath d='M8 8h7M8 11.5h5'/%3E%3C/svg%3E");
@@ -5342,38 +5360,6 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   letter-spacing: 0;
 }
 
-/* History citation chip: keeps the message text, replaces only the raw protocol
-   token with a readable reference label. */
-.ph-citetoken-history {
-  display: inline;
-  padding: 1px 6px;
-  border-radius: 5px;
-  border: 1px solid var(--ph-accent-line);
-  background: var(--ph-accent-soft);
-  color: var(--ph-accent-text);
-  font-size: 0;
-  white-space: nowrap;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-}
-.ph-citetoken-history::before {
-  content: '';
-  display: inline-block;
-  width: 11px;
-  height: 11px;
-  margin-right: 4px;
-  vertical-align: -1px;
-  background: currentColor;
-  -webkit-mask: var(--ph-citetoken-mask) center / contain no-repeat;
-  mask: var(--ph-citetoken-mask) center / contain no-repeat;
-}
-.ph-citetoken-history::after {
-  content: attr(data-ph-citetoken-label);
-  font-family: var(--ph-font-ui);
-  font-size: var(--ph-fs-12);
-  line-height: 1.5;
-  letter-spacing: 0;
-}
 `
 
 export function installStyles(ctx) {

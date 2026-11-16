@@ -11,8 +11,8 @@ import { h } from '../core/dom.js'
 import { Icon } from '../core/icons.jsx'
 import { Badge, Button, IconButton, useToasts } from '../core/primitives.jsx'
 import { pendingStore } from '../core/pending.js'
-import { commitReferenceBatch } from '../core/reference-actions.js'
-import { insertTokenIntoComposer, registerComposerBridge } from '../core/dnd.js'
+import { commitReferenceBatch, dropPendingReferences, dropPendingMaterial } from '../core/reference-actions.js'
+import { insertTokenIntoComposer, registerComposerBridge, removeTokenFromComposer, composerHasToken } from '../core/dnd.js'
 import { installCitationTokens } from '../core/cite-token.js'
 import { FeedbackHost, notify } from '../core/feedback.js'
 
@@ -45,45 +45,17 @@ function usePendingSnapshot() {
  */
 export function ComposerEntry(props) {
   const t = props.t
-  const inputActions = props.inputActions
-  const sessionId = props.sessionId
-  const snapshot = usePendingSnapshot()
-  const pending = snapshot.bundles.filter(
-    (bundle) => !bundle.added && bundle.token && (!bundle.sessionId || bundle.sessionId === sessionId),
-  )
-  const [adding, setAdding] = React.useState(false)
-  const materialCount = pending.reduce((sum, bundle) => sum + (Array.isArray(bundle.materials) ? bundle.materials.length : 0), 0)
-  const addPending = () => {
-    if (pending.length === 0) {
-      if (props.openPapers) props.openPapers()
-      return
-    }
-    if (adding) return
-    setAdding(true)
-    const allMaterials = pending.flatMap((bundle) => bundle.materials || [])
-    // Merge legacy multi-bundle stacks into one set before touching the draft.
-    commitReferenceBatch(allMaterials, { sessionId })
-      .then(({ result }) => {
-        if (insertTokenIntoComposer(result.token)) pendingStore.markAdded(result.bundleId)
-        else notify('warning', t('dnd.pendingInsert'), { label: t('dnd.addManual') }, 6000)
-      })
-      .catch((error) => notify('error', t('dock.failed') + ' · ' + String((error && error.message) || error), null, 5000))
-      .then(() => setAdding(false))
-  }
-  const hasRefs = pending.length > 0
   return h(
     'button',
     {
       type: 'button',
-      className: 'ph-composer-entry' + (hasRefs ? ' ph-composer-entry--refs' : ''),
-      title: hasRefs ? t('composer.refsHint', { count: materialCount }) : t('composer.papers'),
-      'aria-label': hasRefs ? t('composer.refsHint', { count: materialCount }) : t('composer.papers'),
-      disabled: adding,
-      onClick: addPending,
+      className: 'ph-composer-entry',
+      title: t('composer.papers'),
+      'aria-label': t('composer.papers'),
+      onClick: () => props.openPapers && props.openPapers(),
     },
-    h(Icon, { name: hasRefs ? 'quote' : 'book', size: 14 }),
-    h('span', { className: 'ph-composer-entry__label' }, hasRefs ? t('composer.refs', { count: materialCount }) : t('composer.papers')),
-    adding ? h('span', { className: 'ph-spinner ph-spinner--inline', 'aria-hidden': 'true' }) : null,
+    h(Icon, { name: 'book', size: 14 }),
+    h('span', { className: 'ph-composer-entry__label' }, t('composer.papers')),
   )
 }
 
@@ -111,19 +83,25 @@ export function DockBody(props) {
       if (!bundle.token) return
       insertingRef.current[bundle.bundleId] = true
       const attempt = (retries) => {
-        if (insertTokenIntoComposer(bundle.token)) {
+        // Marking the bundle added is only honest once the token is really in
+        // the draft: a composer that is still mounting can accept the insert
+        // call and drop the text.
+        if (insertTokenIntoComposer(bundle.token) && composerHasToken(bundle.token)) {
           // The card's own 已加入草稿 badge + undo button is the feedback; a
           // second generic toast would duplicate and crowd the composer.
           pendingStore.markAdded(bundle.bundleId)
+          // Reset the guard: the same bundle id gets a new token when the set
+          // grows, and that token must be allowed to enter the draft too.
+          insertingRef.current[bundle.bundleId] = false
           return
         }
-        if (retries > 0) setTimeout(() => attempt(retries - 1), 300)
+        if (retries > 0) setTimeout(() => attempt(retries - 1), 260)
         else {
           insertingRef.current[bundle.bundleId] = false
           notify('warning', t('dnd.pendingInsert'), { label: t('dnd.addManual'), onClick: () => insertBundle(bundle) }, 9000)
         }
       }
-      setTimeout(() => attempt(12), 150)
+      setTimeout(() => attempt(14), 180)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bundles.map((bundle) => bundle.bundleId + ':' + bundle.added + ':' + Boolean(bundle.autoInsert)).join(','), t])
@@ -159,7 +137,7 @@ export function DockBody(props) {
       })
       insertingRef.current[bundle.bundleId] = true
       setBusyId(bundle.bundleId)
-      const first = attemptInsert(bundle)
+      const first = attemptInsert(bundle) && composerHasToken(bundle.token)
       if (first) {
         pendingStore.markAdded(bundle.bundleId)
         setBusyId(null)
@@ -167,7 +145,7 @@ export function DockBody(props) {
         return
       }
       setTimeout(() => {
-        const second = attemptInsert(bundle)
+        const second = attemptInsert(bundle) && composerHasToken(bundle.token)
         if (second) {
           pendingStore.markAdded(bundle.bundleId)
         } else {
@@ -179,6 +157,12 @@ export function DockBody(props) {
     },
     [attemptInsert, busyId, inputActions, push, t],
   )
+
+  const clearAllReferences = React.useCallback(async () => {
+    const tokens = snapshot.bundles.map((bundle) => bundle.token).filter(Boolean)
+    tokens.forEach((token) => removeTokenFromComposer(token))
+    pendingStore.clear()
+  }, [snapshot.bundles])
 
   if (bundles.length === 0) {
     return h(
@@ -254,12 +238,13 @@ export function DockBody(props) {
                     className: 'ph-refcard__undo',
                     title: t('dock.card.undo'),
                     onClick: () => {
-                      pendingStore.remove(bundle.bundleId)
-                      push('info', t('dock.card.removed'), null, 2000)
+                      dropPendingReferences(bundle.bundleId)
+                        .then(() => push('info', t('dock.card.removed'), null, 2000))
+                        .catch(() => push('error', t('dock.failed'), null, 3000))
                     },
                   })
                 : null,
-              h(IconButton, { icon: 'close', className: 'ph-refcard__remove', title: t('dock.remove'), onClick: () => pendingStore.remove(bundle.bundleId) }),
+              h(IconButton, { icon: 'close', className: 'ph-refcard__remove', title: t('dock.remove'), onClick: () => { dropPendingReferences(bundle.bundleId).catch(() => {}) } }),
               h(
                 'button',
                 {
@@ -288,7 +273,7 @@ export function DockBody(props) {
                       h('span', { className: 'ph-refcard__materialIcon' }, h(Icon, { name: materialIcon(material.kind), size: 13 })),
                       h('span', { className: 'ph-refcard__materialTitle', title: material.title || material.figureLabel || material.id }, material.title || material.figureLabel || material.id),
                       h('span', { className: 'ph-refcard__materialMeta' }, material.page ? t('reader.pages', { page: material.page }) : t('dock.item.' + (material.kind || 'paper'))),
-                      h(IconButton, { icon: 'close', className: 'ph-refcard__materialRemove', title: t('dock.remove'), onClick: () => pendingStore.removeMaterial(bundle.bundleId, index) }),
+                      h(IconButton, { icon: 'close', className: 'ph-refcard__materialRemove', title: t('dock.remove'), onClick: () => { dropPendingMaterial(bundle.bundleId, index).catch(() => {}) } }),
                     ),
                   ),
                 ),
@@ -296,7 +281,7 @@ export function DockBody(props) {
                   'div',
                   { className: 'ph-refcard__foot' },
                   h('span', { className: 'ph-refcard__hint' }, t('dock.card.hint')),
-                  h('button', { type: 'button', className: 'ph-linkbtn', onClick: () => { pendingStore.clear(); push('info', t('dock.card.cleared'), null, 2000) } }, t('dock.card.clear')),
+                  h('button', { type: 'button', className: 'ph-linkbtn', onClick: () => { clearAllReferences().then(() => push('info', t('dock.card.cleared'), null, 2000)).catch(() => {}) } }, t('dock.card.clear')),
                 ),
               )
             : null,
@@ -304,7 +289,7 @@ export function DockBody(props) {
       }),
       hiddenCount > 0 ? h('div', { className: 'ph-dock__more' }, t('dock.card.more', { count: hiddenCount })) : null,
       bundles.length > 1
-        ? h('button', { type: 'button', className: 'ph-dock__clearAll', onClick: () => { pendingStore.clear(); push('info', t('dock.card.cleared'), null, 2000) } }, t('dock.clearAll'))
+        ? h('button', { type: 'button', className: 'ph-dock__clearAll', onClick: () => { clearAllReferences().then(() => push('info', t('dock.card.cleared'), null, 2000)).catch(() => {}) } }, t('dock.clearAll'))
         : null,
       toasts.length > 0
         ? h(

@@ -55,26 +55,24 @@ export const PLUGIN_ID = 'dsh-pappers-hall'
 export const ROUTE_PREFIX = '/pappers-hall'
 
 /**
- * Fixed system-prompt guidance for reference-bundle tokens.
+ * Fixed system-prompt guidance for the composer reference chip.
  *
- * The Client inserts a compact mention like `@论文中心 2 篇论文` into the
- * chat draft; this section teaches the model to turn that token into the
- * `scope=reference_bundle` tool call instead of guessing or scanning the whole
- * library. Registered through the optional `systemPrompt` service and disposed
+ * The Client keeps the attachment out of the message text (it is a chip above
+ * the composer), so this section teaches the model to resolve it through
+ * `papers_references` and then read only that bundle. Registered through the optional `systemPrompt` service and disposed
  * with the other registrations.
  */
 export const MATERIALS_PROMPT =
-  'Pappers-Hall materials appear in the user message as a short mention like ' +
-  '`@论文中心 2 篇论文 + 1 张图` or `@论文中心 1 条笔记《标题》`. ' +
-  'When the message contains such a mention, call papers_references (no arguments) to get the attached ' +
-  'bundle_id and its material list, then call papers_search with scope:"reference_bundle" and that ' +
-  'bundle_id, and read only that material set. ' +
-  'For notes use kinds:["note"]: bundle-scoped results include the note id, ' +
+  'The user can attach Pappers-Hall materials (papers, figures, annotations, notes) to a message with the ' +
+  'reference chip above the composer. Nothing about that attachment appears in the message text, so when the ' +
+  'message asks about papers or notes, call papers_references (no arguments) once to get the attached bundle_id ' +
+  'and its material list. If it returns status:"empty", nothing is attached — answer from the library or ask. ' +
+  'When a bundle is returned, read it with papers_search scope:"reference_bundle" and that bundle_id instead of ' +
+  'scanning the whole library. For notes use kinds:["note"]: bundle-scoped results include the note id, ' +
   'title, snippet and text, so do not guess which note was attached and do not scan the whole note library; ' +
   'use notes_get with the returned note id if the full note is needed. For papers use papers_get_passage or ' +
-  'papers_get_figure with the same bundle_id. Use scope:"library" only when the user explicitly asks to search ' +
-  'the whole paper library. papers_get_figure returns the real figure image; when its JSON reports ' +
-  'image.status other than "ready", say the image is unavailable instead of describing it.'
+  'papers_get_figure with the same bundle_id. papers_get_figure returns the real figure image; when its JSON ' +
+  'reports image.status other than "ready", say the image is unavailable instead of describing it.'
 
 /** Stable system-prompt section name owned by this plugin. */
 export const MATERIALS_PROMPT_SECTION = 'plugin:pappers-hall-materials'

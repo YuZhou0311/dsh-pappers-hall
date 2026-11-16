@@ -4709,6 +4709,29 @@ export function createStore({ db, layout, fts5, config = {}, logger, manifest = 
     },
 
     /**
+     * `references.attach` — bind the pending bundle to a session.
+     *
+     * The composer chip is the only UI for references, so the bundle must be
+     * discoverable by the model without any token in the message: attaching it
+     * to the session makes `papers_references` return it.
+     *
+     * @param {{bundleId:string, sessionId?:string}} params attach request.
+     * @returns {object} the attached bundle identity.
+     */
+    referencesAttach(params = {}) {
+      const bundleId = String(params.bundleId ?? '')
+      if (bundleId === '') throw invalid('references.attach requires bundleId')
+      const row = db.prepare('SELECT * FROM bundles WHERE id = ?').get(bundleId)
+      if (row === undefined) throw notFound(`bundle ${bundleId} does not exist`, { bundleId })
+      const sessionId = typeof params.sessionId === 'string' && params.sessionId !== '' ? params.sessionId : null
+      if (sessionId !== null && row.session_id !== sessionId) {
+        db.prepare('UPDATE bundles SET session_id = ? WHERE id = ?').run(sessionId, bundleId)
+      }
+      recordEvent('references.attach', null, { bundleId, sessionId })
+      return { bundleId, sessionId: sessionId ?? row.session_id ?? null }
+    },
+
+    /**
      * `references.latest` — the newest active bundle for a session.
      *
      * The draft carries a compact `@论文中心 2 篇论文` mention instead of a long
@@ -4727,6 +4750,14 @@ export function createStore({ db, layout, fts5, config = {}, logger, manifest = 
         row = db
           .prepare("SELECT * FROM bundles WHERE session_id = ? AND state = 'active' ORDER BY created_at DESC, rowid DESC LIMIT 1")
           .get(params.sessionId)
+        // A reference attached before the Session existed has no session id yet;
+        // fall back to the newest unattached bundle so the first message still
+        // resolves its materials.
+        if (row === undefined) {
+          row = db
+            .prepare("SELECT * FROM bundles WHERE session_id IS NULL AND state = 'active' ORDER BY created_at DESC, rowid DESC LIMIT 1")
+            .get()
+        }
       } else {
         row = db.prepare("SELECT * FROM bundles WHERE state = 'active' ORDER BY created_at DESC, rowid DESC LIMIT 1").get()
       }

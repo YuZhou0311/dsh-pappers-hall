@@ -5360,6 +5360,65 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   letter-spacing: 0;
 }
 
+
+
+/* ============================ 14 composer reference chip ================== */
+/* One compact chip above the composer. It is the whole reference UI: no
+   protocol string is written into the draft. */
+.ph-refchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  align-self: flex-start;
+  max-width: min(560px, 100%);
+  margin: 0 0 2px;
+  padding: 1px 2px 1px 4px;
+  border: 1px solid var(--ph-line);
+  border-radius: 8px;
+  background: var(--ph-surface-1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.ph-refchip__main {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  height: 24px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ph-ink-2);
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  cursor: pointer;
+  border-radius: 5px;
+}
+.ph-refchip__main:hover { background: var(--ph-surface-2); color: var(--ph-ink); }
+.ph-refchip__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--ph-fw-medium); }
+.ph-refchip__chev { color: var(--ph-ink-4); flex: none; }
+.ph-refchip__remove { width: 20px; height: 20px; opacity: 0.55; }
+.ph-refchip:hover .ph-refchip__remove { opacity: 1; }
+.ph-refchip__panel {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  min-width: 260px;
+  max-width: 420px;
+  padding: 5px;
+  border: 1px solid var(--ph-line);
+  border-radius: 10px;
+  background: var(--ph-surface-1);
+  box-shadow: 0 12px 32px -18px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.ph-refchip__item { display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 4px; border-radius: 5px; font-size: var(--ph-fs-11); }
+.ph-refchip__item:hover { background: var(--ph-surface-2); }
+.ph-refchip__icon { color: var(--ph-ink-3); flex: none; display: inline-flex; }
+.ph-refchip__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ph-ink); }
+.ph-refchip__meta { flex: none; color: var(--ph-ink-4); font-variant-numeric: tabular-nums; }
+.ph-refchip__itemRemove { width: 18px; height: 18px; opacity: 0; }
+.ph-refchip__item:hover .ph-refchip__itemRemove { opacity: 0.8; }
+.ph-dock-slot { position: relative; }
 `
 
 export function installStyles(ctx) {

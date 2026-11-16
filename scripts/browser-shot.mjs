@@ -322,6 +322,84 @@ async function main() {
       const after = await evaluate(`(() => { const composer = document.querySelector('[data-composer-input="true"]'); return composer ? composer.innerText.slice(0, 120) : null })()`)
       console.log('setDraft probe:', JSON.stringify(setDraftTest), 'after:', JSON.stringify(after))
     }
+    if (STEPS.includes('probe-mention-picker')) {
+      const opened = await evaluate(`(() => {
+        const composer = document.querySelector('[data-composer-input="true"]')
+        if (!composer) return { ok: false }
+        composer.focus()
+        const selection = window.getSelection()
+        selection.selectAllChildren(composer)
+        selection.collapseToEnd()
+        document.execCommand('insertText', false, '@')
+        return { ok: true }
+      })()`)
+      await sleep(900)
+      const picker = await evaluate(`(() => {
+        const list = document.querySelector('[role=listbox], [data-input-trigger-menu], [class*=trigger], [class*=mention]')
+        return { hasPicker: Boolean(list), text: (list?.innerText || '').slice(0, 300), allDialogs: document.querySelectorAll('[role=listbox]').length }
+      })()`)
+      console.log('mention picker probe:', JSON.stringify(opened), JSON.stringify(picker))
+      await shot('probe-mention-picker')
+    }
+    if (STEPS.includes('probe-submit-hook')) {
+      const patched = await evaluate(`(() => {
+        const node = document.querySelector('.ph-composer-entry')
+        const key = Object.keys(node || {}).find((k) => k.startsWith('__reactFiber'))
+        let fiber = node && node[key]
+        let actions = null
+        for (let i = 0; i < 40 && fiber; i += 1) {
+          if (fiber.memoizedProps && fiber.memoizedProps.inputActions) { actions = fiber.memoizedProps.inputActions; break }
+          fiber = fiber.return
+        }
+        if (!actions) return { ok: false }
+        window.__phSubmitProbe = { called: 0 }
+        const original = actions.submit
+        actions.submit = function (...args) {
+          window.__phSubmitProbe.called += 1
+          return original.apply(this, args)
+        }
+        try { actions.setDraft('submit-probe-text') } catch (e) { return { ok: false, error: String(e) } }
+        return { ok: true }
+      })()`)
+      await sleep(500)
+      const clicked = await evaluate(`(() => {
+        const buttons = [...document.querySelectorAll('button')]
+        const send = buttons.find((b) => /发送|send/i.test((b.getAttribute('aria-label') || b.getAttribute('title') || '')))
+        if (!send) return { found: false, labels: buttons.map((b) => b.getAttribute('aria-label')).filter(Boolean).slice(0, 12) }
+        send.click()
+        return { found: true }
+      })()`)
+      await sleep(1500)
+      const probe = await evaluate("window.__phSubmitProbe ? window.__phSubmitProbe.called : -1")
+      console.log('submit hook probe:', JSON.stringify(patched), JSON.stringify(clicked), 'called:', probe)
+    }
+    if (STEPS.includes('probe-trigger-api')) {
+      const out = await evaluate(`(() => {
+        const services = window.__phServices || null
+        const result = { hasGlobal: Boolean(services) }
+        return result
+      })()`)
+      console.log('probe trigger globals:', JSON.stringify(out))
+      const keys = await evaluate(`(() => {
+        const node = document.querySelector('.ph-composer-entry')
+        const key = Object.keys(node || {}).find((k) => k.startsWith('__reactFiber'))
+        let fiber = node && node[key]
+        const found = {}
+        for (let i = 0; i < 60 && fiber; i += 1) {
+          const ctx = fiber.memoizedProps && fiber.memoizedProps.ctx
+          if (ctx && typeof ctx.get === 'function') {
+            const triggers = ctx.get('inputTriggers')
+            const inputs = ctx.get('inputState') || ctx.get('composer')
+            found.triggers = triggers ? Object.keys(triggers) : null
+            found.inputs = inputs ? Object.keys(inputs).slice(0, 40) : null
+            break
+          }
+          fiber = fiber.return
+        }
+        return found
+      })()`)
+      console.log('probe ctx services:', JSON.stringify(keys).slice(0, 800))
+    }
     if (STEPS.includes('probe-attachments')) {
       const out = await evaluate(`(() => {
         const node = document.querySelector('.ph-composer-entry')
@@ -571,78 +649,56 @@ async function main() {
           button.click()
           return true
         })()`)
-        await sleep(2200)
-        const draft = await evaluate(`(() => {
+        await sleep(2000)
+        const chip = await evaluate(`(() => {
           const composer = document.querySelector('[data-composer-input="true"]')
-          const chips = [...document.querySelectorAll('[data-composer-input="true"] .ph-citetoken')]
+          const node = document.querySelector('.ph-refchip')
           return {
-            rawText: (composer?.innerText || '').slice(0, 160),
-            chipCount: chips.length,
-            chipLabel: chips[0] ? chips[0].getAttribute('data-ph-citetoken-label') : null,
-            chipWidth: chips[0] ? Math.round(chips[0].getBoundingClientRect().width) : 0,
+            draftText: (composer?.innerText || '').slice(0, 120),
+            chip: node ? node.innerText.slice(0, 120) : null,
+            chipWidth: node ? Math.round(node.getBoundingClientRect().width) : 0,
           }
         })()`)
-        console.log('cite auto draft:', cited, JSON.stringify(draft))
-        await shot('04y-cite-auto-draft')
-        // Cite a second paper: the draft must end with ONE token describing both.
+        console.log('cite chip:', cited, JSON.stringify(chip))
+        await shot('04y-cite-chip')
+        // Second citation extends the same chip.
         await evaluate(`(() => {
           const buttons = [...document.querySelectorAll('button[title="引用到对话"]')]
-          const second = buttons.find((button, index) => index === 1) || buttons[1]
-          if (second) second.click()
-          return Boolean(second)
+          if (buttons[1]) buttons[1].click()
+          return Boolean(buttons[1])
         })()`)
-        await sleep(2400)
+        await sleep(2000)
         const twice = await evaluate(`(() => {
           const composer = document.querySelector('[data-composer-input="true"]')
-          const text = composer ? composer.innerText : ''
-          const tokenCount = text.split('@论文中心(').length - 1
-          return { tokenCount: tokenCount, length: text.length, head: text.slice(0, 120) }
+          const node = document.querySelector('.ph-refchip')
+          return { draftText: (composer?.innerText || '').slice(0, 120), chip: node ? node.innerText.slice(0, 120) : null }
         })()`)
-        console.log('second cite draft:', JSON.stringify(twice))
-        await shot('04y2-cite-twice')
-        // Type right after the chip: the chip must survive.
+        console.log('second cite chip:', JSON.stringify(twice))
+        const expanded = await evaluate(`(() => {
+          const main = document.querySelector('.ph-refchip__main')
+          if (main) main.click()
+          return Boolean(main)
+        })()`)
+        await sleep(500)
+        const panel = await evaluate(`(() => {
+          const node = document.querySelector('.ph-refchip__panel')
+          return { open: Boolean(node), text: (node?.innerText || '').slice(0, 200), items: node ? node.querySelectorAll('.ph-refchip__item').length : 0 }
+        })()`)
+        console.log('chip panel:', expanded, JSON.stringify(panel))
+        await shot('04y3-cite-chip-panel')
+        await shot('04y2-cite-chip-twice')
+        // Cancel clears the chip and leaves the draft untouched.
         await evaluate(`(() => {
-          const composer = document.querySelector('[data-composer-input="true"]')
-          if (!composer) return false
-          composer.focus()
-          const selection = window.getSelection()
-          selection.selectAllChildren(composer)
-          selection.collapseToEnd()
-          return true
-        })()`)
-        await evaluate(`(() => {
-          const chip = document.querySelector('[data-composer-input="true"] .ph-citetoken')
-          const target = chip ? chip.nextSibling : null
-          if (target && target.nodeType === 3) {
-            const range = document.createRange()
-            range.setStart(target, target.nodeValue.length)
-            range.collapse(true)
-            const selection = window.getSelection()
-            selection.removeAllRanges()
-            selection.addRange(range)
-          }
-          return true
-        })()`)
-        await sleep(900)
-        const afterTyping = await evaluate(`(() => {
-          const chips = [...document.querySelectorAll('[data-composer-input="true"] .ph-citetoken')]
-          const composer = document.querySelector('[data-composer-input="true"]')
-          return { chipCount: chips.length, text: (composer?.innerText || '').slice(0, 200) }
-        })()`)
-        console.log('chip survives typing:', JSON.stringify(afterTyping))
-        await shot('04z-cite-chip-typing')
-        // Cancel the reference: the draft must be cleaned.
-        await evaluate(`(() => {
-          const remove = document.querySelector('.ph-refcard__remove')
+          const remove = document.querySelector('.ph-refchip__remove')
           if (remove) remove.click()
           return Boolean(remove)
         })()`)
-        await sleep(1600)
-        const afterRemove = await evaluate(`(() => {
-          const composer = document.querySelector('[data-composer-input="true"]')
-          return { text: (composer?.innerText || '').slice(0, 200), chips: document.querySelectorAll('[data-composer-input="true"] .ph-citetoken').length }
-        })()`)
-        console.log('draft after cancel:', JSON.stringify(afterRemove))
+        await sleep(1500)
+        const after = await evaluate(`(() => ({
+          draftText: (document.querySelector('[data-composer-input="true"]')?.innerText || '').slice(0, 120),
+          chip: document.querySelectorAll('.ph-refchip').length,
+        }))()`)
+        console.log('after cancel:', JSON.stringify(after))
         await shot('04w-cite-cancelled')
       }
       if (STEPS.includes('drawer-multi-cite')) {

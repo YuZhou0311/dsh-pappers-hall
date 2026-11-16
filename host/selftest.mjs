@@ -400,7 +400,7 @@ async function main() {
     const fallbackTerms = extractQueryTerms('这是一段中文解释，没有英文术语。', '把作物模型和强化学习连起来的流程图')
     check('AI expansion has a deterministic fallback', fallbackTerms.source === 'fallback' && fallbackTerms.terms.length >= 3, fallbackTerms)
     const promptText = fake.state.promptSections.get('plugin:pappers-hall-materials')?.text ?? ''
-    check('system prompt explains reference mention scope', promptText.includes('@论文中心') && promptText.includes('papers_references') && promptText.includes('reference_bundle'), promptText.slice(0, 120))
+    check('system prompt explains reference chip scope', promptText.includes('reference chip') && promptText.includes('papers_references') && promptText.includes('reference_bundle'), promptText.slice(0, 120))
 
     // ---- status/diagnostics before import ------------------------------
     const status0 = await service.api.call('status')
@@ -921,8 +921,8 @@ async function main() {
     })
     check('references.commit creates an immutable bundle', typeof bundle.bundleId === 'string' && bundle.materials.length === 2)
     check(
-      'bundle token is a compact mention without a protocol id',
-      /^@论文中心 .+$/.test(bundle.token) && !/bn-/.test(bundle.token) && bundle.token.length <= 60,
+      'bundle token carries no protocol id',
+      typeof bundle.token === 'string' && !/bn-/.test(bundle.token) && bundle.token.length <= 60,
       bundle.token,
     )
     check('bundle token mentions material counts', bundle.token.includes('篇论文') && bundle.token.includes('张图'), bundle.token)

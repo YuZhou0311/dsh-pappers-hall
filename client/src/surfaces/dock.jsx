@@ -80,9 +80,15 @@ export function DockBody(props) {
       if (state.bundles.length === 0) return
       const composer = document.querySelector('[data-composer-input="true"]')
       const text = composer ? String(composer.innerText || '') : ''
+      const now = Date.now()
       state.bundles.forEach((bundle) => {
         if (!bundle.token) return
         if (props.sessionId && bundle.sessionId && bundle.sessionId !== props.sessionId) return
+        // Only a reference that actually reached the draft can go stale: the
+        // insert is async, and pruning before it lands made the card flash away
+        // the moment it was created.
+        if (!bundle.added) return
+        if (now - (bundle.createdAt || 0) < 1500) return
         // `includes` covers the intact mention; a partially deleted mention no
         // longer matches and drops the pending reference immediately.
         if (text.includes(bundle.token)) return

@@ -30020,9 +30020,12 @@ function DockBody(props) {
       if (state.bundles.length === 0) return;
       const composer2 = document.querySelector('[data-composer-input="true"]');
       const text2 = composer2 ? String(composer2.innerText || "") : "";
+      const now = Date.now();
       state.bundles.forEach((bundle) => {
         if (!bundle.token) return;
         if (props.sessionId && bundle.sessionId && bundle.sessionId !== props.sessionId) return;
+        if (!bundle.added) return;
+        if (now - (bundle.createdAt || 0) < 1500) return;
         if (text2.includes(bundle.token)) return;
         pendingStore.remove(bundle.bundleId);
       });

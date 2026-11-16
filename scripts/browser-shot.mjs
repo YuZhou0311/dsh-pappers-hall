@@ -773,6 +773,31 @@ async function main() {
         console.log('draft after cancel:', JSON.stringify(afterRemove))
         await shot('04w-cite-cancelled')
       }
+      if (STEPS.includes('cite-noflash')) {
+        await evaluate(`(() => {
+          const button = [...document.querySelectorAll('button[title="引用到对话"]')][0]
+          if (button) button.click()
+          return Boolean(button)
+        })()`)
+        const samples = []
+        for (let i = 0; i < 25; i += 1) {
+          await sleep(120)
+          const value = await evaluate("document.querySelectorAll('.ph-refcard').length")
+          samples.push(value)
+        }
+        await evaluate(`(() => {
+          const button = [...document.querySelectorAll('button[title="引用到对话"]')][1]
+          if (button) button.click()
+          return Boolean(button)
+        })()`)
+        for (let i = 0; i < 25; i += 1) {
+          await sleep(120)
+          const value = await evaluate("document.querySelectorAll('.ph-refcard').length")
+          samples.push(value)
+        }
+        console.log('card samples:', JSON.stringify(samples), 'min:', Math.min(...samples))
+        await shot('04r-noflash')
+      }
       if (STEPS.includes('cite-delete-partial')) {
         await evaluate(`(() => {
           const button = [...document.querySelectorAll('button[title="引用到对话"]')][0]

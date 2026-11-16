@@ -7,14 +7,14 @@
 <p align="center"><b>Pappers-Hall · Your research workbench inside DeepSeek Harness</b><br>Organize papers, read closely, build notes, and bring source material into your research conversations.</p>
 
 <p align="center">
-  <img alt="Pre-release" src="https://img.shields.io/badge/Status-Pre--release-4D6BFE?style=flat-square">
+  <img alt="Release v0.1.0" src="https://img.shields.io/badge/Release-v0.1.0-4D6BFE?style=flat-square">
   <img alt="DSH community plugin" src="https://img.shields.io/badge/DeepSeek_Harness-Community_Plugin-172C51?style=flat-square">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/License-MIT-476C64?style=flat-square"></a>
 </p>
 
 <p align="center"><a href="#workbench">The workbench</a> · <a href="#features">Product tour</a> · <a href="#start">Get started</a> · <a href="#faq">FAQ</a> · <a href="docs/press-kit/README.md">Press kit</a></p>
 
-> **Actively developed · Pre-release.** GitHub downloads are preview builds. Screenshots show the current development instance; consult each [release's notes](https://github.com/YuZhou0311/dsh-pappers-hall/releases) for the capabilities of that package.
+> **Actively developed · public v0.1.0.** Install straight into DSH with `github:YuZhou0311/dsh-pappers-hall` (see [Get started](#start)); screenshots show the current development instance, and each [release's notes](https://github.com/YuZhou0311/dsh-pappers-hall/releases) describe that package.
 
 <br>
 
@@ -156,18 +156,58 @@ brew install poppler
 
 On other platforms, install the corresponding Poppler command-line tools and make sure DSH can find them. See [configuration](docs/DEVELOPMENT.md#configuration) for custom executable paths.
 
-### 2. Install a pre-release package
+### 2. Install straight into DSH (recommended)
 
-Download a `.tgz` from [GitHub Releases](https://github.com/YuZhou0311/dsh-pappers-hall/releases), selecting a **Pre-release** build. Quit DSH Desktop completely, install from your download directory, then reopen DSH. This example uses the published `0.24.23` package; substitute your downloaded filename:
+Open DSH → **Plugins** → **+ Add plugin**, paste any of the lines below into the box and press Install. No release download needed:
 
-```sh
-dsh plugin --profile desktop add ./dsh-pappers-hall-0.24.23.tgz
+```
+github:YuZhou0311/dsh-pappers-hall
 ```
 
-For DSH Web, substitute your Web profile and restart that instance. If `dsh` is not available in your terminal, configure the command through the DSH Desktop menu first.
+These forms work too:
+
+```
+YuZhou0311/dsh-pappers-hall
+
+https://github.com/YuZhou0311/dsh-pappers-hall
+```
+
+The equivalent CLI command:
+
+```sh
+dsh plugin --profile desktop add github:YuZhou0311/dsh-pappers-hall
+```
+
+Reopen DSH (or reload the plugin) and the "Paper centre" entry appears in the sidebar. The first visit docks a "Getting started" task card that imports the sample paper and offers the local component.
+
+To upgrade:
+
+```sh
+dsh plugin --profile desktop add github:YuZhou0311/dsh-pappers-hall
+```
+
+If the old version is still reported, remove and reinstall:
+
+```sh
+dsh plugin --profile desktop remove dsh-pappers-hall
+dsh plugin --profile desktop add github:YuZhou0311/dsh-pappers-hall
+```
 
 <details>
-<summary><b>Install from source</b></summary>
+<summary><b>Offline install (release package)</b></summary>
+
+Download a `.tgz` from [GitHub Releases](https://github.com/YuZhou0311/dsh-pappers-hall/releases), quit DSH Desktop completely, then install:
+
+```sh
+dsh plugin --profile desktop add ./dsh-pappers-hall-0.1.0.tgz
+```
+
+Substitute the downloaded filename. For DSH Web use your Web profile instead of `desktop` and restart that instance; if `dsh` is not on your PATH, configure it from the DSH desktop menu first.
+
+</details>
+
+<details>
+<summary><b>Run from source</b></summary>
 
 ```sh
 git clone https://github.com/YuZhou0311/dsh-pappers-hall.git
@@ -177,7 +217,7 @@ npm run build
 dsh plugin --profile desktop add "link:$PWD"
 ```
 
-Rebuild after updating, then reload the plugin or restart the page as required by the host. Configuration, tool details and verification commands are documented in [DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Rebuild after updates, then reload the plugin or restart the page as the host requires. See [development notes](docs/DEVELOPMENT.md) for configuration, the tool list and verification commands.
 
 </details>
 

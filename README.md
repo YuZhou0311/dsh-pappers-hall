@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img alt="开发中，预发布" src="https://img.shields.io/badge/Status-Pre--release-4D6BFE?style=flat-square">
+  <img alt="公开预览版 v0.1.0" src="https://img.shields.io/badge/Release-v0.1.0-4D6BFE?style=flat-square">
   <img alt="DeepSeek Harness 社区插件" src="https://img.shields.io/badge/DeepSeek_Harness-Community_Plugin-172C51?style=flat-square">
   <a href="LICENSE"><img alt="MIT 开源许可" src="https://img.shields.io/badge/License-MIT-476C64?style=flat-square"></a>
 </p>
@@ -190,17 +190,55 @@ brew install poppler
 
 其他环境需安装对应的 Poppler 命令行工具，并确保 DSH 能找到它们。自定义程序路径见 [配置说明](docs/DEVELOPMENT.md#configuration)。
 
-### 2. 安装预发布包
+### 2. 在 DSH 里直接安装（推荐）
 
-前往 **[GitHub Releases](https://github.com/YuZhou0311/dsh-pappers-hall/releases)**，选择标有 **Pre-release** 的版本，下载 `dsh-pappers-hall-*.tgz`。请先阅读该版本说明；这里链接到所有发布，方便找到预发布包。
+打开 DSH →「插件」→ 右上角「**+ 添加插件**」，在输入框里粘贴下面任意一行，点「安装」即可，不需要下载发布包：
 
-完全退出 DSH 桌面端后，在下载目录执行安装，再重新打开 DSH。以下以已发布的 `0.24.23` 为例，文件名请替换为实际下载版本：
-
-```sh
-dsh plugin --profile desktop add ./dsh-pappers-hall-0.24.23.tgz
+```
+github:YuZhou0311/dsh-pappers-hall
 ```
 
-若使用 DSH Web，请将 profile 替换为自己的 Web profile，并重启对应实例。命令行中没有 `dsh` 时，可先在 DSH 桌面端菜单中配置 dsh 命令。
+也接受下面两种写法：
+
+```
+YuZhou0311/dsh-pappers-hall
+
+https://github.com/YuZhou0311/dsh-pappers-hall
+```
+
+等价命令行安装方式：
+
+```sh
+dsh plugin --profile desktop add github:YuZhou0311/dsh-pappers-hall
+```
+
+安装完成后重新打开 DSH（或重新加载插件），左侧会出现「论文中心」入口。首次进入会看到「开始使用」任务卡，跟着它导入示例论文、安装本地组件即可。
+
+升级到最新版：
+
+```sh
+dsh plugin --profile desktop add github:YuZhou0311/dsh-pappers-hall
+```
+
+该命令会按 GitHub 默认分支重新解析依赖；如果仍显示旧版本，先移除再安装：
+
+```sh
+dsh plugin --profile desktop remove dsh-pappers-hall
+dsh plugin --profile desktop add github:YuZhou0311/dsh-pappers-hall
+```
+
+<details>
+<summary><b>离线安装（下载发布包）</b></summary>
+
+前往 [GitHub Releases](https://github.com/YuZhou0311/dsh-pappers-hall/releases) 下载 `dsh-pappers-hall-*.tgz`，完全退出 DSH 后执行：
+
+```sh
+dsh plugin --profile desktop add ./dsh-pappers-hall-0.1.0.tgz
+```
+
+文件名请替换为实际下载版本。DSH Web 请把 `desktop` 换成自己的 Web profile，并重启对应实例；命令行中没有 `dsh` 时，可先在 DSH 桌面端菜单里配置。
+
+</details>
 
 <details>
 <summary><b>从源码运行</b></summary>

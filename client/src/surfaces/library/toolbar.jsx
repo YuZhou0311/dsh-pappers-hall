@@ -11,6 +11,7 @@ import { copyText, dataUrlPayload, importFormatOf, readFileAsDataUrl } from '../
 import { pendingStore } from '../../core/pending.js'
 import { notify } from '../../core/feedback.js'
 import { FolderPicker } from './folders.jsx'
+import { withViewTransition } from '../../core/motion.js'
 
 function operationId(prefix) {
   const random =
@@ -167,7 +168,10 @@ export function LibraryToolbar(props) {
           { id: 'table', icon: 'list', title: t('library.view.table') },
           { id: 'grid', icon: 'grid', title: t('library.view.grid') },
         ],
-        onChange: (value) => controller.setViewMode(value),
+        onChange: (value) => {
+          if (value === snapshot.viewMode) return
+          withViewTransition(props.scopeRef && props.scopeRef.current, () => controller.setViewMode(value))
+        },
       }),
     ),
     h('span', { className: 'ph-spacer' }),

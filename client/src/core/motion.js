@@ -91,3 +91,35 @@ export function SlidingThumb(props) {
     h('span', { key: props.popKey == null ? 'thumb' : String(props.popKey), className: 'ph-thumb__inner' }),
   )
 }
+
+/**
+ * Run one View Transition around a DOM/React state update.
+ *
+ * This is deliberately a thin progressive-enhancement wrapper: unsupported
+ * engines and reduced-motion users get the update immediately. Element-scoped
+ * transitions are preferred when the caller supplies a scope element; the
+ * fallback is the document transition, which is safe for the paper-grid view
+ * switch because no top-layer surface is open at that point.
+ *
+ * @param {Element|Document|null} scope
+ * @param {() => void} update
+ */
+export function withViewTransition(scope, update) {
+  const run = typeof update === 'function' ? update : () => {}
+  let reduced = false
+  try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches } catch { reduced = false }
+  if (reduced) { run(); return null }
+  const target = scope && typeof scope.startViewTransition === 'function' ? scope : null
+  // When a component scope is supplied, never fall back to a document-wide
+  // transition: that would block the page and hide top-layer surfaces.
+  const owner = target || (!scope && typeof document !== 'undefined' && typeof document.startViewTransition === 'function' ? document : null)
+  if (!owner) { run(); return null }
+  try {
+    const transition = owner.startViewTransition(run)
+    if (transition && transition.ready && typeof transition.ready.catch === 'function') transition.ready.catch(() => {})
+    return transition
+  } catch {
+    run()
+    return null
+  }
+}

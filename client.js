@@ -1304,17 +1304,6 @@ button.ph-iconbtn { font: inherit; }
   transition: background-color var(--ph-fast) var(--ph-ease), box-shadow var(--ph-fast) var(--ph-ease);
   animation: ph-fade-up var(--ph-base) var(--ph-ease) both;
 }
-/* first paint only: a 24ms cascade over the first screenful, never on filter */
-.ph-rowitem:nth-child(1) { animation-delay: 0ms; }
-.ph-rowitem:nth-child(2) { animation-delay: 24ms; }
-.ph-rowitem:nth-child(3) { animation-delay: 48ms; }
-.ph-rowitem:nth-child(4) { animation-delay: 72ms; }
-.ph-rowitem:nth-child(5) { animation-delay: 96ms; }
-.ph-rowitem:nth-child(6) { animation-delay: 120ms; }
-.ph-rowitem:nth-child(7) { animation-delay: 144ms; }
-.ph-rowitem:nth-child(8) { animation-delay: 168ms; }
-.ph-rowitem:nth-child(9) { animation-delay: 192ms; }
-.ph-rowitem:nth-child(10) { animation-delay: 216ms; }
 .ph-rowitem:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .ph-rowitem--selected { background: var(--dsw-alias-interactive-bg-active); }
 .ph-rowitem--selected::before {
@@ -3939,15 +3928,6 @@ body.ph-dnd-dragging [data-ph-drag] { opacity: 0.55; }
 .ph-gridcard__title { font-size: 12.5px; line-height: 1.4; letter-spacing: -0.004em; }
 .ph-gridcard__meta { font-size: 10.5px; color: var(--ph-ink-3); }
 
-/* first-paint cascade for both presentations */
-.ph-gridcard:nth-child(1) { animation-delay: 0ms; }
-.ph-gridcard:nth-child(2) { animation-delay: 24ms; }
-.ph-gridcard:nth-child(3) { animation-delay: 48ms; }
-.ph-gridcard:nth-child(4) { animation-delay: 72ms; }
-.ph-gridcard:nth-child(5) { animation-delay: 96ms; }
-.ph-gridcard:nth-child(6) { animation-delay: 120ms; }
-.ph-gridcard:nth-child(7) { animation-delay: 144ms; }
-.ph-gridcard:nth-child(8) { animation-delay: 168ms; }
 
 /* ---- 10.6 details rail -------------------------------------------------- */
 .ph-pane--right { background: var(--ph-bg); border-left: 1px solid var(--ph-hairline); }
@@ -4863,6 +4843,163 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   color: var(--dsw-alias-state-success-primary);
   background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 8%, var(--ph-surface-1));
   font-size: 11.5px;
+}
+
+
+/* ==================================================== 9 modern motion layer */
+/* Replace the old hand-written nth-child delay ladder with sibling-index().
+   The fallback is no delay: rows/cards stay visible, only the cascade is lost. */
+.ph-rowitem,
+.ph-gridcard {
+  --ph-stagger-step: 24ms;
+  animation-delay: 0ms;
+}
+@supports (animation-delay: calc(sibling-index() * 1ms)) {
+  .ph-rowitem,
+  .ph-gridcard {
+    animation-delay: calc((sibling-index() - 1) * var(--ph-stagger-step));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ph-rowitem,
+  .ph-gridcard {
+    animation-delay: 0ms;
+  }
+}
+
+/* Hover/press polish: compositor-only transforms, no layout reads. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ph-gridcard {
+    transition:
+      transform 180ms var(--ph-ease-out),
+      box-shadow 220ms var(--ph-ease-out),
+      border-color 160ms var(--ph-ease-out);
+  }
+  .ph-gridcard:hover {
+    transform: translateY(-3px) scale(1.002);
+  }
+  .ph-btn--primary:hover:not(:disabled) {
+    translate: 0 -1px;
+  }
+  .ph-btn:active:not(:disabled) {
+    translate: 0 1px;
+  }
+}
+
+/* Softer, more legible headings and stable scrollbar width. */
+.ph-gridcard__title,
+.ph-rowitem__title,
+.ph-r-toolbar__title,
+.ph-settings__title,
+.ph-n-inline__title {
+  text-wrap: pretty;
+}
+.ph-scroll,
+.ph-settings__body,
+.ph-r-scroll,
+.ph-n-doc,
+.ph-sidebar__body {
+  scrollbar-gutter: stable;
+}
+
+/* Content-bearing cards get paint/layout containment; this keeps large lists
+   from invalidating the whole grid while preserving intrinsic sizing. */
+.ph-gridcard {
+  contain: layout paint style;
+}
+
+/* Container-aware AI/side panels instead of viewport-only breakpoints. */
+.ph-r-ai,
+.ph-sidebar,
+.ph-n-inline {
+  container-type: inline-size;
+}
+@container (max-width: 330px) {
+  .ph-r-ai__tools,
+  .ph-r-ai__modes {
+    flex-wrap: wrap;
+  }
+  .ph-providerwarning__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Native top-layer entry: the inner settings panel already animates; fade the
+   backdrop as well so opening/closing does not hard-cut. */
+.ph-settingsdialog[open]::backdrop {
+  animation: ph-fade-in 180ms var(--ph-ease) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ph-settingsdialog[open]::backdrop { animation: none; }
+}
+
+/* View Transitions: the grid/table switch uses the browser's snapshot engine
+   where available, and falls back to an immediate update elsewhere. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: var(--ph-ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* ============================================== 10 vivid surface polish */
+::selection {
+  background: color-mix(in srgb, var(--ph-accent) 24%, transparent);
+  color: var(--ph-ink);
+}
+
+.ph-center__mark {
+  background-image: linear-gradient(145deg, color-mix(in srgb, var(--ph-hue-primary) 76%, #ffffff), var(--ph-hue-primary) 62%, color-mix(in srgb, var(--ph-hue-primary) 70%, #171a21));
+  box-shadow: 0 6px 18px -7px color-mix(in srgb, var(--ph-hue-primary) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+.ph-btn--primary {
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--ph-btn-fill) 88%, #ffffff) 0%, var(--ph-btn-fill) 55%, color-mix(in srgb, var(--ph-btn-fill) 88%, #000000) 100%);
+  box-shadow: 0 4px 14px -7px color-mix(in srgb, var(--ph-btn-fill) 62%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.ph-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 8px 22px -10px color-mix(in srgb, var(--ph-btn-fill) 72%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.ph-gridcard {
+  position: relative;
+  isolation: isolate;
+}
+.ph-gridcard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    radial-gradient(120% 90% at 12% 0%, color-mix(in srgb, var(--ph-accent) 9%, transparent), transparent 62%),
+    radial-gradient(100% 100% at 100% 100%, color-mix(in srgb, var(--ph-hue-secondary) 7%, transparent), transparent 66%);
+  opacity: 0;
+  transition: opacity 220ms var(--ph-ease-out);
+  pointer-events: none;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ph-gridcard:hover::after { opacity: 1; }
+}
+
+.ph-r-ai__msg {
+  animation: ph-fade-up 200ms var(--ph-ease-out) both;
+}
+.ph-sidebar__head,
+.ph-n-statusbar,
+.ph-center__topbar {
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--ph-bg) 92%, var(--ph-accent) 2%) 0%, var(--ph-bg) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-r-ai__msg { animation: none; }
+  .ph-gridcard::after { transition: none; }
 }
 `;
 function installStyles(ctx) {
@@ -6249,6 +6386,35 @@ function SlidingThumb(props) {
     /* Remounting on selection change replays the squash/pop animation. */
     h("span", { key: props.popKey == null ? "thumb" : String(props.popKey), className: "ph-thumb__inner" })
   );
+}
+function withViewTransition(scope, update) {
+  const run = typeof update === "function" ? update : () => {
+  };
+  let reduced = false;
+  try {
+    reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    reduced = false;
+  }
+  if (reduced) {
+    run();
+    return null;
+  }
+  const target = scope && typeof scope.startViewTransition === "function" ? scope : null;
+  const owner = target || (!scope && typeof document !== "undefined" && typeof document.startViewTransition === "function" ? document : null);
+  if (!owner) {
+    run();
+    return null;
+  }
+  try {
+    const transition = owner.startViewTransition(run);
+    if (transition && transition.ready && typeof transition.ready.catch === "function") transition.ready.catch(() => {
+    });
+    return transition;
+  } catch {
+    run();
+    return null;
+  }
 }
 
 // src/core/primitives.jsx
@@ -25751,7 +25917,10 @@ function LibraryToolbar(props) {
           { id: "table", icon: "list", title: t("library.view.table") },
           { id: "grid", icon: "grid", title: t("library.view.grid") }
         ],
-        onChange: (value) => controller.setViewMode(value)
+        onChange: (value) => {
+          if (value === snapshot4.viewMode) return;
+          withViewTransition(props.scopeRef && props.scopeRef.current, () => controller.setViewMode(value));
+        }
       })
     ),
     h("span", { className: "ph-spacer" }),
@@ -27718,7 +27887,7 @@ function LibraryShell(props) {
   ) : h(
     "div",
     { className: "ph-pane ph-pane--mid" + (snapshot4.selection.length > 0 ? " ph-pane--batch" : "") },
-    h(LibraryToolbar, { t, api, snapshot: snapshot4, controller: library, pushToast: push }),
+    h(LibraryToolbar, { t, api, snapshot: snapshot4, controller: library, pushToast: push, scopeRef: rootRef }),
     h(SearchFilters, { t, snapshot: snapshot4, controller: library }),
     snapshot4.filters.view === "duplicates" ? h(DuplicatesPane, { t, snapshot: snapshot4, controller: library, pushToast: push }) : h(ItemTable, {
       t,

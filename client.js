@@ -57,8 +57,8 @@ __export(index_exports, {
   sectionizeMarkdown: () => sectionizeMarkdown
 });
 module.exports = __toCommonJS(index_exports);
-var import_react49 = __toESM(require("react"), 1);
-var import_react50 = require("react");
+var import_react50 = __toESM(require("react"), 1);
+var import_react51 = require("react");
 
 // src/core/constants.js
 var NS = "pappers-hall";
@@ -4804,6 +4804,40 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-providerwarning--auth { border-color: color-mix(in srgb, var(--dsw-alias-state-danger-primary) 45%, var(--ph-line)); }
 .ph-providerwarning--auth .ph-providerwarning__icon { color: var(--dsw-alias-state-danger-primary); }
 .ph-providerwarning--rate { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 30%, var(--ph-line)); }
+
+/* shared AI warning inside narrow cards/popovers */
+.ph-providerwarning--compact {
+  margin: 6px 0;
+  padding: 8px 9px;
+  gap: 8px;
+  border-radius: 8px;
+}
+.ph-providerwarning--compact .ph-providerwarning__title { font-size: 12px; }
+.ph-providerwarning--compact .ph-providerwarning__body { font-size: 11.5px; }
+.ph-providerwarning--compact .ph-providerwarning__actions { width: 100%; justify-content: flex-start; }
+.ph-providerwarning--compact .ph-providerwarning__actions .ph-btn { min-height: 26px; height: 26px; font-size: 11.5px; }
+.ph-providerwarning--compact .ph-providerwarning__icon { display: none; }
+
+/* Compact AI warnings live in narrow side panels: keep text on its own row
+   instead of letting the action buttons squeeze it into a vertical column. */
+.ph-providerwarning--compact { flex-wrap: wrap; }
+.ph-providerwarning--compact .ph-providerwarning__main { flex: 1 1 100%; }
+.ph-providerwarning--compact .ph-providerwarning__actions { flex: 1 1 100%; }
+.ph-providerwarning__details { margin-top: 6px; font-size: 11px; color: var(--ph-ink-3); }
+.ph-providerwarning__details summary { cursor: pointer; user-select: none; }
+.ph-providerwarning__details code {
+  display: block;
+  margin-top: 4px;
+  padding: 6px 7px;
+  border-radius: 6px;
+  background: var(--ph-surface-2);
+  color: var(--ph-ink-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--ph-font-mono);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -6509,7 +6543,7 @@ function PanelIcon(props) {
 }
 
 // src/surfaces/center.jsx
-var import_react41 = __toESM(require("react"), 1);
+var import_react42 = __toESM(require("react"), 1);
 
 // src/core/bus.js
 var handlers = /* @__PURE__ */ new Map();
@@ -6814,7 +6848,7 @@ function createStore2() {
 var navigation = createStore2();
 
 // src/surfaces/library/shell.jsx
-var import_react39 = __toESM(require("react"), 1);
+var import_react40 = __toESM(require("react"), 1);
 
 // src/core/files.js
 function formatBytes(bytes2) {
@@ -11126,10 +11160,10 @@ function CollectionsPane(props) {
 }
 
 // src/surfaces/library/note-inline.jsx
-var import_react16 = __toESM(require("react"), 1);
+var import_react17 = __toESM(require("react"), 1);
 
 // src/surfaces/notes/editor.jsx
-var import_react15 = __toESM(require("react"), 1);
+var import_react16 = __toESM(require("react"), 1);
 
 // src/core/note-context.js
 var current = null;
@@ -12481,10 +12515,73 @@ function NoteCards(props) {
 }
 
 // src/surfaces/notes/dialogs.jsx
+var import_react15 = __toESM(require("react"), 1);
+
+// src/core/ai-warning.jsx
 var import_react14 = __toESM(require("react"), 1);
+function providerIssue(reason) {
+  const text2 = String(reason || "");
+  if (text2 === "") return "";
+  if (/insufficient|quota|balance|credit|billing|payment|402|额度|余额|欠费|计费|余额不足/i.test(text2)) return "quota";
+  if (/api.?key|credential|unauthor|auth(?:entication|orization)?|401|403|token.*(?:invalid|expired)|登录|认证|密钥/i.test(text2)) return "auth";
+  if (/rate.?limit|too many requests|429|限流|请求过多/i.test(text2)) return "rate";
+  if (/no llm adapter|not composed|no default model|model.*(?:not found|unavailable|unsupported)|模型.*(?:不可用|不存在)/i.test(text2)) return "config";
+  return "error";
+}
+function openModelSettings() {
+  try {
+    bus.emit("open-settings");
+  } catch (error) {
+    console.warn("[pappers-hall] open settings failed", error);
+  }
+}
+function AiWarning(props) {
+  const t = props.t;
+  const reason = String(props.reason || "").trim();
+  if (props.status !== "error" && props.status !== "unavailable" && reason === "") return null;
+  const issue = providerIssue(reason);
+  const tr = (key, params) => {
+    const direct = t(key, params);
+    if (direct && direct !== key && !String(direct).startsWith("reader.")) return direct;
+    if (direct && String(direct).startsWith("reader.")) {
+      const fallback = t(String(direct), params);
+      if (fallback && fallback !== direct) return fallback;
+    }
+    return direct;
+  };
+  const title2 = tr("ai.warning." + issue + ".title");
+  const body = tr("ai.warning." + issue + ".bodyPlain");
+  const open = props.onOpenSettings || openModelSettings;
+  return import_react14.default.createElement(
+    "div",
+    { className: "ph-providerwarning ph-providerwarning--" + issue + (props.compact ? " ph-providerwarning--compact" : ""), role: "alert" },
+    import_react14.default.createElement("span", { className: "ph-providerwarning__icon" }, import_react14.default.createElement(Icon, { name: "warning", size: 18 })),
+    import_react14.default.createElement(
+      "div",
+      { className: "ph-providerwarning__main" },
+      import_react14.default.createElement("div", { className: "ph-providerwarning__title" }, title2),
+      import_react14.default.createElement("div", { className: "ph-providerwarning__body" }, body),
+      reason ? import_react14.default.createElement(
+        "details",
+        { className: "ph-providerwarning__details" },
+        import_react14.default.createElement("summary", null, tr("ai.warning.details")),
+        import_react14.default.createElement("code", null, reason)
+      ) : null
+    ),
+    import_react14.default.createElement(
+      "div",
+      { className: "ph-providerwarning__actions" },
+      props.showSettings === false ? null : import_react14.default.createElement("button", { type: "button", className: "ph-btn ph-btn--primary ph-btn--sm", onClick: open }, tr("ai.warning.changeProvider")),
+      props.onRetry ? import_react14.default.createElement("button", { type: "button", className: "ph-btn ph-btn--secondary ph-btn--sm", onClick: props.onRetry }, tr("common.retry")) : null,
+      props.extra || null
+    )
+  );
+}
+
+// src/surfaces/notes/dialogs.jsx
 function Modal(props) {
   const t = props.t;
-  import_react14.default.useEffect(() => {
+  import_react15.default.useEffect(() => {
     if (typeof document === "undefined") return void 0;
     const onKey = (event) => {
       if (event.key === "Escape" && !props.busy) {
@@ -12495,27 +12592,27 @@ function Modal(props) {
     document.addEventListener("keydown", onKey, true);
     return () => document.removeEventListener("keydown", onKey, true);
   }, [props.busy, props.onClose]);
-  return import_react14.default.createElement(
+  return import_react15.default.createElement(
     "div",
     { className: "ph-n-modal-backdrop", onMouseDown: (event) => {
       if (event.target === event.currentTarget && !props.busy && props.onClose) props.onClose();
     } },
-    import_react14.default.createElement(
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-modal" + (props.wide ? " ph-n-modal--wide" : ""), role: "dialog", "aria-modal": "true", "aria-label": props.title },
-      import_react14.default.createElement(
+      import_react15.default.createElement(
         "div",
         { className: "ph-n-modal__head" },
-        import_react14.default.createElement(
+        import_react15.default.createElement(
           "div",
           { className: "ph-n-modal__titles" },
-          import_react14.default.createElement("h2", { className: "ph-n-modal__title" }, props.title),
-          props.desc ? import_react14.default.createElement("p", { className: "ph-n-modal__desc" }, props.desc) : null
+          import_react15.default.createElement("h2", { className: "ph-n-modal__title" }, props.title),
+          props.desc ? import_react15.default.createElement("p", { className: "ph-n-modal__desc" }, props.desc) : null
         ),
-        import_react14.default.createElement(IconButton, { icon: "close", title: t("common.close"), onClick: props.busy ? void 0 : props.onClose, disabled: props.busy })
+        import_react15.default.createElement(IconButton, { icon: "close", title: t("common.close"), onClick: props.busy ? void 0 : props.onClose, disabled: props.busy })
       ),
-      import_react14.default.createElement("div", { className: "ph-n-modal__body ph-n-scroll" }, props.children),
-      import_react14.default.createElement("div", { className: "ph-n-modal__foot" }, props.footer)
+      import_react15.default.createElement("div", { className: "ph-n-modal__body ph-n-scroll" }, props.children),
+      import_react15.default.createElement("div", { className: "ph-n-modal__foot" }, props.footer)
     )
   );
 }
@@ -12542,15 +12639,15 @@ function BeautifyDialog(props) {
     unbeautified: completeSections.filter((section) => !beautified.has(section.id)),
     selection: selectionSections
   };
-  const [scope, setScope] = import_react14.default.useState(() => scene.unbeautified.length > 0 ? "unbeautified" : "all");
-  const [direction, setDirection] = import_react14.default.useState("scientific");
-  const [layout, setLayout] = import_react14.default.useState("auto");
-  const [status, setStatus] = import_react14.default.useState({ phase: "idle", message: "", meta: null });
-  const [ai, setAi] = import_react14.default.useState(() => ({ loading: true, available: null, reason: "", model: "" }));
-  const [figures, setFigures] = import_react14.default.useState({ status: "loading", candidates: [] });
-  const [useFigures, setUseFigures] = import_react14.default.useState(false);
+  const [scope, setScope] = import_react15.default.useState(() => scene.unbeautified.length > 0 ? "unbeautified" : "all");
+  const [direction, setDirection] = import_react15.default.useState("scientific");
+  const [layout, setLayout] = import_react15.default.useState("auto");
+  const [status, setStatus] = import_react15.default.useState({ phase: "idle", message: "", meta: null });
+  const [ai, setAi] = import_react15.default.useState(() => ({ loading: true, available: null, reason: "", model: "" }));
+  const [figures, setFigures] = import_react15.default.useState({ status: "loading", candidates: [] });
+  const [useFigures, setUseFigures] = import_react15.default.useState(false);
   const busy2 = status.phase === "running";
-  import_react14.default.useEffect(() => {
+  import_react15.default.useEffect(() => {
     let alive = true;
     if (!service || typeof service.figureCandidates !== "function") {
       setFigures({ status: "ready", candidates: [] });
@@ -12571,7 +12668,7 @@ function BeautifyDialog(props) {
       alive = false;
     };
   }, [props.note, props.paperLinks, service]);
-  import_react14.default.useEffect(() => {
+  import_react15.default.useEffect(() => {
     let alive = true;
     if (props.aiStatus) {
       setAi({
@@ -12636,7 +12733,7 @@ function BeautifyDialog(props) {
     { id: "all", label: t("notes.beautify.scope.all"), count: scene.all.length }
   ];
   if (props.selection) scopeItems.push({ id: "selection", label: t("notes.beautify.scope.selection"), count: scene.selection.length });
-  return import_react14.default.createElement(
+  return import_react15.default.createElement(
     Modal,
     {
       t,
@@ -12646,13 +12743,13 @@ function BeautifyDialog(props) {
       busy: busy2,
       wide: true,
       footer: [
-        import_react14.default.createElement(
+        import_react15.default.createElement(
           "button",
           { key: "cancel", type: "button", className: "ph-btn ph-btn--secondary ph-btn--md", onClick: props.onClose, disabled: busy2 },
-          import_react14.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
+          import_react15.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
         ),
-        import_react14.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
-        import_react14.default.createElement(
+        import_react15.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
+        import_react15.default.createElement(
           "button",
           {
             key: "start",
@@ -12662,26 +12759,26 @@ function BeautifyDialog(props) {
             disabled: busy2 || activeSections.length === 0 || ai.available === false,
             title: ai.available === false ? t("notes.beautify.aiUnavailable") : void 0
           },
-          busy2 ? import_react14.default.createElement("span", { className: "ph-spinner ph-spinner--inline", "aria-hidden": "true" }) : import_react14.default.createElement(Icon, { name: "sparkle", size: 14 }),
-          import_react14.default.createElement("span", { className: "ph-btn__label" }, busy2 ? t("notes.beautify.running") : t("notes.beautify.start"))
+          busy2 ? import_react15.default.createElement("span", { className: "ph-spinner ph-spinner--inline", "aria-hidden": "true" }) : import_react15.default.createElement(Icon, { name: "sparkle", size: 14 }),
+          import_react15.default.createElement("span", { className: "ph-btn__label" }, busy2 ? t("notes.beautify.running") : t("notes.beautify.start"))
         )
       ]
     },
-    ai.loading ? import_react14.default.createElement("div", { className: "ph-n-progress" }, import_react14.default.createElement(Spinner), import_react14.default.createElement("span", null, t("notes.beautify.checkingAi"))) : ai.available === false ? import_react14.default.createElement(
-      "div",
-      { className: "ph-n-error" },
-      import_react14.default.createElement(Icon, { name: "warning", size: 14 }),
-      import_react14.default.createElement("span", null, t("notes.beautify.unavailable", { reason: ai.reason || t("common.unavailable") }))
-    ) : null,
-    import_react14.default.createElement(
+    ai.loading ? import_react15.default.createElement("div", { className: "ph-n-progress" }, import_react15.default.createElement(Spinner), import_react15.default.createElement("span", null, t("notes.beautify.checkingAi"))) : ai.available === false ? import_react15.default.createElement(AiWarning, {
+      t,
+      compact: true,
+      status: "unavailable",
+      reason: ai.reason || t("common.unavailable")
+    }) : null,
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-field" },
-      import_react14.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.direction")),
-      import_react14.default.createElement(
+      import_react15.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.direction")),
+      import_react15.default.createElement(
         "div",
         { className: "ph-n-choices" },
         DIRECTIONS.map(
-          (item) => import_react14.default.createElement(
+          (item) => import_react15.default.createElement(
             "button",
             {
               key: item.id,
@@ -12691,79 +12788,79 @@ function BeautifyDialog(props) {
               "aria-pressed": direction === item.id ? "true" : "false",
               disabled: busy2
             },
-            import_react14.default.createElement("span", { className: "ph-n-choice__title" }, t(item.title)),
-            import_react14.default.createElement("span", { className: "ph-n-choice__desc" }, t(item.desc))
+            import_react15.default.createElement("span", { className: "ph-n-choice__title" }, t(item.title)),
+            import_react15.default.createElement("span", { className: "ph-n-choice__desc" }, t(item.desc))
           )
         )
       ),
-      import_react14.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.directionHint"))
+      import_react15.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.directionHint"))
     ),
-    import_react14.default.createElement(
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-field" },
-      import_react14.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.layout")),
-      import_react14.default.createElement(
+      import_react15.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.layout")),
+      import_react15.default.createElement(
         "div",
         { className: "ph-n-radio-row" },
         LAYOUTS.map(
-          (item) => import_react14.default.createElement(
+          (item) => import_react15.default.createElement(
             "label",
             { key: item.id, className: "ph-n-radio", onClick: () => setLayout(item.id) },
-            import_react14.default.createElement("input", { type: "radio", checked: layout === item.id, onChange: () => setLayout(item.id), disabled: busy2, name: "ph-n-layout" }),
-            import_react14.default.createElement("span", null, t(item.label))
+            import_react15.default.createElement("input", { type: "radio", checked: layout === item.id, onChange: () => setLayout(item.id), disabled: busy2, name: "ph-n-layout" }),
+            import_react15.default.createElement("span", null, t(item.label))
           )
         )
       )
     ),
-    import_react14.default.createElement(
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-field" },
-      import_react14.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.scope")),
-      import_react14.default.createElement(
+      import_react15.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.scope")),
+      import_react15.default.createElement(
         "div",
         { className: "ph-n-radio-row" },
         scopeItems.map(
-          (item) => import_react14.default.createElement(
+          (item) => import_react15.default.createElement(
             "label",
             { key: item.id, className: "ph-n-radio", onClick: () => setScope(item.id) },
-            import_react14.default.createElement("input", {
+            import_react15.default.createElement("input", {
               type: "radio",
               checked: scope === item.id,
               onChange: () => setScope(item.id),
               disabled: busy2 || item.count === 0,
               name: "ph-n-scope"
             }),
-            import_react14.default.createElement("span", null, item.label + " (" + item.count + ")")
+            import_react15.default.createElement("span", null, item.label + " (" + item.count + ")")
           )
         )
       )
     ),
-    import_react14.default.createElement(
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-field" },
-      import_react14.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.figures")),
-      figures.status === "loading" ? import_react14.default.createElement("div", { className: "ph-n-progress" }, import_react14.default.createElement(Spinner), import_react14.default.createElement("span", null, t("notes.beautify.figuresLoading"))) : figures.candidates.length > 0 ? import_react14.default.createElement(
+      import_react15.default.createElement("div", { className: "ph-n-field__label" }, t("notes.beautify.figures")),
+      figures.status === "loading" ? import_react15.default.createElement("div", { className: "ph-n-progress" }, import_react15.default.createElement(Spinner), import_react15.default.createElement("span", null, t("notes.beautify.figuresLoading"))) : figures.candidates.length > 0 ? import_react15.default.createElement(
         "div",
         { className: "ph-n-radio-row" },
-        import_react14.default.createElement(
+        import_react15.default.createElement(
           "label",
           { className: "ph-n-radio", onClick: () => setUseFigures((value) => !value) },
-          import_react14.default.createElement("input", {
+          import_react15.default.createElement("input", {
             type: "checkbox",
             checked: useFigures,
             onChange: () => setUseFigures((value) => !value),
             disabled: busy2
           }),
-          import_react14.default.createElement("span", null, t("notes.beautify.useFigures", { count: figures.candidates.length }))
+          import_react15.default.createElement("span", null, t("notes.beautify.useFigures", { count: figures.candidates.length }))
         )
-      ) : import_react14.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.noFigures")),
-      import_react14.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.figuresHint"))
+      ) : import_react15.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.noFigures")),
+      import_react15.default.createElement("div", { className: "ph-n-field__hint" }, t("notes.beautify.figuresHint"))
     ),
-    import_react14.default.createElement(
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-summary" },
-      import_react14.default.createElement(Icon, { name: "info", size: 14, className: "ph-n-summary__icon" }),
-      import_react14.default.createElement(
+      import_react15.default.createElement(Icon, { name: "info", size: 14, className: "ph-n-summary__icon" }),
+      import_react15.default.createElement(
         "div",
         null,
         t("notes.beautify.sections", { count: activeSections.length }),
@@ -12771,21 +12868,21 @@ function BeautifyDialog(props) {
         skippedIncomplete ? " \xB7 " + t("notes.beautify.noComplete") : ""
       )
     ),
-    status.phase === "running" ? import_react14.default.createElement("div", { className: "ph-n-progress" }, import_react14.default.createElement(Spinner), import_react14.default.createElement("span", null, t("notes.beautify.running"))) : null,
-    status.phase === "error" ? import_react14.default.createElement("div", { className: "ph-n-error" }, import_react14.default.createElement(Icon, { name: "warning", size: 14 }), import_react14.default.createElement("span", null, status.message)) : null
+    status.phase === "running" ? import_react15.default.createElement("div", { className: "ph-n-progress" }, import_react15.default.createElement(Spinner), import_react15.default.createElement("span", null, t("notes.beautify.running"))) : null,
+    status.phase === "error" ? import_react15.default.createElement("div", { className: "ph-n-error" }, import_react15.default.createElement(Icon, { name: "warning", size: 14 }), import_react15.default.createElement("span", null, status.message)) : null
   );
 }
 function RevisionsDialog(props) {
   const t = props.t;
   const service = props.service;
-  const [state, setState] = import_react14.default.useState({ status: "loading", items: [], error: "" });
-  const [confirming, setConfirming] = import_react14.default.useState(0);
-  const [busy2, setBusy] = import_react14.default.useState(false);
-  const load = import_react14.default.useCallback(() => {
+  const [state, setState] = import_react15.default.useState({ status: "loading", items: [], error: "" });
+  const [confirming, setConfirming] = import_react15.default.useState(0);
+  const [busy2, setBusy] = import_react15.default.useState(false);
+  const load = import_react15.default.useCallback(() => {
     setState({ status: "loading", items: [], error: "" });
     Promise.resolve(service.revisions(props.noteId)).then((items2) => setState({ status: "ready", items: Array.isArray(items2) ? items2 : [], error: "" })).catch((error) => setState({ status: "error", items: [], error: String(error && error.message || error) }));
   }, [props.noteId, service]);
-  import_react14.default.useEffect(() => {
+  import_react15.default.useEffect(() => {
     load();
   }, [load]);
   const restore = (revision2) => {
@@ -12805,7 +12902,7 @@ function RevisionsDialog(props) {
     const translated = t(key);
     return translated === key ? t("notes.history.reason.update") : translated;
   };
-  return import_react14.default.createElement(
+  return import_react15.default.createElement(
     Modal,
     {
       t,
@@ -12814,49 +12911,49 @@ function RevisionsDialog(props) {
       onClose: props.onClose,
       busy: busy2,
       footer: [
-        import_react14.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
-        import_react14.default.createElement(
+        import_react15.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
+        import_react15.default.createElement(
           "button",
           { key: "close", type: "button", className: "ph-btn ph-btn--secondary ph-btn--md", onClick: props.onClose, disabled: busy2 },
-          import_react14.default.createElement("span", { className: "ph-btn__label" }, t("common.close"))
+          import_react15.default.createElement("span", { className: "ph-btn__label" }, t("common.close"))
         )
       ]
     },
-    state.status === "loading" ? import_react14.default.createElement("div", { className: "ph-n-progress" }, import_react14.default.createElement(Spinner), import_react14.default.createElement("span", null, t("notes.history.loading"))) : null,
-    state.status === "error" ? import_react14.default.createElement(
+    state.status === "loading" ? import_react15.default.createElement("div", { className: "ph-n-progress" }, import_react15.default.createElement(Spinner), import_react15.default.createElement("span", null, t("notes.history.loading"))) : null,
+    state.status === "error" ? import_react15.default.createElement(
       "div",
       { className: "ph-n-error" },
-      import_react14.default.createElement(Icon, { name: "warning", size: 14 }),
-      import_react14.default.createElement("span", null, state.error || t("common.unavailable")),
-      import_react14.default.createElement(
+      import_react15.default.createElement(Icon, { name: "warning", size: 14 }),
+      import_react15.default.createElement("span", null, state.error || t("common.unavailable")),
+      import_react15.default.createElement(
         "button",
         { type: "button", className: "ph-btn ph-btn--secondary ph-btn--sm", onClick: load },
-        import_react14.default.createElement("span", { className: "ph-btn__label" }, t("common.retry"))
+        import_react15.default.createElement("span", { className: "ph-btn__label" }, t("common.retry"))
       )
     ) : null,
-    state.status === "ready" && state.items.length === 0 ? import_react14.default.createElement(EmptyState, { compact: true, icon: "history", title: t("notes.history.empty") }) : null,
-    state.items.length > 0 ? import_react14.default.createElement(
+    state.status === "ready" && state.items.length === 0 ? import_react15.default.createElement(EmptyState, { compact: true, icon: "history", title: t("notes.history.empty") }) : null,
+    state.items.length > 0 ? import_react15.default.createElement(
       "div",
       { className: "ph-n-revlist" },
       state.items.map(
-        (item, index) => import_react14.default.createElement(
+        (item, index) => import_react15.default.createElement(
           "div",
           { key: String(item.revision) + "-" + index, className: "ph-n-revrow" + (item.revision === props.currentRevision ? " ph-n-revrow--current" : "") },
-          import_react14.default.createElement(
+          import_react15.default.createElement(
             "div",
             { className: "ph-n-revrow__main" },
-            import_react14.default.createElement(
+            import_react15.default.createElement(
               "span",
               { className: "ph-n-revrow__label" },
               "r" + item.revision + " \xB7 " + reasonLabel3(item.reason) + (item.revision === props.currentRevision ? " \xB7 " + t("notes.history.current") : "")
             ),
-            import_react14.default.createElement(
+            import_react15.default.createElement(
               "span",
               { className: "ph-n-revrow__meta" },
               formatNoteTime(item.createdAt) + " \xB7 " + t("notes.history.length", { count: item.contentMdLength || 0 }) + (item.hasContentJson ? " \xB7 " + t("notes.cards.beautified") : "")
             )
           ),
-          import_react14.default.createElement(
+          import_react15.default.createElement(
             "button",
             {
               type: "button",
@@ -12865,28 +12962,28 @@ function RevisionsDialog(props) {
               disabled: busy2 || item.revision === props.currentRevision,
               title: t("notes.history.restore")
             },
-            import_react14.default.createElement("span", { className: "ph-btn__label" }, confirming === item.revision ? t("notes.history.restoreConfirm") : t("notes.history.restore"))
+            import_react15.default.createElement("span", { className: "ph-btn__label" }, confirming === item.revision ? t("notes.history.restoreConfirm") : t("notes.history.restore"))
           )
         )
       )
     ) : null,
-    import_react14.default.createElement("p", { className: "ph-n-field__hint" }, t("notes.history.restoreHint"))
+    import_react15.default.createElement("p", { className: "ph-n-field__hint" }, t("notes.history.restoreHint"))
   );
 }
 function PaperLinkDialog(props) {
   const t = props.t;
   const api = props.api;
   const initial = Array.isArray(props.note && props.note.paperIds) ? props.note.paperIds : [];
-  const [selected, setSelected] = import_react14.default.useState(() => new Set(initial));
-  const [query, setQuery] = import_react14.default.useState("");
-  const [state, setState] = import_react14.default.useState({ status: "idle", items: [], error: "" });
-  const [folders, setFolders] = import_react14.default.useState([]);
-  const [folderId, setFolderId] = import_react14.default.useState("");
-  const [annotatedOnly, setAnnotatedOnly] = import_react14.default.useState(false);
-  const [linkFilter, setLinkFilter] = import_react14.default.useState("all");
-  const [busy2, setBusy] = import_react14.default.useState(false);
-  const debounced = import_react14.default.useRef("");
-  import_react14.default.useEffect(() => {
+  const [selected, setSelected] = import_react15.default.useState(() => new Set(initial));
+  const [query, setQuery] = import_react15.default.useState("");
+  const [state, setState] = import_react15.default.useState({ status: "idle", items: [], error: "" });
+  const [folders, setFolders] = import_react15.default.useState([]);
+  const [folderId, setFolderId] = import_react15.default.useState("");
+  const [annotatedOnly, setAnnotatedOnly] = import_react15.default.useState(false);
+  const [linkFilter, setLinkFilter] = import_react15.default.useState("all");
+  const [busy2, setBusy] = import_react15.default.useState(false);
+  const debounced = import_react15.default.useRef("");
+  import_react15.default.useEffect(() => {
     let alive = true;
     Promise.resolve(api("library.folders.tree", {})).then((result) => {
       if (!alive) return;
@@ -12908,7 +13005,7 @@ function PaperLinkDialog(props) {
       alive = false;
     };
   }, [api]);
-  import_react14.default.useEffect(() => {
+  import_react15.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       debounced.current = query;
       setState((previous) => Object.assign({}, previous, { status: "loading" }));
@@ -12956,7 +13053,7 @@ function PaperLinkDialog(props) {
     if (linkFilter === "unlinked") return !selected.has(paper.id);
     return true;
   });
-  return import_react14.default.createElement(
+  return import_react15.default.createElement(
     Modal,
     {
       t,
@@ -12965,66 +13062,66 @@ function PaperLinkDialog(props) {
       onClose: props.onClose,
       busy: busy2,
       footer: [
-        import_react14.default.createElement(
+        import_react15.default.createElement(
           "button",
           { key: "cancel", type: "button", className: "ph-btn ph-btn--secondary ph-btn--md", onClick: props.onClose, disabled: busy2 },
-          import_react14.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
+          import_react15.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
         ),
-        import_react14.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
-        import_react14.default.createElement(
+        import_react15.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
+        import_react15.default.createElement(
           "button",
           { key: "save", type: "button", className: "ph-btn ph-btn--primary ph-btn--md", onClick: save, disabled: busy2 },
-          busy2 ? import_react14.default.createElement("span", { className: "ph-spinner ph-spinner--inline", "aria-hidden": "true" }) : null,
-          import_react14.default.createElement("span", { className: "ph-btn__label" }, t("notes.papers.save"))
+          busy2 ? import_react15.default.createElement("span", { className: "ph-spinner ph-spinner--inline", "aria-hidden": "true" }) : null,
+          import_react15.default.createElement("span", { className: "ph-btn__label" }, t("notes.papers.save"))
         )
       ]
     },
-    import_react14.default.createElement(SearchInput, { value: query, onChange: setQuery, placeholder: t("notes.papers.search"), clearLabel: t("common.clear") }),
-    import_react14.default.createElement(
+    import_react15.default.createElement(SearchInput, { value: query, onChange: setQuery, placeholder: t("notes.papers.search"), clearLabel: t("common.clear") }),
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-paperpick__filters" },
-      import_react14.default.createElement(
+      import_react15.default.createElement(
         "select",
         { className: "ph-select ph-select--inline", value: folderId, "aria-label": t("folders.pick"), onChange: (event) => setFolderId(event.target.value) },
-        import_react14.default.createElement("option", { value: "" }, t("folders.all")),
-        folders.map((folder) => import_react14.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
+        import_react15.default.createElement("option", { value: "" }, t("folders.all")),
+        folders.map((folder) => import_react15.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
       ),
-      import_react14.default.createElement(
+      import_react15.default.createElement(
         "label",
         { className: "ph-n-paperpick__annot" },
-        import_react14.default.createElement("input", { type: "checkbox", checked: annotatedOnly, onChange: (event) => setAnnotatedOnly(event.target.checked) }),
+        import_react15.default.createElement("input", { type: "checkbox", checked: annotatedOnly, onChange: (event) => setAnnotatedOnly(event.target.checked) }),
         t("notes.papers.annotatedOnly")
       ),
-      import_react14.default.createElement(
+      import_react15.default.createElement(
         "select",
         { className: "ph-select ph-select--inline", value: linkFilter, "aria-label": t("notes.papers.filterLabel"), onChange: (event) => setLinkFilter(event.target.value) },
-        import_react14.default.createElement("option", { value: "all" }, t("notes.papers.filter.all")),
-        import_react14.default.createElement("option", { value: "linked" }, t("notes.papers.filter.linked")),
-        import_react14.default.createElement("option", { value: "unlinked" }, t("notes.papers.filter.unlinked"))
+        import_react15.default.createElement("option", { value: "all" }, t("notes.papers.filter.all")),
+        import_react15.default.createElement("option", { value: "linked" }, t("notes.papers.filter.linked")),
+        import_react15.default.createElement("option", { value: "unlinked" }, t("notes.papers.filter.unlinked"))
       )
     ),
-    import_react14.default.createElement(
+    import_react15.default.createElement(
       "div",
       { className: "ph-n-paperpick" },
-      state.status === "loading" ? import_react14.default.createElement("div", { className: "ph-n-progress" }, import_react14.default.createElement(Spinner), import_react14.default.createElement("span", null, t("common.loading"))) : null,
-      state.status === "error" ? import_react14.default.createElement("div", { className: "ph-n-error" }, import_react14.default.createElement(Icon, { name: "warning", size: 14 }), import_react14.default.createElement("span", null, state.error)) : null,
-      state.status === "ready" && visibleItems.length === 0 ? import_react14.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch") }) : null,
-      import_react14.default.createElement(
+      state.status === "loading" ? import_react15.default.createElement("div", { className: "ph-n-progress" }, import_react15.default.createElement(Spinner), import_react15.default.createElement("span", null, t("common.loading"))) : null,
+      state.status === "error" ? import_react15.default.createElement("div", { className: "ph-n-error" }, import_react15.default.createElement(Icon, { name: "warning", size: 14 }), import_react15.default.createElement("span", null, state.error)) : null,
+      state.status === "ready" && visibleItems.length === 0 ? import_react15.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch") }) : null,
+      import_react15.default.createElement(
         "div",
         { className: "ph-n-paperpick__list" },
         visibleItems.map(
-          (paper) => import_react14.default.createElement(
+          (paper) => import_react15.default.createElement(
             "label",
             { key: paper.id, className: "ph-n-paperpick__row" },
-            import_react14.default.createElement("input", { type: "checkbox", checked: selected.has(paper.id), onChange: () => toggle(paper.id) }),
-            import_react14.default.createElement("span", { className: "ph-n-paperpick__title", title: titleOf(paper) }, titleOf(paper)),
-            paper.year ? import_react14.default.createElement("span", { className: "ph-n-caption" }, String(paper.year)) : null,
-            Number(paper.annotationCount) > 0 ? import_react14.default.createElement("span", { className: "ph-n-caption" }, "\u6279\u6CE8 " + paper.annotationCount) : null
+            import_react15.default.createElement("input", { type: "checkbox", checked: selected.has(paper.id), onChange: () => toggle(paper.id) }),
+            import_react15.default.createElement("span", { className: "ph-n-paperpick__title", title: titleOf(paper) }, titleOf(paper)),
+            paper.year ? import_react15.default.createElement("span", { className: "ph-n-caption" }, String(paper.year)) : null,
+            Number(paper.annotationCount) > 0 ? import_react15.default.createElement("span", { className: "ph-n-caption" }, "\u6279\u6CE8 " + paper.annotationCount) : null
           )
         )
       )
     ),
-    selected.size > 0 ? import_react14.default.createElement("div", { className: "ph-n-summary" }, import_react14.default.createElement(Icon, { name: "link", size: 14, className: "ph-n-summary__icon" }), import_react14.default.createElement("span", null, t("notes.papers.selected", { count: selected.size }))) : import_react14.default.createElement("div", { className: "ph-n-summary" }, import_react14.default.createElement(Icon, { name: "info", size: 14, className: "ph-n-summary__icon" }), import_react14.default.createElement("span", null, t("notes.papers.none")))
+    selected.size > 0 ? import_react15.default.createElement("div", { className: "ph-n-summary" }, import_react15.default.createElement(Icon, { name: "link", size: 14, className: "ph-n-summary__icon" }), import_react15.default.createElement("span", null, t("notes.papers.selected", { count: selected.size }))) : import_react15.default.createElement("div", { className: "ph-n-summary" }, import_react15.default.createElement(Icon, { name: "info", size: 14, className: "ph-n-summary__icon" }), import_react15.default.createElement("span", null, t("notes.papers.none")))
   );
 }
 
@@ -13033,8 +13130,8 @@ function draftTimeLabel(value) {
   return formatNoteTime(value) || "";
 }
 function Menu(props) {
-  const ref = import_react15.default.useRef(null);
-  import_react15.default.useEffect(() => {
+  const ref = import_react16.default.useRef(null);
+  import_react16.default.useEffect(() => {
     const onDown = (event) => {
       if (ref.current && !ref.current.contains(event.target)) props.onClose();
     };
@@ -13048,11 +13145,11 @@ function Menu(props) {
       document.removeEventListener("keydown", onKey);
     };
   }, [props]);
-  return import_react15.default.createElement(
+  return import_react16.default.createElement(
     "div",
     { className: "ph-n-menu", ref, role: "menu" },
     (props.items || []).filter(Boolean).map(
-      (item) => import_react15.default.createElement(
+      (item) => import_react16.default.createElement(
         "button",
         {
           key: item.id,
@@ -13066,8 +13163,8 @@ function Menu(props) {
           disabled: item.disabled,
           title: item.title
         },
-        item.icon ? import_react15.default.createElement(Icon, { name: item.icon, size: 14 }) : null,
-        import_react15.default.createElement("span", { className: "ph-n-menu__label" }, item.label)
+        item.icon ? import_react16.default.createElement(Icon, { name: item.icon, size: 14 }) : null,
+        import_react16.default.createElement("span", { className: "ph-n-menu__label" }, item.label)
       )
     )
   );
@@ -13078,78 +13175,78 @@ function NoteEditor(props) {
   const compact = props.variant === "compact";
   const note = props.note && props.note.id ? props.note : null;
   const noteId = note ? String(note.id) : "";
-  const [title2, setTitle] = import_react15.default.useState(note ? note.title : "");
-  const [content, setContent] = import_react15.default.useState(note ? note.contentMd : "");
-  const [contentJson, setContentJson] = import_react15.default.useState(note ? note.contentJson : null);
-  const [viewMode, setViewMode] = import_react15.default.useState(note && note.contentJson ? "cards" : "original");
-  const [saveState, setSaveState] = import_react15.default.useState({ status: note ? "saved" : "idle", at: 0, message: "" });
-  const [conflict, setConflict] = import_react15.default.useState(null);
-  const [draftFound, setDraftFound] = import_react15.default.useState(null);
-  const [incompleteIds, setIncompleteIds] = import_react15.default.useState(() => note ? resolveIncompleteSections(note.id, sectionizeMarkdown(note.contentMd)) : []);
-  const [beautifyOpen, setBeautifyOpen] = import_react15.default.useState(false);
-  const [directiveMenuOpen, setDirectiveMenuOpen] = import_react15.default.useState(false);
-  const [directiveRunning, setDirectiveRunning] = import_react15.default.useState(false);
-  const [beautifySelection, setBeautifySelection] = import_react15.default.useState(null);
-  const [historyOpen, setHistoryOpen] = import_react15.default.useState(false);
-  const [linkOpen, setLinkOpen] = import_react15.default.useState(false);
-  const [menuOpen, setMenuOpen] = import_react15.default.useState(false);
-  const [deleting, setDeleting] = import_react15.default.useState(false);
-  const [deleteOpen, setDeleteOpen] = import_react15.default.useState(false);
-  const [sectionsOpen, setSectionsOpen] = import_react15.default.useState(false);
-  const [aiStatus, setAiStatus] = import_react15.default.useState(props.aiStatus || null);
-  const [autoFix, setAutoFix] = import_react15.default.useState(() => readAutoFix(note ? note.id : ""));
-  const [autoIntro, setAutoIntro] = import_react15.default.useState(false);
-  const [autoOverlay, setAutoOverlay] = import_react15.default.useState(null);
-  const [autoRunning, setAutoRunning] = import_react15.default.useState(false);
-  const [autoStatus, setAutoStatus] = import_react15.default.useState(null);
-  const titleRef = import_react15.default.useRef(null);
-  const contentRef = import_react15.default.useRef(null);
-  const textareaRef = import_react15.default.useRef(null);
-  const noteRef = import_react15.default.useRef(note);
-  const revisionRef = import_react15.default.useRef(note ? note.revision : 0);
-  const localRef = import_react15.default.useRef({ title: note ? note.title : "", content: note ? note.contentMd : "" });
-  const dirtyRef = import_react15.default.useRef(false);
-  const debounceRef = import_react15.default.useRef(null);
-  const retryRef = import_react15.default.useRef(null);
-  const retryCountRef = import_react15.default.useRef(0);
-  const saveSeqRef = import_react15.default.useRef(0);
-  const saveOpRef = import_react15.default.useRef({ id: "", snapshot: "" });
-  const mountedRef = import_react15.default.useRef(true);
-  const loadKeyRef = import_react15.default.useRef("");
-  const onSavedRef = import_react15.default.useRef(props.onSaved);
+  const [title2, setTitle] = import_react16.default.useState(note ? note.title : "");
+  const [content, setContent] = import_react16.default.useState(note ? note.contentMd : "");
+  const [contentJson, setContentJson] = import_react16.default.useState(note ? note.contentJson : null);
+  const [viewMode, setViewMode] = import_react16.default.useState(note && note.contentJson ? "cards" : "original");
+  const [saveState, setSaveState] = import_react16.default.useState({ status: note ? "saved" : "idle", at: 0, message: "" });
+  const [conflict, setConflict] = import_react16.default.useState(null);
+  const [draftFound, setDraftFound] = import_react16.default.useState(null);
+  const [incompleteIds, setIncompleteIds] = import_react16.default.useState(() => note ? resolveIncompleteSections(note.id, sectionizeMarkdown(note.contentMd)) : []);
+  const [beautifyOpen, setBeautifyOpen] = import_react16.default.useState(false);
+  const [directiveMenuOpen, setDirectiveMenuOpen] = import_react16.default.useState(false);
+  const [directiveRunning, setDirectiveRunning] = import_react16.default.useState(false);
+  const [beautifySelection, setBeautifySelection] = import_react16.default.useState(null);
+  const [historyOpen, setHistoryOpen] = import_react16.default.useState(false);
+  const [linkOpen, setLinkOpen] = import_react16.default.useState(false);
+  const [menuOpen, setMenuOpen] = import_react16.default.useState(false);
+  const [deleting, setDeleting] = import_react16.default.useState(false);
+  const [deleteOpen, setDeleteOpen] = import_react16.default.useState(false);
+  const [sectionsOpen, setSectionsOpen] = import_react16.default.useState(false);
+  const [aiStatus, setAiStatus] = import_react16.default.useState(props.aiStatus || null);
+  const [autoFix, setAutoFix] = import_react16.default.useState(() => readAutoFix(note ? note.id : ""));
+  const [autoIntro, setAutoIntro] = import_react16.default.useState(false);
+  const [autoOverlay, setAutoOverlay] = import_react16.default.useState(null);
+  const [autoRunning, setAutoRunning] = import_react16.default.useState(false);
+  const [autoStatus, setAutoStatus] = import_react16.default.useState(null);
+  const titleRef = import_react16.default.useRef(null);
+  const contentRef = import_react16.default.useRef(null);
+  const textareaRef = import_react16.default.useRef(null);
+  const noteRef = import_react16.default.useRef(note);
+  const revisionRef = import_react16.default.useRef(note ? note.revision : 0);
+  const localRef = import_react16.default.useRef({ title: note ? note.title : "", content: note ? note.contentMd : "" });
+  const dirtyRef = import_react16.default.useRef(false);
+  const debounceRef = import_react16.default.useRef(null);
+  const retryRef = import_react16.default.useRef(null);
+  const retryCountRef = import_react16.default.useRef(0);
+  const saveSeqRef = import_react16.default.useRef(0);
+  const saveOpRef = import_react16.default.useRef({ id: "", snapshot: "" });
+  const mountedRef = import_react16.default.useRef(true);
+  const loadKeyRef = import_react16.default.useRef("");
+  const onSavedRef = import_react16.default.useRef(props.onSaved);
   onSavedRef.current = props.onSaved;
-  const contentJsonRef = import_react15.default.useRef(note ? note.contentJson : null);
-  const contentSaveTimerRef = import_react15.default.useRef(null);
-  const contentSaveSeqRef = import_react15.default.useRef(0);
-  const incompleteRef = import_react15.default.useRef(incompleteIds);
-  const autoEnabledRef = import_react15.default.useRef(false);
-  const autoDirectionRef = import_react15.default.useRef(DEFAULT_AUTOFIX_DIRECTION);
-  const autoBusyRef = import_react15.default.useRef(false);
-  const autoTimerRef = import_react15.default.useRef(null);
-  const autoOverlayRef = import_react15.default.useRef(null);
-  const autoOverlayTimerRef = import_react15.default.useRef(null);
-  const autoStatusTimerRef = import_react15.default.useRef(null);
-  const autoLastAtRef = import_react15.default.useRef(0);
-  const autoFailRef = import_react15.default.useRef("");
-  const sameNoteRef = import_react15.default.useRef("");
-  import_react15.default.useEffect(() => {
+  const contentJsonRef = import_react16.default.useRef(note ? note.contentJson : null);
+  const contentSaveTimerRef = import_react16.default.useRef(null);
+  const contentSaveSeqRef = import_react16.default.useRef(0);
+  const incompleteRef = import_react16.default.useRef(incompleteIds);
+  const autoEnabledRef = import_react16.default.useRef(false);
+  const autoDirectionRef = import_react16.default.useRef(DEFAULT_AUTOFIX_DIRECTION);
+  const autoBusyRef = import_react16.default.useRef(false);
+  const autoTimerRef = import_react16.default.useRef(null);
+  const autoOverlayRef = import_react16.default.useRef(null);
+  const autoOverlayTimerRef = import_react16.default.useRef(null);
+  const autoStatusTimerRef = import_react16.default.useRef(null);
+  const autoLastAtRef = import_react16.default.useRef(0);
+  const autoFailRef = import_react16.default.useRef("");
+  const sameNoteRef = import_react16.default.useRef("");
+  import_react16.default.useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
   }, []);
-  import_react15.default.useEffect(() => {
+  import_react16.default.useEffect(() => {
     contentJsonRef.current = contentJson;
   }, [contentJson]);
-  import_react15.default.useEffect(() => {
+  import_react16.default.useEffect(() => {
     incompleteRef.current = incompleteIds;
   }, [incompleteIds]);
-  import_react15.default.useEffect(() => {
+  import_react16.default.useEffect(() => {
     autoEnabledRef.current = autoFix.enabled;
     autoDirectionRef.current = autoFix.direction;
   }, [autoFix]);
   const loadKey = note ? String(note.id) + ":" + String(note.revision) + ":" + String(note.updatedAt || "") : "";
-  import_react15.default.useEffect(() => {
+  import_react16.default.useEffect(() => {
     if (loadKey === loadKeyRef.current) return;
     loadKeyRef.current = loadKey;
     if (!note) return;
@@ -13196,7 +13293,7 @@ function NoteEditor(props) {
       scheduleAutoCheck(1200);
     }
   }, [loadKey, note]);
-  const buildDraftPayload = import_react15.default.useCallback(() => {
+  const buildDraftPayload = import_react16.default.useCallback(() => {
     const current2 = noteRef.current;
     if (!current2) return null;
     return {
@@ -13206,7 +13303,7 @@ function NoteEditor(props) {
       baseRevision: revisionRef.current
     };
   }, []);
-  const persist = import_react15.default.useCallback(
+  const persist = import_react16.default.useCallback(
     (options) => {
       const current2 = noteRef.current;
       if (!current2 || !current2.id) return Promise.resolve(null);
@@ -13265,21 +13362,21 @@ function NoteEditor(props) {
     },
     [buildDraftPayload, service]
   );
-  const scheduleSave = import_react15.default.useCallback(() => {
+  const scheduleSave = import_react16.default.useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       debounceRef.current = null;
       persist();
     }, 800);
   }, [persist]);
-  const flush = import_react15.default.useCallback(() => {
+  const flush = import_react16.default.useCallback(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
       debounceRef.current = null;
     }
     return persist();
   }, [persist]);
-  const applyLocal = import_react15.default.useCallback(
+  const applyLocal = import_react16.default.useCallback(
     (patch) => {
       localRef.current = Object.assign({}, localRef.current, patch);
       if ("title" in patch) setTitle(patch.title);
@@ -13293,7 +13390,7 @@ function NoteEditor(props) {
     },
     [scheduleSave]
   );
-  import_react15.default.useEffect(() => {
+  import_react16.default.useEffect(() => {
     const onPageHide = () => {
       if (!dirtyRef.current || !noteRef.current) return;
       const draft = buildDraftPayload();
@@ -13329,12 +13426,12 @@ function NoteEditor(props) {
       }
     };
   }, [buildDraftPayload, service]);
-  const sections = import_react15.default.useMemo(() => sectionizeMarkdown(content), [content]);
-  const cardRows = import_react15.default.useMemo(() => matchSectionCards(content, contentJson).sections, [content, contentJson]);
-  const beautifiedIds = import_react15.default.useMemo(() => cardRows.filter((row) => row.beautified).map((row) => row.section.id), [cardRows]);
+  const sections = import_react16.default.useMemo(() => sectionizeMarkdown(content), [content]);
+  const cardRows = import_react16.default.useMemo(() => matchSectionCards(content, contentJson).sections, [content, contentJson]);
+  const beautifiedIds = import_react16.default.useMemo(() => cardRows.filter((row) => row.beautified).map((row) => row.section.id), [cardRows]);
   const incompleteSet = new Set(incompleteIds);
   const incompleteCount = incompleteIds.length;
-  const toggleIncomplete = import_react15.default.useCallback(
+  const toggleIncomplete = import_react16.default.useCallback(
     (sectionId) => {
       if (!noteId) return;
       const next = new Set(incompleteIds);
@@ -13442,7 +13539,7 @@ function NoteEditor(props) {
     const source = "> \u5F15\u81EA " + (figure.paperTitle || "\u8BBA\u6587") + (figure.page ? ", p." + figure.page : "") + " \xB7 " + label;
     return appendNoteSection("\u9644\u56FE", [block], source);
   }
-  const linkPaperToCurrent = import_react15.default.useCallback((paperId) => {
+  const linkPaperToCurrent = import_react16.default.useCallback((paperId) => {
     const current2 = noteRef.current;
     if (!current2 || !paperId) return Promise.resolve(null);
     return Promise.resolve(service.link(current2.id, [paperId])).then((fresh) => {
@@ -13455,7 +13552,7 @@ function NoteEditor(props) {
       return fresh;
     });
   }, [service]);
-  import_react15.default.useEffect(() => {
+  import_react16.default.useEffect(() => {
     if (!note || !note.id) return void 0;
     setNoteContext({
       noteId: note.id,
@@ -13487,17 +13584,17 @@ function NoteEditor(props) {
       }
     }
   }
-  import_react15.default.useEffect(() => () => {
+  import_react16.default.useEffect(() => () => {
     if (contentSaveTimerRef.current) clearTimeout(contentSaveTimerRef.current);
   }, []);
-  const persistCards = import_react15.default.useCallback(
+  const persistCards = import_react16.default.useCallback(
     (nextContentJson) => {
       const flushFirst = dirtyRef.current ? flush() : Promise.resolve(null);
       return flushFirst.then(() => saveContentJson(nextContentJson, { switchView: true }));
     },
     [flush]
   );
-  const openBeautify = import_react15.default.useCallback(() => {
+  const openBeautify = import_react16.default.useCallback(() => {
     cancelPendingAuto();
     const textarea = textareaRef.current;
     let selection = null;
@@ -13575,7 +13672,7 @@ function NoteEditor(props) {
       if (mountedRef.current) setDirectiveRunning(false);
     });
   }
-  const reloadNote = import_react15.default.useCallback(() => {
+  const reloadNote = import_react16.default.useCallback(() => {
     if (!noteId) return;
     const current2 = noteRef.current;
     Promise.resolve(service.get(noteId)).then((fresh) => {
@@ -13598,7 +13695,7 @@ function NoteEditor(props) {
     }).catch(() => {
     });
   }, [noteId, service]);
-  const overwriteConflict = import_react15.default.useCallback(() => {
+  const overwriteConflict = import_react16.default.useCallback(() => {
     setConflict(null);
     flush();
     persist({ force: true });
@@ -13606,7 +13703,7 @@ function NoteEditor(props) {
       if (dirtyRef.current) persist({ force: true });
     }, 10);
   }, [flush, persist]);
-  const deleteNote = import_react15.default.useCallback(() => {
+  const deleteNote = import_react16.default.useCallback(() => {
     if (!note || deleting) return;
     setDeleting(true);
     Promise.resolve(service.remove([note.id])).then(() => {
@@ -13618,7 +13715,7 @@ function NoteEditor(props) {
       if (props.notify) props.notify("error", t("notes.deleteFailed", { message: String(error && error.message || error) }));
     });
   }, [deleting, note, props, service, t]);
-  const clearFormat = import_react15.default.useCallback(() => {
+  const clearFormat = import_react16.default.useCallback(() => {
     if (!note) return;
     Promise.resolve(service.update({ id: note.id, patch: { contentJson: null }, expectedRevision: revisionRef.current || void 0 })).then((saved) => {
       if (saved) {
@@ -13633,7 +13730,7 @@ function NoteEditor(props) {
       if (props.notify) props.notify("error", t("notes.clearFormatFailed", { message: String(error && error.message || error) }));
     });
   }, [note, props, service, t]);
-  const exportNote = import_react15.default.useCallback(() => {
+  const exportNote = import_react16.default.useCallback(() => {
     if (!note) return;
     const fallback = () => {
       const markdown = noteToMarkdown(Object.assign({}, note, { title: localRef.current.title, contentMd: localRef.current.content }));
@@ -13886,13 +13983,13 @@ function NoteEditor(props) {
     setAutoIntro(false);
   }
   if (!note) {
-    return import_react15.default.createElement(
+    return import_react16.default.createElement(
       "div",
       { className: "ph-n-editor" },
-      import_react15.default.createElement(
+      import_react16.default.createElement(
         "div",
         { className: "ph-n-main__empty" },
-        import_react15.default.createElement(EmptyState, { icon: "note", title: t("notes.editor.emptyTitle"), desc: t("notes.editor.emptyDesc") })
+        import_react16.default.createElement(EmptyState, { icon: "note", title: t("notes.editor.emptyTitle"), desc: t("notes.editor.emptyDesc") })
       )
     );
   }
@@ -13913,18 +14010,18 @@ function NoteEditor(props) {
     contentJson ? { id: "clearFormat", icon: "restore", label: t("notes.clearFormat"), run: clearFormat, title: t("notes.clearFormatHint") } : null,
     { id: "delete", icon: "trash", label: t("notes.delete"), run: () => setDeleteOpen(true), danger: true, title: t("notes.deleteConfirm") }
   ];
-  return import_react15.default.createElement(
+  return import_react16.default.createElement(
     "div",
     { className: "ph-n-editor" + (compact ? " ph-n-editor--compact" : "") },
     /* head ------------------------------------------------------------------ */
-    import_react15.default.createElement(
+    import_react16.default.createElement(
       "div",
       { className: "ph-n-editor__head" },
-      import_react15.default.createElement(
+      import_react16.default.createElement(
         "div",
         { className: "ph-n-editor__titlerow" },
-        props.onOpenNoteLibrary && compact ? import_react15.default.createElement(IconButton, { icon: "external", title: t("notes.library.open"), onClick: () => props.onOpenNoteLibrary(note.id), className: "ph-n-editor__back" }) : null,
-        import_react15.default.createElement("input", {
+        props.onOpenNoteLibrary && compact ? import_react16.default.createElement(IconButton, { icon: "external", title: t("notes.library.open"), onClick: () => props.onOpenNoteLibrary(note.id), className: "ph-n-editor__back" }) : null,
+        import_react16.default.createElement("input", {
           ref: titleRef,
           className: "ph-n-editor__title",
           value: title2,
@@ -13939,13 +14036,13 @@ function NoteEditor(props) {
             }
           }
         }),
-        import_react15.default.createElement(
+        import_react16.default.createElement(
           "div",
           { className: "ph-n-editor__actions" },
-          import_react15.default.createElement(
+          import_react16.default.createElement(
             "div",
             { className: "ph-n-directivewrap" },
-            import_react15.default.createElement(Button, {
+            import_react16.default.createElement(Button, {
               size: "sm",
               variant: "ghost",
               icon: "listOrdered",
@@ -13953,9 +14050,9 @@ function NoteEditor(props) {
               loading: directiveRunning,
               title: t("notes.directive.title")
             }, compact ? directiveCount > 0 ? String(directiveCount) : "" : t("notes.directive.button") + (directiveCount > 0 ? " " + directiveCount : "")),
-            directiveMenuOpen ? import_react15.default.createElement(Menu, { items: directiveItems, onClose: () => setDirectiveMenuOpen(false) }) : null
+            directiveMenuOpen ? import_react16.default.createElement(Menu, { items: directiveItems, onClose: () => setDirectiveMenuOpen(false) }) : null
           ),
-          import_react15.default.createElement(Button, {
+          import_react16.default.createElement(Button, {
             size: "sm",
             variant: "soft",
             icon: "sparkle",
@@ -13963,26 +14060,26 @@ function NoteEditor(props) {
             title: autoRunning ? t("notes.beautifyBusy") : t("notes.beautify"),
             disabled: sections.length === 0 || autoRunning
           }, compact ? null : t("notes.beautify")),
-          contentJson ? import_react15.default.createElement(IconButton, {
+          contentJson ? import_react16.default.createElement(IconButton, {
             icon: viewMode === "cards" ? "book" : "layers",
             title: viewMode === "cards" ? t("notes.view.original") : t("notes.view.cards"),
             onClick: () => setViewMode(viewMode === "cards" ? "original" : "cards"),
             active: viewMode === "cards"
           }) : null,
-          import_react15.default.createElement(IconButton, { icon: "history", title: t("notes.history"), onClick: () => setHistoryOpen(true) }),
-          import_react15.default.createElement(
+          import_react16.default.createElement(IconButton, { icon: "history", title: t("notes.history"), onClick: () => setHistoryOpen(true) }),
+          import_react16.default.createElement(
             "div",
             { style: { position: "relative" } },
-            import_react15.default.createElement(IconButton, { icon: "more", title: t("notes.menu"), onClick: () => setMenuOpen((value) => !value), active: menuOpen }),
-            menuOpen ? import_react15.default.createElement(Menu, { items: menuItems, onClose: () => setMenuOpen(false) }) : null
+            import_react16.default.createElement(IconButton, { icon: "more", title: t("notes.menu"), onClick: () => setMenuOpen((value) => !value), active: menuOpen }),
+            menuOpen ? import_react16.default.createElement(Menu, { items: menuItems, onClose: () => setMenuOpen(false) }) : null
           )
         )
       ),
       /* meta row: folder + linked papers + save state ---------------------- */
-      import_react15.default.createElement(
+      import_react16.default.createElement(
         "div",
         { className: "ph-n-editor__meta" },
-        props.folders && props.folders.length > 0 ? import_react15.default.createElement(
+        props.folders && props.folders.length > 0 ? import_react16.default.createElement(
           "select",
           {
             className: "ph-select ph-select--sm",
@@ -13994,46 +14091,46 @@ function NoteEditor(props) {
               if (props.onMoveFolder) props.onMoveFolder(value);
             }
           },
-          import_react15.default.createElement("option", { value: "" }, t("notes.folder.uncategorized")),
-          props.folders.map((folder) => import_react15.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
+          import_react16.default.createElement("option", { value: "" }, t("notes.folder.uncategorized")),
+          props.folders.map((folder) => import_react16.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
         ) : null,
         papers.length > 0 ? papers.map(
-          (link) => import_react15.default.createElement(
+          (link) => import_react16.default.createElement(
             "span",
             { key: link.paperId, className: "ph-n-chip" },
-            import_react15.default.createElement(Icon, { name: "book", size: 11 }),
-            import_react15.default.createElement("span", { className: "ph-n-chip__label", title: link.titleZh || link.title || link.paperId }, link.titleZh || link.title || link.paperId),
-            props.onOpenPaper ? import_react15.default.createElement(IconButton, { icon: "external", title: t("notes.papers.open"), onClick: () => props.onOpenPaper(link.paperId), size: 12 }) : null
+            import_react16.default.createElement(Icon, { name: "book", size: 11 }),
+            import_react16.default.createElement("span", { className: "ph-n-chip__label", title: link.titleZh || link.title || link.paperId }, link.titleZh || link.title || link.paperId),
+            props.onOpenPaper ? import_react16.default.createElement(IconButton, { icon: "external", title: t("notes.papers.open"), onClick: () => props.onOpenPaper(link.paperId), size: 12 }) : null
           )
-        ) : boundPaperId ? import_react15.default.createElement(
+        ) : boundPaperId ? import_react16.default.createElement(
           "span",
           { className: "ph-n-chip ph-n-chip--folder", title: t("notes.papers.boundToCurrentHint") },
-          import_react15.default.createElement(Icon, { name: "link", size: 11 }),
-          import_react15.default.createElement("span", { className: "ph-n-chip__label" }, t("notes.papers.boundToCurrent"))
-        ) : import_react15.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.none")),
-        props.linkable || props.linkable === void 0 ? import_react15.default.createElement(Button, { size: "sm", variant: "ghost", icon: "link", onClick: () => setLinkOpen(true), title: t("notes.papers.add") }, compact ? null : t("notes.papers.add")) : null,
-        import_react15.default.createElement("span", { className: "ph-n-editor__meta-spacer" }),
-        import_react15.default.createElement("span", { className: "ph-n-caption" }, t("notes.wordCount", { count: content.length })),
-        import_react15.default.createElement(
+          import_react16.default.createElement(Icon, { name: "link", size: 11 }),
+          import_react16.default.createElement("span", { className: "ph-n-chip__label" }, t("notes.papers.boundToCurrent"))
+        ) : import_react16.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.none")),
+        props.linkable || props.linkable === void 0 ? import_react16.default.createElement(Button, { size: "sm", variant: "ghost", icon: "link", onClick: () => setLinkOpen(true), title: t("notes.papers.add") }, compact ? null : t("notes.papers.add")) : null,
+        import_react16.default.createElement("span", { className: "ph-n-editor__meta-spacer" }),
+        import_react16.default.createElement("span", { className: "ph-n-caption" }, t("notes.wordCount", { count: content.length })),
+        import_react16.default.createElement(
           "span",
           { className: saveStateClass, title: saveState.message || stateLabel2, role: "status" },
-          saveState.status === "saving" ? import_react15.default.createElement(Spinner) : import_react15.default.createElement("span", { className: "ph-n-savestate__dot" }),
-          import_react15.default.createElement("span", null, stateLabel2),
-          saveState.status === "offline" || saveState.status === "error" ? import_react15.default.createElement("button", { type: "button", className: "ph-btn ph-btn--ghost ph-btn--sm ph-n-savestate__retry", onClick: () => {
+          saveState.status === "saving" ? import_react16.default.createElement(Spinner) : import_react16.default.createElement("span", { className: "ph-n-savestate__dot" }),
+          import_react16.default.createElement("span", null, stateLabel2),
+          saveState.status === "offline" || saveState.status === "error" ? import_react16.default.createElement("button", { type: "button", className: "ph-btn ph-btn--ghost ph-btn--sm ph-n-savestate__retry", onClick: () => {
             retryCountRef.current = 0;
             flush();
-          } }, import_react15.default.createElement("span", { className: "ph-btn__label" }, t("notes.retrySave"))) : null
+          } }, import_react16.default.createElement("span", { className: "ph-btn__label" }, t("notes.retrySave"))) : null
         )
       )
     ),
     /* auto-beautify controls (v2 边写边美化) -------------------------------- */
-    import_react15.default.createElement(
+    import_react16.default.createElement(
       "div",
       { className: "ph-n-editor__toolbar" },
-      import_react15.default.createElement(
+      import_react16.default.createElement(
         "div",
         { className: "ph-n-autofix" },
-        import_react15.default.createElement(
+        import_react16.default.createElement(
           "button",
           {
             type: "button",
@@ -14042,11 +14139,11 @@ function NoteEditor(props) {
             title: t("notes.autofix.toggleHint"),
             "aria-pressed": autoFix.enabled ? "true" : "false"
           },
-          import_react15.default.createElement("span", { className: "ph-n-autofix__dot" + (autoRunning ? " ph-n-autofix__dot--pulse" : "") }),
+          import_react16.default.createElement("span", { className: "ph-n-autofix__dot" + (autoRunning ? " ph-n-autofix__dot--pulse" : "") }),
           t("notes.autofix.toggle"),
-          autoFix.enabled ? import_react15.default.createElement("span", { className: "ph-n-autofix__state" }, autoRunning ? t("notes.autofix.stateRunning") : t("notes.autofix.stateOn")) : null
+          autoFix.enabled ? import_react16.default.createElement("span", { className: "ph-n-autofix__state" }, autoRunning ? t("notes.autofix.stateRunning") : t("notes.autofix.stateOn")) : null
         ),
-        autoFix.enabled ? import_react15.default.createElement(
+        autoFix.enabled ? import_react16.default.createElement(
           "select",
           {
             className: "ph-n-autofix__select",
@@ -14059,33 +14156,33 @@ function NoteEditor(props) {
             ["plain", "notes.beautify.direction.plain"],
             ["vivid", "notes.beautify.direction.vivid"],
             ["scientific", "notes.beautify.direction.scientific"]
-          ].map(([value, key]) => import_react15.default.createElement("option", { key: value, value }, t(key)))
+          ].map(([value, key]) => import_react16.default.createElement("option", { key: value, value }, t(key)))
         ) : null,
-        autoStatus ? import_react15.default.createElement(
+        autoStatus ? import_react16.default.createElement(
           "span",
           {
             className: "ph-n-autofix__status" + (autoStatus.kind === "warn" ? " ph-n-autofix__status--warn" : autoStatus.kind === "ok" ? " ph-n-autofix__status--ok" : ""),
             title: autoStatus.text
           },
-          autoStatus.kind === "info" && autoRunning ? import_react15.default.createElement(Spinner) : null,
+          autoStatus.kind === "info" && autoRunning ? import_react16.default.createElement(Spinner) : null,
           autoStatus.text
         ) : null,
-        autoOverlay ? import_react15.default.createElement(
+        autoOverlay ? import_react16.default.createElement(
           "div",
           { className: "ph-n-autofix__overlay", role: "dialog", "aria-label": t("notes.autofix.overlayTitle") },
-          import_react15.default.createElement(
+          import_react16.default.createElement(
             "div",
             { className: "ph-n-autofix__overlay-head" },
-            import_react15.default.createElement(Icon, { name: "sparkle", size: 13 }),
+            import_react16.default.createElement(Icon, { name: "sparkle", size: 13 }),
             t("notes.autofix.overlayTitle")
           ),
-          import_react15.default.createElement(
+          import_react16.default.createElement(
             "div",
             { className: "ph-n-autofix__overlay-sub" },
             t("notes.autofix.overlaySub", { count: autoOverlay.sections.length, chars: autoOverlay.pendingChars }) + (autoOverlay.degraded ? " \xB7 " + t("notes.autofix.degraded") : "")
           ),
           autoOverlay.directions.map(
-            (option) => import_react15.default.createElement(
+            (option) => import_react16.default.createElement(
               "button",
               {
                 key: option.id,
@@ -14094,26 +14191,26 @@ function NoteEditor(props) {
                 onClick: () => adoptAutoDirection(option.id),
                 title: option.reason || ""
               },
-              import_react15.default.createElement(
+              import_react16.default.createElement(
                 "span",
                 { className: "ph-n-autofix__option-main" },
-                import_react15.default.createElement(
+                import_react16.default.createElement(
                   "span",
                   { className: "ph-n-autofix__option-label" },
                   option.label,
-                  option.id === autoOverlay.recommended ? import_react15.default.createElement("span", { className: "ph-n-autofix__option-tag" }, t("notes.autofix.recommended")) : null,
-                  option.useFigures ? import_react15.default.createElement(Icon, { name: "figure", size: 10 }) : null
+                  option.id === autoOverlay.recommended ? import_react16.default.createElement("span", { className: "ph-n-autofix__option-tag" }, t("notes.autofix.recommended")) : null,
+                  option.useFigures ? import_react16.default.createElement(Icon, { name: "figure", size: 10 }) : null
                 ),
-                option.reason ? import_react15.default.createElement("span", { className: "ph-n-autofix__option-reason" }, option.reason) : null
+                option.reason ? import_react16.default.createElement("span", { className: "ph-n-autofix__option-reason" }, option.reason) : null
               )
             )
           ),
-          import_react15.default.createElement(
+          import_react16.default.createElement(
             "div",
             { className: "ph-n-autofix__overlay-foot" },
-            import_react15.default.createElement("span", { className: "ph-n-caption" }, t("notes.autofix.autoAdopt")),
-            import_react15.default.createElement("span", { className: "ph-n-spacer" }),
-            import_react15.default.createElement(
+            import_react16.default.createElement("span", { className: "ph-n-caption" }, t("notes.autofix.autoAdopt")),
+            import_react16.default.createElement("span", { className: "ph-n-spacer" }),
+            import_react16.default.createElement(
               "button",
               { type: "button", className: "ph-n-autofix__toggle", onClick: ignoreAuto },
               t("notes.autofix.ignore")
@@ -14121,46 +14218,46 @@ function NoteEditor(props) {
           )
         ) : null
       ),
-      import_react15.default.createElement("span", { className: "ph-n-toolbar__spacer" }),
-      import_react15.default.createElement("span", { className: "ph-n-caption" }, autoFix.enabled ? t("notes.autofix.hint") : t("notes.autofix.offHint"))
+      import_react16.default.createElement("span", { className: "ph-n-toolbar__spacer" }),
+      import_react16.default.createElement("span", { className: "ph-n-caption" }, autoFix.enabled ? t("notes.autofix.hint") : t("notes.autofix.offHint"))
     ),
     /* banners --------------------------------------------------------------- */
-    import_react15.default.createElement(
+    import_react16.default.createElement(
       "div",
       { className: "ph-n-editor__bars" },
-      autoIntro ? import_react15.default.createElement(
+      autoIntro ? import_react16.default.createElement(
         "div",
         { className: "ph-n-autofix__intro", role: "status" },
-        import_react15.default.createElement(Icon, { name: "sparkle", size: 14 }),
-        import_react15.default.createElement("span", null, t("notes.autofix.intro")),
-        import_react15.default.createElement("span", { className: "ph-n-spacer" }),
-        import_react15.default.createElement(
+        import_react16.default.createElement(Icon, { name: "sparkle", size: 14 }),
+        import_react16.default.createElement("span", null, t("notes.autofix.intro")),
+        import_react16.default.createElement("span", { className: "ph-n-spacer" }),
+        import_react16.default.createElement(
           "button",
           { type: "button", className: "ph-n-autofix__toggle", onClick: dismissAutoIntro },
           t("notes.autofix.introOk")
         )
       ) : null,
-      conflict ? import_react15.default.createElement(
+      conflict ? import_react16.default.createElement(
         "div",
         { className: "ph-n-banner ph-n-banner--warn" },
-        import_react15.default.createElement(Icon, { name: "warning", size: 14 }),
-        import_react15.default.createElement("span", null, t("notes.conflict.title", { revision: conflict.currentRevision || "?" })),
-        import_react15.default.createElement(
+        import_react16.default.createElement(Icon, { name: "warning", size: 14 }),
+        import_react16.default.createElement("span", null, t("notes.conflict.title", { revision: conflict.currentRevision || "?" })),
+        import_react16.default.createElement(
           "span",
           { className: "ph-n-banner__actions" },
-          import_react15.default.createElement(Button, { size: "sm", variant: "secondary", onClick: reloadNote }, t("notes.conflict.reload")),
-          import_react15.default.createElement(Button, { size: "sm", variant: "danger", onClick: overwriteConflict }, t("notes.conflict.keep"))
+          import_react16.default.createElement(Button, { size: "sm", variant: "secondary", onClick: reloadNote }, t("notes.conflict.reload")),
+          import_react16.default.createElement(Button, { size: "sm", variant: "danger", onClick: overwriteConflict }, t("notes.conflict.keep"))
         )
       ) : null,
-      draftFound ? import_react15.default.createElement(
+      draftFound ? import_react16.default.createElement(
         "div",
         { className: "ph-n-banner" },
-        import_react15.default.createElement(Icon, { name: "note", size: 14 }),
-        import_react15.default.createElement("span", null, t("notes.draftFound", { time: draftTimeLabel(draftFound.at) })),
-        import_react15.default.createElement(
+        import_react16.default.createElement(Icon, { name: "note", size: 14 }),
+        import_react16.default.createElement("span", null, t("notes.draftFound", { time: draftTimeLabel(draftFound.at) })),
+        import_react16.default.createElement(
           "span",
           { className: "ph-n-banner__actions" },
-          import_react15.default.createElement(Button, {
+          import_react16.default.createElement(Button, {
             size: "sm",
             variant: "secondary",
             onClick: () => {
@@ -14168,7 +14265,7 @@ function NoteEditor(props) {
               setDraftFound(null);
             }
           }, t("notes.draft.restore")),
-          import_react15.default.createElement(Button, {
+          import_react16.default.createElement(Button, {
             size: "sm",
             variant: "ghost",
             onClick: () => {
@@ -14178,15 +14275,15 @@ function NoteEditor(props) {
           }, t("notes.draft.discard"))
         )
       ) : null,
-      saveState.status === "error" ? import_react15.default.createElement(
+      saveState.status === "error" ? import_react16.default.createElement(
         "div",
         { className: "ph-n-banner ph-n-banner--error" },
-        import_react15.default.createElement(Icon, { name: "warning", size: 14 }),
-        import_react15.default.createElement("span", null, t("notes.saveFailedDetail", { message: saveState.message || t("common.unknownError") })),
-        import_react15.default.createElement(
+        import_react16.default.createElement(Icon, { name: "warning", size: 14 }),
+        import_react16.default.createElement("span", null, t("notes.saveFailedDetail", { message: saveState.message || t("common.unknownError") })),
+        import_react16.default.createElement(
           "span",
           { className: "ph-n-banner__actions" },
-          import_react15.default.createElement(Button, { size: "sm", variant: "secondary", onClick: () => {
+          import_react16.default.createElement(Button, { size: "sm", variant: "secondary", onClick: () => {
             retryCountRef.current = 0;
             flush();
           } }, t("notes.retrySave"))
@@ -14194,27 +14291,27 @@ function NoteEditor(props) {
       ) : null
     ),
     /* sections protection --------------------------------------------------- */
-    sections.length > 0 ? import_react15.default.createElement(
+    sections.length > 0 ? import_react16.default.createElement(
       "div",
       { className: "ph-n-sections" },
-      import_react15.default.createElement(
+      import_react16.default.createElement(
         "button",
         { type: "button", className: "ph-n-sections__head", onClick: () => setSectionsOpen((value) => !value), "aria-expanded": sectionsOpen ? "true" : "false" },
-        import_react15.default.createElement(Icon, { name: sectionsOpen ? "chevronDown" : "chevronRight", size: 12 }),
-        import_react15.default.createElement("span", null, t("notes.sections.title")),
-        import_react15.default.createElement("span", { className: "ph-n-sections__hint" }, t("notes.sections.count", { done: sections.length - incompleteCount, total: sections.length })),
-        incompleteCount > 0 ? import_react15.default.createElement(Badge, { tone: "warn" }, t("notes.sections.incompleteCount", { count: incompleteCount })) : null
+        import_react16.default.createElement(Icon, { name: sectionsOpen ? "chevronDown" : "chevronRight", size: 12 }),
+        import_react16.default.createElement("span", null, t("notes.sections.title")),
+        import_react16.default.createElement("span", { className: "ph-n-sections__hint" }, t("notes.sections.count", { done: sections.length - incompleteCount, total: sections.length })),
+        incompleteCount > 0 ? import_react16.default.createElement(Badge, { tone: "warn" }, t("notes.sections.incompleteCount", { count: incompleteCount })) : null
       ),
-      sectionsOpen ? import_react15.default.createElement(
+      sectionsOpen ? import_react16.default.createElement(
         "div",
         { className: "ph-n-sections__list" },
         sections.map((section) => {
           const incomplete = incompleteSet.has(section.id);
-          return import_react15.default.createElement(
+          return import_react16.default.createElement(
             "div",
             { key: section.id, className: "ph-n-sections__row" },
-            import_react15.default.createElement("span", { className: "ph-n-sections__heading", title: section.text || "" }, section.heading || t("notes.section.untitled")),
-            import_react15.default.createElement(
+            import_react16.default.createElement("span", { className: "ph-n-sections__heading", title: section.text || "" }, section.heading || t("notes.section.untitled")),
+            import_react16.default.createElement(
               "button",
               {
                 type: "button",
@@ -14226,11 +14323,11 @@ function NoteEditor(props) {
             )
           );
         }),
-        import_react15.default.createElement("p", { className: "ph-n-sections__hint" }, t("notes.sections.hint"))
+        import_react16.default.createElement("p", { className: "ph-n-sections__hint" }, t("notes.sections.hint"))
       ) : null
     ) : null,
     /* content --------------------------------------------------------------- */
-    import_react15.default.createElement(
+    import_react16.default.createElement(
       "div",
       {
         className: "ph-n-editor__content",
@@ -14259,10 +14356,10 @@ function NoteEditor(props) {
           });
         }
       },
-      viewMode === "cards" && contentJson ? import_react15.default.createElement(
+      viewMode === "cards" && contentJson ? import_react16.default.createElement(
         "div",
         { className: "ph-n-editor__cards ph-n-scroll" },
-        import_react15.default.createElement(NoteCards, {
+        import_react16.default.createElement(NoteCards, {
           t,
           rows: cardRows,
           incompleteIds,
@@ -14274,7 +14371,7 @@ function NoteEditor(props) {
           onChangeData: patchContentData,
           onAction: runNoteAction
         })
-      ) : import_react15.default.createElement("textarea", {
+      ) : import_react16.default.createElement("textarea", {
         ref: textareaRef,
         className: "ph-n-editor__textarea ph-n-scroll",
         value: content,
@@ -14303,7 +14400,7 @@ function NoteEditor(props) {
       })
     ),
     /* dialogs --------------------------------------------------------------- */
-    beautifyOpen ? import_react15.default.createElement(BeautifyDialog, {
+    beautifyOpen ? import_react16.default.createElement(BeautifyDialog, {
       t,
       service,
       note: Object.assign({}, note, { contentMd: content }),
@@ -14325,7 +14422,7 @@ function NoteEditor(props) {
       },
       onClose: () => setBeautifyOpen(false)
     }) : null,
-    historyOpen ? import_react15.default.createElement(RevisionsDialog, {
+    historyOpen ? import_react16.default.createElement(RevisionsDialog, {
       t,
       service,
       noteId: note.id,
@@ -14348,7 +14445,7 @@ function NoteEditor(props) {
       },
       onClose: () => setHistoryOpen(false)
     }) : null,
-    deleteOpen ? import_react15.default.createElement(
+    deleteOpen ? import_react16.default.createElement(
       Modal,
       {
         t,
@@ -14359,21 +14456,21 @@ function NoteEditor(props) {
         },
         busy: deleting,
         footer: [
-          import_react15.default.createElement(
+          import_react16.default.createElement(
             "button",
             { key: "cancel", type: "button", className: "ph-btn ph-btn--secondary ph-btn--md", onClick: () => setDeleteOpen(false), disabled: deleting },
-            import_react15.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
+            import_react16.default.createElement("span", { className: "ph-btn__label" }, t("common.cancel"))
           ),
-          import_react15.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
-          import_react15.default.createElement(
+          import_react16.default.createElement("span", { key: "spacer", className: "ph-n-spacer" }),
+          import_react16.default.createElement(
             "button",
             { key: "confirm", type: "button", className: "ph-btn ph-btn--danger ph-btn--md", onClick: deleteNote, disabled: deleting },
-            import_react15.default.createElement("span", { className: "ph-btn__label" }, t("common.confirm"))
+            import_react16.default.createElement("span", { className: "ph-btn__label" }, t("common.confirm"))
           )
         ]
       }
     ) : null,
-    linkOpen ? import_react15.default.createElement(PaperLinkDialog, {
+    linkOpen ? import_react16.default.createElement(PaperLinkDialog, {
       t,
       api: props.api,
       note,
@@ -14392,12 +14489,12 @@ function NoteEditor(props) {
 function NoteInline(props) {
   const t = props.t;
   const api = props.api;
-  const releaseStyles = import_react16.default.useMemo(() => ensureNotesStyles(), []);
-  const service = import_react16.default.useMemo(() => createNotesService(api), [api]);
-  const [state, setState] = import_react16.default.useState({ status: "loading", note: null, folders: [], error: null });
-  const [reload, setReload] = import_react16.default.useState(0);
-  import_react16.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  import_react16.default.useEffect(() => {
+  const releaseStyles = import_react17.default.useMemo(() => ensureNotesStyles(), []);
+  const service = import_react17.default.useMemo(() => createNotesService(api), [api]);
+  const [state, setState] = import_react17.default.useState({ status: "loading", note: null, folders: [], error: null });
+  const [reload, setReload] = import_react17.default.useState(0);
+  import_react17.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  import_react17.default.useEffect(() => {
     let alive = true;
     if (!props.noteId) {
       setState({ status: "empty", note: null, folders: [], error: null });
@@ -14425,7 +14522,7 @@ function NoteInline(props) {
       alive = false;
     };
   }, [service, props.noteId, reload]);
-  import_react16.default.useEffect(() => {
+  import_react17.default.useEffect(() => {
     const onLinked = (event) => {
       if (event && event.detail && String(event.detail.noteId) === String(props.noteId)) setReload((value) => value + 1);
     };
@@ -14461,13 +14558,13 @@ function NoteInline(props) {
 }
 
 // src/surfaces/notes/paper-panel.jsx
-var import_react32 = __toESM(require("react"), 1);
+var import_react33 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/text-layer.jsx
-var import_react18 = __toESM(require("react"), 1);
+var import_react19 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/shared.jsx
-var import_react17 = __toESM(require("react"), 1);
+var import_react18 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/messages.js
 var READER_ZH = {
@@ -14732,6 +14829,25 @@ var READER_ZH = {
   "reader.ai.you": "\u4F60",
   "reader.ai.newChat": "\u6E05\u7A7A\u5BF9\u8BDD",
   "reader.ai.noAnswer": "\u6A21\u578B\u6CA1\u6709\u8FD4\u56DE\u5185\u5BB9",
+  "reader.ai.warning.quota.title": "\u5F53\u524D\u6A21\u578B\u989D\u5EA6\u4E0D\u8DB3\uFF0C\u65E0\u6CD5\u7EE7\u7EED\u4F7F\u7528",
+  "reader.ai.warning.quota.body": "\u4F9B\u5E94\u5546\u8FD4\u56DE\uFF1A{reason}\u3002\u53EF\u4EE5\u5207\u6362\u5230\u5176\u4ED6\u5DF2\u914D\u7F6E\u7684\u6A21\u578B\u4F9B\u5E94\u5546\u540E\u91CD\u8BD5\u3002",
+  "reader.ai.warning.quota.bodyPlain": "\u5F53\u524D\u8BA2\u9605\u989D\u5EA6\u5DF2\u7528\u5B8C\u3002\u8BF7\u5207\u6362\u6A21\u578B\u4F9B\u5E94\u5546\u540E\u91CD\u8BD5\u3002",
+  "reader.ai.warning.auth.title": "\u6A21\u578B\u51ED\u8BC1\u65E0\u6548\u6216\u5DF2\u8FC7\u671F",
+  "reader.ai.warning.auth.body": "\u4F9B\u5E94\u5546\u8FD4\u56DE\uFF1A{reason}\u3002\u8BF7\u5728 DSH \u8BBE\u7F6E\u4E2D\u68C0\u67E5\u767B\u5F55/\u8BA2\u9605\uFF0C\u6216\u5207\u6362\u5230\u5176\u4ED6\u6A21\u578B\u4F9B\u5E94\u5546\u3002",
+  "reader.ai.warning.auth.bodyPlain": "\u5F53\u524D\u6A21\u578B\u51ED\u8BC1\u4E0D\u53EF\u7528\u3002\u8BF7\u91CD\u65B0\u767B\u5F55\u6216\u5207\u6362\u4F9B\u5E94\u5546\u3002",
+  "reader.ai.warning.rate.title": "\u6A21\u578B\u8BF7\u6C42\u8FC7\u4E8E\u9891\u7E41",
+  "reader.ai.warning.rate.body": "\u4F9B\u5E94\u5546\u8FD4\u56DE\uFF1A{reason}\u3002\u53EF\u4EE5\u7A0D\u540E\u91CD\u8BD5\uFF0C\u6216\u6362\u4E00\u4E2A\u6A21\u578B\u4F9B\u5E94\u5546\u3002",
+  "reader.ai.warning.rate.bodyPlain": "\u8BF7\u6C42\u8FC7\u4E8E\u9891\u7E41\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u6216\u6362\u4E00\u4E2A\u4F9B\u5E94\u5546\u3002",
+  "reader.ai.warning.config.title": "\u5F53\u524D\u6A21\u578B\u4E0D\u53EF\u7528",
+  "reader.ai.warning.config.body": "{reason}\u3002\u8BF7\u5728\u8BBE\u7F6E\u4E2D\u9009\u62E9 DSH \u5DF2\u914D\u7F6E\u7684\u6A21\u578B\u4F9B\u5E94\u5546\u3002",
+  "reader.ai.warning.config.bodyPlain": "\u5F53\u524D\u6CA1\u6709\u53EF\u7528\u7684\u9ED8\u8BA4\u6A21\u578B\uFF0C\u8BF7\u5148\u9009\u62E9\u6A21\u578B\u4F9B\u5E94\u5546\u3002",
+  "reader.ai.warning.error.title": "AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528",
+  "reader.ai.warning.error.body": "{reason}\u3002\u4F60\u53EF\u4EE5\u68C0\u67E5\u6A21\u578B\u4F9B\u5E94\u5546\u8BBE\u7F6E\u540E\u91CD\u8BD5\u3002",
+  "reader.ai.warning.error.bodyPlain": "AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF0C\u8BF7\u68C0\u67E5\u6A21\u578B\u4F9B\u5E94\u5546\u8BBE\u7F6E\u3002",
+  "reader.ai.warning.details": "\u9519\u8BEF\u8BE6\u60C5",
+  "reader.ai.warning.answerFailed": "\u672C\u6B21\u56DE\u7B54\u672A\u5B8C\u6210\uFF0C\u8BF7\u6309\u4E0A\u65B9\u63D0\u793A\u66F4\u6362\u4F9B\u5E94\u5546\u540E\u91CD\u8BD5\u3002",
+  "reader.ai.warning.changeProvider": "\u66F4\u6362\u6A21\u578B\u4F9B\u5E94\u5546",
+  "reader.common.retry": "\u91CD\u8BD5",
   "reader.ai.reasonFallback": "\u4E0D\u53EF\u7528",
   "reader.ai.imageUnsupported": "\u5F53\u524D\u6A21\u578B\u4E0D\u652F\u6301\u56FE\u50CF\u8F93\u5165\uFF0C\u8BF7\u5173\u95ED\u201C\u5E26\u4E0A\u9875\u9762\u56FE\u7247\u201D\u540E\u91CD\u8BD5\u3002",
   "reader.ai.limit": "\u8F93\u5165\u4E0A\u9650 {chars} \u5B57",
@@ -15775,11 +15891,11 @@ function findBlockMatches(pageData, query) {
 function useAsync(load, deps, options) {
   const opts = options || {};
   const enabled = opts.enabled !== false;
-  const [state, setState] = import_react17.default.useState({ status: enabled ? "loading" : "idle", data: opts.initialData, error: null });
-  const [tick, setTick] = import_react17.default.useState(0);
-  const loadRef = import_react17.default.useRef(load);
+  const [state, setState] = import_react18.default.useState({ status: enabled ? "loading" : "idle", data: opts.initialData, error: null });
+  const [tick, setTick] = import_react18.default.useState(0);
+  const loadRef = import_react18.default.useRef(load);
   loadRef.current = load;
-  import_react17.default.useEffect(() => {
+  import_react18.default.useEffect(() => {
     if (!enabled) {
       setState({ status: "idle", data: opts.initialData, error: null });
       return void 0;
@@ -15818,12 +15934,12 @@ function useAsync(load, deps, options) {
       }
     };
   }, deps.concat([tick, enabled]));
-  const reload = import_react17.default.useCallback(() => setTick((value) => value + 1), []);
+  const reload = import_react18.default.useCallback(() => setTick((value) => value + 1), []);
   return { status: state.status, data: state.data, error: state.error, reload };
 }
 function useElementSize(ref) {
-  const [size, setSize] = import_react17.default.useState({ width: 0, height: 0 });
-  import_react17.default.useEffect(() => {
+  const [size, setSize] = import_react18.default.useState({ width: 0, height: 0 });
+  import_react18.default.useEffect(() => {
     const element2 = ref.current;
     if (!element2) return void 0;
     let frame2 = 0;
@@ -15894,8 +16010,8 @@ function assessTranslationReliability(result, quote) {
   return { unreliable: Boolean(flagged || garbled), reason: firstText3(hostReason), garbled };
 }
 function usePrefersReducedMotion() {
-  const [reduced, setReduced] = import_react17.default.useState(false);
-  import_react17.default.useEffect(() => {
+  const [reduced, setReduced] = import_react18.default.useState(false);
+  import_react18.default.useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return void 0;
     let query = null;
     try {
@@ -15964,11 +16080,11 @@ function Icon2(props) {
   const size = Number(props && props.size) || 16;
   const shapes = ICONS2[props && props.name] || ICONS2.book;
   const children = shapes.map((shape, index) => {
-    if (shape[0] === "path") return import_react17.default.createElement("path", { key: index, d: shape[1] });
-    if (shape[0] === "circle") return import_react17.default.createElement("circle", Object.assign({ key: index }, shape[1]));
-    return import_react17.default.createElement("rect", Object.assign({ key: index }, shape[1]));
+    if (shape[0] === "path") return import_react18.default.createElement("path", { key: index, d: shape[1] });
+    if (shape[0] === "circle") return import_react18.default.createElement("circle", Object.assign({ key: index }, shape[1]));
+    return import_react18.default.createElement("rect", Object.assign({ key: index }, shape[1]));
   });
-  return import_react17.default.createElement(
+  return import_react18.default.createElement(
     "svg",
     {
       className: cx("ph-r-icon", props && props.className),
@@ -15988,7 +16104,7 @@ function Icon2(props) {
 }
 function Spinner2(props) {
   const size = Number(props && props.size) || 14;
-  return import_react17.default.createElement("span", {
+  return import_react18.default.createElement("span", {
     className: cx("ph-r-spinner", props && props.className),
     style: { width: size, height: size },
     "aria-hidden": "true"
@@ -15999,7 +16115,7 @@ function Btn(props) {
   const size = props.size || "md";
   const iconOnly = Boolean(props.iconOnly);
   const label = props.label || props.title || (iconOnly ? "" : void 0);
-  return import_react17.default.createElement(
+  return import_react18.default.createElement(
     "button",
     {
       type: "button",
@@ -16021,12 +16137,12 @@ function Btn(props) {
       onMouseDown: props.onMouseDown,
       onKeyDown: props.onKeyDown
     },
-    props.icon ? import_react17.default.createElement(Icon2, { name: props.icon, size: size === "sm" ? 14 : 16 }) : null,
-    !iconOnly && props.children != null ? import_react17.default.createElement("span", { className: "ph-r-btn__label" }, props.children) : null
+    props.icon ? import_react18.default.createElement(Icon2, { name: props.icon, size: size === "sm" ? 14 : 16 }) : null,
+    !iconOnly && props.children != null ? import_react18.default.createElement("span", { className: "ph-r-btn__label" }, props.children) : null
   );
 }
 function IconBtn(props) {
-  return import_react17.default.createElement(
+  return import_react18.default.createElement(
     "button",
     {
       type: "button",
@@ -16038,13 +16154,13 @@ function IconBtn(props) {
       "aria-pressed": props.active ? "true" : void 0,
       tabIndex: props.tabIndex
     },
-    import_react17.default.createElement(Icon2, { name: props.icon, size: props.size || 16 })
+    import_react18.default.createElement(Icon2, { name: props.icon, size: props.size || 16 })
   );
 }
 function Tabs(props) {
   const items2 = arrayOf3(props.items);
   const slider = useSlidingThumb();
-  return import_react17.default.createElement(
+  return import_react18.default.createElement(
     "div",
     {
       className: cx("ph-r-tabs", slider.rect && "ph-r-tabs--sliding", props.className),
@@ -16052,9 +16168,9 @@ function Tabs(props) {
       role: "tablist",
       "aria-label": props["aria-label"]
     },
-    import_react17.default.createElement(SlidingThumb, { rect: slider.rect, className: "ph-thumb--pill", inset: 2, popKey: props.value }),
+    import_react18.default.createElement(SlidingThumb, { rect: slider.rect, className: "ph-thumb--pill", inset: 2, popKey: props.value }),
     items2.map(
-      (item) => import_react17.default.createElement(
+      (item) => import_react18.default.createElement(
         "button",
         {
           key: item.id,
@@ -16066,44 +16182,44 @@ function Tabs(props) {
           onClick: () => props.onChange(item.id),
           title: item.title
         },
-        import_react17.default.createElement("span", null, item.label),
-        item.count != null ? import_react17.default.createElement("span", { className: "ph-r-tab__count" }, String(item.count)) : null
+        import_react18.default.createElement("span", null, item.label),
+        item.count != null ? import_react18.default.createElement("span", { className: "ph-r-tab__count" }, String(item.count)) : null
       )
     )
   );
 }
 function Badge2(props) {
-  return import_react17.default.createElement(
+  return import_react18.default.createElement(
     "span",
     { className: cx("ph-r-badge", props && props.tone && "ph-r-badge--" + props.tone, props && props.className), title: props && props.title },
     props && props.children
   );
 }
 function Empty(props) {
-  return import_react17.default.createElement(
+  return import_react18.default.createElement(
     "div",
     { className: cx("ph-r-empty", props.tone && "ph-r-empty--" + props.tone, props.className) },
-    props.icon ? import_react17.default.createElement(Icon2, { name: props.icon, size: 22, className: "ph-r-empty__icon" }) : null,
-    import_react17.default.createElement("p", { className: "ph-r-empty__title" }, props.title || ""),
-    props.desc ? import_react17.default.createElement("p", { className: "ph-r-empty__desc" }, props.desc) : null,
-    props.action ? import_react17.default.createElement("div", { className: "ph-r-empty__action" }, props.action) : null
+    props.icon ? import_react18.default.createElement(Icon2, { name: props.icon, size: 22, className: "ph-r-empty__icon" }) : null,
+    import_react18.default.createElement("p", { className: "ph-r-empty__title" }, props.title || ""),
+    props.desc ? import_react18.default.createElement("p", { className: "ph-r-empty__desc" }, props.desc) : null,
+    props.action ? import_react18.default.createElement("div", { className: "ph-r-empty__action" }, props.action) : null
   );
 }
 function Chip(props) {
   const content = [
-    props.icon ? import_react17.default.createElement(Icon2, { key: "icon", name: props.icon, size: 13 }) : null,
-    import_react17.default.createElement("span", { key: "label", className: "ph-r-chip__label" }, props.children)
+    props.icon ? import_react18.default.createElement(Icon2, { key: "icon", name: props.icon, size: 13 }) : null,
+    import_react18.default.createElement("span", { key: "label", className: "ph-r-chip__label" }, props.children)
   ];
-  const body = props.onClick ? import_react17.default.createElement("button", { type: "button", className: cx("ph-r-chip", props.active && "ph-r-chip--active", props.className), onClick: props.onClick, title: props.title }, content) : import_react17.default.createElement("span", { className: cx("ph-r-chip", props.active && "ph-r-chip--active", props.className), title: props.title }, content);
+  const body = props.onClick ? import_react18.default.createElement("button", { type: "button", className: cx("ph-r-chip", props.active && "ph-r-chip--active", props.className), onClick: props.onClick, title: props.title }, content) : import_react18.default.createElement("span", { className: cx("ph-r-chip", props.active && "ph-r-chip--active", props.className), title: props.title }, content);
   if (!props.onRemove) return body;
-  return import_react17.default.createElement(
+  return import_react18.default.createElement(
     "span",
     { className: cx("ph-r-chipwrap", props.className) },
     body,
-    import_react17.default.createElement(
+    import_react18.default.createElement(
       "button",
       { type: "button", className: "ph-r-chip__remove", onClick: props.onRemove, title: props.removeLabel, "aria-label": props.removeLabel },
-      import_react17.default.createElement(Icon2, { name: "close", size: 11 })
+      import_react18.default.createElement(Icon2, { name: "close", size: 11 })
     )
   );
 }
@@ -16177,7 +16293,7 @@ function PageTextLayerImpl(props) {
     const style = wordStyle(word, width, height);
     if (!style) continue;
     spans.push(
-      import_react18.default.createElement(
+      import_react19.default.createElement(
         "span",
         {
           key: index,
@@ -16190,7 +16306,7 @@ function PageTextLayerImpl(props) {
     );
   }
   if (spans.length === 0) return null;
-  return import_react18.default.createElement(
+  return import_react19.default.createElement(
     "div",
     {
       className: cx("ph-r-textlayer", !interactive && "ph-r-textlayer--static"),
@@ -16200,12 +16316,12 @@ function PageTextLayerImpl(props) {
     spans
   );
 }
-var PageTextLayer = import_react18.default.memo(PageTextLayerImpl, (previous, next) => {
+var PageTextLayer = import_react19.default.memo(PageTextLayerImpl, (previous, next) => {
   return previous.words === next.words && previous.width === next.width && previous.height === next.height && previous.active === next.active && previous.interactive === next.interactive && previous.page === next.page;
 });
 
 // src/surfaces/reader/shell.jsx
-var import_react31 = __toESM(require("react"), 1);
+var import_react32 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/styles.js
 var STYLE_ID2 = "ph-reader-styles";
@@ -18833,7 +18949,7 @@ function ensureReaderStyles() {
 }
 
 // src/surfaces/reader/ai-panel.jsx
-var import_react19 = __toESM(require("react"), 1);
+var import_react20 = __toESM(require("react"), 1);
 var messageSeq = 0;
 function nextMessageId() {
   messageSeq += 1;
@@ -18852,27 +18968,27 @@ function AnswerBlock(props) {
   const reason = firstText3(message.reason, t("reader.ai.reasonFallback"));
   const sources = arrayOf3(message.sources);
   const imageHint = !ok && message.includeImage && /image|vision|图像|图片/i.test(String(reason));
-  return import_react19.default.createElement(
+  return import_react20.default.createElement(
     "div",
     { className: "ph-r-ai__msg" },
-    import_react19.default.createElement("div", { className: "ph-r-ai__role" }, t("reader.ai.title")),
-    import_react19.default.createElement(
+    import_react20.default.createElement("div", { className: "ph-r-ai__role" }, t("reader.ai.title")),
+    import_react20.default.createElement(
       "div",
       { className: cx("ph-r-ai__answer", !ok && "ph-r-ai__answer--bad") },
-      ok ? import_react19.default.createElement("div", { className: "ph-r-ai__answer-text" }, import_react19.default.createElement(Markdown, { text: answer || t("reader.ai.noAnswer") })) : import_react19.default.createElement(
+      ok ? import_react20.default.createElement("div", { className: "ph-r-ai__answer-text" }, import_react20.default.createElement(Markdown, { text: answer || t("reader.ai.noAnswer") })) : import_react20.default.createElement(
         "div",
         { className: "ph-r-ai__answer-warn" },
-        message.status === "error" ? t("reader.ai.error", { message: reason }) : t("reader.ai.unavailable", { reason })
+        providerIssue(reason) ? t("reader.ai.warning.answerFailed") : message.status === "error" ? t("reader.ai.error", { message: reason }) : t("reader.ai.unavailable", { reason })
       ),
-      ok && sources.length > 0 ? import_react19.default.createElement(
+      ok && sources.length > 0 ? import_react20.default.createElement(
         "div",
         { className: "ph-r-ai__sources" },
-        import_react19.default.createElement("span", { className: "ph-r-ai__sourcelabel" }, t("reader.ai.sources")),
+        import_react20.default.createElement("span", { className: "ph-r-ai__sourcelabel" }, t("reader.ai.sources")),
         sources.map((source, index) => {
           const isFigure = source && source.kind === "figure";
           const page2 = num(source && source.page, 0);
           const label = firstText3(source && source.label, source && source.figureId);
-          return import_react19.default.createElement(
+          return import_react20.default.createElement(
             "button",
             {
               key: index,
@@ -18885,15 +19001,15 @@ function AnswerBlock(props) {
           );
         })
       ) : null,
-      ok ? import_react19.default.createElement(
+      ok ? import_react20.default.createElement(
         "div",
         { className: "ph-r-ai__meta" },
-        message.cached ? import_react19.default.createElement("span", null, t("reader.ai.metaCached", { model: firstText3(message.model, message.provider, "AI") })) : message.provider || message.model ? import_react19.default.createElement("span", null, t("reader.ai.meta", {
+        message.cached ? import_react20.default.createElement("span", null, t("reader.ai.metaCached", { model: firstText3(message.model, message.provider, "AI") })) : message.provider || message.model ? import_react20.default.createElement("span", null, t("reader.ai.meta", {
           model: firstText3(message.model, message.provider, "AI"),
           elapsed: num(message.elapsedMs, 0)
         })) : null,
-        !message.cached && message.elapsedMs && !message.provider && !message.model ? import_react19.default.createElement("span", null, String(formatElapsed(message.elapsedMs))) : null,
-        message.fast ? import_react19.default.createElement(
+        !message.cached && message.elapsedMs && !message.provider && !message.model ? import_react20.default.createElement("span", null, String(formatElapsed(message.elapsedMs))) : null,
+        message.fast ? import_react20.default.createElement(
           "span",
           {
             className: "ph-r-ai__fast",
@@ -18901,57 +19017,57 @@ function AnswerBlock(props) {
           },
           t("reader.ai.fastBadge")
         ) : null
-      ) : imageHint ? import_react19.default.createElement(
+      ) : imageHint ? import_react20.default.createElement(
         "div",
         { className: "ph-r-ai__answer-actions" },
-        import_react19.default.createElement(
+        import_react20.default.createElement(
           Btn,
           { size: "sm", variant: "soft", icon: "image", onClick: props.onDisableImage },
           t("reader.ai.imageUnsupported")
         )
       ) : null,
-      ok ? import_react19.default.createElement(
+      ok ? import_react20.default.createElement(
         "div",
         { className: "ph-r-ai__answer-actions" },
-        import_react19.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: () => props.onCopyAnswer(answer) }, t("reader.ai.answer.copy")),
-        import_react19.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: () => props.onCiteAnswer(message) }, t("reader.ai.answer.cite"))
+        import_react20.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: () => props.onCopyAnswer(answer) }, t("reader.ai.answer.copy")),
+        import_react20.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: () => props.onCiteAnswer(message) }, t("reader.ai.answer.cite"))
       ) : null
     )
   );
 }
 function QuestionBlock(props) {
   const t = props.t;
-  return import_react19.default.createElement(
+  return import_react20.default.createElement(
     "div",
     { className: "ph-r-ai__msg ph-r-ai__msg--user" },
-    import_react19.default.createElement("div", { className: "ph-r-ai__role" }, t("reader.ai.you")),
-    props.quote ? import_react19.default.createElement("blockquote", { className: "ph-r-ai__quote" }, props.quote.length > 180 ? props.quote.slice(0, 180) + "\u2026" : props.quote) : null,
-    import_react19.default.createElement("div", { className: "ph-r-ai__bubble" }, props.text),
-    props.includeImage ? import_react19.default.createElement("span", { className: "ph-r-ai__hint" }, "\u{1F5BC} " + t("reader.ai.includeImage")) : null
+    import_react20.default.createElement("div", { className: "ph-r-ai__role" }, t("reader.ai.you")),
+    props.quote ? import_react20.default.createElement("blockquote", { className: "ph-r-ai__quote" }, props.quote.length > 180 ? props.quote.slice(0, 180) + "\u2026" : props.quote) : null,
+    import_react20.default.createElement("div", { className: "ph-r-ai__bubble" }, props.text),
+    props.includeImage ? import_react20.default.createElement("span", { className: "ph-r-ai__hint" }, "\u{1F5BC} " + t("reader.ai.includeImage")) : null
   );
 }
 function AiPanel(props) {
   const t = props.t;
   const api = props.api;
-  const [draft, setDraft] = import_react19.default.useState("");
-  const [messages, setMessages] = import_react19.default.useState([]);
-  const [busy2, setBusy] = import_react19.default.useState(false);
-  const [includeImage, setIncludeImage] = import_react19.default.useState(false);
-  const [mode, setMode] = import_react19.default.useState("deep");
+  const [draft, setDraft] = import_react20.default.useState("");
+  const [messages, setMessages] = import_react20.default.useState([]);
+  const [busy2, setBusy] = import_react20.default.useState(false);
+  const [includeImage, setIncludeImage] = import_react20.default.useState(false);
+  const [mode, setMode] = import_react20.default.useState("deep");
   const modeSlider = useSlidingThumb();
-  const [extraQuote, setExtraQuote] = import_react19.default.useState("");
-  const bodyRef = import_react19.default.useRef(null);
-  const inputRef = import_react19.default.useRef(null);
-  const requestRef = import_react19.default.useRef(0);
-  const mountedRef = import_react19.default.useRef(true);
+  const [extraQuote, setExtraQuote] = import_react20.default.useState("");
+  const bodyRef = import_react20.default.useRef(null);
+  const inputRef = import_react20.default.useRef(null);
+  const requestRef = import_react20.default.useRef(0);
+  const mountedRef = import_react20.default.useRef(true);
   const statusState = useAsync(() => api("ai.status", {}), [props.paperId]);
-  import_react19.default.useEffect(() => {
+  import_react20.default.useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
   }, []);
-  import_react19.default.useEffect(() => {
+  import_react20.default.useEffect(() => {
     const element2 = bodyRef.current;
     if (!element2) return;
     element2.scrollTop = element2.scrollHeight;
@@ -18968,7 +19084,7 @@ function AiPanel(props) {
   const warningStatus = statusUnavailable ? statusState.status === "error" ? "error" : "unavailable" : failedMessage ? "error" : "";
   const maxChars = status && status.limits && status.limits.maxInputChars ? num(status.limits.maxInputChars, 0) : 0;
   const selection = props.selection && props.selection.quote ? props.selection : null;
-  const ask = import_react19.default.useCallback(
+  const ask = import_react20.default.useCallback(
     (promptText, options) => {
       const opts = options || {};
       const prompt = String(promptText || "").trim();
@@ -19046,7 +19162,7 @@ function AiPanel(props) {
     },
     [api, busy2, extraQuote, includeImage, mode, props.page, props.paperId, props.sessionId, selection, t]
   );
-  import_react19.default.useEffect(() => {
+  import_react20.default.useEffect(() => {
     const request2 = props.request;
     if (!request2 || !request2.seq || request2.seq === requestRef.current) return;
     requestRef.current = request2.seq;
@@ -19088,18 +19204,18 @@ function AiPanel(props) {
   const copyAnswer = (text2) => {
     copyText2(text2).then((ok) => props.notify(ok ? "success" : "error", ok ? t("reader.ai.answer.copied") : t("reader.toast.copyFailed")));
   };
-  const contextChips = import_react19.default.createElement(
+  const contextChips = import_react20.default.createElement(
     "div",
     { className: "ph-r-ai__context" },
-    import_react19.default.createElement(Icon2, { name: "book", size: 12 }),
-    props.paper ? import_react19.default.createElement(Chip, { title: paperChipTitle(props.paper) }, paperChipTitle(props.paper) || t("reader.ai.context.paper")) : import_react19.default.createElement(Chip, null, t("reader.ai.context.paper")),
-    import_react19.default.createElement(Chip, { icon: "pages" }, t("reader.ai.context.page", { page: props.page })),
-    selection ? import_react19.default.createElement(Chip, {
+    import_react20.default.createElement(Icon2, { name: "book", size: 12 }),
+    props.paper ? import_react20.default.createElement(Chip, { title: paperChipTitle(props.paper) }, paperChipTitle(props.paper) || t("reader.ai.context.paper")) : import_react20.default.createElement(Chip, null, t("reader.ai.context.paper")),
+    import_react20.default.createElement(Chip, { icon: "pages" }, t("reader.ai.context.page", { page: props.page })),
+    selection ? import_react20.default.createElement(Chip, {
       icon: "highlighter",
       title: selection.quote,
       onRemove: props.onClearSelection,
       removeLabel: t("reader.ai.context.clear")
-    }, t("reader.ai.context.selection") + " \xB7 " + (selection.quote.length > 14 ? selection.quote.slice(0, 14) + "\u2026" : selection.quote)) : extraQuote ? import_react19.default.createElement(Chip, {
+    }, t("reader.ai.context.selection") + " \xB7 " + (selection.quote.length > 14 ? selection.quote.slice(0, 14) + "\u2026" : selection.quote)) : extraQuote ? import_react20.default.createElement(Chip, {
       icon: "highlighter",
       title: extraQuote,
       onRemove: () => setExtraQuote(""),
@@ -19112,28 +19228,28 @@ function AiPanel(props) {
     { key: "figure", prompt: t("reader.ai.prompt.figure"), label: t("reader.ai.suggestion.figure") },
     { key: "relation", prompt: t("reader.ai.suggestion.relation"), label: t("reader.ai.suggestion.relation") }
   ];
-  return import_react19.default.createElement(
+  return import_react20.default.createElement(
     "div",
     { className: "ph-r-ai" },
-    import_react19.default.createElement(
+    import_react20.default.createElement(
       "div",
       {
         className: cx("ph-r-ai__status", statusState.status === "ready" && status && status.available ? "ph-r-ai__status--ok" : statusState.status === "loading" ? "" : "ph-r-ai__status--bad"),
         title: statusReason
       },
-      statusState.status === "loading" ? import_react19.default.createElement(Spinner2, { size: 11 }) : import_react19.default.createElement(Icon2, { name: statusUnavailable ? "warning" : "sparkles", size: 12 }),
-      statusState.status === "loading" ? import_react19.default.createElement("span", null, t("reader.ai.status.loading")) : statusUnavailable ? import_react19.default.createElement("span", null, t("reader.ai.status.unavailable", { reason: statusReason })) : import_react19.default.createElement("span", null, t("reader.ai.status.available", { model: firstText3(status && status.model, status && status.provider, "AI") })),
-      statusState.status === "ready" && status && status.provider && status.model ? import_react19.default.createElement(Badge2, null, String(status.provider)) : null,
-      import_react19.default.createElement("span", { className: "ph-r-ai__spacer" }),
-      statusState.status === "error" && statusState.reload ? import_react19.default.createElement(IconBtn, { icon: "refresh", title: t("reader.retry"), onClick: statusState.reload }) : null,
-      messages.length > 0 ? import_react19.default.createElement(
+      statusState.status === "loading" ? import_react20.default.createElement(Spinner2, { size: 11 }) : import_react20.default.createElement(Icon2, { name: statusUnavailable ? "warning" : "sparkles", size: 12 }),
+      statusState.status === "loading" ? import_react20.default.createElement("span", null, t("reader.ai.status.loading")) : statusUnavailable ? import_react20.default.createElement("span", null, t("reader.ai.status.unavailable", { reason: statusReason })) : import_react20.default.createElement("span", null, t("reader.ai.status.available", { model: firstText3(status && status.model, status && status.provider, "AI") })),
+      statusState.status === "ready" && status && status.provider && status.model ? import_react20.default.createElement(Badge2, null, String(status.provider)) : null,
+      import_react20.default.createElement("span", { className: "ph-r-ai__spacer" }),
+      statusState.status === "error" && statusState.reload ? import_react20.default.createElement(IconBtn, { icon: "refresh", title: t("reader.retry"), onClick: statusState.reload }) : null,
+      messages.length > 0 ? import_react20.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => setMessages([]), title: t("reader.ai.newChat") },
-        import_react19.default.createElement(Icon2, { name: "close", size: 12 }),
-        import_react19.default.createElement("span", null, t("reader.ai.newChat"))
+        import_react20.default.createElement(Icon2, { name: "close", size: 12 }),
+        import_react20.default.createElement("span", null, t("reader.ai.newChat"))
       ) : null
     ),
-    warningReason ? import_react19.default.createElement(ProviderWarning, {
+    warningReason ? import_react20.default.createElement(AiWarning, {
       t,
       status: warningStatus,
       reason: warningReason,
@@ -19141,18 +19257,18 @@ function AiPanel(props) {
       onRetry: statusState.reload,
       compact: true
     }) : null,
-    import_react19.default.createElement(
+    import_react20.default.createElement(
       "div",
       { ref: bodyRef, className: "ph-r-ai__body ph-r-scroll", "data-ph-ai-messages": String(messages.length) },
-      empty ? import_react19.default.createElement(
+      empty ? import_react20.default.createElement(
         "div",
         { className: "ph-r-ai__empty" },
-        import_react19.default.createElement(Empty, { icon: "sparkles", title: t("reader.ai.title"), desc: t("reader.ai.empty") }),
-        import_react19.default.createElement(
+        import_react20.default.createElement(Empty, { icon: "sparkles", title: t("reader.ai.title"), desc: t("reader.ai.empty") }),
+        import_react20.default.createElement(
           "div",
           { className: "ph-r-ai__suggestions" },
           suggestions.map(
-            (item) => import_react19.default.createElement(
+            (item) => import_react20.default.createElement(
               "button",
               {
                 key: item.key,
@@ -19166,7 +19282,7 @@ function AiPanel(props) {
           )
         )
       ) : messages.map(
-        (message) => message.role === "user" ? import_react19.default.createElement(QuestionBlock, { key: message.id, t, text: message.text, quote: message.quote, includeImage: message.includeImage }) : import_react19.default.createElement(AnswerBlock, {
+        (message) => message.role === "user" ? import_react20.default.createElement(QuestionBlock, { key: message.id, t, text: message.text, quote: message.quote, includeImage: message.includeImage }) : import_react20.default.createElement(AnswerBlock, {
           key: message.id,
           t,
           message,
@@ -19179,21 +19295,21 @@ function AiPanel(props) {
           }
         })
       ),
-      busy2 ? import_react19.default.createElement(
+      busy2 ? import_react20.default.createElement(
         "div",
         { className: "ph-r-ai__busy" },
-        import_react19.default.createElement(Spinner2, { size: 12 }),
-        import_react19.default.createElement("span", null, t("reader.ai.asking"))
+        import_react20.default.createElement(Spinner2, { size: 12 }),
+        import_react20.default.createElement("span", null, t("reader.ai.asking"))
       ) : null
     ),
-    import_react19.default.createElement(
+    import_react20.default.createElement(
       "div",
       { className: "ph-r-ai__composer" },
       contextChips,
-      import_react19.default.createElement(
+      import_react20.default.createElement(
         "div",
         { className: "ph-r-ai__inputrow" },
-        import_react19.default.createElement("textarea", {
+        import_react20.default.createElement("textarea", {
           ref: inputRef,
           className: "ph-r-ai__input",
           value: draft,
@@ -19204,7 +19320,7 @@ function AiPanel(props) {
           onChange: (event) => setDraft(event.target.value),
           onKeyDown
         }),
-        import_react19.default.createElement(
+        import_react20.default.createElement(
           "button",
           {
             type: "button",
@@ -19214,13 +19330,13 @@ function AiPanel(props) {
             title: t("reader.ai.send"),
             "aria-label": t("reader.ai.send")
           },
-          import_react19.default.createElement(Icon2, { name: "send", size: 15 })
+          import_react20.default.createElement(Icon2, { name: "send", size: 15 })
         )
       ),
-      import_react19.default.createElement(
+      import_react20.default.createElement(
         "div",
         { className: "ph-r-ai__tools" },
-        import_react19.default.createElement(
+        import_react20.default.createElement(
           "div",
           {
             className: cx("ph-r-ai__modes", modeSlider.rect && "ph-r-ai__modes--sliding"),
@@ -19228,9 +19344,9 @@ function AiPanel(props) {
             role: "group",
             "aria-label": t("reader.ai.mode.label")
           },
-          import_react19.default.createElement(SlidingThumb, { rect: modeSlider.rect, popKey: mode }),
+          import_react20.default.createElement(SlidingThumb, { rect: modeSlider.rect, popKey: mode }),
           ["fast", "deep"].map(
-            (value) => import_react19.default.createElement(
+            (value) => import_react20.default.createElement(
               "button",
               {
                 key: value,
@@ -19242,12 +19358,12 @@ function AiPanel(props) {
                 onClick: () => setMode(value),
                 disabled: busy2
               },
-              value === "fast" ? import_react19.default.createElement(Icon2, { name: "sparkles", size: 11 }) : null,
+              value === "fast" ? import_react20.default.createElement(Icon2, { name: "sparkles", size: 11 }) : null,
               t("reader.ai.mode." + value)
             )
           )
         ),
-        import_react19.default.createElement(
+        import_react20.default.createElement(
           "button",
           {
             type: "button",
@@ -19256,19 +19372,19 @@ function AiPanel(props) {
             title: t("reader.ai.includeImageHint"),
             "aria-pressed": includeImage ? "true" : "false"
           },
-          import_react19.default.createElement("span", { className: "ph-r-ai__check" }, includeImage ? import_react19.default.createElement(Icon2, { name: "check", size: 8 }) : null),
-          import_react19.default.createElement("span", null, t("reader.ai.includeImage"))
+          import_react20.default.createElement("span", { className: "ph-r-ai__check" }, includeImage ? import_react20.default.createElement(Icon2, { name: "check", size: 8 }) : null),
+          import_react20.default.createElement("span", null, t("reader.ai.includeImage"))
         ),
-        maxChars > 0 ? import_react19.default.createElement("span", { className: "ph-r-ai__hint" }, t("reader.ai.limit", { chars: maxChars })) : null,
-        import_react19.default.createElement("span", { className: "ph-r-ai__spacer" }),
-        busy2 ? import_react19.default.createElement("span", { className: "ph-r-ai__hint" }, t("reader.ai.asking")) : null
+        maxChars > 0 ? import_react20.default.createElement("span", { className: "ph-r-ai__hint" }, t("reader.ai.limit", { chars: maxChars })) : null,
+        import_react20.default.createElement("span", { className: "ph-r-ai__spacer" }),
+        busy2 ? import_react20.default.createElement("span", { className: "ph-r-ai__hint" }, t("reader.ai.asking")) : null
       )
     )
   );
 }
 
 // src/surfaces/reader/undo.js
-var import_react20 = __toESM(require("react"), 1);
+var import_react21 = __toESM(require("react"), 1);
 var MAX_ENTRIES2 = 60;
 function isUndoContext(value) {
   return Boolean(value && typeof value.push === "function" && typeof value.undoLast === "function");
@@ -19365,12 +19481,12 @@ function createUndoStore() {
 }
 var EMPTY_SNAPSHOT = { revision: 0, busy: false, canUndo: false, canRedo: false, labels: [] };
 function useReaderUndo(external) {
-  const storeRef = import_react20.default.useRef(null);
+  const storeRef = import_react21.default.useRef(null);
   if (storeRef.current === null) storeRef.current = createUndoStore();
   const store = storeRef.current;
   const externalActive = isUndoContext(external);
-  const localSnapshot = import_react20.default.useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
-  const subscribeExternal = import_react20.default.useCallback(
+  const localSnapshot = import_react21.default.useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const subscribeExternal = import_react21.default.useCallback(
     (listener) => {
       if (!externalActive) return () => {
       };
@@ -19385,7 +19501,7 @@ function useReaderUndo(external) {
     },
     [external, externalActive]
   );
-  const externalSnapshot = import_react20.default.useCallback(() => {
+  const externalSnapshot = import_react21.default.useCallback(() => {
     if (!externalActive) return EMPTY_SNAPSHOT;
     try {
       return external.getSnapshot() || EMPTY_SNAPSHOT;
@@ -19393,8 +19509,8 @@ function useReaderUndo(external) {
       return EMPTY_SNAPSHOT;
     }
   }, [external, externalActive]);
-  const externalState = import_react20.default.useSyncExternalStore(subscribeExternal, externalSnapshot, externalSnapshot);
-  const push = import_react20.default.useCallback(
+  const externalState = import_react21.default.useSyncExternalStore(subscribeExternal, externalSnapshot, externalSnapshot);
+  const push = import_react21.default.useCallback(
     (entry) => {
       if (externalActive) {
         try {
@@ -19412,7 +19528,7 @@ function useReaderUndo(external) {
     },
     [external, externalActive, store]
   );
-  const undo2 = import_react20.default.useCallback(async () => {
+  const undo2 = import_react21.default.useCallback(async () => {
     if (externalActive) {
       try {
         const result = await external.undoLast();
@@ -19425,7 +19541,7 @@ function useReaderUndo(external) {
     }
     return store.undo();
   }, [external, externalActive, store]);
-  const redo = import_react20.default.useCallback(async () => {
+  const redo = import_react21.default.useCallback(async () => {
     if (externalActive) {
       try {
         const result = await external.redoLast();
@@ -19453,7 +19569,7 @@ function useReaderUndo(external) {
 }
 
 // src/surfaces/reader/engines.js
-var import_react21 = __toESM(require("react"), 1);
+var import_react22 = __toESM(require("react"), 1);
 var PROVIDER_LABELS = {
   auto: "\u81EA\u52A8\uFF08Google \u2192 MyMemory \u2192 AI\uFF09",
   google: "Google \u7FFB\u8BD1",
@@ -19539,14 +19655,14 @@ function isProbablyChinese(text2) {
   return cjk >= 2 && cjk >= latin;
 }
 function useTranslationPreference(context, apiCall) {
-  const [snapshot4, setSnapshot] = import_react21.default.useState(() => {
+  const [snapshot4, setSnapshot] = import_react22.default.useState(() => {
     try {
       return context && typeof context.getSnapshot === "function" && context.getSnapshot() || null;
     } catch {
       return null;
     }
   });
-  import_react21.default.useEffect(() => {
+  import_react22.default.useEffect(() => {
     if (!context || typeof context.subscribe !== "function") return void 0;
     let unsubscribe = () => {
     };
@@ -19573,7 +19689,7 @@ function useTranslationPreference(context, apiCall) {
       }
     };
   }, [context]);
-  import_react21.default.useEffect(() => {
+  import_react22.default.useEffect(() => {
     if (context) return void 0;
     let alive = true;
     Promise.resolve().then(() => apiCall("translate.settings", {})).then((result) => {
@@ -19592,15 +19708,15 @@ function useTranslationPreference(context, apiCall) {
 }
 
 // src/surfaces/reader/annotation-layer.jsx
-var import_react22 = __toESM(require("react"), 1);
+var import_react23 = __toESM(require("react"), 1);
 function ColorPens(props) {
   const value = props.value || "yellow";
   const rt = props.t;
-  return import_react22.default.createElement(
+  return import_react23.default.createElement(
     "div",
     { className: "ph-r-pens", role: "group", "aria-label": props.label || rt("reader.annot.color") },
     ANNOTATION_COLORS.map(
-      (name) => import_react22.default.createElement("button", {
+      (name) => import_react23.default.createElement("button", {
         key: name,
         type: "button",
         className: cx("ph-r-pen", "ph-r-pen--" + name, value === name && "ph-r-pen--current"),
@@ -19617,7 +19733,7 @@ function NotePin(props) {
   const annotation = props.annotation;
   const anchor = noteAnchor(annotation);
   if (!anchor) return null;
-  return import_react22.default.createElement(
+  return import_react23.default.createElement(
     "span",
     {
       className: cx(
@@ -19635,10 +19751,10 @@ function NotePin(props) {
       },
       "data-ph-annotation": annotation.id
     },
-    import_react22.default.createElement(
+    import_react23.default.createElement(
       "span",
       { className: cx("ph-r-note-pin", "ph-r-note-pin--" + annotation.color) },
-      import_react22.default.createElement(Icon2, { name: "sticky", size: 11 })
+      import_react23.default.createElement(Icon2, { name: "sticky", size: 11 })
     )
   );
 }
@@ -19648,12 +19764,12 @@ function AnnotationMarks(props) {
   for (const annotation of annotations) {
     if (!annotation || annotation.state === "trash") continue;
     if (annotation.kind === "note") {
-      marks.push(import_react22.default.createElement(NotePin, { key: annotation.id, annotation, activeId: props.activeId }));
+      marks.push(import_react23.default.createElement(NotePin, { key: annotation.id, annotation, activeId: props.activeId }));
       continue;
     }
     annotation.rects.forEach((rect, index) => {
       marks.push(
-        import_react22.default.createElement("span", {
+        import_react23.default.createElement("span", {
           key: annotation.id + ":" + index,
           className: cx(
             "ph-r-mark",
@@ -19669,7 +19785,7 @@ function AnnotationMarks(props) {
     });
   }
   if (marks.length === 0) return null;
-  return import_react22.default.createElement("div", { className: "ph-r-marks", "aria-hidden": "true", "data-ph-annotations": String(props.page || "") }, marks);
+  return import_react23.default.createElement("div", { className: "ph-r-marks", "aria-hidden": "true", "data-ph-annotations": String(props.page || "") }, marks);
 }
 function AnnotationTooltip(props) {
   const annotation = props.annotation;
@@ -19677,26 +19793,26 @@ function AnnotationTooltip(props) {
   const quote = firstText3(annotation.quote);
   const comment = firstText3(annotation.comment);
   if (!quote && !comment) return null;
-  return import_react22.default.createElement(
+  return import_react23.default.createElement(
     "div",
     { className: "ph-r-tip", style: props.style, role: "tooltip" },
-    quote ? import_react22.default.createElement("div", { className: "ph-r-tip__quote" }, quote.length > 180 ? quote.slice(0, 180) + "\u2026" : quote) : null,
-    comment ? import_react22.default.createElement("div", { className: "ph-r-tip__comment" }, comment.length > 220 ? comment.slice(0, 220) + "\u2026" : comment) : null
+    quote ? import_react23.default.createElement("div", { className: "ph-r-tip__quote" }, quote.length > 180 ? quote.slice(0, 180) + "\u2026" : quote) : null,
+    comment ? import_react23.default.createElement("div", { className: "ph-r-tip__comment" }, comment.length > 220 ? comment.slice(0, 220) + "\u2026" : comment) : null
   );
 }
 function AnnotationPopover(props) {
   const rt = props.t;
   const annotation = props.annotation;
   const annotationId = annotation.id;
-  const [comment, setComment] = import_react22.default.useState(() => firstText3(annotation.comment));
-  const [color, setColor] = import_react22.default.useState(annotation.color);
-  const [quoteExpanded, setQuoteExpanded] = import_react22.default.useState(false);
-  const [saving, setSaving] = import_react22.default.useState(false);
-  const [savedAt, setSavedAt] = import_react22.default.useState(0);
-  const [translation, setTranslation] = import_react22.default.useState(null);
-  const [translating, setTranslating] = import_react22.default.useState(false);
-  const savedCommentRef = import_react22.default.useRef(firstText3(annotation.comment));
-  import_react22.default.useEffect(() => {
+  const [comment, setComment] = import_react23.default.useState(() => firstText3(annotation.comment));
+  const [color, setColor] = import_react23.default.useState(annotation.color);
+  const [quoteExpanded, setQuoteExpanded] = import_react23.default.useState(false);
+  const [saving, setSaving] = import_react23.default.useState(false);
+  const [savedAt, setSavedAt] = import_react23.default.useState(0);
+  const [translation, setTranslation] = import_react23.default.useState(null);
+  const [translating, setTranslating] = import_react23.default.useState(false);
+  const savedCommentRef = import_react23.default.useRef(firstText3(annotation.comment));
+  import_react23.default.useEffect(() => {
     if (annotationId !== void 0) {
       setComment(firstText3(annotation.comment));
       setColor(annotation.color);
@@ -19706,9 +19822,9 @@ function AnnotationPopover(props) {
       setQuoteExpanded(false);
     }
   }, [annotationId]);
-  const updateRef = import_react22.default.useRef(props.onUpdate);
+  const updateRef = import_react23.default.useRef(props.onUpdate);
   updateRef.current = props.onUpdate;
-  import_react22.default.useEffect(() => {
+  import_react23.default.useEffect(() => {
     const next = comment.trim();
     if (next === savedCommentRef.current) return void 0;
     const timer2 = setTimeout(() => {
@@ -19751,7 +19867,7 @@ function AnnotationPopover(props) {
       setTranslation({ status: "error", reason: firstText3(error && error.message, "error") });
     }).then(() => setTranslating(false));
   };
-  const actionButton = (key, icon, label, onClick, options) => import_react22.default.createElement(
+  const actionButton = (key, icon, label, onClick, options) => import_react23.default.createElement(
     "button",
     {
       key,
@@ -19761,10 +19877,10 @@ function AnnotationPopover(props) {
       disabled: options && options.disabled,
       title: options && options.title || label
     },
-    import_react22.default.createElement(Icon2, { name: icon, size: 13 }),
-    import_react22.default.createElement("span", null, label)
+    import_react23.default.createElement(Icon2, { name: icon, size: 13 }),
+    import_react23.default.createElement("span", null, label)
   );
-  return import_react22.default.createElement(
+  return import_react23.default.createElement(
     "div",
     {
       className: cx("ph-r-card", "ph-r-popover"),
@@ -19773,35 +19889,35 @@ function AnnotationPopover(props) {
       "data-ph-popover": annotationId,
       onMouseDown: (event) => event.stopPropagation()
     },
-    import_react22.default.createElement(
+    import_react23.default.createElement(
       "div",
       { className: "ph-r-popover__head" },
-      import_react22.default.createElement("span", { className: "ph-r-annotcard__swatch", style: { background: colorHex(annotation.color) } }),
-      import_react22.default.createElement("strong", null, annotationKindLabel(rt, annotation.kind)),
-      import_react22.default.createElement("span", { className: "ph-r-popover__meta" }, rt("reader.annot.pageChip", { page: annotation.page })),
-      import_react22.default.createElement("span", { className: "ph-r-popover__meta" }, formatTime2(annotation.createdAt)),
-      import_react22.default.createElement("span", { className: "ph-r-popover__spacer" }),
-      import_react22.default.createElement(IconBtn, { icon: "close", title: rt("reader.close"), onClick: props.onClose })
+      import_react23.default.createElement("span", { className: "ph-r-annotcard__swatch", style: { background: colorHex(annotation.color) } }),
+      import_react23.default.createElement("strong", null, annotationKindLabel(rt, annotation.kind)),
+      import_react23.default.createElement("span", { className: "ph-r-popover__meta" }, rt("reader.annot.pageChip", { page: annotation.page })),
+      import_react23.default.createElement("span", { className: "ph-r-popover__meta" }, formatTime2(annotation.createdAt)),
+      import_react23.default.createElement("span", { className: "ph-r-popover__spacer" }),
+      import_react23.default.createElement(IconBtn, { icon: "close", title: rt("reader.close"), onClick: props.onClose })
     ),
-    quote ? import_react22.default.createElement(
+    quote ? import_react23.default.createElement(
       "div",
       { className: cx("ph-r-popover__quotewrap", longQuote && !quoteExpanded && "ph-r-popover__quotewrap--clamped") },
-      import_react22.default.createElement("blockquote", { className: "ph-r-popover__quote" }, quote),
-      longQuote ? import_react22.default.createElement(
+      import_react23.default.createElement("blockquote", { className: "ph-r-popover__quote" }, quote),
+      longQuote ? import_react23.default.createElement(
         "button",
         { type: "button", className: "ph-r-popover__expand", onClick: () => setQuoteExpanded((value) => !value) },
         quoteExpanded ? rt("reader.popover.collapseQuote") : rt("reader.popover.expandQuote")
       ) : null
     ) : null,
-    import_react22.default.createElement(
+    import_react23.default.createElement(
       "div",
       { className: "ph-r-popover__commenthead" },
-      import_react22.default.createElement("span", null, rt("reader.annot.comment")),
-      import_react22.default.createElement("span", { className: "ph-r-popover__spacer" }),
-      saving ? import_react22.default.createElement("span", { className: "ph-r-popover__autosave" }, rt("reader.popover.saving")) : savedAt ? import_react22.default.createElement("span", { className: "ph-r-popover__autosave ph-r-popover__autosave--ok" }, rt("reader.popover.saved")) : import_react22.default.createElement("span", { className: "ph-r-popover__autosave" }, rt("reader.popover.autosave")),
-      dirty ? import_react22.default.createElement("button", { type: "button", className: "ph-r-popover__expand", onClick: cancelComment }, rt("reader.popover.cancelEdit")) : null
+      import_react23.default.createElement("span", null, rt("reader.annot.comment")),
+      import_react23.default.createElement("span", { className: "ph-r-popover__spacer" }),
+      saving ? import_react23.default.createElement("span", { className: "ph-r-popover__autosave" }, rt("reader.popover.saving")) : savedAt ? import_react23.default.createElement("span", { className: "ph-r-popover__autosave ph-r-popover__autosave--ok" }, rt("reader.popover.saved")) : import_react23.default.createElement("span", { className: "ph-r-popover__autosave" }, rt("reader.popover.autosave")),
+      dirty ? import_react23.default.createElement("button", { type: "button", className: "ph-r-popover__expand", onClick: cancelComment }, rt("reader.popover.cancelEdit")) : null
     ),
-    import_react22.default.createElement("textarea", {
+    import_react23.default.createElement("textarea", {
       className: "ph-r-popover__textarea",
       value: comment,
       rows: 3,
@@ -19825,13 +19941,13 @@ function AnnotationPopover(props) {
         }
       }
     }),
-    import_react22.default.createElement(
+    import_react23.default.createElement(
       "div",
       { className: "ph-r-popover__row" },
-      import_react22.default.createElement("span", { className: "ph-r-popover__hint" }, rt("reader.annot.color")),
-      import_react22.default.createElement(ColorPens, { t: rt, value: color, onChange: changeColor })
+      import_react23.default.createElement("span", { className: "ph-r-popover__hint" }, rt("reader.annot.color")),
+      import_react23.default.createElement(ColorPens, { t: rt, value: color, onChange: changeColor })
     ),
-    import_react22.default.createElement(
+    import_react23.default.createElement(
       "div",
       { className: "ph-r-popover__grid" },
       quote ? actionButton("copy", "copy", rt("reader.popover.copyQuote"), () => props.onCopy(annotation)) : null,
@@ -19844,20 +19960,22 @@ function AnnotationPopover(props) {
       actionButton("noteLink", "note", rt("reader.annot.quoteToNote"), () => props.onLinkNote && props.onLinkNote(annotation), { disabled: !props.onLinkNote }),
       actionButton("delete", "trash", rt("reader.annot.delete"), () => props.onDelete(annotation))
     ),
-    translating ? import_react22.default.createElement("div", { className: "ph-r-popover__translation" }, import_react22.default.createElement(Spinner2, { size: 11 }), import_react22.default.createElement("span", null, rt("reader.popover.translating"))) : translation ? import_react22.default.createElement(
+    translating ? import_react23.default.createElement("div", { className: "ph-r-popover__translation" }, import_react23.default.createElement(Spinner2, { size: 11 }), import_react23.default.createElement("span", null, rt("reader.popover.translating"))) : translation ? import_react23.default.createElement(
       "div",
       { className: "ph-r-popover__translation" },
-      translation.status === "translated" || translation.translation ? import_react22.default.createElement("div", { className: "ph-r-popover__translationtext" }, firstText3(translation.translation)) : import_react22.default.createElement(
-        "div",
-        { className: "ph-r-resultcard__warn" },
-        rt("reader.selection.quickUnavailable", { reason: firstText3(translation.reason, rt("reader.ai.reasonFallback")) })
-      ),
-      import_react22.default.createElement(
+      translation.status === "translated" || translation.translation ? import_react23.default.createElement("div", { className: "ph-r-popover__translationtext" }, firstText3(translation.translation)) : import_react23.default.createElement(AiWarning, {
+        t: rt,
+        compact: true,
+        status: translation.status === "unavailable" ? "unavailable" : "error",
+        reason: firstText3(translation.reason, rt("reader.ai.reasonFallback")),
+        onRetry: quickTranslate
+      }),
+      import_react23.default.createElement(
         "div",
         { className: "ph-r-popover__translationmeta" },
-        translation.engine || translation.provider ? import_react22.default.createElement("span", null, engineBadge(translation.engine, translation.model, translation.latencyMs, translation.cached)) : translation.model ? import_react22.default.createElement("span", null, String(translation.model).split("/").pop()) : null,
-        translation.translation && props.onAiTranslate ? import_react22.default.createElement("button", { type: "button", className: "ph-r-popover__expand", onClick: aiTranslate, disabled: translating }, rt("reader.selection.aiRefine")) : null,
-        translation.translation ? import_react22.default.createElement(
+        translation.engine || translation.provider ? import_react23.default.createElement("span", null, engineBadge(translation.engine, translation.model, translation.latencyMs, translation.cached)) : translation.model ? import_react23.default.createElement("span", null, String(translation.model).split("/").pop()) : null,
+        translation.translation && props.onAiTranslate ? import_react23.default.createElement("button", { type: "button", className: "ph-r-popover__expand", onClick: aiTranslate, disabled: translating }, rt("reader.selection.aiRefine")) : null,
+        translation.translation ? import_react23.default.createElement(
           "button",
           {
             type: "button",
@@ -19877,11 +19995,11 @@ function AnnotationPopover(props) {
 }
 function NoteComposer(props) {
   const rt = props.t;
-  const [text2, setText] = import_react22.default.useState("");
-  const [color, setColor] = import_react22.default.useState(props.color || "yellow");
-  const [saving, setSaving] = import_react22.default.useState(false);
-  const textareaRef = import_react22.default.useRef(null);
-  import_react22.default.useEffect(() => {
+  const [text2, setText] = import_react23.default.useState("");
+  const [color, setColor] = import_react23.default.useState(props.color || "yellow");
+  const [saving, setSaving] = import_react23.default.useState(false);
+  const textareaRef = import_react23.default.useRef(null);
+  import_react23.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       if (textareaRef.current && typeof textareaRef.current.focus === "function") textareaRef.current.focus();
     }, 30);
@@ -19894,18 +20012,18 @@ function NoteComposer(props) {
     Promise.resolve(props.onSave({ text: value, color })).catch(() => {
     }).then(() => setSaving(false));
   };
-  return import_react22.default.createElement(
+  return import_react23.default.createElement(
     "div",
     { className: cx("ph-r-card", "ph-r-noteform"), style: props.style, onMouseDown: (event) => event.stopPropagation() },
-    import_react22.default.createElement(
+    import_react23.default.createElement(
       "div",
       { className: "ph-r-noteform__title" },
-      import_react22.default.createElement(Icon2, { name: "sticky", size: 14 }),
-      import_react22.default.createElement("span", null, rt("reader.note.title")),
-      import_react22.default.createElement("span", { className: "ph-r-popover__spacer" }),
-      import_react22.default.createElement(IconBtn, { icon: "close", title: rt("reader.note.cancel"), onClick: props.onCancel })
+      import_react23.default.createElement(Icon2, { name: "sticky", size: 14 }),
+      import_react23.default.createElement("span", null, rt("reader.note.title")),
+      import_react23.default.createElement("span", { className: "ph-r-popover__spacer" }),
+      import_react23.default.createElement(IconBtn, { icon: "close", title: rt("reader.note.cancel"), onClick: props.onCancel })
     ),
-    import_react22.default.createElement("textarea", {
+    import_react23.default.createElement("textarea", {
       ref: textareaRef,
       className: "ph-r-popover__textarea",
       value: text2,
@@ -19923,15 +20041,15 @@ function NoteComposer(props) {
         }
       }
     }),
-    import_react22.default.createElement(ColorPens, { t: rt, value: color, onChange: setColor }),
-    import_react22.default.createElement(
+    import_react23.default.createElement(ColorPens, { t: rt, value: color, onChange: setColor }),
+    import_react23.default.createElement(
       "div",
       { className: "ph-r-noteform__actions" },
-      import_react22.default.createElement(Btn, { size: "sm", variant: "ghost", onClick: props.onCancel }, rt("reader.note.cancel")),
-      import_react22.default.createElement(
+      import_react23.default.createElement(Btn, { size: "sm", variant: "ghost", onClick: props.onCancel }, rt("reader.note.cancel")),
+      import_react23.default.createElement(
         Btn,
         { size: "sm", variant: "solid", onClick: save, disabled: saving || text2.trim() === "" },
-        saving ? import_react22.default.createElement(Spinner2, { size: 11 }) : import_react22.default.createElement(Icon2, { name: "check", size: 12 }),
+        saving ? import_react23.default.createElement(Spinner2, { size: 11 }) : import_react23.default.createElement(Icon2, { name: "check", size: 12 }),
         " ",
         rt("reader.note.save")
       )
@@ -19940,8 +20058,8 @@ function NoteComposer(props) {
 }
 function AnnotationListPanel(props) {
   const rt = props.t;
-  const [colorFilter, setColorFilter] = import_react22.default.useState("all");
-  const [kindFilter, setKindFilter] = import_react22.default.useState("all");
+  const [colorFilter, setColorFilter] = import_react23.default.useState("all");
+  const [kindFilter, setKindFilter] = import_react23.default.useState("all");
   const annotations = (props.annotations || []).slice().sort((left, right) => {
     return left.page - right.page || String(left.createdAt).localeCompare(String(right.createdAt));
   });
@@ -19951,19 +20069,19 @@ function AnnotationListPanel(props) {
     return true;
   });
   if (annotations.length === 0) {
-    return import_react22.default.createElement(Empty, {
+    return import_react23.default.createElement(Empty, {
       icon: "highlighter",
       title: rt("reader.annot.empty"),
       desc: rt("reader.annot.emptyDesc")
     });
   }
-  const filters = import_react22.default.createElement(
+  const filters = import_react23.default.createElement(
     "div",
     { className: "ph-r-annotfilters" },
-    import_react22.default.createElement(
+    import_react23.default.createElement(
       "div",
       { className: "ph-r-annotfilters__row" },
-      import_react22.default.createElement(
+      import_react23.default.createElement(
         "button",
         {
           type: "button",
@@ -19973,7 +20091,7 @@ function AnnotationListPanel(props) {
         rt("reader.annot.filter.allColors")
       ),
       ANNOTATION_COLORS.map(
-        (name) => import_react22.default.createElement(
+        (name) => import_react23.default.createElement(
           "button",
           {
             key: name,
@@ -19988,11 +20106,11 @@ function AnnotationListPanel(props) {
         )
       )
     ),
-    import_react22.default.createElement(
+    import_react23.default.createElement(
       "div",
       { className: "ph-r-annotfilters__row" },
       ["all", "highlight", "area", "note"].map(
-        (kind) => import_react22.default.createElement(
+        (kind) => import_react23.default.createElement(
           "button",
           {
             key: kind,
@@ -20003,18 +20121,18 @@ function AnnotationListPanel(props) {
           kind === "all" ? rt("reader.annot.filter.allKinds") : annotationKindLabel(rt, kind)
         )
       ),
-      import_react22.default.createElement("span", { className: "ph-r-annotfilters__count" }, rt("reader.annot.filter.count", { shown: filtered.length, total: annotations.length }))
+      import_react23.default.createElement("span", { className: "ph-r-annotfilters__count" }, rt("reader.annot.filter.count", { shown: filtered.length, total: annotations.length }))
     )
   );
-  return import_react22.default.createElement(
+  return import_react23.default.createElement(
     "div",
     { className: "ph-r-annotlistwrap" },
     filters,
-    filtered.length === 0 ? import_react22.default.createElement(Empty, { icon: "highlighter", title: rt("reader.annot.filter.empty"), desc: rt("reader.annot.filter.emptyDesc") }) : import_react22.default.createElement(
+    filtered.length === 0 ? import_react23.default.createElement(Empty, { icon: "highlighter", title: rt("reader.annot.filter.empty"), desc: rt("reader.annot.filter.emptyDesc") }) : import_react23.default.createElement(
       "div",
       { className: "ph-r-annotlist" },
       filtered.map(
-        (annotation) => import_react22.default.createElement(
+        (annotation) => import_react23.default.createElement(
           "div",
           {
             key: annotation.id,
@@ -20029,17 +20147,17 @@ function AnnotationListPanel(props) {
               }
             }
           },
-          import_react22.default.createElement(
+          import_react23.default.createElement(
             "div",
             { className: "ph-r-annotcard__head" },
-            import_react22.default.createElement("span", { className: "ph-r-annotcard__swatch", style: { background: colorHex(annotation.color) } }),
-            import_react22.default.createElement(Badge2, { tone: annotation.origin === "ai_explanation" ? "business" : "muted" }, annotationKindLabel(rt, annotation.kind)),
-            import_react22.default.createElement("span", { className: "ph-r-annotcard__page" }, rt("reader.annot.pageChip", { page: annotation.page })),
-            import_react22.default.createElement("span", { className: "ph-r-annotcard__spacer" }),
-            import_react22.default.createElement(
+            import_react23.default.createElement("span", { className: "ph-r-annotcard__swatch", style: { background: colorHex(annotation.color) } }),
+            import_react23.default.createElement(Badge2, { tone: annotation.origin === "ai_explanation" ? "business" : "muted" }, annotationKindLabel(rt, annotation.kind)),
+            import_react23.default.createElement("span", { className: "ph-r-annotcard__page" }, rt("reader.annot.pageChip", { page: annotation.page })),
+            import_react23.default.createElement("span", { className: "ph-r-annotcard__spacer" }),
+            import_react23.default.createElement(
               "span",
               { className: "ph-r-annotcard__actions" },
-              import_react22.default.createElement(IconBtn, {
+              import_react23.default.createElement(IconBtn, {
                 icon: "quote",
                 title: rt("reader.annot.cite"),
                 onClick: (event) => {
@@ -20047,7 +20165,7 @@ function AnnotationListPanel(props) {
                   props.onCite(annotation);
                 }
               }),
-              import_react22.default.createElement(IconBtn, {
+              import_react23.default.createElement(IconBtn, {
                 icon: "note",
                 title: rt("reader.annot.quoteToNote"),
                 onClick: (event) => {
@@ -20055,7 +20173,7 @@ function AnnotationListPanel(props) {
                   if (props.onLinkNote) props.onLinkNote(annotation);
                 }
               }),
-              import_react22.default.createElement(IconBtn, {
+              import_react23.default.createElement(IconBtn, {
                 icon: "trash",
                 title: rt("reader.annot.delete"),
                 onClick: (event) => {
@@ -20065,13 +20183,13 @@ function AnnotationListPanel(props) {
               })
             )
           ),
-          annotation.quote ? import_react22.default.createElement("p", { className: "ph-r-annotcard__quote" }, annotation.quote) : null,
-          annotation.comment ? import_react22.default.createElement("div", { className: "ph-r-annotcard__comment" }, annotation.comment) : import_react22.default.createElement("div", { className: "ph-r-annotcard__foot" }, rt("reader.annot.commentEmpty")),
-          import_react22.default.createElement(
+          annotation.quote ? import_react23.default.createElement("p", { className: "ph-r-annotcard__quote" }, annotation.quote) : null,
+          annotation.comment ? import_react23.default.createElement("div", { className: "ph-r-annotcard__comment" }, annotation.comment) : import_react23.default.createElement("div", { className: "ph-r-annotcard__foot" }, rt("reader.annot.commentEmpty")),
+          import_react23.default.createElement(
             "div",
             { className: "ph-r-annotcard__foot" },
             formatTime2(annotation.createdAt),
-            annotation.page !== props.page ? import_react22.default.createElement("span", null, " \xB7 " + rt("reader.annot.jump", { page: annotation.page })) : null
+            annotation.page !== props.page ? import_react23.default.createElement("span", null, " \xB7 " + rt("reader.annot.jump", { page: annotation.page })) : null
           )
         )
       )
@@ -20080,7 +20198,7 @@ function AnnotationListPanel(props) {
 }
 
 // src/surfaces/reader/bilingual.jsx
-var import_react23 = __toESM(require("react"), 1);
+var import_react24 = __toESM(require("react"), 1);
 var DEFAULT_ROLES = /* @__PURE__ */ new Set(["body", "heading", "caption"]);
 var TRANSLATABLE_ROLES = /* @__PURE__ */ new Set(["body", "heading", "caption"]);
 var ROLE_KEYS = {
@@ -20120,11 +20238,11 @@ function BlockCard(props) {
   let translationBody = null;
   if (showTranslation) {
     if (translationText) {
-      translationBody = import_react23.default.createElement(
+      translationBody = import_react24.default.createElement(
         "p",
         { className: cx("ph-r-bi__translation", !showOriginal && "ph-r-bi__translation--only") },
         translationText,
-        entry.engine || entry.provider ? import_react23.default.createElement(
+        entry.engine || entry.provider ? import_react24.default.createElement(
           "span",
           {
             className: cx("ph-r-bi__engine", entry.cached && "ph-r-bi__engine--cached"),
@@ -20132,44 +20250,44 @@ function BlockCard(props) {
           },
           engineInitial(entry.engine, entry.provider, entry.cached)
         ) : null,
-        entry.cached ? import_react23.default.createElement(
+        entry.cached ? import_react24.default.createElement(
           "span",
           { className: "ph-r-bi__cached", title: t("reader.bilingual.cached") },
-          import_react23.default.createElement(Icon2, { name: "refresh", size: 9 }),
-          import_react23.default.createElement("span", null, t("reader.bilingual.cached"))
+          import_react24.default.createElement(Icon2, { name: "refresh", size: 9 }),
+          import_react24.default.createElement("span", null, t("reader.bilingual.cached"))
         ) : null
       );
     } else if (pending) {
-      translationBody = import_react23.default.createElement(
+      translationBody = import_react24.default.createElement(
         "div",
         { className: "ph-r-bi__pending" },
-        import_react23.default.createElement(Spinner2, { size: 11 }),
-        import_react23.default.createElement("span", null, t("reader.bilingual.translating"))
+        import_react24.default.createElement(Spinner2, { size: 11 }),
+        import_react24.default.createElement("span", null, t("reader.bilingual.translating"))
       );
     } else if (failed && translatable) {
-      translationBody = import_react23.default.createElement(
+      translationBody = import_react24.default.createElement(
         "div",
         { className: "ph-r-bi__unavailable" },
-        import_react23.default.createElement("span", null, t("reader.bilingual.blockFailed", { reason })),
-        import_react23.default.createElement(
+        import_react24.default.createElement("span", null, t("reader.bilingual.blockFailed", { reason })),
+        import_react24.default.createElement(
           Btn,
           { size: "sm", variant: "ghost", icon: "refresh", onClick: () => props.onTranslateBlock(block), disabled: props.pageBusy },
           t("reader.bilingual.retryBlock")
         )
       );
     } else if (props.pageBusy && translatable) {
-      translationBody = import_react23.default.createElement(
+      translationBody = import_react24.default.createElement(
         "div",
         { className: "ph-r-bi__pending" },
-        import_react23.default.createElement(Icon2, { name: "clock", size: 11 }),
-        import_react23.default.createElement("span", null, t("reader.bilingual.waiting"))
+        import_react24.default.createElement(Icon2, { name: "clock", size: 11 }),
+        import_react24.default.createElement("span", null, t("reader.bilingual.waiting"))
       );
     } else if (translatable) {
-      translationBody = import_react23.default.createElement(
+      translationBody = import_react24.default.createElement(
         "div",
         { className: "ph-r-bi__pending" },
-        import_react23.default.createElement("span", null, t("reader.bilingual.untranslated")),
-        import_react23.default.createElement(
+        import_react24.default.createElement("span", null, t("reader.bilingual.untranslated")),
+        import_react24.default.createElement(
           Btn,
           { size: "sm", variant: "ghost", icon: "translate", onClick: () => props.onTranslateBlock(block), disabled: props.pageBusy },
           t("reader.bilingual.translateBlock")
@@ -20177,20 +20295,20 @@ function BlockCard(props) {
       );
     }
   }
-  return import_react23.default.createElement(
+  return import_react24.default.createElement(
     "article",
     {
       className: cx("ph-r-bi__card", "ph-r-bi__card--" + role),
       "data-ph-block": String(block.id != null ? block.id : props.index),
       "data-ph-role": role
     },
-    import_react23.default.createElement(
+    import_react24.default.createElement(
       "div",
       { className: "ph-r-bi__role" },
-      import_react23.default.createElement(Icon2, { name: role === "caption" ? "figure" : role === "heading" ? "book" : "note", size: 11 }),
-      import_react23.default.createElement("span", null, t(roleKey)),
-      import_react23.default.createElement("span", { className: "ph-r-bi__spacer" }),
-      !translationText && translatable ? import_react23.default.createElement(
+      import_react24.default.createElement(Icon2, { name: role === "caption" ? "figure" : role === "heading" ? "book" : "note", size: 11 }),
+      import_react24.default.createElement("span", null, t(roleKey)),
+      import_react24.default.createElement("span", { className: "ph-r-bi__spacer" }),
+      !translationText && translatable ? import_react24.default.createElement(
         "button",
         {
           type: "button",
@@ -20200,11 +20318,11 @@ function BlockCard(props) {
           onClick: () => props.onTranslateBlock(block),
           title: t("reader.bilingual.translateBlock")
         },
-        pending ? import_react23.default.createElement(Spinner2, { size: 10 }) : import_react23.default.createElement(Icon2, { name: "translate", size: 11 }),
-        import_react23.default.createElement("span", null, t("reader.bilingual.translateBlock"))
+        pending ? import_react24.default.createElement(Spinner2, { size: 10 }) : import_react24.default.createElement(Icon2, { name: "translate", size: 11 }),
+        import_react24.default.createElement("span", null, t("reader.bilingual.translateBlock"))
       ) : null
     ),
-    showOriginal ? import_react23.default.createElement("p", { className: "ph-r-bi__original" }, String(block.text || "").trim()) : null,
+    showOriginal ? import_react24.default.createElement("p", { className: "ph-r-bi__original" }, String(block.text || "").trim()) : null,
     translationBody
   );
 }
@@ -20213,7 +20331,7 @@ function BilingualPanel(props) {
   const blocksEntry = props.blocksEntry || null;
   const status = blocksEntry ? blocksEntry.status : "idle";
   const allBlocks = orderBlocks(arrayOf3(blocksEntry && blocksEntry.data && blocksEntry.data.blocks));
-  const [showMarginal, setShowMarginal] = import_react23.default.useState(false);
+  const [showMarginal, setShowMarginal] = import_react24.default.useState(false);
   const visibleBlocks = showMarginal ? allBlocks : allBlocks.filter(
     (block) => DEFAULT_ROLES.has(String(block.role || "body")) && String(block.text || "").trim().length >= 2 && !looksLikePageMetadata(block.text)
   );
@@ -20233,17 +20351,17 @@ function BilingualPanel(props) {
   else if (translationStatus === "translated") pageButtonLabel = t("reader.bilingual.retranslate");
   else if (translationStatus === "partial") pageButtonLabel = t("reader.bilingual.continue");
   const pageButtonForce = translationStatus === "translated";
-  const header = import_react23.default.createElement(
+  const header = import_react24.default.createElement(
     "div",
     { className: "ph-r-bi__head" },
-    import_react23.default.createElement(
+    import_react24.default.createElement(
       "div",
       { className: "ph-r-bi__titleline" },
-      import_react23.default.createElement(Icon2, { name: "translate", size: 14 }),
-      import_react23.default.createElement("span", { className: "ph-r-bi__title" }, t("reader.bilingual.title")),
-      import_react23.default.createElement("span", { className: "ph-r-bi__page" }, t("reader.bilingual.page", { page: props.page })),
-      import_react23.default.createElement("span", { className: "ph-r-bi__spacer" }),
-      props.mode === "original" ? null : import_react23.default.createElement(
+      import_react24.default.createElement(Icon2, { name: "translate", size: 14 }),
+      import_react24.default.createElement("span", { className: "ph-r-bi__title" }, t("reader.bilingual.title")),
+      import_react24.default.createElement("span", { className: "ph-r-bi__page" }, t("reader.bilingual.page", { page: props.page })),
+      import_react24.default.createElement("span", { className: "ph-r-bi__spacer" }),
+      props.mode === "original" ? null : import_react24.default.createElement(
         Btn,
         {
           size: "sm",
@@ -20253,10 +20371,10 @@ function BilingualPanel(props) {
           onClick: () => props.onTranslatePage(pageButtonForce),
           title: pageButtonLabel
         },
-        pageBusy ? import_react23.default.createElement(Spinner2, { size: 11 }) : null,
+        pageBusy ? import_react24.default.createElement(Spinner2, { size: 11 }) : null,
         pageButtonLabel
       ),
-      props.mode === "original" || !props.onAiTranslatePage ? null : import_react23.default.createElement(
+      props.mode === "original" || !props.onAiTranslatePage ? null : import_react24.default.createElement(
         Btn,
         {
           size: "sm",
@@ -20269,31 +20387,31 @@ function BilingualPanel(props) {
         t("reader.bilingual.aiTranslatePage")
       )
     ),
-    import_react23.default.createElement(
+    import_react24.default.createElement(
       "div",
       { className: "ph-r-bi__prov" },
-      progress.total > 0 ? import_react23.default.createElement(
+      progress.total > 0 ? import_react24.default.createElement(
         "span",
         { className: cx("ph-r-bi__progresslabel", progress.failed > 0 && "ph-r-bi__progresslabel--warn") },
         t("reader.bilingual.progress", { done: progress.done, total: progress.total }),
-        progress.failed > 0 ? import_react23.default.createElement("span", null, " \xB7 " + t("reader.bilingual.progressFailed", { failed: progress.failed })) : null
+        progress.failed > 0 ? import_react24.default.createElement("span", null, " \xB7 " + t("reader.bilingual.progressFailed", { failed: progress.failed })) : null
       ) : null,
-      props.structurePending ? import_react23.default.createElement(Badge2, { tone: "warn", title: t("reader.bilingual.structureBackfillingHint") }, t("reader.bilingual.structureBackfilling")) : null,
-      props.providerLabel ? import_react23.default.createElement(
+      props.structurePending ? import_react24.default.createElement(Badge2, { tone: "warn", title: t("reader.bilingual.structureBackfillingHint") }, t("reader.bilingual.structureBackfilling")) : null,
+      props.providerLabel ? import_react24.default.createElement(
         "span",
         { className: "ph-r-bi__enginepref", title: t("reader.bilingual.enginePreferenceHint") },
         t("reader.bilingual.enginePreference", { engine: props.providerLabel })
       ) : null,
-      provenance && provenance.label ? import_react23.default.createElement(
+      provenance && provenance.label ? import_react24.default.createElement(
         "span",
         { className: "ph-r-bi__engineused", title: provenance.model || "" },
         t("reader.bilingual.engineUsed", { engines: provenance.label })
-      ) : provenance && provenance.model ? import_react23.default.createElement("span", null, t("reader.bilingual.provenance", { model: provenance.model })) : null,
-      translation && translation.provider === "llm" ? import_react23.default.createElement(Badge2, { tone: "business" }, t("reader.bilingual.aiTranslated")) : null,
-      cachedAll ? import_react23.default.createElement(Badge2, { tone: "success" }, t("reader.bilingual.cached")) : null,
-      props.mode === "translation" ? import_react23.default.createElement(Badge2, { tone: "business" }, t("reader.bilingual.onlyTranslation")) : null
+      ) : provenance && provenance.model ? import_react24.default.createElement("span", null, t("reader.bilingual.provenance", { model: provenance.model })) : null,
+      translation && translation.provider === "llm" ? import_react24.default.createElement(Badge2, { tone: "business" }, t("reader.bilingual.aiTranslated")) : null,
+      cachedAll ? import_react24.default.createElement(Badge2, { tone: "success" }, t("reader.bilingual.cached")) : null,
+      props.mode === "translation" ? import_react24.default.createElement(Badge2, { tone: "business" }, t("reader.bilingual.onlyTranslation")) : null
     ),
-    progress.total > 0 ? import_react23.default.createElement(
+    progress.total > 0 ? import_react24.default.createElement(
       "div",
       {
         className: "ph-r-bi__bar",
@@ -20303,15 +20421,15 @@ function BilingualPanel(props) {
         "aria-valuenow": progress.done,
         "aria-label": t("reader.bilingual.progress", { done: progress.done, total: progress.total })
       },
-      import_react23.default.createElement("span", {
+      import_react24.default.createElement("span", {
         className: cx("ph-r-bi__barfill", progress.failed > 0 && "ph-r-bi__barfill--warn"),
         style: { width: Math.round(progress.done / Math.max(1, progress.total) * 100) + "%" }
       })
     ) : null,
-    allBlocks.length > 0 ? import_react23.default.createElement(
+    allBlocks.length > 0 ? import_react24.default.createElement(
       "div",
       { className: "ph-r-bi__filter" },
-      import_react23.default.createElement(
+      import_react24.default.createElement(
         "button",
         {
           type: "button",
@@ -20320,44 +20438,41 @@ function BilingualPanel(props) {
           "aria-pressed": showMarginal ? "true" : "false",
           title: t("reader.bilingual.showMarginalHint")
         },
-        import_react23.default.createElement("span", { className: "ph-r-ai__check" }, showMarginal ? import_react23.default.createElement(Icon2, { name: "check", size: 8 }) : null),
-        import_react23.default.createElement("span", null, showMarginal ? t("reader.bilingual.hideMarginal") : t("reader.bilingual.showMarginal"))
+        import_react24.default.createElement("span", { className: "ph-r-ai__check" }, showMarginal ? import_react24.default.createElement(Icon2, { name: "check", size: 8 }) : null),
+        import_react24.default.createElement("span", null, showMarginal ? t("reader.bilingual.hideMarginal") : t("reader.bilingual.showMarginal"))
       ),
-      hiddenCount > 0 && !showMarginal ? import_react23.default.createElement("span", { className: "ph-r-bi__hidden" }, t("reader.bilingual.hiddenCount", { count: hiddenCount })) : null
+      hiddenCount > 0 && !showMarginal ? import_react24.default.createElement("span", { className: "ph-r-bi__hidden" }, t("reader.bilingual.hiddenCount", { count: hiddenCount })) : null
     ) : null,
-    translationStatus === "unavailable" && unavailableReason ? import_react23.default.createElement(
-      "div",
-      { className: "ph-r-bi__unavailable" },
-      t("reader.bilingual.unavailable", { reason: unavailableReason }),
-      import_react23.default.createElement(
-        Btn,
-        { size: "sm", variant: "ghost", icon: "refresh", onClick: () => props.onTranslatePage(false), style: { marginTop: 6 }, disabled: pageBusy },
-        t("reader.bilingual.retry")
-      )
-    ) : null
+    (translationStatus === "unavailable" || translationStatus === "error") && unavailableReason ? import_react24.default.createElement(AiWarning, {
+      t,
+      compact: true,
+      status: translationStatus === "unavailable" ? "unavailable" : "error",
+      reason: unavailableReason,
+      onRetry: pageBusy ? void 0 : () => props.onTranslatePage(false)
+    }) : null
   );
   let body = null;
   if (status === "loading" || status === "idle") {
-    body = import_react23.default.createElement(
+    body = import_react24.default.createElement(
       "div",
       { className: "ph-r-bi__skeleton", "aria-busy": "true" },
       [96, 72, 88, 64].map(
-        (percent, index) => import_react23.default.createElement(
+        (percent, index) => import_react24.default.createElement(
           "div",
           { key: index, className: "ph-r-bi__card" },
-          import_react23.default.createElement("span", { className: "ph-r-skeleton", style: { width: "24%", height: 10, marginBottom: 8 } }),
-          import_react23.default.createElement("span", { className: "ph-r-skeleton", style: { width: percent + "%", height: 11, marginBottom: 5 } }),
-          import_react23.default.createElement("span", { className: "ph-r-skeleton", style: { width: Math.max(40, percent - 22) + "%", height: 11 } })
+          import_react24.default.createElement("span", { className: "ph-r-skeleton", style: { width: "24%", height: 10, marginBottom: 8 } }),
+          import_react24.default.createElement("span", { className: "ph-r-skeleton", style: { width: percent + "%", height: 11, marginBottom: 5 } }),
+          import_react24.default.createElement("span", { className: "ph-r-skeleton", style: { width: Math.max(40, percent - 22) + "%", height: 11 } })
         )
       )
     );
   } else if (status === "error") {
-    body = import_react23.default.createElement(Empty, {
+    body = import_react24.default.createElement(Empty, {
       icon: "warning",
       tone: "error",
       title: t("reader.bilingual.structureUnavailable", { reason: structureError || "error" }),
       desc: t("reader.bilingual.structurePending"),
-      action: props.onRetryBlocks ? import_react23.default.createElement(
+      action: props.onRetryBlocks ? import_react24.default.createElement(
         Btn,
         {
           size: "sm",
@@ -20372,11 +20487,11 @@ function BilingualPanel(props) {
       ) : null
     });
   } else if (allBlocks.length === 0) {
-    body = import_react23.default.createElement(Empty, {
+    body = import_react24.default.createElement(Empty, {
       icon: "translate",
       title: t("reader.bilingual.empty"),
       desc: t("reader.page.structurePending"),
-      action: props.onRetryBlocks ? import_react23.default.createElement(
+      action: props.onRetryBlocks ? import_react24.default.createElement(
         Btn,
         {
           size: "sm",
@@ -20391,22 +20506,22 @@ function BilingualPanel(props) {
       ) : null
     });
   } else if (visibleBlocks.length === 0) {
-    body = import_react23.default.createElement(Empty, {
+    body = import_react24.default.createElement(Empty, {
       icon: "note",
       title: t("reader.bilingual.onlyMarginal"),
       desc: t("reader.bilingual.onlyMarginalDesc"),
-      action: import_react23.default.createElement(
+      action: import_react24.default.createElement(
         Btn,
         { size: "sm", variant: "soft", onClick: () => setShowMarginal(true) },
         t("reader.bilingual.showMarginal")
       )
     });
   } else {
-    body = import_react23.default.createElement(
+    body = import_react24.default.createElement(
       "div",
       { className: "ph-r-bi__list", "data-ph-bilingual": "blocks" },
       visibleBlocks.map(
-        (block, index) => import_react23.default.createElement(BlockCard, {
+        (block, index) => import_react24.default.createElement(BlockCard, {
           key: block.id != null ? "b-" + block.id : "b-" + index,
           t,
           block,
@@ -20420,16 +20535,16 @@ function BilingualPanel(props) {
       )
     );
   }
-  return import_react23.default.createElement(
+  return import_react24.default.createElement(
     "div",
     { className: "ph-r-bi" },
     header,
-    import_react23.default.createElement("div", { className: "ph-r-bi__body ph-r-scroll" }, body)
+    import_react24.default.createElement("div", { className: "ph-r-bi__body ph-r-scroll" }, body)
   );
 }
 
 // src/surfaces/reader/floating-tools.jsx
-var import_react24 = __toESM(require("react"), 1);
+var import_react25 = __toESM(require("react"), 1);
 var PENS = ["yellow", "green", "blue", "red", "purple"];
 function FloatingAnnotationTools(props) {
   const t = props.t;
@@ -20439,38 +20554,38 @@ function FloatingAnnotationTools(props) {
     right: props.sidePanelOpen ? "calc(var(--ph-r-side) + 18px)" : "18px",
     bottom: props.translationOpen ? "calc(46% + 14px)" : "18px"
   };
-  return import_react24.default.createElement(
+  return import_react25.default.createElement(
     "div",
     { className: "ph-r-floattools", style, "data-ph-floating-tools": "true" },
-    props.showTip ? import_react24.default.createElement(
+    props.showTip ? import_react25.default.createElement(
       "div",
       { className: "ph-r-tools-tip", role: "status" },
-      import_react24.default.createElement(
+      import_react25.default.createElement(
         "div",
         { className: "ph-r-tools-tip__head" },
-        import_react24.default.createElement(Icon2, { name: "sparkles", size: 14 }),
-        import_react24.default.createElement("strong", null, t("reader.tools.tip.title"))
+        import_react25.default.createElement(Icon2, { name: "sparkles", size: 14 }),
+        import_react25.default.createElement("strong", null, t("reader.tools.tip.title"))
       ),
-      import_react24.default.createElement("p", { className: "ph-r-tools-tip__text" }, t("reader.tools.tip.desc")),
-      import_react24.default.createElement(
+      import_react25.default.createElement("p", { className: "ph-r-tools-tip__text" }, t("reader.tools.tip.desc")),
+      import_react25.default.createElement(
         "div",
         { className: "ph-r-tools-tip__actions" },
-        import_react24.default.createElement(
+        import_react25.default.createElement(
           "button",
           { type: "button", className: "ph-r-btn ph-r-btn--ghost ph-r-btn--sm", onClick: props.onShowTip, title: t("reader.tools.help") },
           t("reader.tools.help")
         ),
-        import_react24.default.createElement(
+        import_react25.default.createElement(
           "button",
           { type: "button", className: "ph-r-btn ph-r-btn--solid ph-r-btn--sm", onClick: props.onDismissTip },
           t("reader.tools.tip.ok")
         )
       )
     ) : null,
-    import_react24.default.createElement(
+    import_react25.default.createElement(
       "div",
       { className: "ph-r-floattools__bar", role: "toolbar", "aria-label": t("reader.tools.label") },
-      import_react24.default.createElement(
+      import_react25.default.createElement(
         "button",
         {
           type: "button",
@@ -20480,11 +20595,11 @@ function FloatingAnnotationTools(props) {
           title: selection ? t("reader.tools.highlightReady") : t("reader.tools.highlightHint"),
           "aria-label": t("reader.tools.highlight")
         },
-        import_react24.default.createElement(Icon2, { name: "highlighter", size: 15 }),
-        import_react24.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.highlight")),
-        import_react24.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+H")
+        import_react25.default.createElement(Icon2, { name: "highlighter", size: 15 }),
+        import_react25.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.highlight")),
+        import_react25.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+H")
       ),
-      import_react24.default.createElement(
+      import_react25.default.createElement(
         "button",
         {
           type: "button",
@@ -20494,11 +20609,11 @@ function FloatingAnnotationTools(props) {
           "aria-pressed": tool === "area" ? "true" : "false",
           "aria-label": t("reader.tools.area")
         },
-        import_react24.default.createElement(Icon2, { name: "area", size: 15 }),
-        import_react24.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.area")),
-        import_react24.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+A")
+        import_react25.default.createElement(Icon2, { name: "area", size: 15 }),
+        import_react25.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.area")),
+        import_react25.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+A")
       ),
-      import_react24.default.createElement(
+      import_react25.default.createElement(
         "button",
         {
           type: "button",
@@ -20508,16 +20623,16 @@ function FloatingAnnotationTools(props) {
           "aria-pressed": tool === "note" ? "true" : "false",
           "aria-label": t("reader.tools.note")
         },
-        import_react24.default.createElement(Icon2, { name: "sticky", size: 15 }),
-        import_react24.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.note")),
-        import_react24.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+N")
+        import_react25.default.createElement(Icon2, { name: "sticky", size: 15 }),
+        import_react25.default.createElement("span", { className: "ph-r-floattools__label" }, t("reader.tools.note")),
+        import_react25.default.createElement("kbd", { className: "ph-r-floattools__kbd" }, "Alt+N")
       ),
-      import_react24.default.createElement("span", { className: "ph-r-floattools__sep", "aria-hidden": "true" }),
-      import_react24.default.createElement(
+      import_react25.default.createElement("span", { className: "ph-r-floattools__sep", "aria-hidden": "true" }),
+      import_react25.default.createElement(
         "span",
         { className: "ph-r-floattools__pens", role: "group", "aria-label": t("reader.tools.pen") },
         PENS.map(
-          (color) => import_react24.default.createElement("button", {
+          (color) => import_react25.default.createElement("button", {
             key: color,
             type: "button",
             className: cx("ph-r-floattools__pen", props.penColor === color && "ph-r-floattools__pen--active", "ph-r-floattools__pen--" + color),
@@ -20528,7 +20643,7 @@ function FloatingAnnotationTools(props) {
           })
         )
       ),
-      import_react24.default.createElement(
+      import_react25.default.createElement(
         "button",
         { type: "button", className: "ph-r-floattools__help", onClick: props.onShowTip, title: t("reader.tools.help"), "aria-label": t("reader.tools.help") },
         "?"
@@ -20538,26 +20653,26 @@ function FloatingAnnotationTools(props) {
 }
 
 // src/surfaces/reader/notes-panel.jsx
-var import_react25 = __toESM(require("react"), 1);
+var import_react26 = __toESM(require("react"), 1);
 function useServiceState(service) {
-  const subscribe2 = import_react25.default.useCallback((listener) => service.subscribe(listener), [service]);
-  const getSnapshot2 = import_react25.default.useCallback(() => service.getSnapshot(), [service]);
-  return import_react25.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
+  const subscribe2 = import_react26.default.useCallback((listener) => service.subscribe(listener), [service]);
+  const getSnapshot2 = import_react26.default.useCallback(() => service.getSnapshot(), [service]);
+  return import_react26.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
 }
 function ReaderNotesPanel(props) {
   const t = props.t;
   const paperId = String(props.paperId || "");
-  const releaseStyles = import_react25.default.useMemo(() => ensureNotesStyles(), []);
-  const service = import_react25.default.useMemo(() => createNotesService(props.api), [props.api]);
+  const releaseStyles = import_react26.default.useMemo(() => ensureNotesStyles(), []);
+  const service = import_react26.default.useMemo(() => createNotesService(props.api), [props.api]);
   const serviceState = useServiceState(service);
-  const [list, setList] = import_react25.default.useState({ status: "loading", items: [], error: null });
-  const [activeId, setActiveId] = import_react25.default.useState("");
-  const [active, setActive] = import_react25.default.useState({ status: "idle", note: null, error: null });
-  const [creating, setCreating] = import_react25.default.useState(false);
-  const [mode, setMode] = import_react25.default.useState("list");
-  const [activeRetry, setActiveRetry] = import_react25.default.useState(0);
-  import_react25.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  import_react25.default.useEffect(() => {
+  const [list, setList] = import_react26.default.useState({ status: "loading", items: [], error: null });
+  const [activeId, setActiveId] = import_react26.default.useState("");
+  const [active, setActive] = import_react26.default.useState({ status: "idle", note: null, error: null });
+  const [creating, setCreating] = import_react26.default.useState(false);
+  const [mode, setMode] = import_react26.default.useState("list");
+  const [activeRetry, setActiveRetry] = import_react26.default.useState(0);
+  import_react26.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  import_react26.default.useEffect(() => {
     let alive = true;
     service.probe().then((state) => {
       if (!alive) return;
@@ -20570,7 +20685,7 @@ function ReaderNotesPanel(props) {
       alive = false;
     };
   }, [service, paperId]);
-  const load = import_react25.default.useCallback(
+  const load = import_react26.default.useCallback(
     (alive) => {
       setList((previous) => Object.assign({}, previous, { status: "loading", error: null }));
       Promise.resolve(service.list({ paperId, limit: 100 })).then((result) => {
@@ -20589,13 +20704,13 @@ function ReaderNotesPanel(props) {
     },
     [paperId, service]
   );
-  const reload = import_react25.default.useCallback(() => {
+  const reload = import_react26.default.useCallback(() => {
     service.probe().then((state) => {
       if (state.status === "unavailable" || state.status === "offline") return;
       load(true);
     });
   }, [load, service]);
-  import_react25.default.useEffect(() => {
+  import_react26.default.useEffect(() => {
     if (!activeId) {
       setActive({ status: "idle", note: null, error: null });
       return void 0;
@@ -20625,7 +20740,7 @@ function ReaderNotesPanel(props) {
       if (timer2) clearTimeout(timer2);
     };
   }, [activeId, service, activeRetry]);
-  const createNote = import_react25.default.useCallback(() => {
+  const createNote = import_react26.default.useCallback(() => {
     if (creating) return;
     setCreating(true);
     Promise.resolve(service.create({ title: "", content: "", paperIds: paperId ? [paperId] : [], status: "draft" })).then((note) => {
@@ -20636,7 +20751,7 @@ function ReaderNotesPanel(props) {
       setMode("editor");
     }).catch((error) => props.notify("error", t("notes.createFailed", { message: String(error && error.message || error) }))).then(() => setCreating(false));
   }, [creating, paperId, props, service, t]);
-  const onSaved = import_react25.default.useCallback((saved) => {
+  const onSaved = import_react26.default.useCallback((saved) => {
     if (!saved) return;
     setList((previous) => {
       const items2 = previous.items.map(
@@ -20653,7 +20768,7 @@ function ReaderNotesPanel(props) {
     });
     setActive((previous) => previous.note && previous.note.id === saved.id ? { status: "ready", note: saved, error: null } : previous);
   }, []);
-  const onDeleted = import_react25.default.useCallback((deleted) => {
+  const onDeleted = import_react26.default.useCallback((deleted) => {
     setList((previous) => {
       const items2 = previous.items.filter((item) => item.id !== deleted.id);
       setActiveId("");
@@ -20663,15 +20778,15 @@ function ReaderNotesPanel(props) {
     });
   }, []);
   if (serviceState.status === "unavailable" || serviceState.status === "offline") {
-    return import_react25.default.createElement(
+    return import_react26.default.createElement(
       "div",
       { className: "ph-r-side__scroll" },
-      import_react25.default.createElement(Empty, {
+      import_react26.default.createElement(Empty, {
         icon: "warning",
         tone: "warning",
         title: serviceState.status === "offline" ? t("notes.service.offlineTitle") : t("notes.service.unavailableTitle"),
         desc: serviceState.status === "offline" ? t("notes.service.offlineDesc") : t("notes.service.unavailableDesc"),
-        action: import_react25.default.createElement(
+        action: import_react26.default.createElement(
           "button",
           {
             type: "button",
@@ -20682,8 +20797,8 @@ function ReaderNotesPanel(props) {
               });
             }
           },
-          import_react25.default.createElement(Icon2, { name: "refresh", size: 13 }),
-          import_react25.default.createElement("span", { className: "ph-r-btn__label" }, t("notes.service.retry"))
+          import_react26.default.createElement(Icon2, { name: "refresh", size: 13 }),
+          import_react26.default.createElement("span", { className: "ph-r-btn__label" }, t("notes.service.retry"))
         )
       })
     );
@@ -20691,38 +20806,38 @@ function ReaderNotesPanel(props) {
   const showList = list.items.length > 0;
   const editing = mode === "editor" && activeId !== "";
   const activeTitle = active.note && (active.note.title || "") ? active.note.title : t("notes.untitled");
-  return import_react25.default.createElement(
+  return import_react26.default.createElement(
     "div",
     { className: "ph-n-readernotes" },
-    import_react25.default.createElement(
+    import_react26.default.createElement(
       "div",
       { className: "ph-n-readernotes__head" },
-      editing ? import_react25.default.createElement(IconBtn, { icon: "chevronLeft", title: t("reader.notes.backToList"), onClick: () => setMode("list") }) : import_react25.default.createElement(Icon2, { name: "note", size: 13 }),
-      import_react25.default.createElement("span", { className: "ph-n-readernotes__title" }, editing ? activeTitle : t("reader.notes.title")),
-      !editing && list.status === "ready" ? import_react25.default.createElement("span", { className: "ph-n-caption" }, String(list.items.length)) : null,
-      import_react25.default.createElement("span", { className: "ph-n-spacer" }),
-      editing ? import_react25.default.createElement(IconBtn, { icon: "external", title: t("notes.library.open"), onClick: () => props.onOpenNoteLibrary && props.onOpenNoteLibrary(activeId) }) : import_react25.default.createElement(IconBtn, { icon: "plus", title: t("reader.notes.new"), onClick: createNote, disabled: creating }),
-      !editing && props.onOpenNoteLibrary ? import_react25.default.createElement(IconBtn, { icon: "external", title: t("notes.library.open"), onClick: () => props.onOpenNoteLibrary(activeId || "") }) : null,
-      !editing ? import_react25.default.createElement(IconBtn, { icon: "refresh", title: t("notes.refresh"), onClick: reload }) : null
+      editing ? import_react26.default.createElement(IconBtn, { icon: "chevronLeft", title: t("reader.notes.backToList"), onClick: () => setMode("list") }) : import_react26.default.createElement(Icon2, { name: "note", size: 13 }),
+      import_react26.default.createElement("span", { className: "ph-n-readernotes__title" }, editing ? activeTitle : t("reader.notes.title")),
+      !editing && list.status === "ready" ? import_react26.default.createElement("span", { className: "ph-n-caption" }, String(list.items.length)) : null,
+      import_react26.default.createElement("span", { className: "ph-n-spacer" }),
+      editing ? import_react26.default.createElement(IconBtn, { icon: "external", title: t("notes.library.open"), onClick: () => props.onOpenNoteLibrary && props.onOpenNoteLibrary(activeId) }) : import_react26.default.createElement(IconBtn, { icon: "plus", title: t("reader.notes.new"), onClick: createNote, disabled: creating }),
+      !editing && props.onOpenNoteLibrary ? import_react26.default.createElement(IconBtn, { icon: "external", title: t("notes.library.open"), onClick: () => props.onOpenNoteLibrary(activeId || "") }) : null,
+      !editing ? import_react26.default.createElement(IconBtn, { icon: "refresh", title: t("notes.refresh"), onClick: reload }) : null
     ),
-    editing ? active.status === "loading" ? import_react25.default.createElement("div", { className: "ph-n-editor__loading" }, import_react25.default.createElement(Spinner2, { size: 13 }), import_react25.default.createElement("span", null, t("notes.loadingNote"))) : active.status === "error" ? import_react25.default.createElement(
+    editing ? active.status === "loading" ? import_react26.default.createElement("div", { className: "ph-n-editor__loading" }, import_react26.default.createElement(Spinner2, { size: 13 }), import_react26.default.createElement("span", null, t("notes.loadingNote"))) : active.status === "error" ? import_react26.default.createElement(
       "div",
       { className: "ph-r-side__scroll" },
-      import_react25.default.createElement(Empty, {
+      import_react26.default.createElement(Empty, {
         icon: "warning",
         tone: "error",
         title: t("notes.loadFailed", { message: String(active.error && active.error.message || "") }),
-        action: import_react25.default.createElement(
+        action: import_react26.default.createElement(
           "button",
           { type: "button", className: "ph-r-btn ph-r-btn--soft ph-r-btn--sm", onClick: () => {
             setActive({ status: "loading", note: null, error: null });
             setActiveRetry((value) => value + 1);
           } },
-          import_react25.default.createElement(Icon2, { name: "refresh", size: 13 }),
-          import_react25.default.createElement("span", { className: "ph-r-btn__label" }, t("common.retry"))
+          import_react26.default.createElement(Icon2, { name: "refresh", size: 13 }),
+          import_react26.default.createElement("span", { className: "ph-r-btn__label" }, t("common.retry"))
         )
       })
-    ) : active.status === "ready" && active.note ? import_react25.default.createElement(NoteEditor, {
+    ) : active.status === "ready" && active.note ? import_react26.default.createElement(NoteEditor, {
       t,
       api: props.api,
       service,
@@ -20736,49 +20851,49 @@ function ReaderNotesPanel(props) {
       onDeleted,
       onOpenNoteLibrary: props.onOpenNoteLibrary,
       onOpenPaper: props.onOpenPaper
-    }) : null : list.status === "loading" && list.items.length === 0 ? import_react25.default.createElement("div", { className: "ph-n-editor__loading" }, import_react25.default.createElement(Spinner2, { size: 13 }), import_react25.default.createElement("span", null, t("notes.loading"))) : list.status === "error" ? import_react25.default.createElement(
+    }) : null : list.status === "loading" && list.items.length === 0 ? import_react26.default.createElement("div", { className: "ph-n-editor__loading" }, import_react26.default.createElement(Spinner2, { size: 13 }), import_react26.default.createElement("span", null, t("notes.loading"))) : list.status === "error" ? import_react26.default.createElement(
       "div",
       { className: "ph-r-side__scroll" },
-      import_react25.default.createElement(Empty, {
+      import_react26.default.createElement(Empty, {
         icon: "warning",
         tone: "error",
         title: t("common.failed"),
         desc: t("notes.loadFailed", { message: String(list.error && list.error.message || "") }),
-        action: import_react25.default.createElement(
+        action: import_react26.default.createElement(
           "button",
           { type: "button", className: "ph-r-btn ph-r-btn--soft ph-r-btn--sm", onClick: reload },
-          import_react25.default.createElement(Icon2, { name: "refresh", size: 13 }),
-          import_react25.default.createElement("span", { className: "ph-r-btn__label" }, t("common.retry"))
+          import_react26.default.createElement(Icon2, { name: "refresh", size: 13 }),
+          import_react26.default.createElement("span", { className: "ph-r-btn__label" }, t("common.retry"))
         )
       })
-    ) : !showList ? import_react25.default.createElement(
+    ) : !showList ? import_react26.default.createElement(
       "div",
       { className: "ph-r-side__scroll" },
-      import_react25.default.createElement(Empty, {
+      import_react26.default.createElement(Empty, {
         icon: "note",
         title: t("reader.notes.empty"),
         desc: t("reader.notes.emptyDesc"),
-        action: import_react25.default.createElement(
+        action: import_react26.default.createElement(
           "button",
           { type: "button", className: "ph-r-btn ph-r-btn--solid ph-r-btn--sm", onClick: createNote, disabled: creating },
-          import_react25.default.createElement(Icon2, { name: "plus", size: 13 }),
-          import_react25.default.createElement("span", { className: "ph-r-btn__label" }, t("reader.notes.new"))
+          import_react26.default.createElement(Icon2, { name: "plus", size: 13 }),
+          import_react26.default.createElement("span", { className: "ph-r-btn__label" }, t("reader.notes.new"))
         )
       })
-    ) : import_react25.default.createElement(
-      import_react25.default.Fragment,
+    ) : import_react26.default.createElement(
+      import_react26.default.Fragment,
       null,
-      import_react25.default.createElement(
+      import_react26.default.createElement(
         "div",
         { className: "ph-n-readernotes__hint" },
-        import_react25.default.createElement(Icon2, { name: "info", size: 12 }),
-        import_react25.default.createElement("span", null, t("reader.notes.pick"))
+        import_react26.default.createElement(Icon2, { name: "info", size: 12 }),
+        import_react26.default.createElement("span", null, t("reader.notes.pick"))
       ),
-      import_react25.default.createElement(
+      import_react26.default.createElement(
         "div",
         { className: "ph-n-readernotes__list ph-n-scroll" },
         list.items.map(
-          (item) => import_react25.default.createElement(
+          (item) => import_react26.default.createElement(
             "button",
             {
               key: item.id,
@@ -20791,8 +20906,8 @@ function ReaderNotesPanel(props) {
               },
               title: item.title || t("notes.untitled")
             },
-            import_react25.default.createElement("span", { className: "ph-n-readernotes__rowtitle" }, item.title || t("notes.untitled")),
-            import_react25.default.createElement(
+            import_react26.default.createElement("span", { className: "ph-n-readernotes__rowtitle" }, item.title || t("notes.untitled")),
+            import_react26.default.createElement(
               "span",
               { className: "ph-n-readernotes__rowmeta" },
               (item.preview || "").replace(/\s+/g, " ").slice(0, 80) || t("notes.empty.preview")
@@ -20801,12 +20916,12 @@ function ReaderNotesPanel(props) {
         )
       )
     ),
-    import_react25.default.createElement("p", { className: "ph-n-caption", style: { padding: "6px 12px 10px", margin: 0 } }, editing ? t("reader.notes.boundHint") : t("reader.notes.listHint"))
+    import_react26.default.createElement("p", { className: "ph-n-caption", style: { padding: "6px 12px 10px", margin: 0 } }, editing ? t("reader.notes.boundHint") : t("reader.notes.listHint"))
   );
 }
 
 // src/surfaces/reader/figures-panel.jsx
-var import_react26 = __toESM(require("react"), 1);
+var import_react27 = __toESM(require("react"), 1);
 
 // src/core/dnd.js
 var MATERIAL_MIME2 = "application/x-pappers-hall-material";
@@ -21104,8 +21219,8 @@ function installDragToConversation(options) {
 // src/surfaces/reader/figures-panel.jsx
 function ReaderFiguresPanel(props) {
   const t = props.t;
-  const [state, setState] = import_react26.default.useState({ status: "loading", items: [], error: null });
-  import_react26.default.useEffect(() => {
+  const [state, setState] = import_react27.default.useState({ status: "loading", items: [], error: null });
+  import_react27.default.useEffect(() => {
     let alive = true;
     setState({ status: "loading", items: [], error: null });
     Promise.resolve(props.api("figures.list", { paperId: props.paperId })).then((result) => {
@@ -21119,13 +21234,13 @@ function ReaderFiguresPanel(props) {
       alive = false;
     };
   }, [props.api, props.paperId]);
-  if (state.status === "loading") return import_react26.default.createElement("div", { className: "ph-r-side__loading" }, import_react26.default.createElement(Spinner2, { size: 14 }), t("reader.figures.loading"));
-  if (state.status === "error") return import_react26.default.createElement(Empty, { icon: "warning", title: t("reader.figures.failed"), desc: String(state.error && state.error.message || state.error) });
-  if (state.items.length === 0) return import_react26.default.createElement(Empty, { icon: "image", title: t("reader.figures.empty"), desc: t("reader.figures.emptyHint") });
-  return import_react26.default.createElement(
+  if (state.status === "loading") return import_react27.default.createElement("div", { className: "ph-r-side__loading" }, import_react27.default.createElement(Spinner2, { size: 14 }), t("reader.figures.loading"));
+  if (state.status === "error") return import_react27.default.createElement(Empty, { icon: "warning", title: t("reader.figures.failed"), desc: String(state.error && state.error.message || state.error) });
+  if (state.items.length === 0) return import_react27.default.createElement(Empty, { icon: "image", title: t("reader.figures.empty"), desc: t("reader.figures.emptyHint") });
+  return import_react27.default.createElement(
     "div",
     { className: "ph-r-figures" },
-    import_react26.default.createElement("p", { className: "ph-r-side__hint" }, t("reader.figures.hint")),
+    import_react27.default.createElement("p", { className: "ph-r-side__hint" }, t("reader.figures.hint")),
     state.items.map((figure) => {
       const material = {
         kind: "figure",
@@ -21140,29 +21255,29 @@ function ReaderFiguresPanel(props) {
         imageUrl: figure.imageUrl || "",
         bbox: figure.bbox || null
       };
-      return import_react26.default.createElement(
+      return import_react27.default.createElement(
         "figure",
         { key: figure.id, className: "ph-r-figcard", ...dragProps(t, [material], { source: "reader" }) },
-        import_react26.default.createElement(
+        import_react27.default.createElement(
           "button",
           { type: "button", className: "ph-r-figcard__media", onClick: () => props.onOpenFigure && props.onOpenFigure(figure) },
-          import_react26.default.createElement("img", { src: figure.thumbnailUrl || figure.imageUrl, alt: figure.label || "", loading: "lazy", draggable: false })
+          import_react27.default.createElement("img", { src: figure.thumbnailUrl || figure.imageUrl, alt: figure.label || "", loading: "lazy", draggable: false })
         ),
-        import_react26.default.createElement(
+        import_react27.default.createElement(
           "figcaption",
           null,
-          import_react26.default.createElement("strong", null, figure.label || "?"),
-          import_react26.default.createElement("span", null, t("reader.figures.page", { page: Number(figure.page) || 1 }))
+          import_react27.default.createElement("strong", null, figure.label || "?"),
+          import_react27.default.createElement("span", null, t("reader.figures.page", { page: Number(figure.page) || 1 }))
         ),
-        figure.caption ? import_react26.default.createElement("p", { className: "ph-r-figcard__cap" }, figure.caption) : null,
-        import_react26.default.createElement(Btn, { size: "sm", variant: "soft", icon: "plus", onClick: () => props.onOpenNoteInsert && props.onOpenNoteInsert(material) }, t("reader.figures.insertNow"))
+        figure.caption ? import_react27.default.createElement("p", { className: "ph-r-figcard__cap" }, figure.caption) : null,
+        import_react27.default.createElement(Btn, { size: "sm", variant: "soft", icon: "plus", onClick: () => props.onOpenNoteInsert && props.onOpenNoteInsert(material) }, t("reader.figures.insertNow"))
       );
     })
   );
 }
 
 // src/surfaces/reader/outline.jsx
-var import_react27 = __toESM(require("react"), 1);
+var import_react28 = __toESM(require("react"), 1);
 function Outline(props) {
   const t = props.t;
   const items2 = Array.isArray(props.items) ? props.items.filter((item) => item && (item.title || item.page)).map((item) => ({
@@ -21173,34 +21288,34 @@ function Outline(props) {
     level: Math.max(1, Math.min(4, Math.round(num(item.level, 1))))
   })) : [];
   if (props.loading && items2.length === 0) {
-    return import_react27.default.createElement(
+    return import_react28.default.createElement(
       "div",
       { className: "ph-r-outline", "aria-busy": "true" },
       [1, 2, 3, 4, 5].map(
-        (index) => import_react27.default.createElement(
+        (index) => import_react28.default.createElement(
           "div",
           { key: index, style: { padding: "7px 8px" } },
-          import_react27.default.createElement("span", { className: "ph-r-skeleton", style: { width: 40 + index * 37 % 50 + "%", height: 11 } })
+          import_react28.default.createElement("span", { className: "ph-r-skeleton", style: { width: 40 + index * 37 % 50 + "%", height: 11 } })
         )
       )
     );
   }
   if (props.error && items2.length === 0) {
-    return import_react27.default.createElement(Empty, {
+    return import_react28.default.createElement(Empty, {
       icon: "warning",
       tone: "error",
       title: t("reader.outline.empty"),
       desc: String(props.error),
-      action: props.onRetry ? import_react27.default.createElement(
+      action: props.onRetry ? import_react28.default.createElement(
         "button",
         { type: "button", className: "ph-r-btn ph-r-btn--soft ph-r-btn--sm", onClick: props.onRetry },
-        import_react27.default.createElement(Icon2, { name: "refresh", size: 13 }),
-        import_react27.default.createElement("span", null, t("reader.retry"))
+        import_react28.default.createElement(Icon2, { name: "refresh", size: 13 }),
+        import_react28.default.createElement("span", null, t("reader.retry"))
       ) : null
     });
   }
   if (items2.length === 0) {
-    return import_react27.default.createElement(Empty, {
+    return import_react28.default.createElement(Empty, {
       icon: "list",
       title: t("reader.outline.empty"),
       desc: t("reader.outline.emptyDesc")
@@ -21212,18 +21327,18 @@ function Outline(props) {
     if (itemPage != null && itemPage <= props.page) activeIndex = index;
   }
   if (activeIndex < 0 && items2.length > 0) activeIndex = 0;
-  return import_react27.default.createElement(
+  return import_react28.default.createElement(
     "div",
     { className: "ph-r-outline" },
-    import_react27.default.createElement(
+    import_react28.default.createElement(
       "div",
       { style: { display: "flex", alignItems: "center", gap: 6, padding: "4px 8px 6px" } },
-      import_react27.default.createElement(Icon2, { name: "list", size: 13 }),
-      import_react27.default.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: "var(--dsw-alias-label-secondary)" } }, t("reader.outline.title")),
-      import_react27.default.createElement(Badge2, null, String(items2.length))
+      import_react28.default.createElement(Icon2, { name: "list", size: 13 }),
+      import_react28.default.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: "var(--dsw-alias-label-secondary)" } }, t("reader.outline.title")),
+      import_react28.default.createElement(Badge2, null, String(items2.length))
     ),
     items2.map(
-      (item, index) => import_react27.default.createElement(
+      (item, index) => import_react28.default.createElement(
         "button",
         {
           key: index + ":" + item.page + ":" + item.title,
@@ -21237,16 +21352,16 @@ function Outline(props) {
           disabled: item.page == null,
           "aria-current": index === activeIndex ? "location" : void 0
         },
-        import_react27.default.createElement("span", { className: "ph-r-outline__level" }, String(item.level)),
-        import_react27.default.createElement("span", { className: "ph-r-outline__label" }, item.title),
-        import_react27.default.createElement("span", { className: "ph-r-outline__page" }, item.page == null ? "\u2014" : String(item.page))
+        import_react28.default.createElement("span", { className: "ph-r-outline__level" }, String(item.level)),
+        import_react28.default.createElement("span", { className: "ph-r-outline__label" }, item.title),
+        import_react28.default.createElement("span", { className: "ph-r-outline__page" }, item.page == null ? "\u2014" : String(item.page))
       )
     )
   );
 }
 
 // src/surfaces/reader/page-canvas.jsx
-var import_react28 = __toESM(require("react"), 1);
+var import_react29 = __toESM(require("react"), 1);
 var PAGE_GAP = 16;
 var PAGE_TOP_PADDING = 18;
 var PAGE_BOTTOM_PADDING = 48;
@@ -21270,7 +21385,7 @@ function scrollElementTo(element2, top, smooth) {
   element2.scrollTop = value;
 }
 function usePageDescriptors(pages, total) {
-  return import_react28.default.useMemo(() => {
+  return import_react29.default.useMemo(() => {
     const list = arrayOf3(pages);
     if (list.length > 0) {
       return list.map((item, index) => {
@@ -21289,7 +21404,7 @@ function usePageDescriptors(pages, total) {
   }, [pages, total]);
 }
 function useAnnotationsByPage(annotations) {
-  return import_react28.default.useMemo(() => {
+  return import_react29.default.useMemo(() => {
     const map = /* @__PURE__ */ new Map();
     for (const annotation of arrayOf3(annotations)) {
       if (!annotation) continue;
@@ -21336,26 +21451,26 @@ function PageViewImpl(props) {
     reducedMotion
   } = props;
   const page2 = pageInfo.page;
-  const pageRef = import_react28.default.useRef(null);
-  const imgRef = import_react28.default.useRef(null);
-  const [imageState, setImageState] = import_react28.default.useState("loading");
-  const [imageVersion, setImageVersion] = import_react28.default.useState(0);
-  const [imageSlow, setImageSlow] = import_react28.default.useState(false);
-  const [areaDrag, setAreaDrag] = import_react28.default.useState(null);
-  const areaRectRef = import_react28.default.useRef(null);
-  const [hover, setHover] = import_react28.default.useState(null);
-  const hoverFrame = import_react28.default.useRef(0);
-  const hoverPoint = import_react28.default.useRef(null);
-  const dragRef = import_react28.default.useRef(null);
-  const [selecting, setSelecting] = import_react28.default.useState(false);
-  const [dragSelect, setDragSelect] = import_react28.default.useState(null);
-  const selectRef = import_react28.default.useRef(null);
-  const selectFrame = import_react28.default.useRef(0);
-  const [noteGhost, setNoteGhost] = import_react28.default.useState(null);
+  const pageRef = import_react29.default.useRef(null);
+  const imgRef = import_react29.default.useRef(null);
+  const [imageState, setImageState] = import_react29.default.useState("loading");
+  const [imageVersion, setImageVersion] = import_react29.default.useState(0);
+  const [imageSlow, setImageSlow] = import_react29.default.useState(false);
+  const [areaDrag, setAreaDrag] = import_react29.default.useState(null);
+  const areaRectRef = import_react29.default.useRef(null);
+  const [hover, setHover] = import_react29.default.useState(null);
+  const hoverFrame = import_react29.default.useRef(0);
+  const hoverPoint = import_react29.default.useRef(null);
+  const dragRef = import_react29.default.useRef(null);
+  const [selecting, setSelecting] = import_react29.default.useState(false);
+  const [dragSelect, setDragSelect] = import_react29.default.useState(null);
+  const selectRef = import_react29.default.useRef(null);
+  const selectFrame = import_react29.default.useRef(0);
+  const [noteGhost, setNoteGhost] = import_react29.default.useState(null);
   const interactive = mode === "select";
   const rawLayer = layerEntry && layerEntry.status === "ready" ? layerEntry.data : null;
   const pageData = pageDataEntry && pageDataEntry.status === "ready" ? pageDataEntry.data : null;
-  const layer = import_react28.default.useMemo(() => {
+  const layer = import_react29.default.useMemo(() => {
     if (!rawLayer) return null;
     const width2 = num(rawLayer.width, pageInfo.width);
     const height2 = num(rawLayer.height, pageInfo.height);
@@ -21365,8 +21480,8 @@ function PageViewImpl(props) {
     if (rawLayer.width === width2 && rawLayer.height === height2) return rawLayer;
     return Object.assign({}, rawLayer, { width: width2, height: height2 });
   }, [pageInfo.height, pageInfo.width, rawLayer]);
-  const selectable = import_react28.default.useMemo(() => selectableWords(layer), [layer]);
-  import_react28.default.useEffect(() => {
+  const selectable = import_react29.default.useMemo(() => selectableWords(layer), [layer]);
+  import_react29.default.useEffect(() => {
     setImageState("loading");
     setImageSlow(false);
     setImageVersion(0);
@@ -21377,12 +21492,12 @@ function PageViewImpl(props) {
     setSelecting(false);
     setNoteGhost(null);
   }, [paperId, page2]);
-  const retryImage = import_react28.default.useCallback(() => {
+  const retryImage = import_react29.default.useCallback(() => {
     setImageState("loading");
     setImageSlow(false);
     setImageVersion((value) => value + 1);
   }, []);
-  const pointOf = import_react28.default.useCallback((event) => {
+  const pointOf = import_react29.default.useCallback((event) => {
     const element2 = pageRef.current;
     if (!element2) return null;
     const box = element2.getBoundingClientRect();
@@ -21392,7 +21507,7 @@ function PageViewImpl(props) {
       y: clamp((event.clientY - box.top) / box.height, 0, 1)
     };
   }, []);
-  const selectionForPoints = import_react28.default.useCallback(
+  const selectionForPoints = import_react29.default.useCallback(
     (start, current2) => {
       const rectNorm = pointRect(start, current2);
       if (!rectNorm || !selectable || selectable.words.length === 0) return null;
@@ -21478,7 +21593,7 @@ function PageViewImpl(props) {
     },
     [selectable]
   );
-  const anchorPx = import_react28.default.useCallback(
+  const anchorPx = import_react29.default.useCallback(
     (anchor, placement) => {
       if (!anchor) return null;
       const half = placement && placement.halfWidth ? placement.halfWidth : 150;
@@ -21494,7 +21609,7 @@ function PageViewImpl(props) {
     },
     [height, width]
   );
-  const openAnnotationAt = import_react28.default.useCallback(
+  const openAnnotationAt = import_react29.default.useCallback(
     (point) => {
       const annotation = annotationAt(annotations, point);
       if (!annotation) return false;
@@ -21506,7 +21621,7 @@ function PageViewImpl(props) {
     },
     [annotations, props]
   );
-  const handleMouseDown = import_react28.default.useCallback(
+  const handleMouseDown = import_react29.default.useCallback(
     (event) => {
       if (event.button !== 0) return;
       const target = event.target;
@@ -21589,7 +21704,7 @@ function PageViewImpl(props) {
     },
     [mode, openAnnotationAt, page2, pointOf, props, selectionForPoints]
   );
-  import_react28.default.useEffect(() => {
+  import_react29.default.useEffect(() => {
     if (!areaDrag) return void 0;
     const onMove = (event) => {
       const start = dragRef.current;
@@ -21619,7 +21734,7 @@ function PageViewImpl(props) {
       window.removeEventListener("mouseup", onUp);
     };
   }, [areaDrag !== null, pointOf, props]);
-  const handleClick = import_react28.default.useCallback(
+  const handleClick = import_react29.default.useCallback(
     (event) => {
       if (mode !== "note") return;
       const target = event.target;
@@ -21629,7 +21744,7 @@ function PageViewImpl(props) {
     },
     [mode, pointOf, props]
   );
-  const handleMouseMove = import_react28.default.useCallback(
+  const handleMouseMove = import_react29.default.useCallback(
     (event) => {
       if (selecting || event.buttons) {
         if (hover) setHover(null);
@@ -21664,7 +21779,7 @@ function PageViewImpl(props) {
     },
     [hover, interactive, mode, pointOf, props.annotations, selecting]
   );
-  const clearHover = import_react28.default.useCallback(() => {
+  const clearHover = import_react29.default.useCallback(() => {
     setHover(null);
     setNoteGhost(null);
   }, []);
@@ -21672,7 +21787,7 @@ function PageViewImpl(props) {
   const pageSelection = selection && selection.page === page2 ? selection : null;
   const pagePopover = popover && popover.annotation && popover.annotation.page === page2 ? popover : null;
   const pageNoteDraft = noteDraft && noteDraft.page === page2 ? noteDraft : null;
-  const pageSearchHits = import_react28.default.useMemo(() => {
+  const pageSearchHits = import_react29.default.useMemo(() => {
     if (!search || !search.query || !search.hits) return null;
     return search.hits.map((hit, index) => ({ hit, index })).filter((entry) => entry.hit.page === page2).map((entry) => Object.assign({}, entry.hit, { order: entry.index }));
   }, [page2, search]);
@@ -21724,7 +21839,7 @@ function PageViewImpl(props) {
   const baseImageSrc = pageUrlOf(paperId, Object.assign({ page: page2 }, pageInfo, { imageUrl: pageInfo.imageUrl }));
   const imageSrc = imageVersion > 0 ? baseImageSrc + (baseImageSrc.indexOf("?") >= 0 ? "&" : "?") + "retry=" + imageVersion : baseImageSrc;
   const showImageSkeleton = imageState === "loading";
-  import_react28.default.useEffect(() => {
+  import_react29.default.useEffect(() => {
     setImageSlow(false);
     const node = imgRef.current;
     if (!node) return void 0;
@@ -21749,7 +21864,7 @@ function PageViewImpl(props) {
     };
   }, [imageSrc, imageVersion]);
   const layerStatus = layerEntry ? layerEntry.status : "idle";
-  return import_react28.default.createElement(
+  return import_react29.default.createElement(
     "div",
     {
       ref: pageRef,
@@ -21767,7 +21882,7 @@ function PageViewImpl(props) {
       onMouseMove: handleMouseMove,
       onMouseLeave: clearHover
     },
-    import_react28.default.createElement(
+    import_react29.default.createElement(
       "img",
       {
         key: "img-" + imageVersion,
@@ -21791,23 +21906,23 @@ function PageViewImpl(props) {
         }
       }
     ),
-    showImageSkeleton ? import_react28.default.createElement("div", { className: "ph-r-page__skeleton" }) : null,
-    showImageSkeleton && imageSlow ? import_react28.default.createElement(
+    showImageSkeleton ? import_react29.default.createElement("div", { className: "ph-r-page__skeleton" }) : null,
+    showImageSkeleton && imageSlow ? import_react29.default.createElement(
       "div",
       { className: "ph-r-page__slow", role: "status" },
-      import_react28.default.createElement(Spinner2, { size: 14 }),
-      import_react28.default.createElement("span", null, t("reader.page.slow")),
-      import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
+      import_react29.default.createElement(Spinner2, { size: 14 }),
+      import_react29.default.createElement("span", null, t("reader.page.slow")),
+      import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
     ) : null,
-    imageState === "error" ? import_react28.default.createElement(
+    imageState === "error" ? import_react29.default.createElement(
       "div",
       { className: "ph-r-page__error" },
-      import_react28.default.createElement(Icon2, { name: "warning", size: 18 }),
-      import_react28.default.createElement("span", null, t("reader.page.imageFailed")),
-      import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
+      import_react29.default.createElement(Icon2, { name: "warning", size: 18 }),
+      import_react29.default.createElement("span", null, t("reader.page.imageFailed")),
+      import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
     ) : null,
-    interactive ? import_react28.default.createElement(FigureDragRegions, { t, figures: props.figures, paperId, page: page2 }) : null,
-    import_react28.default.createElement(PageTextLayer, {
+    interactive ? import_react29.default.createElement(FigureDragRegions, { t, figures: props.figures, paperId, page: page2 }) : null,
+    import_react29.default.createElement(PageTextLayer, {
       key: "text-" + page2,
       page: page2,
       words: selectable.words,
@@ -21821,13 +21936,13 @@ function PageViewImpl(props) {
     (() => {
       const overlayRects = dragSelect && dragSelect.rects ? dragSelect.rects : pageSelection ? pageSelection.rects : null;
       if (!overlayRects || overlayRects.length === 0) return null;
-      return import_react28.default.createElement(
+      return import_react29.default.createElement(
         "div",
         { className: "ph-r-selrect", "data-ph-text-selection": String(dragSelect ? dragSelect.wordCount : pageSelection ? pageSelection.wordCount || 0 : 0) },
-        overlayRects.map((rect, index) => import_react28.default.createElement("span", { key: index, className: "ph-r-selrect__box", style: rectStyle(rect) }))
+        overlayRects.map((rect, index) => import_react29.default.createElement("span", { key: index, className: "ph-r-selrect__box", style: rectStyle(rect) }))
       );
     })(),
-    dragSelect && dragSelect.wordCount > 0 ? import_react28.default.createElement(
+    dragSelect && dragSelect.wordCount > 0 ? import_react29.default.createElement(
       "span",
       {
         className: "ph-r-selcount",
@@ -21838,23 +21953,23 @@ function PageViewImpl(props) {
       },
       t("reader.selection.selectedWords", { count: dragSelect.wordCount })
     ) : null,
-    noteGhost && mode === "note" && !noteDraft ? import_react28.default.createElement("span", {
+    noteGhost && mode === "note" && !noteDraft ? import_react29.default.createElement("span", {
       className: "ph-r-note-ghost",
       style: { left: (noteGhost.x * 100).toFixed(2) + "%", top: (noteGhost.y * 100).toFixed(2) + "%" },
       "aria-hidden": "true"
-    }, import_react28.default.createElement(Icon2, { name: "sticky", size: 12 })) : null,
-    import_react28.default.createElement(AnnotationMarks, {
+    }, import_react29.default.createElement(Icon2, { name: "sticky", size: 12 })) : null,
+    import_react29.default.createElement(AnnotationMarks, {
       page: page2,
       annotations: pageAnnotations,
       activeId: activeAnnotationId
     }),
-    figureHighlight ? import_react28.default.createElement(FigureHighlightOverlay, { t, figureFocus: figureHighlight, page: page2 }) : null,
-    pageSearchHits && pageSearchHits.length > 0 ? import_react28.default.createElement(
+    figureHighlight ? import_react29.default.createElement(FigureHighlightOverlay, { t, figureFocus: figureHighlight, page: page2 }) : null,
+    pageSearchHits && pageSearchHits.length > 0 ? import_react29.default.createElement(
       "div",
       { className: "ph-r-hits" },
       pageSearchHits.map(
         (hit) => hit.rects.map(
-          (rect, index) => import_react28.default.createElement("span", {
+          (rect, index) => import_react29.default.createElement("span", {
             key: hit.order + ":" + index,
             className: cx("ph-r-hit", hit.order === activeHitOrder && "ph-r-hit--active"),
             style: rectStyle(rect)
@@ -21862,20 +21977,20 @@ function PageViewImpl(props) {
         )
       )
     ) : null,
-    areaDrag ? import_react28.default.createElement("span", { className: "ph-r-area-drag", style: rectStyle(areaDrag) }) : null,
-    active || pageSearchHits ? import_react28.default.createElement(
+    areaDrag ? import_react29.default.createElement("span", { className: "ph-r-area-drag", style: rectStyle(areaDrag) }) : null,
+    active || pageSearchHits ? import_react29.default.createElement(
       "span",
       { className: "ph-r-page__chip" },
-      import_react28.default.createElement(Icon2, { name: "pages", size: 11 }),
+      import_react29.default.createElement(Icon2, { name: "pages", size: 11 }),
       String(page2)
     ) : null,
-    active && !layer ? import_react28.default.createElement(
+    active && !layer ? import_react29.default.createElement(
       "span",
       { className: "ph-r-page__structure" },
       layerStatus === "loading" || layerStatus === "idle" ? t("reader.page.textLayer.loading") : t("reader.page.textLayer.unavailable")
     ) : null,
-    showTooltip ? import_react28.default.createElement(AnnotationTooltip, { annotation: showTooltip.annotation, style: tooltipStyle }) : null,
-    selectionToolbar ? import_react28.default.createElement(
+    showTooltip ? import_react29.default.createElement(AnnotationTooltip, { annotation: showTooltip.annotation, style: tooltipStyle }) : null,
+    selectionToolbar ? import_react29.default.createElement(
       "div",
       {
         className: cx("ph-r-float", "ph-r-card", "ph-r-selbar"),
@@ -21883,9 +21998,9 @@ function PageViewImpl(props) {
         "data-ph-overlay": "selection",
         onMouseDown: (event) => event.preventDefault()
       },
-      import_react28.default.createElement("span", { className: "ph-r-selbar__count" }, t("reader.selection.selectedWords", { count: pageSelection ? pageSelection.wordCount || 0 : 0 })),
-      import_react28.default.createElement("span", { className: "ph-r-selbar__sep" }),
-      import_react28.default.createElement(
+      import_react29.default.createElement("span", { className: "ph-r-selbar__count" }, t("reader.selection.selectedWords", { count: pageSelection ? pageSelection.wordCount || 0 : 0 })),
+      import_react29.default.createElement("span", { className: "ph-r-selbar__sep" }),
+      import_react29.default.createElement(
         "button",
         {
           type: "button",
@@ -21893,43 +22008,43 @@ function PageViewImpl(props) {
           onClick: () => props.onSelectionAction("quickTranslate"),
           title: t("reader.selection.quickTranslateHint")
         },
-        import_react28.default.createElement(Icon2, { name: "sparkles", size: 14 }),
-        import_react28.default.createElement("span", null, t("reader.selection.quickTranslate"))
+        import_react29.default.createElement(Icon2, { name: "sparkles", size: 14 }),
+        import_react29.default.createElement("span", null, t("reader.selection.quickTranslate"))
       ),
-      import_react28.default.createElement(ColorPenRow, {
+      import_react29.default.createElement(ColorPenRow, {
         t,
         onPick: (color) => props.onSelectionAction("highlight", { color })
       }),
-      import_react28.default.createElement("span", { className: "ph-r-selbar__sep" }),
-      import_react28.default.createElement(
+      import_react29.default.createElement("span", { className: "ph-r-selbar__sep" }),
+      import_react29.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("copy"), title: t("reader.selection.copy") },
-        import_react28.default.createElement(Icon2, { name: "copy", size: 14 }),
-        import_react28.default.createElement("span", null, t("reader.selection.copy"))
+        import_react29.default.createElement(Icon2, { name: "copy", size: 14 }),
+        import_react29.default.createElement("span", null, t("reader.selection.copy"))
       ),
-      import_react28.default.createElement(
+      import_react29.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("explain"), title: t("reader.selection.explain") },
-        import_react28.default.createElement(Icon2, { name: "book", size: 14 }),
-        import_react28.default.createElement("span", null, t("reader.selection.explain"))
+        import_react29.default.createElement(Icon2, { name: "book", size: 14 }),
+        import_react29.default.createElement("span", null, t("reader.selection.explain"))
       ),
-      import_react28.default.createElement(
+      import_react29.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("ask"), title: t("reader.selection.ask") },
-        import_react28.default.createElement(Icon2, { name: "note", size: 14 }),
-        import_react28.default.createElement("span", null, t("reader.selection.ask"))
+        import_react29.default.createElement(Icon2, { name: "note", size: 14 }),
+        import_react29.default.createElement("span", null, t("reader.selection.ask"))
       ),
-      import_react28.default.createElement(
+      import_react29.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("cite"), title: t("reader.selection.cite") },
-        import_react28.default.createElement(Icon2, { name: "quote", size: 14 }),
-        import_react28.default.createElement("span", null, t("reader.selection.cite"))
+        import_react29.default.createElement(Icon2, { name: "quote", size: 14 }),
+        import_react29.default.createElement("span", null, t("reader.selection.cite"))
       )
     ) : null,
-    pageSelection && selectionResult && selectionResult.page === page2 ? import_react28.default.createElement(
-      import_react28.default.Fragment,
+    pageSelection && selectionResult && selectionResult.page === page2 ? import_react29.default.createElement(
+      import_react29.default.Fragment,
       null,
-      selectionResult.replace ? import_react28.default.createElement(
+      selectionResult.replace ? import_react29.default.createElement(
         "div",
         {
           className: "ph-r-card ph-r-replacecard",
@@ -21941,16 +22056,16 @@ function PageViewImpl(props) {
           "data-ph-overlay": "selection-replace",
           onMouseDown: (event) => event.stopPropagation()
         },
-        import_react28.default.createElement(
+        import_react29.default.createElement(
           "div",
           { className: "ph-r-resultcard__head" },
-          import_react28.default.createElement(Icon2, { name: "translate", size: 13 }),
-          import_react28.default.createElement("strong", null, t("reader.selection.translated")),
-          import_react28.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
-          import_react28.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.closeReplace"), onClick: () => props.onSelectionAction("closeReplace") })
+          import_react29.default.createElement(Icon2, { name: "translate", size: 13 }),
+          import_react29.default.createElement("strong", null, t("reader.selection.translated")),
+          import_react29.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
+          import_react29.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.closeReplace"), onClick: () => props.onSelectionAction("closeReplace") })
         ),
-        import_react28.default.createElement("div", { className: "ph-r-replacecard__text" }, firstText3(selectionResult.translation))
-      ) : import_react28.default.createElement(SelectionResultCard, {
+        import_react29.default.createElement("div", { className: "ph-r-replacecard__text" }, firstText3(selectionResult.translation))
+      ) : import_react29.default.createElement(SelectionResultCard, {
         t,
         result: selectionResult,
         width,
@@ -21965,7 +22080,7 @@ function PageViewImpl(props) {
         onOpenSettings: props.onOpenSettings
       })
     ) : null,
-    pagePopover ? import_react28.default.createElement(AnnotationPopover, {
+    pagePopover ? import_react29.default.createElement(AnnotationPopover, {
       t,
       annotation: pagePopover.annotation,
       busy: Boolean(pagePopover.busy),
@@ -21983,7 +22098,7 @@ function PageViewImpl(props) {
       onAiTranslate: props.onAiTranslateAnnotation ? () => props.onAiTranslateAnnotation(pagePopover.annotation) : void 0,
       onUndoDelete: () => props.onDeleteAnnotation(pagePopover.annotation)
     }) : null,
-    pageNoteDraft && notePosition ? import_react28.default.createElement(NoteComposer, {
+    pageNoteDraft && notePosition ? import_react29.default.createElement(NoteComposer, {
       t,
       color: noteDraft.color,
       style: notePosition,
@@ -21992,15 +22107,15 @@ function PageViewImpl(props) {
     }) : null
   );
 }
-var PageView = import_react28.default.memo(PageViewImpl, (previous, next) => {
+var PageView = import_react29.default.memo(PageViewImpl, (previous, next) => {
   return previous.paperId === next.paperId && previous.pageInfo === next.pageInfo && previous.width === next.width && previous.height === next.height && previous.active === next.active && previous.mode === next.mode && previous.reducedMotion === next.reducedMotion && previous.pageDataEntry === next.pageDataEntry && previous.layerEntry === next.layerEntry && previous.activeAnnotationId === next.activeAnnotationId && previous.selection === next.selection && previous.selectionResult === next.selectionResult && previous.popover === next.popover && previous.noteDraft === next.noteDraft && previous.search === next.search && previous.figures === next.figures && previous.t === next.t && sameAnnotations(previous.annotations, next.annotations);
 });
 function ColorPenRow(props) {
-  return import_react28.default.createElement(
+  return import_react29.default.createElement(
     "div",
     { className: "ph-r-pens", role: "group", "aria-label": props.t("reader.selection.colors") },
     ["yellow", "green", "blue", "red", "purple"].map(
-      (color) => import_react28.default.createElement("button", {
+      (color) => import_react29.default.createElement("button", {
         key: color,
         type: "button",
         className: "ph-r-pen ph-r-pen--" + color,
@@ -22013,8 +22128,8 @@ function ColorPenRow(props) {
 }
 function SelectionResultCard(props) {
   const { t, result, anchor, width, height } = props;
-  const [now, setNow] = import_react28.default.useState(() => Date.now());
-  import_react28.default.useEffect(() => {
+  const [now, setNow] = import_react29.default.useState(() => Date.now());
+  import_react29.default.useEffect(() => {
     if (!result.loading) return void 0;
     const timer2 = setInterval(() => setNow(Date.now()), 200);
     return () => clearInterval(timer2);
@@ -22030,7 +22145,7 @@ function SelectionResultCard(props) {
   const translated = result.status === "translated" || Boolean(value);
   const engineText = translated && (result.engine || result.provider) ? engineBadge(result.engine, result.model, result.latencyMs, result.cached) : "";
   const loadingText = result.aiRefine ? t("reader.selection.refining") : t("reader.selection.quickTranslating");
-  return import_react28.default.createElement(
+  return import_react29.default.createElement(
     "div",
     {
       className: cx("ph-r-float", "ph-r-card", "ph-r-resultcard"),
@@ -22038,52 +22153,49 @@ function SelectionResultCard(props) {
       "data-ph-overlay": "selection-result",
       onMouseDown: (event) => event.stopPropagation()
     },
-    import_react28.default.createElement(
+    import_react29.default.createElement(
       "div",
       { className: "ph-r-resultcard__head" },
-      import_react28.default.createElement(Icon2, { name: "sparkles", size: 13 }),
-      import_react28.default.createElement("strong", null, result.aiRefine ? t("reader.selection.aiRefine") : t("reader.selection.quickTranslate")),
-      engineText ? import_react28.default.createElement("span", { className: "ph-r-resultcard__engine", title: engineDetails(result.engine, result.model) }, engineText) : null,
-      result.freeOnly || result.mode === "free" || result.engine && result.engine.free ? import_react28.default.createElement(
+      import_react29.default.createElement(Icon2, { name: "sparkles", size: 13 }),
+      import_react29.default.createElement("strong", null, result.aiRefine ? t("reader.selection.aiRefine") : t("reader.selection.quickTranslate")),
+      engineText ? import_react29.default.createElement("span", { className: "ph-r-resultcard__engine", title: engineDetails(result.engine, result.model) }, engineText) : null,
+      result.freeOnly || result.mode === "free" || result.engine && result.engine.free ? import_react29.default.createElement(
         "span",
         { className: "ph-r-resultcard__free", title: t("reader.selection.freeFastHint") },
         t("reader.selection.freeFast") + (!translated && elapsedLabel ? " \xB7 " + elapsedLabel : "")
       ) : null,
-      result.provider === "llm" && result.fast ? import_react28.default.createElement("span", { className: "ph-r-ai__fast" }, t("reader.selection.fastMode")) : null,
-      import_react28.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
-      import_react28.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.close"), onClick: props.onClose })
+      result.provider === "llm" && result.fast ? import_react29.default.createElement("span", { className: "ph-r-ai__fast" }, t("reader.selection.fastMode")) : null,
+      import_react29.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
+      import_react29.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.close"), onClick: props.onClose })
     ),
-    result.loading ? import_react28.default.createElement(
+    result.loading ? import_react29.default.createElement(
       "div",
       { className: "ph-r-resultcard__loading" },
-      import_react28.default.createElement(Spinner2, { size: 12 }),
-      import_react28.default.createElement("span", null, loadingText),
-      elapsedLabel ? import_react28.default.createElement(
+      import_react29.default.createElement(Spinner2, { size: 12 }),
+      import_react29.default.createElement("span", null, loadingText),
+      elapsedLabel ? import_react29.default.createElement(
         "span",
         { className: "ph-r-resultcard__meta" },
         (result.provider ? providerLabel2(result.provider) + " \xB7 " : "") + elapsedLabel
       ) : null
     ) : null,
-    !result.loading && !value ? import_react28.default.createElement(
-      "div",
-      { className: "ph-r-resultcard__warn" },
-      t("reader.selection.quickUnavailable", { reason: firstText3(result.reason, t("reader.ai.reasonFallback")) }),
-      import_react28.default.createElement(
-        "div",
-        { className: "ph-r-resultcard__actions", style: { marginTop: 6, borderTop: "none", paddingTop: 0 } },
-        import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "refresh", onClick: props.onRetry }, t("reader.retry")),
-        props.onRefine ? import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine }, t("reader.selection.aiRefineCta")) : null,
-        props.onOpenSettings ? import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "settings", onClick: props.onOpenSettings }, t("ai.warning.changeProvider")) : null
-      )
-    ) : null,
-    !result.loading && value ? import_react28.default.createElement("div", { className: "ph-r-resultcard__body" }, value) : null,
-    !result.loading && value ? import_react28.default.createElement(
+    !result.loading && !value ? import_react29.default.createElement(AiWarning, {
+      t,
+      compact: true,
+      status: "error",
+      reason: firstText3(result.reason, t("reader.ai.reasonFallback")),
+      onRetry: props.onRetry,
+      onOpenSettings: props.onOpenSettings,
+      extra: props.onRefine ? import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine }, t("reader.selection.aiRefineCta")) : null
+    }) : null,
+    !result.loading && value ? import_react29.default.createElement("div", { className: "ph-r-resultcard__body" }, value) : null,
+    !result.loading && value ? import_react29.default.createElement(
       "div",
       { className: "ph-r-resultcard__actions" },
-      import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: props.onCopy }, t("reader.selection.copyTranslation")),
-      import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "translate", onClick: props.onReplace }, t("reader.selection.replace")),
-      import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: props.onSend }, t("reader.selection.sendToChat")),
-      props.onRefine && !result.aiRefine ? import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine, title: t("reader.selection.aiRefineHint") }, t("reader.selection.aiRefine")) : null
+      import_react29.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: props.onCopy }, t("reader.selection.copyTranslation")),
+      import_react29.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "translate", onClick: props.onReplace }, t("reader.selection.replace")),
+      import_react29.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: props.onSend }, t("reader.selection.sendToChat")),
+      props.onRefine && !result.aiRefine ? import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine, title: t("reader.selection.aiRefineHint") }, t("reader.selection.aiRefine")) : null
     ) : null
   );
 }
@@ -22162,7 +22274,7 @@ function FigureDragRegions(props) {
         baseDrag.onDragStart(event);
       }
     });
-    regions.push(import_react28.default.createElement(
+    regions.push(import_react29.default.createElement(
       "div",
       Object.assign(
         {
@@ -22179,7 +22291,7 @@ function FigureDragRegions(props) {
         },
         regionDrag
       ),
-      import_react28.default.createElement(
+      import_react29.default.createElement(
         "span",
         { className: "ph-r-figdrag__chip", "aria-hidden": "true" },
         label ? t("reader.figure.dragChip", { label }) : t("reader.figure.dragChipNoLabel")
@@ -22187,14 +22299,14 @@ function FigureDragRegions(props) {
     ));
   }
   if (regions.length === 0) return null;
-  return import_react28.default.createElement("div", { className: "ph-r-figdrags" }, regions);
+  return import_react29.default.createElement("div", { className: "ph-r-figdrags" }, regions);
 }
 function FigureHighlightOverlay(props) {
   const t = props.t;
   const focus = props.figureFocus;
   const focusKey = focus && focus.figureId ? String(focus.figureId) + ":" + String(focus.seq || "") + ":" + String(props.page == null ? "" : props.page) : "";
-  const [expired, setExpired] = import_react28.default.useState(false);
-  import_react28.default.useEffect(() => {
+  const [expired, setExpired] = import_react29.default.useState(false);
+  import_react29.default.useEffect(() => {
     setExpired(false);
     if (focusKey === "") return void 0;
     const timer2 = setTimeout(() => setExpired(true), 4600);
@@ -22206,32 +22318,32 @@ function FigureHighlightOverlay(props) {
   const style = figureRectStyle(focus.bbox);
   if (!style) return null;
   const label = focus.figureLabel ? t("reader.figure.highlightLabel", { label: focus.figureLabel }) : t("reader.figure.highlight");
-  return import_react28.default.createElement(
+  return import_react29.default.createElement(
     "div",
     { className: "ph-r-fighl", style, "data-ph-figure-focus": String(focus.figureId || ""), "aria-hidden": "true" },
-    import_react28.default.createElement("span", { className: "ph-r-fighl__label" }, label)
+    import_react29.default.createElement("span", { className: "ph-r-fighl__label" }, label)
   );
 }
 function PageCanvas(props) {
-  const scrollRef = import_react28.default.useRef(null);
-  const layoutRef = import_react28.default.useRef([]);
-  const previousLayoutRef = import_react28.default.useRef(null);
-  const rafRef = import_react28.default.useRef(0);
-  const scrolledRef = import_react28.default.useRef(false);
-  const [scrollTop, setScrollTop] = import_react28.default.useState(0);
-  const [viewport, setViewport] = import_react28.default.useState({ width: 0, height: 0 });
+  const scrollRef = import_react29.default.useRef(null);
+  const layoutRef = import_react29.default.useRef([]);
+  const previousLayoutRef = import_react29.default.useRef(null);
+  const rafRef = import_react29.default.useRef(0);
+  const scrolledRef = import_react29.default.useRef(false);
+  const [scrollTop, setScrollTop] = import_react29.default.useState(0);
+  const [viewport, setViewport] = import_react29.default.useState({ width: 0, height: 0 });
   const size = useElementSizeCompat(scrollRef);
-  import_react28.default.useEffect(() => {
+  import_react29.default.useEffect(() => {
     setViewport({ width: size.width, height: size.height });
   }, [size.width, size.height]);
   const descriptors = usePageDescriptors(props.pages, props.total);
-  const baseWidth = import_react28.default.useMemo(() => {
+  const baseWidth = import_react29.default.useMemo(() => {
     if (viewport.width > 0) {
       return clamp(viewport.width - CANVAS_SIDE_PADDING * 2, MIN_BASE_WIDTH, MAX_BASE_WIDTH);
     }
     return 640;
   }, [viewport.width]);
-  const layout = import_react28.default.useMemo(() => {
+  const layout = import_react29.default.useMemo(() => {
     const list = [];
     let top = PAGE_TOP_PADDING;
     for (const descriptor of descriptors) {
@@ -22244,7 +22356,7 @@ function PageCanvas(props) {
   }, [baseWidth, descriptors, props.zoom]);
   layoutRef.current = layout;
   const contentHeight = layout.length > 0 ? layout[layout.length - 1].top + layout[layout.length - 1].height + PAGE_BOTTOM_PADDING : 0;
-  import_react28.default.useLayoutEffect(() => {
+  import_react29.default.useLayoutEffect(() => {
     const element2 = scrollRef.current;
     const previous = previousLayoutRef.current;
     if (!element2 || !previous || previous.length === 0 || layout.length === 0) {
@@ -22270,7 +22382,7 @@ function PageCanvas(props) {
     }
     previousLayoutRef.current = layout;
   }, [layout, scrollTop]);
-  import_react28.default.useEffect(() => {
+  import_react29.default.useEffect(() => {
     const jump = props.jump;
     if (!jump || !jump.page) return;
     const element2 = scrollRef.current;
@@ -22280,7 +22392,7 @@ function PageCanvas(props) {
     setScrollTop(layout[index].top);
     props.onPageChange(jump.page);
   }, [props.jump && props.jump.seq]);
-  import_react28.default.useEffect(() => {
+  import_react29.default.useEffect(() => {
     const focus = props.focus;
     if (!focus || !focus.page || !focus.rect) return;
     const element2 = scrollRef.current;
@@ -22289,7 +22401,7 @@ function PageCanvas(props) {
     const item = layout[index];
     scrollElementTo(element2, item.top + focus.rect.y * item.height - 140, !props.reducedMotion);
   }, [props.focus && props.focus.seq]);
-  const handleScroll = import_react28.default.useCallback(() => {
+  const handleScroll = import_react29.default.useCallback(() => {
     const element2 = scrollRef.current;
     if (!element2) return;
     if (rafRef.current) return;
@@ -22315,7 +22427,7 @@ function PageCanvas(props) {
     if (typeof requestAnimationFrame === "function") rafRef.current = requestAnimationFrame(run);
     else run();
   }, [props]);
-  const visibleRange = import_react28.default.useMemo(() => {
+  const visibleRange = import_react29.default.useMemo(() => {
     if (layout.length === 0) return { start: 0, end: -1 };
     const height = viewport.height > 0 ? viewport.height : 900;
     const top = scrollTop - height * VIRTUAL_BUFFER;
@@ -22343,7 +22455,7 @@ function PageCanvas(props) {
     }
     return { start, end };
   }, [layout, props.page, scrollTop, viewport.height]);
-  import_react28.default.useEffect(() => {
+  import_react29.default.useEffect(() => {
     const list = layoutRef.current;
     for (let index = visibleRange.start; index <= visibleRange.end; index += 1) {
       const item = list[index];
@@ -22353,7 +22465,7 @@ function PageCanvas(props) {
     }
   }, [props.ensureLayer, props.ensurePage, props.dataVersion, visibleRange]);
   const annotationsByPage = useAnnotationsByPage(props.annotations);
-  const figuresByPage = import_react28.default.useMemo(() => {
+  const figuresByPage = import_react29.default.useMemo(() => {
     const map = /* @__PURE__ */ new Map();
     for (const figure of arrayOf3(props.figures)) {
       const figurePage = Math.round(num(figure && figure.page, 0));
@@ -22370,7 +22482,7 @@ function PageCanvas(props) {
     const visible = index >= visibleRange.start && index <= visibleRange.end;
     if (!visible) {
       children.push(
-        import_react28.default.createElement(
+        import_react29.default.createElement(
           "div",
           {
             key: "ph-" + descriptor.page,
@@ -22384,7 +22496,7 @@ function PageCanvas(props) {
       continue;
     }
     children.push(
-      import_react28.default.createElement(PageView, {
+      import_react29.default.createElement(PageView, {
         key: "ph-" + descriptor.page,
         t: props.t,
         paperId: props.paperId,
@@ -22424,7 +22536,7 @@ function PageCanvas(props) {
       })
     );
   }
-  return import_react28.default.createElement(
+  return import_react29.default.createElement(
     "div",
     {
       ref: scrollRef,
@@ -22432,7 +22544,7 @@ function PageCanvas(props) {
       onScroll: handleScroll,
       "data-ph-scroll": "canvas"
     },
-    import_react28.default.createElement(
+    import_react29.default.createElement(
       "div",
       { className: "ph-r-pages", style: { minHeight: contentHeight } },
       children
@@ -22440,8 +22552,8 @@ function PageCanvas(props) {
   );
 }
 function useElementSizeCompat(ref) {
-  const [size, setSize] = import_react28.default.useState({ width: 0, height: 0 });
-  import_react28.default.useEffect(() => {
+  const [size, setSize] = import_react29.default.useState({ width: 0, height: 0 });
+  import_react29.default.useEffect(() => {
     const element2 = ref.current;
     if (!element2) return void 0;
     let frame2 = 0;
@@ -22476,7 +22588,7 @@ function useElementSizeCompat(ref) {
 }
 
 // src/surfaces/reader/toolbar.jsx
-var import_react29 = __toESM(require("react"), 1);
+var import_react30 = __toESM(require("react"), 1);
 function authorLine2(authors) {
   const list = arrayOf3(authors);
   const names = [];
@@ -22508,10 +22620,10 @@ function ReaderToolbar(props) {
   const total = Math.max(1, Math.round(num(props.total, 1)));
   const page2 = Math.max(1, Math.min(total, Math.round(num(props.page, 1))));
   const search = props.search || { open: false, query: "", hits: [], index: 0 };
-  const searchInputRef = import_react29.default.useRef(null);
+  const searchInputRef = import_react30.default.useRef(null);
   const noteContext = props.noteContext || null;
   const linkedToNote = Boolean(noteContext && paper && Array.isArray(noteContext.paperIds) && noteContext.paperIds.includes(paper.id));
-  import_react29.default.useEffect(() => {
+  import_react30.default.useEffect(() => {
     if (!search.open) return;
     const timer2 = setTimeout(() => {
       const element2 = searchInputRef.current;
@@ -22533,14 +22645,14 @@ function ReaderToolbar(props) {
   const venue = firstText3(paper && paper.venue, paper && paper.containerTitle);
   if (venue) metaParts.push(venue);
   if (paper && paper.pageCount) metaParts.push(rt("reader.pagesCount", { count: paper.pageCount }));
-  return import_react29.default.createElement(
+  return import_react30.default.createElement(
     "div",
     { className: "ph-r-toolbar", role: "toolbar", "aria-label": rt("reader.mode.label") },
     /* ---------------- identity row ---------------- */
-    import_react29.default.createElement(
+    import_react30.default.createElement(
       "div",
       { className: "ph-r-toolbar__row ph-r-toolbar__row--main" },
-      import_react29.default.createElement(
+      import_react30.default.createElement(
         Btn,
         {
           className: "ph-r-toolbar__back",
@@ -22552,27 +22664,27 @@ function ReaderToolbar(props) {
         },
         rt("reader.back")
       ),
-      import_react29.default.createElement(
+      import_react30.default.createElement(
         "div",
         { className: "ph-r-toolbar__titles" },
-        import_react29.default.createElement(
+        import_react30.default.createElement(
           "div",
           { className: "ph-r-toolbar__titleline" },
-          import_react29.default.createElement("h1", { className: "ph-r-toolbar__title", title: String(title2) }, title2),
-          import_react29.default.createElement("span", { className: "ph-r-toolbar__badge" }, rt("reader.pageOf", { page: page2, total }))
+          import_react30.default.createElement("h1", { className: "ph-r-toolbar__title", title: String(title2) }, title2),
+          import_react30.default.createElement("span", { className: "ph-r-toolbar__badge" }, rt("reader.pageOf", { page: page2, total }))
         ),
-        import_react29.default.createElement(
+        import_react30.default.createElement(
           "div",
           { className: "ph-r-toolbar__meta", title: original ? original + (metaParts.length ? " \xB7 " + metaParts.join(" \xB7 ") : "") : metaParts.join(" \xB7 ") },
-          original ? import_react29.default.createElement("span", { style: { opacity: 0.85, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, original) : null,
-          original && metaParts.length ? import_react29.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, "\xB7") : null,
-          metaParts.length ? import_react29.default.createElement("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, metaParts.join(" \xB7 ")) : null
+          original ? import_react30.default.createElement("span", { style: { opacity: 0.85, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, original) : null,
+          original && metaParts.length ? import_react30.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, "\xB7") : null,
+          metaParts.length ? import_react30.default.createElement("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, metaParts.join(" \xB7 ")) : null
         )
       ),
-      import_react29.default.createElement(
+      import_react30.default.createElement(
         "div",
         { className: "ph-r-toolbar__actions" },
-        import_react29.default.createElement(
+        import_react30.default.createElement(
           Btn,
           {
             size: "sm",
@@ -22584,7 +22696,7 @@ function ReaderToolbar(props) {
           },
           "AI"
         ),
-        props.onOpenSettings ? import_react29.default.createElement(IconBtn, {
+        props.onOpenSettings ? import_react30.default.createElement(IconBtn, {
           icon: "settings",
           title: "\u8BBE\u7F6E",
           "aria-label": "\u8BBE\u7F6E",
@@ -22593,19 +22705,19 @@ function ReaderToolbar(props) {
       )
     ),
     /* ---------------- tool row ---------------- */
-    import_react29.default.createElement(
+    import_react30.default.createElement(
       "div",
       { className: "ph-r-toolbar__row ph-r-toolbar__row--tools" },
-      import_react29.default.createElement(
+      import_react30.default.createElement(
         "div",
         { className: "ph-r-pager", role: "group", "aria-label": rt("reader.pageOf", { page: page2, total }) },
-        import_react29.default.createElement(IconBtn, {
+        import_react30.default.createElement(IconBtn, {
           icon: "chevronLeft",
           title: rt("reader.prevPage"),
           disabled: page2 <= 1 || props.loading,
           onClick: () => props.onPage(Math.max(1, page2 - 1))
         }),
-        import_react29.default.createElement("input", {
+        import_react30.default.createElement("input", {
           key: "page-input-" + page2,
           className: "ph-r-pager__input",
           type: "text",
@@ -22623,20 +22735,20 @@ function ReaderToolbar(props) {
           },
           onBlur: (event) => commitPage(event.currentTarget.value)
         }),
-        import_react29.default.createElement("span", { className: "ph-r-pager__total" }, "/ " + total),
-        import_react29.default.createElement(IconBtn, {
+        import_react30.default.createElement("span", { className: "ph-r-pager__total" }, "/ " + total),
+        import_react30.default.createElement(IconBtn, {
           icon: "chevronRight",
           title: rt("reader.nextPage"),
           disabled: page2 >= total || props.loading,
           onClick: () => props.onPage(Math.min(total, page2 + 1))
         })
       ),
-      import_react29.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
-      import_react29.default.createElement(
+      import_react30.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
+      import_react30.default.createElement(
         "div",
         { className: "ph-r-zoom", role: "group", "aria-label": rt("reader.zoomValue", { percent: Math.round(props.zoom * 100) }) },
-        import_react29.default.createElement(IconBtn, { icon: "zoomOut", title: rt("reader.zoomOut"), onClick: () => props.onZoomStep(-1) }),
-        import_react29.default.createElement(
+        import_react30.default.createElement(IconBtn, { icon: "zoomOut", title: rt("reader.zoomOut"), onClick: () => props.onZoomStep(-1) }),
+        import_react30.default.createElement(
           "button",
           {
             type: "button",
@@ -22646,12 +22758,12 @@ function ReaderToolbar(props) {
           },
           Math.round(num(props.zoom, 1) * 100) + "%"
         ),
-        import_react29.default.createElement(IconBtn, { icon: "zoomIn", title: rt("reader.zoomIn"), onClick: () => props.onZoomStep(1) }),
-        import_react29.default.createElement(IconBtn, { icon: "fit", title: rt("reader.zoomFit"), onClick: props.onZoomFit })
+        import_react30.default.createElement(IconBtn, { icon: "zoomIn", title: rt("reader.zoomIn"), onClick: () => props.onZoomStep(1) }),
+        import_react30.default.createElement(IconBtn, { icon: "fit", title: rt("reader.zoomFit"), onClick: props.onZoomFit })
       ),
-      import_react29.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
-      import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite"), className: "ph-r-toolbar__cite" }, rt("reader.cite")),
-      import_react29.default.createElement(
+      import_react30.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
+      import_react30.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite"), className: "ph-r-toolbar__cite" }, rt("reader.cite")),
+      import_react30.default.createElement(
         "a",
         {
           className: "ph-r-btn ph-r-btn--ghost ph-r-btn--sm ph-r-toolbar__pdf",
@@ -22660,15 +22772,15 @@ function ReaderToolbar(props) {
           rel: "noopener noreferrer",
           title: rt("reader.openPdf")
         },
-        import_react29.default.createElement(Icon2, { name: "external", size: 14 }),
-        import_react29.default.createElement("span", { className: "ph-r-btn__label" }, rt("reader.openPdf"))
+        import_react30.default.createElement(Icon2, { name: "external", size: 14 }),
+        import_react30.default.createElement("span", { className: "ph-r-btn__label" }, rt("reader.openPdf"))
       ),
-      import_react29.default.createElement("span", { className: "ph-r-toolbar__spacer" }),
-      search.open ? import_react29.default.createElement(
+      import_react30.default.createElement("span", { className: "ph-r-toolbar__spacer" }),
+      search.open ? import_react30.default.createElement(
         "div",
         { className: "ph-r-find" },
-        import_react29.default.createElement(Icon2, { name: "search", size: 13, className: "ph-r-find__icon" }),
-        import_react29.default.createElement("input", {
+        import_react30.default.createElement(Icon2, { name: "search", size: 13, className: "ph-r-find__icon" }),
+        import_react30.default.createElement("input", {
           ref: searchInputRef,
           className: "ph-r-find__input",
           type: "text",
@@ -22687,16 +22799,16 @@ function ReaderToolbar(props) {
             }
           }
         }),
-        import_react29.default.createElement(
+        import_react30.default.createElement(
           "span",
           { className: cx("ph-r-find__count", search.query && search.hits.length === 0 && "ph-r-find__count--empty") },
           !search.query ? "" : search.hits.length === 0 ? rt("reader.search.none") : rt("reader.search.count", { index: Math.min(search.index + 1, search.hits.length), total: search.hits.length })
         ),
-        import_react29.default.createElement(IconBtn, { icon: "chevronUp", title: rt("reader.search.prev"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(-1) }),
-        import_react29.default.createElement(IconBtn, { icon: "chevronDown", title: rt("reader.search.next"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(1) }),
-        import_react29.default.createElement(IconBtn, { icon: "close", title: rt("reader.search.close"), onClick: () => props.onSearchToggle(false) })
-      ) : import_react29.default.createElement(IconBtn, { icon: "search", title: rt("reader.search"), onClick: () => props.onSearchToggle(true) }),
-      import_react29.default.createElement(IconBtn, {
+        import_react30.default.createElement(IconBtn, { icon: "chevronUp", title: rt("reader.search.prev"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(-1) }),
+        import_react30.default.createElement(IconBtn, { icon: "chevronDown", title: rt("reader.search.next"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(1) }),
+        import_react30.default.createElement(IconBtn, { icon: "close", title: rt("reader.search.close"), onClick: () => props.onSearchToggle(false) })
+      ) : import_react30.default.createElement(IconBtn, { icon: "search", title: rt("reader.search"), onClick: () => props.onSearchToggle(true) }),
+      import_react30.default.createElement(IconBtn, {
         icon: "sidePanel",
         title: rt("reader.sidePanelToggle"),
         active: props.sideOpen,
@@ -22707,7 +22819,7 @@ function ReaderToolbar(props) {
 }
 
 // src/surfaces/reader/thumbnails.jsx
-var import_react30 = __toESM(require("react"), 1);
+var import_react31 = __toESM(require("react"), 1);
 var THUMB_INSET = 30;
 var OVERSCAN = 250;
 var FALLBACK_RAIL_WIDTH = 118;
@@ -22733,25 +22845,25 @@ function offsetsOf(pages, total, railWidth) {
 }
 function Thumbnails(props) {
   const t = props.t;
-  const scrollRef = import_react30.default.useRef(null);
-  const listRef = import_react30.default.useRef(null);
-  const [scrollTop, setScrollTop] = import_react30.default.useState(0);
+  const scrollRef = import_react31.default.useRef(null);
+  const listRef = import_react31.default.useRef(null);
+  const [scrollTop, setScrollTop] = import_react31.default.useState(0);
   const size = useElementSize(scrollRef);
   const railWidth = size.width > 0 ? size.width : FALLBACK_RAIL_WIDTH;
-  const layout = import_react30.default.useMemo(() => offsetsOf(props.pages, props.total, railWidth), [props.pages, props.total, railWidth]);
+  const layout = import_react31.default.useMemo(() => offsetsOf(props.pages, props.total, railWidth), [props.pages, props.total, railWidth]);
   const activeIndex = layout.items.findIndex((item) => item.page === props.page);
-  const visible = import_react30.default.useMemo(() => {
+  const visible = import_react31.default.useMemo(() => {
     const height = size.height > 0 ? size.height : 900;
     const top = scrollTop - OVERSCAN;
     const bottom = scrollTop + height + OVERSCAN;
     return layout.items.filter((item) => item.offset + item.itemHeight >= top && item.offset <= bottom);
   }, [layout.items, scrollTop, size.height]);
-  const handleScroll = import_react30.default.useCallback(() => {
+  const handleScroll = import_react31.default.useCallback(() => {
     const element2 = scrollRef.current;
     if (!element2) return;
     setScrollTop(element2.scrollTop || 0);
   }, []);
-  import_react30.default.useEffect(() => {
+  import_react31.default.useEffect(() => {
     const element2 = scrollRef.current;
     const item = layout.items[activeIndex];
     if (!element2 || !item) return;
@@ -22761,7 +22873,7 @@ function Thumbnails(props) {
     if (item.offset < top + 8) element2.scrollTop = Math.max(0, item.offset - 8);
     else if (item.offset + item.itemHeight > top + height - 8) element2.scrollTop = item.offset + item.itemHeight - height + 8;
   }, [activeIndex, layout.items, props.page]);
-  return import_react30.default.createElement(
+  return import_react31.default.createElement(
     "div",
     {
       ref: scrollRef,
@@ -22771,10 +22883,10 @@ function Thumbnails(props) {
       "aria-label": t("reader.thumbnails"),
       "data-ph-scroll": "rail"
     },
-    import_react30.default.createElement(
+    import_react31.default.createElement(
       "div",
       { ref: listRef, className: "ph-r-rail__inner", style: { height: layout.totalHeight } },
-      activeIndex >= 0 ? import_react30.default.createElement("span", {
+      activeIndex >= 0 ? import_react31.default.createElement("span", {
         className: "ph-r-rail__indicator",
         style: {
           height: 30,
@@ -22784,7 +22896,7 @@ function Thumbnails(props) {
       }) : null,
       visible.map((item) => {
         const active = item.page === props.page;
-        return import_react30.default.createElement(
+        return import_react31.default.createElement(
           "button",
           {
             key: item.page,
@@ -22796,10 +22908,10 @@ function Thumbnails(props) {
             "aria-current": active ? "page" : void 0,
             "data-ph-thumb": String(item.page)
           },
-          import_react30.default.createElement(
+          import_react31.default.createElement(
             "span",
             { className: "ph-r-rail__thumb", style: { height: item.imageHeight } },
-            import_react30.default.createElement(
+            import_react31.default.createElement(
               "span",
               {
                 style: {
@@ -22811,7 +22923,7 @@ function Thumbnails(props) {
                 "aria-hidden": "true"
               }
             ),
-            import_react30.default.createElement("img", {
+            import_react31.default.createElement("img", {
               src: item.imageUrl || pageImageUrl(props.paperId, item.page, 220),
               alt: "",
               loading: "lazy",
@@ -22828,14 +22940,14 @@ function Thumbnails(props) {
               }
             })
           ),
-          import_react30.default.createElement(
+          import_react31.default.createElement(
             "span",
             { className: "ph-r-rail__num" },
             String(item.page)
           )
         );
       }),
-      layout.items.length === 0 ? import_react30.default.createElement(Icon2, { name: "pages", size: 20 }) : null
+      layout.items.length === 0 ? import_react31.default.createElement(Icon2, { name: "pages", size: 20 }) : null
     )
   );
 }
@@ -22846,17 +22958,17 @@ var TOOLS_TIP_FLAG = "reader.tools.tip.v1";
 var NO_ANNOTATIONS = [];
 var DEFAULT_COLOR = "yellow";
 function useReaderNotices(onToast) {
-  const [toasts, setToasts] = import_react31.default.useState([]);
-  const timers = import_react31.default.useRef(/* @__PURE__ */ new Map());
+  const [toasts, setToasts] = import_react32.default.useState([]);
+  const timers = import_react32.default.useRef(/* @__PURE__ */ new Map());
   const external = typeof onToast === "function";
-  import_react31.default.useEffect(() => {
+  import_react32.default.useEffect(() => {
     const pending = timers.current;
     return () => {
       pending.forEach((timer2) => clearTimeout(timer2));
       pending.clear();
     };
   }, []);
-  const notify2 = import_react31.default.useCallback(
+  const notify2 = import_react32.default.useCallback(
     (kind, text2, action) => {
       const message = String(text2 || "");
       if (!message) return;
@@ -22885,53 +22997,53 @@ function useReaderNotices(onToast) {
     },
     [external, onToast]
   );
-  const dismiss2 = import_react31.default.useCallback((id) => {
+  const dismiss2 = import_react32.default.useCallback((id) => {
     setToasts((previous) => previous.filter((toast) => toast.id !== id));
   }, []);
   return { notify: notify2, toasts, dismiss: dismiss2, external };
 }
 function StateScreen(props) {
-  return import_react31.default.createElement(
+  return import_react32.default.createElement(
     "div",
     { className: "ph-r-reader" },
-    import_react31.default.createElement(
+    import_react32.default.createElement(
       "div",
       { className: "ph-r-toolbar" },
-      import_react31.default.createElement(
+      import_react32.default.createElement(
         "div",
         { className: "ph-r-toolbar__row ph-r-toolbar__row--main" },
-        import_react31.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack }, props.t("reader.back"))
+        import_react32.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack }, props.t("reader.back"))
       )
     ),
-    import_react31.default.createElement(
+    import_react32.default.createElement(
       "div",
       { style: { flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 } },
-      props.loading ? import_react31.default.createElement(
+      props.loading ? import_react32.default.createElement(
         "div",
         { style: { display: "flex", alignItems: "center", gap: 10, color: "var(--dsw-alias-label-secondary)" }, role: "status" },
-        import_react31.default.createElement(Spinner2, { size: 16 }),
-        import_react31.default.createElement("span", null, props.t("reader.loading"))
-      ) : import_react31.default.createElement(Empty, {
+        import_react32.default.createElement(Spinner2, { size: 16 }),
+        import_react32.default.createElement("span", null, props.t("reader.loading"))
+      ) : import_react32.default.createElement(Empty, {
         icon: props.icon || "warning",
         tone: props.tone,
         title: props.title,
         desc: props.desc,
-        action: props.retry ? import_react31.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: props.retry }, props.t("reader.retry")) : null
+        action: props.retry ? import_react32.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: props.retry }, props.t("reader.retry")) : null
       })
     )
   );
 }
 function useNavigationSnapshot(navigation2) {
-  const subscribe2 = import_react31.default.useCallback(
+  const subscribe2 = import_react32.default.useCallback(
     (listener) => navigation2 && typeof navigation2.subscribe === "function" ? navigation2.subscribe(listener) : () => {
     },
     [navigation2]
   );
-  const getSnapshot2 = import_react31.default.useCallback(
+  const getSnapshot2 = import_react32.default.useCallback(
     () => navigation2 && typeof navigation2.getSnapshot === "function" ? navigation2.getSnapshot() : null,
     [navigation2]
   );
-  return import_react31.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
+  return import_react32.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
 }
 function annotationRequest(base, draft) {
   const rects = arrayOf3(draft.rects).map(normalizeRect).filter(Boolean);
@@ -22952,7 +23064,7 @@ function annotationRequest(base, draft) {
   if (params.kind === "note" && rects.length === 0) return params;
   return params;
 }
-var ReaderBoundary = class extends import_react31.default.Component {
+var ReaderBoundary = class extends import_react32.default.Component {
   constructor(props) {
     super(props);
     this.state = { error: null, epoch: 0 };
@@ -22970,7 +23082,7 @@ var ReaderBoundary = class extends import_react31.default.Component {
   render() {
     if (this.state.error) {
       const rt = this.props.t;
-      return import_react31.default.createElement(StateScreen, {
+      return import_react32.default.createElement(StateScreen, {
         t: rt,
         icon: "warning",
         tone: "error",
@@ -22984,26 +23096,26 @@ var ReaderBoundary = class extends import_react31.default.Component {
   }
 };
 function ReaderShell(props) {
-  const rt = import_react31.default.useMemo(() => buildReaderT(props.t), [props.t]);
-  return import_react31.default.createElement(ReaderBoundary, {
+  const rt = import_react32.default.useMemo(() => buildReaderT(props.t), [props.t]);
+  return import_react32.default.createElement(ReaderBoundary, {
     t: rt,
     onBack: props.onBack,
-    render: (key) => import_react31.default.createElement(ReaderShellInner, Object.assign({}, props, { key }))
+    render: (key) => import_react32.default.createElement(ReaderShellInner, Object.assign({}, props, { key }))
   });
 }
 function ReaderShellInner(props) {
-  const rt = import_react31.default.useMemo(() => buildReaderT(props.t), [props.t]);
+  const rt = import_react32.default.useMemo(() => buildReaderT(props.t), [props.t]);
   const trSlider = useSlidingThumb();
-  const releaseStyles = import_react31.default.useMemo(() => ensureReaderStyles(), []);
-  import_react31.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  const apiCall = import_react31.default.useMemo(() => createApiCaller(props.api), [props.api]);
+  const releaseStyles = import_react32.default.useMemo(() => ensureReaderStyles(), []);
+  import_react32.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  const apiCall = import_react32.default.useMemo(() => createApiCaller(props.api), [props.api]);
   const reducedMotion = usePrefersReducedMotion();
   const notices = useReaderNotices(props.onToast);
   const notify2 = notices.notify;
   const undoApi = useReaderUndo(props.undo);
   const translationPreference = useTranslationPreference(props.translation, apiCall);
   const preferredProvider = translationPreference.provider;
-  const notifyUndo = import_react31.default.useCallback(
+  const notifyUndo = import_react32.default.useCallback(
     (kind, text2) => {
       notify2(kind, text2, {
         label: rt("reader.undo.undo"),
@@ -23025,50 +23137,50 @@ function ReaderShellInner(props) {
   const detail = openState.data || null;
   const paper = detail && detail.paper || props.paper || null;
   const versionId = firstText3(detail && detail.version && detail.version.id);
-  const pages = import_react31.default.useMemo(() => arrayOf3(detail && detail.pages), [detail]);
-  const total = import_react31.default.useMemo(() => {
+  const pages = import_react32.default.useMemo(() => arrayOf3(detail && detail.pages), [detail]);
+  const total = import_react32.default.useMemo(() => {
     const count = Math.round(num(pages.length > 0 ? pages.length : paper && paper.pageCount, 1));
     return Math.max(1, count);
   }, [pages, paper]);
-  const [figureFocus, setFigureFocus] = import_react31.default.useState(null);
-  const [paperFigures, setPaperFigures] = import_react31.default.useState({ paperId: "", items: [] });
-  const [noteContext, setNoteContextState] = import_react31.default.useState(() => getNoteContext());
-  const figureFocusTimer = import_react31.default.useRef(null);
-  const [page2, setPage] = import_react31.default.useState(() => {
+  const [figureFocus, setFigureFocus] = import_react32.default.useState(null);
+  const [paperFigures, setPaperFigures] = import_react32.default.useState({ paperId: "", items: [] });
+  const [noteContext, setNoteContextState] = import_react32.default.useState(() => getNoteContext());
+  const figureFocusTimer = import_react32.default.useRef(null);
+  const [page2, setPage] = import_react32.default.useState(() => {
     const explicit = Math.round(num(props.initialPage, 0));
     if (explicit > 0) return explicit;
     const restored = props.paperId ? readReadingPosition(props.paperId) : 0;
     return restored > 0 ? restored : 1;
   });
-  const jumpSeq = import_react31.default.useRef(0);
-  const [jump, setJump] = import_react31.default.useState(null);
-  const pageRef = import_react31.default.useRef(page2);
+  const jumpSeq = import_react32.default.useRef(0);
+  const [jump, setJump] = import_react32.default.useState(null);
+  const pageRef = import_react32.default.useRef(page2);
   pageRef.current = page2;
-  const totalRef = import_react31.default.useRef(total);
+  const totalRef = import_react32.default.useRef(total);
   totalRef.current = total;
-  import_react31.default.useEffect(() => {
+  import_react32.default.useEffect(() => {
     if (typeof props.onPageChange === "function") props.onPageChange(page2);
   }, [page2, props.onPageChange]);
-  const goToPage = import_react31.default.useCallback((target, options) => {
+  const goToPage = import_react32.default.useCallback((target, options) => {
     const next = clamp(Math.round(num(target, 1)), 1, totalRef.current);
     setPage(next);
     jumpSeq.current += 1;
     setJump({ page: next, seq: jumpSeq.current, smooth: !(options && options.instant) });
   }, []);
-  const [zoom, setZoom] = import_react31.default.useState(1);
-  const zoomStep = import_react31.default.useCallback((direction) => {
+  const [zoom, setZoom] = import_react32.default.useState(1);
+  const zoomStep = import_react32.default.useCallback((direction) => {
     setZoom((previous) => {
       const next = Math.round((previous + direction * ZOOM_STEP) * 100) / 100;
       return clamp(next, ZOOM_MIN, ZOOM_MAX);
     });
   }, []);
-  const zoomFit = import_react31.default.useCallback(() => setZoom(1), []);
-  const [mode, setMode] = import_react31.default.useState("source");
-  const changeMode = import_react31.default.useCallback((next) => {
+  const zoomFit = import_react32.default.useCallback(() => setZoom(1), []);
+  const [mode, setMode] = import_react32.default.useState("source");
+  const changeMode = import_react32.default.useCallback((next) => {
     setMode(next);
   }, []);
-  const [tool, setTool] = import_react31.default.useState("select");
-  const changeTool = import_react31.default.useCallback(
+  const [tool, setTool] = import_react32.default.useState("select");
+  const changeTool = import_react32.default.useCallback(
     (next) => {
       setTool(next);
       if (next === "area") notify2("info", rt("reader.areaModeActive"));
@@ -23077,50 +23189,50 @@ function ReaderShellInner(props) {
     },
     [notify2, rt]
   );
-  const [sideOpen, setSideOpen] = import_react31.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1150);
-  const [sideTab, setSideTab] = import_react31.default.useState(() => {
+  const [sideOpen, setSideOpen] = import_react32.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1150);
+  const [sideTab, setSideTab] = import_react32.default.useState(() => {
     const requested = firstText3(props.initialTab);
     return SIDE_TABS.indexOf(requested) >= 0 ? requested : "outline";
   });
-  const [penColor, setPenColorState] = import_react31.default.useState(DEFAULT_COLOR);
-  const setPenColor = import_react31.default.useCallback((color) => {
+  const [penColor, setPenColorState] = import_react32.default.useState(DEFAULT_COLOR);
+  const setPenColor = import_react32.default.useCallback((color) => {
     const value = firstText3(color, DEFAULT_COLOR);
     lastColor.current = value;
     setPenColorState(value);
   }, []);
-  const [toolsTip, setToolsTip] = import_react31.default.useState(() => !readFlag(TOOLS_TIP_FLAG));
-  const dismissToolsTip = import_react31.default.useCallback(() => {
+  const [toolsTip, setToolsTip] = import_react32.default.useState(() => !readFlag(TOOLS_TIP_FLAG));
+  const dismissToolsTip = import_react32.default.useCallback(() => {
     writeFlag(TOOLS_TIP_FLAG, true);
     setToolsTip(false);
   }, []);
-  const showToolsTip = import_react31.default.useCallback(() => setToolsTip(true), []);
-  const openSide = import_react31.default.useCallback((tab) => {
+  const showToolsTip = import_react32.default.useCallback(() => setToolsTip(true), []);
+  const openSide = import_react32.default.useCallback((tab) => {
     setSideOpen(true);
     if (tab) setSideTab(tab);
   }, []);
-  const toggleSide = import_react31.default.useCallback(() => setSideOpen((value) => !value), []);
-  const [scrolled, setScrolled] = import_react31.default.useState(false);
-  const handleScrolledChange = import_react31.default.useCallback((value) => setScrolled(Boolean(value)), []);
-  const pageCache = import_react31.default.useRef(/* @__PURE__ */ new Map());
-  const layerCache = import_react31.default.useRef(/* @__PURE__ */ new Map());
-  const [dataVersion, setDataVersion] = import_react31.default.useState(0);
-  const bumpData = import_react31.default.useCallback(() => setDataVersion((value) => value + 1), []);
-  const getPageData = import_react31.default.useCallback(
+  const toggleSide = import_react32.default.useCallback(() => setSideOpen((value) => !value), []);
+  const [scrolled, setScrolled] = import_react32.default.useState(false);
+  const handleScrolledChange = import_react32.default.useCallback((value) => setScrolled(Boolean(value)), []);
+  const pageCache = import_react32.default.useRef(/* @__PURE__ */ new Map());
+  const layerCache = import_react32.default.useRef(/* @__PURE__ */ new Map());
+  const [dataVersion, setDataVersion] = import_react32.default.useState(0);
+  const bumpData = import_react32.default.useCallback(() => setDataVersion((value) => value + 1), []);
+  const getPageData = import_react32.default.useCallback(
     (pageNo) => {
       const entry = pageCache.current.get(pageNo);
       return entry && entry.paperId === paperId ? entry : null;
     },
     [paperId]
   );
-  const getLayer = import_react31.default.useCallback(
+  const getLayer = import_react32.default.useCallback(
     (pageNo) => {
       const entry = layerCache.current.get(pageNo);
       return entry && entry.paperId === paperId ? entry : null;
     },
     [paperId]
   );
-  const structureRefreshes = import_react31.default.useRef(/* @__PURE__ */ new Map());
-  const ensurePage = import_react31.default.useCallback(
+  const structureRefreshes = import_react32.default.useRef(/* @__PURE__ */ new Map());
+  const ensurePage = import_react32.default.useCallback(
     (pageNo) => {
       if (!paperId || !pageNo) return;
       const existing = pageCache.current.get(pageNo);
@@ -23149,9 +23261,9 @@ function ReaderShellInner(props) {
     },
     [apiCall, bumpData, paperId]
   );
-  const ensurePageRef = import_react31.default.useRef(ensurePage);
+  const ensurePageRef = import_react32.default.useRef(ensurePage);
   ensurePageRef.current = ensurePage;
-  const ensureLayer = import_react31.default.useCallback(
+  const ensureLayer = import_react32.default.useCallback(
     (pageNo) => {
       if (!paperId || !pageNo) return;
       const existing = layerCache.current.get(pageNo);
@@ -23168,14 +23280,14 @@ function ReaderShellInner(props) {
     },
     [apiCall, bumpData, paperId]
   );
-  const retryPage = import_react31.default.useCallback(
+  const retryPage = import_react32.default.useCallback(
     (pageNo) => {
       pageCache.current.delete(pageNo);
       ensurePage(pageNo);
     },
     [ensurePage]
   );
-  const retryLayer = import_react31.default.useCallback(
+  const retryLayer = import_react32.default.useCallback(
     (pageNo) => {
       layerCache.current.delete(pageNo);
       ensureLayer(pageNo);
@@ -23187,26 +23299,26 @@ function ReaderShellInner(props) {
     [paperId],
     { enabled: Boolean(paperId) }
   );
-  const outlineItems = import_react31.default.useMemo(() => arrayOf3(outlineState.data && outlineState.data.items), [outlineState.data]);
-  const [annotationReload, setAnnotationReload] = import_react31.default.useState(0);
+  const outlineItems = import_react32.default.useMemo(() => arrayOf3(outlineState.data && outlineState.data.items), [outlineState.data]);
+  const [annotationReload, setAnnotationReload] = import_react32.default.useState(0);
   const annotationsState = useAsync(
     (signal) => paperId ? apiCall("annotations.list", versionId ? { paperId, versionId } : { paperId }, { signal }) : Promise.resolve([]),
     [paperId, versionId, annotationReload],
     { enabled: Boolean(paperId) }
   );
-  const [annotations, setAnnotations] = import_react31.default.useState(NO_ANNOTATIONS);
-  import_react31.default.useEffect(() => {
+  const [annotations, setAnnotations] = import_react32.default.useState(NO_ANNOTATIONS);
+  import_react32.default.useEffect(() => {
     if (annotationsState.status === "ready") setAnnotations(normalizeAnnotations(annotationsState.data));
   }, [annotationsState.status, annotationsState.data]);
-  const lastColor = import_react31.default.useRef(DEFAULT_COLOR);
-  const intentSeq = import_react31.default.useRef(0);
-  const [annotationIntent, setAnnotationIntent] = import_react31.default.useState(() => {
+  const lastColor = import_react32.default.useRef(DEFAULT_COLOR);
+  const intentSeq = import_react32.default.useRef(0);
+  const [annotationIntent, setAnnotationIntent] = import_react32.default.useState(() => {
     const initial = firstText3(props.annotationId);
     if (!initial) return null;
     intentSeq.current += 1;
     return { id: initial, seq: intentSeq.current };
   });
-  const createAnnotation = import_react31.default.useCallback(
+  const createAnnotation = import_react32.default.useCallback(
     (draft) => {
       const params = annotationRequest({ paperId, versionId, page: pageRef.current }, draft);
       const optimistic = normalizeAnnotation(
@@ -23263,7 +23375,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, paperId, versionId]
   );
-  const updateAnnotation = import_react31.default.useCallback(
+  const updateAnnotation = import_react32.default.useCallback(
     (annotation, patch) => {
       const previous = annotation;
       setAnnotations(
@@ -23309,7 +23421,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, rt]
   );
-  const deleteAnnotation = import_react31.default.useCallback(
+  const deleteAnnotation = import_react32.default.useCallback(
     (annotation) => {
       let index = -1;
       setAnnotations((list) => {
@@ -23367,18 +23479,18 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, rt]
   );
-  const [popover, setPopover] = import_react31.default.useState(null);
-  const popoverAnnotation = import_react31.default.useMemo(() => {
+  const [popover, setPopover] = import_react32.default.useState(null);
+  const popoverAnnotation = import_react32.default.useMemo(() => {
     if (!popover) return null;
     const found = annotations.find((annotation) => annotation.id === popover.id);
     return found || null;
   }, [annotations, popover]);
-  const popoverProp = import_react31.default.useMemo(() => {
+  const popoverProp = import_react32.default.useMemo(() => {
     if (!popoverAnnotation || !popover) return null;
     return { annotation: popoverAnnotation, anchor: popover.anchor, autoFocus: Boolean(popover.autoFocus) };
   }, [popoverAnnotation, popover]);
   const activeAnnotationId = popoverAnnotation ? popoverAnnotation.id : null;
-  import_react31.default.useEffect(() => {
+  import_react32.default.useEffect(() => {
     if (!annotationIntent) return;
     if (annotationsState.status === "error") {
       setAnnotationIntent(null);
@@ -23396,8 +23508,8 @@ function ReaderShellInner(props) {
   }, [annotations, annotationIntent, annotationsState.status, goToPage]);
   const navigation2 = props.navigation;
   const navSnapshot = useNavigationSnapshot(navigation2);
-  const navConsumed = import_react31.default.useRef(0);
-  import_react31.default.useEffect(() => {
+  const navConsumed = import_react32.default.useRef(0);
+  import_react32.default.useEffect(() => {
     if (!navigation2 || !navSnapshot || !navSnapshot.seq) return;
     if (navConsumed.current === navSnapshot.seq) return;
     const route = navSnapshot.route || {};
@@ -23431,15 +23543,15 @@ function ReaderShellInner(props) {
       figureFocusTimer.current = setTimeout(() => setFigureFocus(null), 4600);
     }
   }, [goToPage, navSnapshot, navigation2, notify2, paperId, rt]);
-  import_react31.default.useEffect(() => () => {
+  import_react32.default.useEffect(() => () => {
     if (figureFocusTimer.current) clearTimeout(figureFocusTimer.current);
   }, []);
-  import_react31.default.useEffect(() => {
+  import_react32.default.useEffect(() => {
     const sync = () => setNoteContextState(getNoteContext());
     sync();
     return subscribeNoteContext(sync);
   }, []);
-  const linkCurrentPaper = import_react31.default.useCallback(() => {
+  const linkCurrentPaper = import_react32.default.useCallback(() => {
     if (!noteContext || typeof noteContext.linkPaper !== "function") {
       notify2("warning", rt("reader.linkNote.noNote"));
       return;
@@ -23452,14 +23564,14 @@ function ReaderShellInner(props) {
       }
     }).catch((error) => notify2("error", rt("reader.linkNote.failed", { message: describeError2(error) })));
   }, [noteContext, paperId, notify2, rt]);
-  const insertFigureIntoNote = import_react31.default.useCallback((material) => {
+  const insertFigureIntoNote = import_react32.default.useCallback((material) => {
     if (!noteContext || typeof noteContext.insertFigure !== "function") {
       notify2("warning", rt("reader.linkNote.noNote"));
       return;
     }
     Promise.resolve(noteContext.insertFigure(material)).then(() => notify2("success", rt("reader.figures.inserted"))).catch((error) => notify2("error", rt("reader.figures.insertFailed", { message: describeError2(error) })));
   }, [noteContext, notify2, rt]);
-  const linkAnnotationToNote = import_react31.default.useCallback((annotation) => {
+  const linkAnnotationToNote = import_react32.default.useCallback((annotation) => {
     if (!noteContext || typeof noteContext.insertQuote !== "function") {
       notify2("warning", rt("reader.linkNote.noNote"));
       return;
@@ -23477,34 +23589,34 @@ function ReaderShellInner(props) {
       annotationId: annotation && annotation.id
     })).then(() => notify2("success", rt("reader.linkNote.quoteDone", { title: noteContext.title || rt("reader.linkNote.untitled") }))).catch((error) => notify2("error", rt("reader.linkNote.quoteFailed", { message: describeError2(error) })));
   }, [noteContext, notify2, rt, paper, page2]);
-  import_react31.default.useEffect(() => {
+  import_react32.default.useEffect(() => {
     if (!figureFocus) return;
     if (Math.round(num(page2, 1)) !== figureFocus.page) setFigureFocus(null);
   }, [page2, figureFocus]);
-  const openAnnotation = import_react31.default.useCallback((annotation, anchor) => {
+  const openAnnotation = import_react32.default.useCallback((annotation, anchor) => {
     setPopover({ id: annotation.id, anchor, autoFocus: false });
   }, []);
-  const closePopover = import_react31.default.useCallback(() => setPopover(null), []);
-  const [selection, setSelection] = import_react31.default.useState(null);
-  const [selectionResult, setSelectionResult] = import_react31.default.useState(null);
-  const handleSelection = import_react31.default.useCallback((next) => {
+  const closePopover = import_react32.default.useCallback(() => setPopover(null), []);
+  const [selection, setSelection] = import_react32.default.useState(null);
+  const [selectionResult, setSelectionResult] = import_react32.default.useState(null);
+  const handleSelection = import_react32.default.useCallback((next) => {
     setSelection(next);
     if (!next) setSelectionResult(null);
   }, []);
-  const clearSelection = import_react31.default.useCallback(() => {
+  const clearSelection = import_react32.default.useCallback(() => {
     setSelection(null);
     setSelectionResult(null);
     clearNativeSelection();
   }, []);
-  const [aiRequest, setAiRequest] = import_react31.default.useState(null);
-  const aiSeq = import_react31.default.useRef(0);
-  const askAi = import_react31.default.useCallback((request2) => {
+  const [aiRequest, setAiRequest] = import_react32.default.useState(null);
+  const aiSeq = import_react32.default.useRef(0);
+  const askAi = import_react32.default.useCallback((request2) => {
     aiSeq.current += 1;
     setAiRequest(Object.assign({}, request2, { seq: aiSeq.current }));
     setSideOpen(true);
     setSideTab("ai");
   }, []);
-  const commitMaterials = import_react31.default.useCallback(
+  const commitMaterials = import_react32.default.useCallback(
     async (materials) => {
       const list = arrayOf3(materials).filter((material) => material && material.id).map((material) => {
         const item = { kind: material.kind || "paper", id: String(material.id) };
@@ -23540,13 +23652,13 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, props.pending, props.sessionId, rt]
   );
-  const citePaperPage = import_react31.default.useCallback(() => {
+  const citePaperPage = import_react32.default.useCallback(() => {
     const title2 = firstText3(paper && paper.titleZh, paper && paper.title);
     commitMaterials([{ kind: "paper", id: paperId, page: page2, title: title2 }]).catch((error) => {
       notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) }));
     });
   }, [commitMaterials, notify2, page2, paper, paperId, rt]);
-  const citeAnnotation = import_react31.default.useCallback(
+  const citeAnnotation = import_react32.default.useCallback(
     (annotation) => {
       commitMaterials([
         {
@@ -23559,7 +23671,7 @@ function ReaderShellInner(props) {
     },
     [commitMaterials, notify2, rt]
   );
-  const citeAiAnswer = import_react31.default.useCallback(
+  const citeAiAnswer = import_react32.default.useCallback(
     (message) => {
       const materials = [{ kind: "paper", id: paperId, page: page2, title: firstText3(paper && paper.titleZh, paper && paper.title) }];
       for (const source of arrayOf3(message && message.sources)) {
@@ -23572,9 +23684,9 @@ function ReaderShellInner(props) {
     [commitMaterials, notify2, page2, paper, paperId, rt]
   );
   const TRANSLATABLE_ROLES2 = ["body", "heading", "caption"];
-  const [translations, setTranslations] = import_react31.default.useState({});
-  const translationSequence = import_react31.default.useRef(0);
-  const translatableBlocksFor = import_react31.default.useCallback(
+  const [translations, setTranslations] = import_react32.default.useState({});
+  const translationSequence = import_react32.default.useRef(0);
+  const translatableBlocksFor = import_react32.default.useCallback(
     (pageNo) => {
       const entry = getPageData(pageNo);
       if (!entry || entry.status !== "ready" || !entry.data) return [];
@@ -23584,7 +23696,7 @@ function ReaderShellInner(props) {
     },
     [getPageData]
   );
-  const updateTranslationPage = import_react31.default.useCallback((pageNo, updater) => {
+  const updateTranslationPage = import_react32.default.useCallback((pageNo, updater) => {
     setTranslations((previous) => {
       const current2 = previous[pageNo] || {
         status: "idle",
@@ -23600,7 +23712,7 @@ function ReaderShellInner(props) {
       return Object.assign({}, previous, { [pageNo]: next });
     });
   }, []);
-  const normalizeBlockEntry = import_react31.default.useCallback(
+  const normalizeBlockEntry = import_react32.default.useCallback(
     (block, item, fallbackEngine, fallbackReason, fallbackModel) => {
       const translation2 = firstText3(item && item.translation);
       const engine = readEngine(item, fallbackEngine && fallbackEngine.provider || "auto");
@@ -23619,7 +23731,7 @@ function ReaderShellInner(props) {
     },
     [rt]
   );
-  const summarizeEngines = import_react31.default.useCallback((blocks, entries2) => {
+  const summarizeEngines = import_react32.default.useCallback((blocks, entries2) => {
     const labels = [];
     const models = [];
     for (const block of blocks) {
@@ -23632,7 +23744,7 @@ function ReaderShellInner(props) {
     const firstEntry = blocks.map((block) => entries2[String(block.id)]).find((entry) => entry && entry.status === "translated");
     return { label: labels.join(" + "), model: models.join(", "), engine: firstEntry ? firstEntry.engine || null : null };
   }, []);
-  const runPageTranslation = import_react31.default.useCallback(
+  const runPageTranslation = import_react32.default.useCallback(
     async (pageNo, options) => {
       if (!paperId) return null;
       const opts = options || {};
@@ -23750,7 +23862,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, preferredProvider, props.sessionId, rt, summarizeEngines, translatableBlocksFor, updateTranslationPage]
   );
-  const legacyPerBlockTranslate = import_react31.default.useCallback(
+  const legacyPerBlockTranslate = import_react32.default.useCallback(
     async (blocks, pageNo, provider, token) => {
       const entries2 = {};
       const queue = blocks.slice().sort((left, right) => String(right.text || "").length - String(left.text || "").length);
@@ -23814,7 +23926,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, normalizeBlockEntry, paperId, props.sessionId, rt, summarizeEngines, updateTranslationPage]
   );
-  const translateBlockInternal = import_react31.default.useCallback(
+  const translateBlockInternal = import_react32.default.useCallback(
     async (block, pageNo, providerOverride) => {
       if (!paperId || !block || block.id == null) return null;
       const target = pageNo || pageRef.current;
@@ -23864,7 +23976,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, normalizeBlockEntry, preferredProvider, props.sessionId, rt, summarizeEngines, translatableBlocksFor, updateTranslationPage]
   );
-  const translatePage = import_react31.default.useCallback(
+  const translatePage = import_react32.default.useCallback(
     (force, options) => {
       if (!paperId) return;
       const opts = options || {};
@@ -23891,15 +24003,15 @@ function ReaderShellInner(props) {
     },
     [notify2, paperId, preferredProvider, rt, runPageTranslation, translateBlockInternal, translatableBlocksFor, translations]
   );
-  const translateAiPage = import_react31.default.useCallback(() => {
+  const translateAiPage = import_react32.default.useCallback(() => {
     return translatePage(true, { provider: "llm" });
   }, [translatePage]);
-  const translateBlock = import_react31.default.useCallback(
+  const translateBlock = import_react32.default.useCallback(
     (block) => translateBlockInternal(block, pageRef.current, preferredProvider || "auto"),
     [preferredProvider, translateBlockInternal]
   );
-  const detectedCache = import_react31.default.useRef(/* @__PURE__ */ new Map());
-  const detectLanguage2 = import_react31.default.useCallback(
+  const detectedCache = import_react32.default.useRef(/* @__PURE__ */ new Map());
+  const detectLanguage2 = import_react32.default.useCallback(
     async (text2) => {
       const value = String(text2 || "").trim();
       if (!value) return "empty";
@@ -23927,7 +24039,7 @@ function ReaderShellInner(props) {
     },
     [apiCall]
   );
-  const quickTranslateText = import_react31.default.useCallback(
+  const quickTranslateText = import_react32.default.useCallback(
     async (text2, pageNo, options) => {
       const opts = options || {};
       const quote = String(text2 || "").trim();
@@ -24088,7 +24200,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, detectLanguage2, paperId, props.paper, props.sessionId, rt]
   );
-  const quickTranslateSelection = import_react31.default.useCallback(
+  const quickTranslateSelection = import_react32.default.useCallback(
     (options) => {
       const opts = options || {};
       if (!selection) return;
@@ -24126,7 +24238,7 @@ function ReaderShellInner(props) {
     },
     [notify2, preferredProvider, quickTranslateText, rt, selection]
   );
-  const refineQuickTranslation = import_react31.default.useCallback(() => {
+  const refineQuickTranslation = import_react32.default.useCallback(() => {
     const quote = selection ? selection.quote : selectionResult && selectionResult.quote;
     const targetPage = selection ? selection.page : selectionResult && selectionResult.page;
     if (!quote) return;
@@ -24139,21 +24251,21 @@ function ReaderShellInner(props) {
       );
     });
   }, [quickTranslateText, selection, selectionResult]);
-  const quickTranslateAnnotation = import_react31.default.useCallback(
+  const quickTranslateAnnotation = import_react32.default.useCallback(
     (annotation) => {
       const text2 = firstText3(annotation && annotation.quote, annotation && annotation.comment);
       return quickTranslateText(text2, annotation && annotation.page, { detect: false, rects: annotation && annotation.rects });
     },
     [quickTranslateText]
   );
-  const aiTranslateAnnotation = import_react31.default.useCallback(
+  const aiTranslateAnnotation = import_react32.default.useCallback(
     (annotation) => {
       const text2 = firstText3(annotation && annotation.quote, annotation && annotation.comment);
       return quickTranslateText(text2, annotation && annotation.page, { detect: false, provider: "llm", fast: true, refine: true, rects: annotation && annotation.rects });
     },
     [quickTranslateText]
   );
-  const highlightSelection = import_react31.default.useCallback(
+  const highlightSelection = import_react32.default.useCallback(
     (color) => {
       if (!selection) return;
       const chosen = color || lastColor.current || DEFAULT_COLOR;
@@ -24178,7 +24290,7 @@ function ReaderShellInner(props) {
     },
     [createAnnotation, notifyUndo, notify2, rt, selection]
   );
-  const citeSelection = import_react31.default.useCallback(() => {
+  const citeSelection = import_react32.default.useCallback(() => {
     if (!selection) return;
     const chosen = lastColor.current || DEFAULT_COLOR;
     const target = {
@@ -24202,7 +24314,7 @@ function ReaderShellInner(props) {
       return commitMaterials([{ kind: "annotation", id: saved.id, page: saved.page, title: target.quote }]);
     }).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
   }, [commitMaterials, createAnnotation, notifyUndo, notify2, rt, selection]);
-  const sendQuickTranslation = import_react31.default.useCallback(() => {
+  const sendQuickTranslation = import_react32.default.useCallback(() => {
     if (!selection || !selectionResult) return;
     const target = { page: selection.page || pageRef.current, quote: selection.quote, rects: selection.rects };
     const translationText = firstText3(selectionResult.translation);
@@ -24221,7 +24333,7 @@ function ReaderShellInner(props) {
       });
     }).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
   }, [commitMaterials, createAnnotation, notifyUndo, notify2, rt, selection, selectionResult]);
-  const handleSelectionAction = import_react31.default.useCallback(
+  const handleSelectionAction = import_react32.default.useCallback(
     (action, payload) => {
       if (action === "closeResult") {
         setSelectionResult(null);
@@ -24278,7 +24390,7 @@ function ReaderShellInner(props) {
     },
     [askAi, citeSelection, highlightSelection, notify2, notifyUndo, quickTranslateSelection, refineQuickTranslation, rt, selection, selectionResult, sendQuickTranslation]
   );
-  const createArea = import_react31.default.useCallback(
+  const createArea = import_react32.default.useCallback(
     (rect) => {
       const normalized = normalizeRect(rect);
       if (!normalized || normalized.w < 0.01 || normalized.h < 8e-3) {
@@ -24300,12 +24412,12 @@ function ReaderShellInner(props) {
     },
     [createAnnotation, notifyUndo, notify2, rt]
   );
-  const [noteDraft, setNoteDraft] = import_react31.default.useState(null);
-  const createNote = import_react31.default.useCallback((point) => {
+  const [noteDraft, setNoteDraft] = import_react32.default.useState(null);
+  const createNote = import_react32.default.useCallback((point) => {
     setNoteDraft({ page: pageRef.current, point, color: lastColor.current || DEFAULT_COLOR });
   }, []);
-  const cancelNote = import_react31.default.useCallback(() => setNoteDraft(null), []);
-  const saveNote = import_react31.default.useCallback(
+  const cancelNote = import_react32.default.useCallback(() => setNoteDraft(null), []);
+  const saveNote = import_react32.default.useCallback(
     (payload) => {
       const point = payload.point || { x: 0.5, y: 0.5 };
       const rect = normalizeRect({
@@ -24335,26 +24447,26 @@ function ReaderShellInner(props) {
     },
     [createAnnotation, notifyUndo, notify2, rt]
   );
-  const askAnnotation = import_react31.default.useCallback(
+  const askAnnotation = import_react32.default.useCallback(
     (annotation) => {
       askAi({ type: "ask", quote: firstText3(annotation.quote, annotation.comment), prompt: "", auto: false });
     },
     [askAi]
   );
-  const explainAnnotation = import_react31.default.useCallback(
+  const explainAnnotation = import_react32.default.useCallback(
     (annotation) => {
       askAi({ type: "explain", quote: firstText3(annotation.quote, annotation.comment), auto: true });
     },
     [askAi]
   );
-  const copyAnnotation = import_react31.default.useCallback(
+  const copyAnnotation = import_react32.default.useCallback(
     (annotation) => {
       const text2 = firstText3(annotation.quote, annotation.comment);
       copyText2(text2).then((ok) => notify2(ok ? "success" : "error", ok ? rt("reader.annot.copyDone") : rt("reader.toast.copyFailed")));
     },
     [notify2, rt]
   );
-  const onAnnotationSelect = import_react31.default.useCallback(
+  const onAnnotationSelect = import_react32.default.useCallback(
     (annotation) => {
       if (annotation.page !== pageRef.current) goToPage(annotation.page);
       const anchor = annotation.rects && annotation.rects.length > 0 ? annotation.rects[0] : { x: 0.5, y: 0.25, w: 0, h: 0 };
@@ -24362,7 +24474,7 @@ function ReaderShellInner(props) {
     },
     [goToPage]
   );
-  const deleteFromPopover = import_react31.default.useCallback(
+  const deleteFromPopover = import_react32.default.useCallback(
     (annotation) => {
       setPopover(null);
       deleteAnnotation(annotation).catch(() => {
@@ -24370,10 +24482,10 @@ function ReaderShellInner(props) {
     },
     [deleteAnnotation]
   );
-  const emptySearch = import_react31.default.useCallback(() => ({ open: false, query: "", hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }), []);
-  const [search, setSearch] = import_react31.default.useState(emptySearch);
-  const focusSeq = import_react31.default.useRef(0);
-  import_react31.default.useEffect(() => {
+  const emptySearch = import_react32.default.useCallback(() => ({ open: false, query: "", hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }), []);
+  const [search, setSearch] = import_react32.default.useState(emptySearch);
+  const focusSeq = import_react32.default.useRef(0);
+  import_react32.default.useEffect(() => {
     if (!search.open) return;
     const query = search.query;
     if (!query.trim()) {
@@ -24408,7 +24520,7 @@ function ReaderShellInner(props) {
       });
     });
   }, [paperId, page2, search.open, search.query, dataVersion]);
-  const toggleSearch = import_react31.default.useCallback(
+  const toggleSearch = import_react32.default.useCallback(
     (open) => {
       setSearch((previous) => {
         if (open) return Object.assign({}, previous, { open: true, focus: previous.focus });
@@ -24417,10 +24529,10 @@ function ReaderShellInner(props) {
     },
     [emptySearch]
   );
-  const setSearchQuery = import_react31.default.useCallback((query) => {
+  const setSearchQuery = import_react32.default.useCallback((query) => {
     setSearch((previous) => Object.assign({}, previous, { query, hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }));
   }, []);
-  const searchNext = import_react31.default.useCallback(
+  const searchNext = import_react32.default.useCallback(
     (delta) => {
       setSearch((previous) => {
         if (!previous.open || previous.hits.length === 0) {
@@ -24439,7 +24551,7 @@ function ReaderShellInner(props) {
     },
     [notify2, rt]
   );
-  import_react31.default.useEffect(() => {
+  import_react32.default.useEffect(() => {
     if (typeof window === "undefined") return void 0;
     const onKeyDown = (event) => {
       const target = event.target;
@@ -24530,8 +24642,8 @@ function ReaderShellInner(props) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [changeTool, clearSelection, goToPage, highlightSelection, noteDraft, notify2, penColor, popover, rt, search.open, selection, tool, toggleSearch, undoApi, zoomStep]);
-  const resetKeyRef = import_react31.default.useRef(paperId);
-  import_react31.default.useEffect(() => {
+  const resetKeyRef = import_react32.default.useRef(paperId);
+  import_react32.default.useEffect(() => {
     if (!paperId) return;
     if (resetKeyRef.current === paperId) return;
     resetKeyRef.current = paperId;
@@ -24561,24 +24673,24 @@ function ReaderShellInner(props) {
       setAnnotationIntent(null);
     }
   }, [paperId]);
-  const jumpedRef = import_react31.default.useRef("");
-  import_react31.default.useEffect(() => {
+  const jumpedRef = import_react32.default.useRef("");
+  import_react32.default.useEffect(() => {
     if (openState.status !== "ready" || !paperId) return;
     if (jumpedRef.current === paperId) return;
     jumpedRef.current = paperId;
     const target = clamp(pageRef.current, 1, total);
     goToPage(target, { instant: true });
   }, [openState.status, paperId, total]);
-  import_react31.default.useEffect(() => {
+  import_react32.default.useEffect(() => {
     if (page2 > total) setPage(total);
   }, [page2, total]);
-  import_react31.default.useEffect(() => {
+  import_react32.default.useEffect(() => {
     if (!paperId) return void 0;
     const timer2 = setTimeout(() => saveReadingPosition(paperId, page2), 500);
     return () => clearTimeout(timer2);
   }, [paperId, page2]);
-  const markedRef = import_react31.default.useRef("");
-  import_react31.default.useEffect(() => {
+  const markedRef = import_react32.default.useRef("");
+  import_react32.default.useEffect(() => {
     if (openState.status !== "ready" || !paperId) return void 0;
     let alive = true;
     Promise.resolve(apiCall("figures.list", { paperId })).then((result) => {
@@ -24592,7 +24704,7 @@ function ReaderShellInner(props) {
       alive = false;
     };
   }, [apiCall, openState.status, paperId]);
-  import_react31.default.useEffect(() => {
+  import_react32.default.useEffect(() => {
     if (openState.status !== "ready" || !paperId || markedRef.current === paperId) return;
     markedRef.current = paperId;
     try {
@@ -24632,7 +24744,7 @@ function ReaderShellInner(props) {
     onNoteCancel: cancelNote
   };
   if (!paperId) {
-    return import_react31.default.createElement(StateScreen, {
+    return import_react32.default.createElement(StateScreen, {
       t: rt,
       icon: "warning",
       tone: "error",
@@ -24643,7 +24755,7 @@ function ReaderShellInner(props) {
   }
   if (openState.status === "error" && !detail) {
     const offline = isOfflineError(openState.error);
-    return import_react31.default.createElement(StateScreen, {
+    return import_react32.default.createElement(StateScreen, {
       t: rt,
       icon: "warning",
       tone: "error",
@@ -24654,14 +24766,14 @@ function ReaderShellInner(props) {
     });
   }
   if (!detail && openState.status === "loading") {
-    return import_react31.default.createElement(StateScreen, { t: rt, loading: true, onBack: props.onBack });
+    return import_react32.default.createElement(StateScreen, { t: rt, loading: true, onBack: props.onBack });
   }
   let sideBody = null;
   if (sideTab === "outline") {
-    sideBody = import_react31.default.createElement(
+    sideBody = import_react32.default.createElement(
       "div",
       { className: "ph-r-side__scroll ph-r-scroll" },
-      import_react31.default.createElement(Outline, {
+      import_react32.default.createElement(Outline, {
         t: rt,
         items: outlineItems,
         page: page2,
@@ -24672,11 +24784,11 @@ function ReaderShellInner(props) {
       })
     );
   } else if (sideTab === "annotations") {
-    sideBody = import_react31.default.createElement(
+    sideBody = import_react32.default.createElement(
       "div",
       { className: "ph-r-side__scroll ph-r-scroll" },
-      import_react31.default.createElement("div", { className: "ph-r-side__hint" }, rt("reader.annot.hint")),
-      import_react31.default.createElement(AnnotationListPanel, {
+      import_react32.default.createElement("div", { className: "ph-r-side__hint" }, rt("reader.annot.hint")),
+      import_react32.default.createElement(AnnotationListPanel, {
         t: rt,
         annotations,
         page: page2,
@@ -24689,7 +24801,7 @@ function ReaderShellInner(props) {
       })
     );
   } else if (sideTab === "notes") {
-    sideBody = import_react31.default.createElement(ReaderNotesPanel, {
+    sideBody = import_react32.default.createElement(ReaderNotesPanel, {
       t: rawT,
       api: apiCall,
       paperId,
@@ -24702,10 +24814,10 @@ function ReaderShellInner(props) {
       }
     });
   } else if (sideTab === "figures") {
-    sideBody = import_react31.default.createElement(
+    sideBody = import_react32.default.createElement(
       "div",
       { className: "ph-r-side__scroll ph-r-scroll" },
-      import_react31.default.createElement(ReaderFiguresPanel, {
+      import_react32.default.createElement(ReaderFiguresPanel, {
         t: rt,
         api: apiCall,
         paperId,
@@ -24721,7 +24833,7 @@ function ReaderShellInner(props) {
       })
     );
   } else {
-    sideBody = import_react31.default.createElement(AiPanel, {
+    sideBody = import_react32.default.createElement(AiPanel, {
       t: rt,
       api: apiCall,
       paperId,
@@ -24737,7 +24849,7 @@ function ReaderShellInner(props) {
       onOpenSettings: props.onOpenSettings
     });
   }
-  const translationSheet = mode === "source" ? null : import_react31.default.createElement(
+  const translationSheet = mode === "source" ? null : import_react32.default.createElement(
     "div",
     {
       className: "ph-r-tr",
@@ -24747,12 +24859,12 @@ function ReaderShellInner(props) {
       },
       "data-ph-translation-sheet": "true"
     },
-    import_react31.default.createElement(
+    import_react32.default.createElement(
       "div",
       { className: "ph-r-tr__head" },
-      import_react31.default.createElement(Icon2, { name: "translate", size: 14 }),
-      import_react31.default.createElement("span", { className: "ph-r-tr__title" }, rt("reader.translation.sheet")),
-      import_react31.default.createElement(
+      import_react32.default.createElement(Icon2, { name: "translate", size: 14 }),
+      import_react32.default.createElement("span", { className: "ph-r-tr__title" }, rt("reader.translation.sheet")),
+      import_react32.default.createElement(
         "div",
         {
           className: cx("ph-r-tr__modes", trSlider.rect && "ph-r-tr__modes--sliding"),
@@ -24760,8 +24872,8 @@ function ReaderShellInner(props) {
           role: "group",
           "aria-label": rt("reader.translation.sheet")
         },
-        import_react31.default.createElement(SlidingThumb, { rect: trSlider.rect, popKey: mode }),
-        import_react31.default.createElement(
+        import_react32.default.createElement(SlidingThumb, { rect: trSlider.rect, popKey: mode }),
+        import_react32.default.createElement(
           "button",
           {
             type: "button",
@@ -24771,7 +24883,7 @@ function ReaderShellInner(props) {
           },
           rt("reader.translation.mode.compare")
         ),
-        import_react31.default.createElement(
+        import_react32.default.createElement(
           "button",
           {
             type: "button",
@@ -24782,13 +24894,13 @@ function ReaderShellInner(props) {
           rt("reader.translation.mode.translation")
         )
       ),
-      import_react31.default.createElement("span", { className: "ph-r-tr__spacer" }),
-      import_react31.default.createElement(IconBtn, { icon: "close", title: rt("reader.translation.close"), onClick: () => changeMode("source") })
+      import_react32.default.createElement("span", { className: "ph-r-tr__spacer" }),
+      import_react32.default.createElement(IconBtn, { icon: "close", title: rt("reader.translation.close"), onClick: () => changeMode("source") })
     ),
-    import_react31.default.createElement(
+    import_react32.default.createElement(
       "div",
       { className: "ph-r-tr__body ph-r-scroll" },
-      import_react31.default.createElement(BilingualPanel, {
+      import_react32.default.createElement(BilingualPanel, {
         t: rt,
         page: page2,
         total,
@@ -24806,7 +24918,7 @@ function ReaderShellInner(props) {
       })
     )
   );
-  return import_react31.default.createElement(
+  return import_react32.default.createElement(
     "div",
     {
       className: cx(
@@ -24817,7 +24929,7 @@ function ReaderShellInner(props) {
       ),
       "data-ph-reader": paperId
     },
-    import_react31.default.createElement(ReaderToolbar, {
+    import_react32.default.createElement(ReaderToolbar, {
       t: rt,
       paper,
       total,
@@ -24846,21 +24958,21 @@ function ReaderShellInner(props) {
       onToggleSide: toggleSide,
       onOpenSettings: props.onOpenSettings
     }),
-    tool !== "select" ? import_react31.default.createElement(
+    tool !== "select" ? import_react32.default.createElement(
       "div",
       { className: "ph-r-modehint" },
-      import_react31.default.createElement(Icon2, { name: tool === "area" ? "area" : "sticky", size: 14 }),
-      import_react31.default.createElement("span", null, tool === "area" ? rt("reader.areaModeActive") : rt("reader.noteModeActive")),
-      import_react31.default.createElement(
+      import_react32.default.createElement(Icon2, { name: tool === "area" ? "area" : "sticky", size: 14 }),
+      import_react32.default.createElement("span", null, tool === "area" ? rt("reader.areaModeActive") : rt("reader.noteModeActive")),
+      import_react32.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => changeTool("select") },
         rt("reader.exitMode")
       )
     ) : null,
-    import_react31.default.createElement(
+    import_react32.default.createElement(
       "div",
       { className: "ph-r-body" },
-      import_react31.default.createElement(Thumbnails, {
+      import_react32.default.createElement(Thumbnails, {
         t: rt,
         paperId,
         pages: pagesForRail,
@@ -24868,7 +24980,7 @@ function ReaderShellInner(props) {
         page: page2,
         onSelect: (target) => goToPage(target)
       }),
-      import_react31.default.createElement(PageCanvas, {
+      import_react32.default.createElement(PageCanvas, {
         t: rt,
         paperId,
         pages,
@@ -24898,13 +25010,13 @@ function ReaderShellInner(props) {
         onScrolledChange: handleScrolledChange,
         actions: canvasActions
       }),
-      import_react31.default.createElement(
+      import_react32.default.createElement(
         "aside",
         { className: cx("ph-r-side", !sideOpen && "ph-r-side--closed"), "aria-label": rt("reader.sidePanel") },
-        import_react31.default.createElement(
+        import_react32.default.createElement(
           "div",
           { className: "ph-r-side__head" },
-          import_react31.default.createElement(Tabs, {
+          import_react32.default.createElement(Tabs, {
             items: sideTabs,
             value: sideTab,
             onChange: (id) => {
@@ -24914,12 +25026,12 @@ function ReaderShellInner(props) {
             "aria-label": rt("reader.sidePanel"),
             className: "ph-r-side__tabs"
           }),
-          import_react31.default.createElement(IconBtn, { icon: "close", title: rt("reader.sidePanelToggle"), onClick: toggleSide })
+          import_react32.default.createElement(IconBtn, { icon: "close", title: rt("reader.sidePanelToggle"), onClick: toggleSide })
         ),
-        import_react31.default.createElement("div", { className: "ph-r-side__body" }, sideBody)
+        import_react32.default.createElement("div", { className: "ph-r-side__body" }, sideBody)
       ),
       translationSheet,
-      import_react31.default.createElement(FloatingAnnotationTools, {
+      import_react32.default.createElement(FloatingAnnotationTools, {
         t: rt,
         tool,
         selectionActive: Boolean(selection && selection.quote),
@@ -24934,19 +25046,19 @@ function ReaderShellInner(props) {
         translationOpen: mode !== "source"
       })
     ),
-    notices.toasts.length > 0 ? import_react31.default.createElement(
+    notices.toasts.length > 0 ? import_react32.default.createElement(
       "div",
       { className: "ph-r-toasts", "aria-live": "polite" },
       notices.toasts.map(
-        (toast) => import_react31.default.createElement(
+        (toast) => import_react32.default.createElement(
           "div",
           { key: toast.id, className: cx("ph-r-toast", "ph-r-toast--" + toast.kind) },
-          import_react31.default.createElement(Icon2, {
+          import_react32.default.createElement(Icon2, {
             name: toast.kind === "success" ? "check" : toast.kind === "error" || toast.kind === "warning" ? "warning" : "note",
             size: 13
           }),
-          import_react31.default.createElement("span", null, toast.text),
-          toast.action ? import_react31.default.createElement(
+          import_react32.default.createElement("span", null, toast.text),
+          toast.action ? import_react32.default.createElement(
             "button",
             {
               type: "button",
@@ -24992,28 +25104,28 @@ var ANNOTATION_COLORS2 = {
 function PaperPanel(props) {
   const t = props.t;
   const api = props.api;
-  const [query, setQuery] = import_react32.default.useState("");
-  const [folders, setFolders] = import_react32.default.useState([]);
-  const [folderId, setFolderId] = import_react32.default.useState("");
-  const [annotatedOnly, setAnnotatedOnly] = import_react32.default.useState(false);
-  const [readFilter, setReadFilter] = import_react32.default.useState("");
-  const [results, setResults] = import_react32.default.useState({ status: "idle", items: [], error: "" });
-  const [open, setOpen] = import_react32.default.useState(null);
-  const [page2, setPage] = import_react32.default.useState(1);
-  const [pageState, setPageState] = import_react32.default.useState({ status: "idle", text: "", source: "", error: "" });
-  const [translation, setTranslation] = import_react32.default.useState({ status: "idle", blocks: [], reason: "" });
-  const [annotations, setAnnotations] = import_react32.default.useState({ status: "idle", items: [], error: "" });
-  const [busy2, setBusy] = import_react32.default.useState("");
-  const [linkedPaperIds, setLinkedPaperIds] = import_react32.default.useState(() => Array.isArray(props.linkedPaperIds) ? props.linkedPaperIds : []);
-  const [selection, setSelection] = import_react32.default.useState(null);
-  const [region, setRegion] = import_react32.default.useState({ status: "idle", text: "", translation: "", reason: "" });
-  const [ai, setAi] = import_react32.default.useState({ status: "idle", answer: "", reason: "" });
-  const dragRef = import_react32.default.useRef(null);
-  const imageWrapRef = import_react32.default.useRef(null);
-  const [layer, setLayer] = import_react32.default.useState(null);
-  const [renderWidth, setRenderWidth] = import_react32.default.useState(0);
-  const restoredRef = import_react32.default.useRef(false);
-  import_react32.default.useEffect(() => {
+  const [query, setQuery] = import_react33.default.useState("");
+  const [folders, setFolders] = import_react33.default.useState([]);
+  const [folderId, setFolderId] = import_react33.default.useState("");
+  const [annotatedOnly, setAnnotatedOnly] = import_react33.default.useState(false);
+  const [readFilter, setReadFilter] = import_react33.default.useState("");
+  const [results, setResults] = import_react33.default.useState({ status: "idle", items: [], error: "" });
+  const [open, setOpen] = import_react33.default.useState(null);
+  const [page2, setPage] = import_react33.default.useState(1);
+  const [pageState, setPageState] = import_react33.default.useState({ status: "idle", text: "", source: "", error: "" });
+  const [translation, setTranslation] = import_react33.default.useState({ status: "idle", blocks: [], reason: "" });
+  const [annotations, setAnnotations] = import_react33.default.useState({ status: "idle", items: [], error: "" });
+  const [busy2, setBusy] = import_react33.default.useState("");
+  const [linkedPaperIds, setLinkedPaperIds] = import_react33.default.useState(() => Array.isArray(props.linkedPaperIds) ? props.linkedPaperIds : []);
+  const [selection, setSelection] = import_react33.default.useState(null);
+  const [region, setRegion] = import_react33.default.useState({ status: "idle", text: "", translation: "", reason: "" });
+  const [ai, setAi] = import_react33.default.useState({ status: "idle", answer: "", reason: "" });
+  const dragRef = import_react33.default.useRef(null);
+  const imageWrapRef = import_react33.default.useRef(null);
+  const [layer, setLayer] = import_react33.default.useState(null);
+  const [renderWidth, setRenderWidth] = import_react33.default.useState(0);
+  const restoredRef = import_react33.default.useRef(false);
+  import_react33.default.useEffect(() => {
     if (!props.noteId || restoredRef.current) return void 0;
     restoredRef.current = true;
     let saved = null;
@@ -25036,14 +25148,14 @@ function PaperPanel(props) {
       alive = false;
     };
   }, [props.noteId, api]);
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     try {
       if (open) sessionStorage.setItem("pappers-hall:notes-open-paper", JSON.stringify({ paperId: open.id, page: page2 }));
       else sessionStorage.removeItem("pappers-hall:notes-open-paper");
     } catch {
     }
   }, [open, page2]);
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     let alive = true;
     Promise.resolve(api("library.folders.tree", {})).then((result) => {
       if (!alive) return;
@@ -25064,7 +25176,7 @@ function PaperPanel(props) {
       alive = false;
     };
   }, [api]);
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       setResults((previous) => Object.assign({}, previous, { status: "loading", error: "" }));
       Promise.resolve(api("library.list", { query: query.trim(), limit: 100, ...folderId ? { folderId } : {} })).then((result) => {
@@ -25083,7 +25195,7 @@ function PaperPanel(props) {
     setPage(1);
     setTranslation({ status: "idle", blocks: [], reason: "" });
   };
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     if (!open) return void 0;
     let alive = true;
     setPageState({ status: "loading", text: "", source: "", error: "" });
@@ -25110,7 +25222,7 @@ function PaperPanel(props) {
       alive = false;
     };
   }, [api, open, page2]);
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     if (!open) return void 0;
     let alive = true;
     setLayer(null);
@@ -25123,7 +25235,7 @@ function PaperPanel(props) {
       alive = false;
     };
   }, [api, open, page2]);
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     const element2 = imageWrapRef.current;
     if (!element2 || typeof ResizeObserver === "undefined") return void 0;
     const observer2 = new ResizeObserver((entries2) => {
@@ -25147,7 +25259,7 @@ function PaperPanel(props) {
     const target = Math.max(1, Math.min(open.total || 1, next));
     if (target !== page2) setPage(target);
   };
-  const selectable = import_react32.default.useMemo(() => selectableWords(layer), [layer]);
+  const selectable = import_react33.default.useMemo(() => selectableWords(layer), [layer]);
   const pageHeight = layer && layer.width > 0 && renderWidth > 0 ? renderWidth * (layer.height / layer.width) : 0;
   const onPageMouseUp = () => {
     if (!open || !layer) return;
@@ -25180,7 +25292,7 @@ function PaperPanel(props) {
       setAi({ status: "ready", answer: String(result.answer || ""), reason: "" });
     }).catch((error) => setAi({ status: "error", answer: "", reason: String(error && error.message || error) })).then(() => setBusy(""));
   };
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     if (!props.noteId) {
       setLinkedPaperIds([]);
       return void 0;
@@ -25210,15 +25322,15 @@ function PaperPanel(props) {
     }).then(() => setBusy(""));
   };
   if (open) {
-    return import_react32.default.createElement(
+    return import_react33.default.createElement(
       "div",
       { className: "ph-n-embedded-reader" },
-      import_react32.default.createElement(
+      import_react33.default.createElement(
         "div",
         { className: "ph-n-embedded-reader__bar" },
-        import_react32.default.createElement(IconButton, { icon: "chevronLeft", title: t("notes.papers.backToList"), onClick: () => setOpen(null) }),
-        import_react32.default.createElement("span", { className: "ph-n-embedded-reader__title" }, paperTitle2(t, open.paper)),
-        props.noteId ? import_react32.default.createElement(Button, {
+        import_react33.default.createElement(IconButton, { icon: "chevronLeft", title: t("notes.papers.backToList"), onClick: () => setOpen(null) }),
+        import_react33.default.createElement("span", { className: "ph-n-embedded-reader__title" }, paperTitle2(t, open.paper)),
+        props.noteId ? import_react33.default.createElement(Button, {
           size: "sm",
           variant: linkedPaperIds.indexOf(open.id) >= 0 ? "soft" : "primary",
           icon: linkedPaperIds.indexOf(open.id) >= 0 ? "checkCircle" : "link",
@@ -25227,10 +25339,10 @@ function PaperPanel(props) {
           onClick: linkOpenPaper
         }, linkedPaperIds.indexOf(open.id) >= 0 ? t("notes.papers.linkedDone") : t("notes.papers.linkCurrent")) : null
       ),
-      import_react32.default.createElement(
+      import_react33.default.createElement(
         "div",
         { className: "ph-n-embedded-reader__body" },
-        import_react32.default.createElement(ReaderShell, {
+        import_react33.default.createElement(ReaderShell, {
           t,
           api,
           paperId: open.id,
@@ -25243,20 +25355,20 @@ function PaperPanel(props) {
       )
     );
   }
-  return import_react32.default.createElement(
+  return import_react33.default.createElement(
     "div",
     { className: "ph-n-paperpane" },
-    import_react32.default.createElement(
+    import_react33.default.createElement(
       "div",
       { className: "ph-n-paperpane__head" },
-      import_react32.default.createElement(Icon, { name: "book", size: 14 }),
-      import_react32.default.createElement("span", { className: "ph-n-paperpane__title" }, t("notes.papers.panel")),
-      props.onClose ? import_react32.default.createElement(IconButton, { icon: "panelRight", title: t("notes.papers.panelClose"), onClick: props.onClose }) : null
+      import_react33.default.createElement(Icon, { name: "book", size: 14 }),
+      import_react33.default.createElement("span", { className: "ph-n-paperpane__title" }, t("notes.papers.panel")),
+      props.onClose ? import_react33.default.createElement(IconButton, { icon: "panelRight", title: t("notes.papers.panelClose"), onClick: props.onClose }) : null
     ),
-    import_react32.default.createElement(
+    import_react33.default.createElement(
       "div",
       { className: "ph-n-paperpane__search" },
-      import_react32.default.createElement(SearchInput, {
+      import_react33.default.createElement(SearchInput, {
         value: query,
         onChange: setQuery,
         placeholder: t("notes.papers.panelSearch"),
@@ -25264,43 +25376,43 @@ function PaperPanel(props) {
         loading: results.status === "loading"
       })
     ),
-    import_react32.default.createElement(
+    import_react33.default.createElement(
       "div",
       { className: "ph-n-paperpane__filters" },
-      import_react32.default.createElement(
+      import_react33.default.createElement(
         "select",
         { className: "ph-select ph-select--inline", value: folderId, "aria-label": t("folders.pick"), onChange: (event) => setFolderId(event.target.value) },
-        import_react32.default.createElement("option", { value: "" }, t("folders.all")),
-        folders.map((folder) => import_react32.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
+        import_react33.default.createElement("option", { value: "" }, t("folders.all")),
+        folders.map((folder) => import_react33.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
       ),
-      import_react32.default.createElement(
+      import_react33.default.createElement(
         "select",
         { className: "ph-select ph-select--inline", value: readFilter, "aria-label": t("library.batch.reading"), onChange: (event) => setReadFilter(event.target.value) },
-        import_react32.default.createElement("option", { value: "" }, t("folders.anyState")),
-        import_react32.default.createElement("option", { value: "unread" }, t("library.smart.toRead")),
-        import_react32.default.createElement("option", { value: "read" }, t("library.smart.read"))
+        import_react33.default.createElement("option", { value: "" }, t("folders.anyState")),
+        import_react33.default.createElement("option", { value: "unread" }, t("library.smart.toRead")),
+        import_react33.default.createElement("option", { value: "read" }, t("library.smart.read"))
       ),
-      import_react32.default.createElement(
+      import_react33.default.createElement(
         "label",
         { className: "ph-n-paperpane__annot" },
-        import_react32.default.createElement("input", { type: "checkbox", checked: annotatedOnly, onChange: (event) => setAnnotatedOnly(event.target.checked) }),
+        import_react33.default.createElement("input", { type: "checkbox", checked: annotatedOnly, onChange: (event) => setAnnotatedOnly(event.target.checked) }),
         t("notes.papers.annotatedOnly")
       )
     ),
-    import_react32.default.createElement(
+    import_react33.default.createElement(
       "div",
       { className: "ph-n-paperpane__body" },
-      import_react32.default.createElement(
+      import_react33.default.createElement(
         "div",
         { className: "ph-n-paperpane__scroll ph-n-scroll" },
-        !open ? import_react32.default.createElement(
+        !open ? import_react33.default.createElement(
           "div",
           { className: "ph-n-paperlist" },
-          results.status === "loading" && results.items.length === 0 ? import_react32.default.createElement("div", { className: "ph-n-progress" }, import_react32.default.createElement(Spinner), import_react32.default.createElement("span", null, t("common.loading"))) : null,
-          results.status === "error" ? import_react32.default.createElement("div", { className: "ph-n-error" }, import_react32.default.createElement(Icon, { name: "warning", size: 14 }), import_react32.default.createElement("span", null, results.error)) : null,
-          results.status === "ready" && results.items.length === 0 ? import_react32.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch"), desc: t("notes.papers.panelHint") }) : null,
+          results.status === "loading" && results.items.length === 0 ? import_react33.default.createElement("div", { className: "ph-n-progress" }, import_react33.default.createElement(Spinner), import_react33.default.createElement("span", null, t("common.loading"))) : null,
+          results.status === "error" ? import_react33.default.createElement("div", { className: "ph-n-error" }, import_react33.default.createElement(Icon, { name: "warning", size: 14 }), import_react33.default.createElement("span", null, results.error)) : null,
+          results.status === "ready" && results.items.length === 0 ? import_react33.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch"), desc: t("notes.papers.panelHint") }) : null,
           results.items.map(
-            (paper) => import_react32.default.createElement(
+            (paper) => import_react33.default.createElement(
               "button",
               {
                 key: paper.id,
@@ -25309,47 +25421,47 @@ function PaperPanel(props) {
                 onClick: () => openPaper(paper),
                 title: paperTitle2(t, paper)
               },
-              import_react32.default.createElement(
+              import_react33.default.createElement(
                 "span",
                 { className: "ph-n-paperrow__thumb" },
-                paper.thumbnailUrl ? import_react32.default.createElement("img", { src: paper.thumbnailUrl, alt: "", loading: "lazy" }) : null
+                paper.thumbnailUrl ? import_react33.default.createElement("img", { src: paper.thumbnailUrl, alt: "", loading: "lazy" }) : null
               ),
-              import_react32.default.createElement(
+              import_react33.default.createElement(
                 "span",
                 { className: "ph-n-paperrow__text" },
-                import_react32.default.createElement("span", { className: "ph-n-paperrow__title" }, paperTitle2(t, paper)),
-                import_react32.default.createElement("span", { className: "ph-n-paperrow__meta" }, [paper.year, paper.venue, Number(paper.annotationCount) > 0 ? "\u6279\u6CE8 " + paper.annotationCount : ""].filter(Boolean).join(" \xB7 ") || t("common.noVenue"))
+                import_react33.default.createElement("span", { className: "ph-n-paperrow__title" }, paperTitle2(t, paper)),
+                import_react33.default.createElement("span", { className: "ph-n-paperrow__meta" }, [paper.year, paper.venue, Number(paper.annotationCount) > 0 ? "\u6279\u6CE8 " + paper.annotationCount : ""].filter(Boolean).join(" \xB7 ") || t("common.noVenue"))
               )
             )
           )
-        ) : import_react32.default.createElement(
+        ) : import_react33.default.createElement(
           "div",
           { className: "ph-n-paperview" },
-          import_react32.default.createElement(
+          import_react33.default.createElement(
             "div",
             { className: "ph-n-paperview__head" },
-            import_react32.default.createElement(
+            import_react33.default.createElement(
               "div",
               { className: "ph-n-paperview__titles" },
-              import_react32.default.createElement("div", { className: "ph-n-paperview__title" }, paperTitle2(t, open.paper)),
-              import_react32.default.createElement(
+              import_react33.default.createElement("div", { className: "ph-n-paperview__title" }, paperTitle2(t, open.paper)),
+              import_react33.default.createElement(
                 "div",
                 { className: "ph-n-paperview__meta" },
                 [text(open.paper && open.paper.title), open.paper && open.paper.year, open.paper && open.paper.venue].filter(Boolean).join(" \xB7 ")
               )
             ),
-            import_react32.default.createElement(IconButton, { icon: "close", title: t("notes.papers.closeView"), onClick: () => setOpen(null) })
+            import_react33.default.createElement(IconButton, { icon: "close", title: t("notes.papers.closeView"), onClick: () => setOpen(null) })
           ),
-          import_react32.default.createElement(
+          import_react33.default.createElement(
             "div",
             { className: "ph-n-paperview__pager" },
-            import_react32.default.createElement(IconButton, { icon: "chevronLeft", title: t("reader.prevPage"), disabled: page2 <= 1, onClick: () => goPage(page2 - 1) }),
-            import_react32.default.createElement("span", null, t("notes.papers.pageOf", { page: page2, total: open.total || 1 })),
-            import_react32.default.createElement(IconButton, { icon: "chevronRight", title: t("reader.nextPage"), disabled: page2 >= (open.total || 1), onClick: () => goPage(page2 + 1) }),
-            import_react32.default.createElement("span", { className: "ph-n-spacer" }),
-            import_react32.default.createElement(Button, { size: "sm", variant: "ghost", icon: "external", onClick: () => props.onOpenPaper && props.onOpenPaper(open.id, page2) }, t("notes.papers.open"))
+            import_react33.default.createElement(IconButton, { icon: "chevronLeft", title: t("reader.prevPage"), disabled: page2 <= 1, onClick: () => goPage(page2 - 1) }),
+            import_react33.default.createElement("span", null, t("notes.papers.pageOf", { page: page2, total: open.total || 1 })),
+            import_react33.default.createElement(IconButton, { icon: "chevronRight", title: t("reader.nextPage"), disabled: page2 >= (open.total || 1), onClick: () => goPage(page2 + 1) }),
+            import_react33.default.createElement("span", { className: "ph-n-spacer" }),
+            import_react33.default.createElement(Button, { size: "sm", variant: "ghost", icon: "external", onClick: () => props.onOpenPaper && props.onOpenPaper(open.id, page2) }, t("notes.papers.open"))
           ),
-          import_react32.default.createElement(
+          import_react33.default.createElement(
             "div",
             {
               className: "ph-n-readerpage",
@@ -25358,72 +25470,72 @@ function PaperPanel(props) {
               title: t("notes.papers.regionHint"),
               style: { "--ph-r-pageh": (pageHeight > 0 ? pageHeight : 640) + "px" }
             },
-            import_react32.default.createElement("img", {
+            import_react33.default.createElement("img", {
               className: "ph-n-readerpage__img",
               src: pageImageUrl2(open.id, page2, 1200),
               alt: t("reader.thumbPage", { page: page2 }),
               loading: "lazy",
               draggable: false
             }),
-            layer && selectable.words.length > 0 ? import_react32.default.createElement(PageTextLayer, { page: page2, words: selectable.words, width: selectable.width, height: selectable.height, active: true, interactive: true }) : null
+            layer && selectable.words.length > 0 ? import_react33.default.createElement(PageTextLayer, { page: page2, words: selectable.words, width: selectable.width, height: selectable.height, active: true, interactive: true }) : null
           ),
-          import_react32.default.createElement(
+          import_react33.default.createElement(
             "div",
             { className: "ph-n-paperview__section" },
-            import_react32.default.createElement("div", { className: "ph-n-paperview__section-title" }, import_react32.default.createElement(Icon, { name: "translate", size: 12 }), t("notes.papers.regionTitle")),
-            import_react32.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.regionHint")),
-            region.status === "loading" ? import_react32.default.createElement("div", { className: "ph-n-progress" }, import_react32.default.createElement(Spinner), import_react32.default.createElement("span", null, t("common.loading"))) : null,
-            region.status === "error" || region.status === "ready" && region.reason && !region.text ? import_react32.default.createElement("div", { className: "ph-n-error" }, import_react32.default.createElement(Icon, { name: "warning", size: 14 }), import_react32.default.createElement("span", null, region.reason || t("common.unavailable"))) : null,
-            region.text ? import_react32.default.createElement(
+            import_react33.default.createElement("div", { className: "ph-n-paperview__section-title" }, import_react33.default.createElement(Icon, { name: "translate", size: 12 }), t("notes.papers.regionTitle")),
+            import_react33.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.regionHint")),
+            region.status === "loading" ? import_react33.default.createElement("div", { className: "ph-n-progress" }, import_react33.default.createElement(Spinner), import_react33.default.createElement("span", null, t("common.loading"))) : null,
+            region.status === "error" || region.status === "ready" && region.reason && !region.text ? import_react33.default.createElement(AiWarning, { t, compact: true, status: "error", reason: region.reason || t("common.unavailable") }) : null,
+            region.text ? import_react33.default.createElement(
               "div",
               { className: "ph-n-region-result" },
-              import_react32.default.createElement("div", { className: "ph-n-region-result__source" }, region.text),
-              region.translation ? import_react32.default.createElement("div", { className: "ph-n-region-result__translation" }, region.translation) : import_react32.default.createElement("div", { className: "ph-n-caption" }, t("notes.papers.regionPending"))
+              import_react33.default.createElement("div", { className: "ph-n-region-result__source" }, region.text),
+              region.translation ? import_react33.default.createElement("div", { className: "ph-n-region-result__translation" }, region.translation) : import_react33.default.createElement("div", { className: "ph-n-caption" }, t("notes.papers.regionPending"))
             ) : null,
-            import_react32.default.createElement(Button, { size: "sm", variant: "soft", icon: "sparkle", loading: busy2 === "ai", onClick: askAiPage }, t("notes.papers.askAi")),
-            ai.status === "loading" ? import_react32.default.createElement("div", { className: "ph-n-progress" }, import_react32.default.createElement(Spinner), import_react32.default.createElement("span", null, t("common.loading"))) : null,
-            ai.status === "error" ? import_react32.default.createElement("div", { className: "ph-n-error" }, import_react32.default.createElement(Icon, { name: "warning", size: 14 }), import_react32.default.createElement("span", null, ai.reason)) : null,
-            ai.answer ? import_react32.default.createElement("div", { className: "ph-n-region-result__translation" }, ai.answer) : null
+            import_react33.default.createElement(Button, { size: "sm", variant: "soft", icon: "sparkle", loading: busy2 === "ai", onClick: askAiPage }, t("notes.papers.askAi")),
+            ai.status === "loading" ? import_react33.default.createElement("div", { className: "ph-n-progress" }, import_react33.default.createElement(Spinner), import_react33.default.createElement("span", null, t("common.loading"))) : null,
+            ai.status === "error" ? import_react33.default.createElement(AiWarning, { t, compact: true, status: "error", reason: ai.reason, onRetry: askAiPage }) : null,
+            ai.answer ? import_react33.default.createElement("div", { className: "ph-n-region-result__translation" }, ai.answer) : null
           ),
-          import_react32.default.createElement(
+          import_react33.default.createElement(
             "div",
             { className: "ph-n-paperview__section" },
-            import_react32.default.createElement(
+            import_react33.default.createElement(
               "div",
               { className: "ph-n-paperview__section-title" },
-              import_react32.default.createElement(Icon, { name: "translate", size: 12 }),
+              import_react33.default.createElement(Icon, { name: "translate", size: 12 }),
               t("notes.papers.translation"),
-              import_react32.default.createElement(Button, { size: "sm", variant: "soft", icon: "translate", loading: busy2 === "translate", onClick: translatePage }, t("notes.papers.translatePage")),
-              import_react32.default.createElement("span", { className: "ph-n-spacer" }),
-              translation.blocks.length > 0 ? import_react32.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.translatedCount", { count: translation.blocks.filter((block) => block && block.translation).length })) : null
+              import_react33.default.createElement(Button, { size: "sm", variant: "soft", icon: "translate", loading: busy2 === "translate", onClick: translatePage }, t("notes.papers.translatePage")),
+              import_react33.default.createElement("span", { className: "ph-n-spacer" }),
+              translation.blocks.length > 0 ? import_react33.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.translatedCount", { count: translation.blocks.filter((block) => block && block.translation).length })) : null
             ),
-            translation.status === "translating" ? import_react32.default.createElement("div", { className: "ph-n-progress" }, import_react32.default.createElement(Spinner), import_react32.default.createElement("span", null, t("notes.papers.translating"))) : null,
-            translation.status === "error" || translation.reason && translation.blocks.length === 0 ? import_react32.default.createElement("div", { className: "ph-n-error" }, import_react32.default.createElement(Icon, { name: "warning", size: 14 }), import_react32.default.createElement("span", null, translation.reason || t("common.unavailable"))) : null,
-            translation.blocks.length > 0 ? import_react32.default.createElement(
+            translation.status === "translating" ? import_react33.default.createElement("div", { className: "ph-n-progress" }, import_react33.default.createElement(Spinner), import_react33.default.createElement("span", null, t("notes.papers.translating"))) : null,
+            translation.status === "error" || translation.reason && translation.blocks.length === 0 ? import_react33.default.createElement(AiWarning, { t, compact: true, status: "error", reason: translation.reason || t("common.unavailable"), onRetry: translatePage }) : null,
+            translation.blocks.length > 0 ? import_react33.default.createElement(
               "div",
               { className: "ph-n-paperview__trans" },
               translation.blocks.slice(0, 14).map(
-                (block, index) => import_react32.default.createElement(
+                (block, index) => import_react33.default.createElement(
                   "div",
                   { key: block && block.id || index },
-                  block && block.translation ? import_react32.default.createElement("p", null, block.translation) : import_react32.default.createElement("p", { className: "muted" }, (block && block.text ? String(block.text).slice(0, 180) : "") + " \xB7 " + t("notes.papers.untranslated"))
+                  block && block.translation ? import_react33.default.createElement("p", null, block.translation) : import_react33.default.createElement("p", { className: "muted" }, (block && block.text ? String(block.text).slice(0, 180) : "") + " \xB7 " + t("notes.papers.untranslated"))
                 )
               )
-            ) : translation.status === "idle" ? import_react32.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.translateHint")) : null
+            ) : translation.status === "idle" ? import_react33.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.translateHint")) : null
           ),
-          import_react32.default.createElement(
+          import_react33.default.createElement(
             "div",
             { className: "ph-n-paperview__section" },
-            import_react32.default.createElement(
+            import_react33.default.createElement(
               "div",
               { className: "ph-n-paperview__section-title" },
-              import_react32.default.createElement(Icon, { name: "highlighter", size: 12 }),
+              import_react33.default.createElement(Icon, { name: "highlighter", size: 12 }),
               t("notes.papers.annotations"),
-              import_react32.default.createElement("span", { className: "ph-n-caption" }, String(annotations.items.length))
+              import_react33.default.createElement("span", { className: "ph-n-caption" }, String(annotations.items.length))
             ),
-            annotations.status === "ready" && annotations.items.length === 0 ? import_react32.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.noAnnotations")) : null,
+            annotations.status === "ready" && annotations.items.length === 0 ? import_react33.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.noAnnotations")) : null,
             annotations.items.slice(0, 8).map(
-              (annotation) => import_react32.default.createElement(
+              (annotation) => import_react33.default.createElement(
                 "button",
                 {
                   key: annotation.id,
@@ -25433,37 +25545,37 @@ function PaperPanel(props) {
                   title: t("reader.annot.openInReader"),
                   style: { textAlign: "left", cursor: "pointer" }
                 },
-                import_react32.default.createElement("span", { className: "ph-n-paperview__annot-dot", style: { background: ANNOTATION_COLORS2[annotation.color] || ANNOTATION_COLORS2.yellow } }),
-                import_react32.default.createElement("span", { className: "ph-n-paperview__annot-text" }, text(annotation.quote, annotation.comment) || annotation.kind)
+                import_react33.default.createElement("span", { className: "ph-n-paperview__annot-dot", style: { background: ANNOTATION_COLORS2[annotation.color] || ANNOTATION_COLORS2.yellow } }),
+                import_react33.default.createElement("span", { className: "ph-n-paperview__annot-text" }, text(annotation.quote, annotation.comment) || annotation.kind)
               )
             )
           ),
-          import_react32.default.createElement(
+          import_react33.default.createElement(
             "div",
             { className: "ph-n-paperview__section" },
-            import_react32.default.createElement(
+            import_react33.default.createElement(
               "div",
               { className: "ph-n-paperview__section-title" },
-              import_react32.default.createElement(Icon, { name: "note", size: 12 }),
+              import_react33.default.createElement(Icon, { name: "note", size: 12 }),
               t("notes.papers.useInNotes")
             ),
-            pageState.status === "loading" ? import_react32.default.createElement("div", { className: "ph-n-progress" }, import_react32.default.createElement(Spinner), import_react32.default.createElement("span", null, t("common.loading"))) : pageState.status === "error" ? import_react32.default.createElement("div", { className: "ph-n-error" }, import_react32.default.createElement(Icon, { name: "warning", size: 14 }), import_react32.default.createElement("span", null, pageState.error)) : import_react32.default.createElement(
+            pageState.status === "loading" ? import_react33.default.createElement("div", { className: "ph-n-progress" }, import_react33.default.createElement(Spinner), import_react33.default.createElement("span", null, t("common.loading"))) : pageState.status === "error" ? import_react33.default.createElement("div", { className: "ph-n-error" }, import_react33.default.createElement(Icon, { name: "warning", size: 14 }), import_react33.default.createElement("span", null, pageState.error)) : import_react33.default.createElement(
               "p",
               { className: "ph-n-caption", style: { maxHeight: 120, overflow: "hidden" } },
               (pageState.text || "").replace(/\s+/g, " ").slice(0, 360) || t("reader.noText")
             ),
-            import_react32.default.createElement(
+            import_react33.default.createElement(
               "div",
               { className: "ph-n-paperview__actions", style: { display: "flex", gap: 6, flexWrap: "wrap" } },
-              props.noteId ? import_react32.default.createElement(Button, {
+              props.noteId ? import_react33.default.createElement(Button, {
                 size: "sm",
                 variant: "soft",
                 icon: "link",
                 onClick: () => props.onLinkPaper && props.onLinkPaper(open.paper),
                 disabled: Array.isArray(props.linkedPaperIds) && props.linkedPaperIds.indexOf(open.id) >= 0
               }, t("notes.papers.linkCurrent")) : null,
-              import_react32.default.createElement(Button, { size: "sm", variant: "ghost", icon: "filter", onClick: () => props.onFilterByPaper && props.onFilterByPaper(open.paper) }, t("notes.fromPaper")),
-              import_react32.default.createElement(Button, { size: "sm", variant: "ghost", icon: "note", onClick: () => props.onCreateNote && props.onCreateNote(open.paper) }, t("notes.papers.newNote"))
+              import_react33.default.createElement(Button, { size: "sm", variant: "ghost", icon: "filter", onClick: () => props.onFilterByPaper && props.onFilterByPaper(open.paper) }, t("notes.fromPaper")),
+              import_react33.default.createElement(Button, { size: "sm", variant: "ghost", icon: "note", onClick: () => props.onCreateNote && props.onCreateNote(open.paper) }, t("notes.papers.newNote"))
             )
           )
         )
@@ -25473,7 +25585,7 @@ function PaperPanel(props) {
 }
 
 // src/surfaces/library/toolbar.jsx
-var import_react33 = __toESM(require("react"), 1);
+var import_react34 = __toESM(require("react"), 1);
 function operationId(prefix) {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
   return (prefix ? prefix + "-" : "") + random;
@@ -25489,8 +25601,8 @@ function ImportControl(props) {
   const t = props.t;
   const api = props.api;
   const controller = props.controller;
-  const [importing, setImporting] = import_react33.default.useState(false);
-  const fileRef = import_react33.default.useRef(null);
+  const [importing, setImporting] = import_react34.default.useState(false);
+  const fileRef = import_react34.default.useRef(null);
   const importFiles = (fileList) => {
     const files = Array.prototype.slice.call(fileList || []);
     if (files.length === 0) return;
@@ -25543,7 +25655,7 @@ function ImportControl(props) {
     }).catch((error) => props.pushToast("error", t("toast.importFailed", { message: describeError(t, error) }))).then(() => setImporting(false));
   };
   return h(
-    import_react33.default.Fragment,
+    import_react34.default.Fragment,
     null,
     h("input", {
       ref: fileRef,
@@ -25572,8 +25684,8 @@ function ImportControl(props) {
 }
 function LibraryToolbar(props) {
   const t = props.t;
-  const [narrow, setNarrow] = import_react33.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
-  import_react33.default.useEffect(() => {
+  const [narrow, setNarrow] = import_react34.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
+  import_react34.default.useEffect(() => {
     const onResize = () => setNarrow(typeof window !== "undefined" && window.innerWidth <= 1100);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -25637,11 +25749,11 @@ function BatchBar(props) {
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const { push } = useToasts();
-  const [tagOpen, setTagOpen] = import_react33.default.useState(false);
-  const [tagValue, setTagValue] = import_react33.default.useState("");
-  const [collectionOpen, setCollectionOpen] = import_react33.default.useState(false);
-  const [busy2, setBusy] = import_react33.default.useState("");
-  const [armed, setArmed] = import_react33.default.useState(false);
+  const [tagOpen, setTagOpen] = import_react34.default.useState(false);
+  const [tagValue, setTagValue] = import_react34.default.useState("");
+  const [collectionOpen, setCollectionOpen] = import_react34.default.useState(false);
+  const [busy2, setBusy] = import_react34.default.useState("");
+  const [armed, setArmed] = import_react34.default.useState(false);
   const count = snapshot4.selection.length;
   const selectedPapers = (snapshot4.items || []).filter((paper) => snapshot4.selection.indexOf(paper.id) >= 0);
   const allFavorite = selectedPapers.length > 0 && selectedPapers.every((paper) => paper.favorite === true);
@@ -25691,7 +25803,7 @@ function BatchBar(props) {
     h("span", { className: "ph-batch__count" }, t("library.selectedCount", { count })),
     h("span", { className: "ph-batch__divider" }),
     trashMode ? h(
-      import_react33.default.Fragment,
+      import_react34.default.Fragment,
       null,
       h(Button, { size: "sm", icon: "restore", loading: busy2 === "restore", onClick: () => {
         setBusy("restore");
@@ -25709,7 +25821,7 @@ function BatchBar(props) {
         }).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
       } }, armed ? t("library.batch.purgeConfirm") : t("library.batch.purge"))
     ) : h(
-      import_react33.default.Fragment,
+      import_react34.default.Fragment,
       null,
       h(
         "div",
@@ -25803,7 +25915,7 @@ function BatchBar(props) {
 }
 
 // src/surfaces/library/item-table.jsx
-var import_react34 = __toESM(require("react"), 1);
+var import_react35 = __toESM(require("react"), 1);
 function thumbUrl(paper) {
   return paper && paper.thumbnailUrl || (paper && paper.id ? "/pappers-hall/thumb/" + paper.id + ".png" : "");
 }
@@ -25903,8 +26015,8 @@ function TableRow(props) {
 function GridCard(props) {
   const t = props.t;
   const paper = props.paper;
-  const [failed, setFailed] = import_react34.default.useState(false);
-  import_react34.default.useEffect(() => setFailed(false), [paper.id]);
+  const [failed, setFailed] = import_react35.default.useState(false);
+  import_react35.default.useEffect(() => setFailed(false), [paper.id]);
   return h(
     "article",
     {
@@ -25945,10 +26057,10 @@ function ItemTable(props) {
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const items2 = snapshot4.items || [];
-  const selection = import_react34.default.useMemo(() => new Set(snapshot4.selection || []), [snapshot4.selection]);
-  const selectedPapers = import_react34.default.useMemo(() => items2.filter((paper) => selection.has(paper.id)), [items2, selection]);
-  const scrollRef = import_react34.default.useRef(null);
-  const [focused, setFocused] = import_react34.default.useState(0);
+  const selection = import_react35.default.useMemo(() => new Set(snapshot4.selection || []), [snapshot4.selection]);
+  const selectedPapers = import_react35.default.useMemo(() => items2.filter((paper) => selection.has(paper.id)), [items2, selection]);
+  const scrollRef = import_react35.default.useRef(null);
+  const [focused, setFocused] = import_react35.default.useState(0);
   const ensureVisible = (index) => {
     const container = scrollRef.current;
     if (!container) return;
@@ -26103,10 +26215,10 @@ function ItemTable(props) {
 }
 
 // src/surfaces/library/details.jsx
-var import_react36 = __toESM(require("react"), 1);
+var import_react37 = __toESM(require("react"), 1);
 
 // src/surfaces/library/metrics.jsx
-var import_react35 = __toESM(require("react"), 1);
+var import_react36 = __toESM(require("react"), 1);
 function num2(value) {
   if (value === null || value === void 0 || value === "") return null;
   const n = Number(value);
@@ -26154,13 +26266,13 @@ function MetricsSection(props) {
   const t = props.t;
   const detail = props.detail;
   const metrics = detail && detail.metrics || {};
-  const [editing, setEditing] = import_react35.default.useState(false);
-  const [busy2, setBusy] = import_react35.default.useState(false);
-  const [failed, setFailed] = import_react35.default.useState("");
-  const [form, setForm] = import_react35.default.useState({});
-  const [saving, setSaving] = import_react35.default.useState(false);
-  const [armed, setArmed] = import_react35.default.useState(false);
-  import_react35.default.useEffect(() => {
+  const [editing, setEditing] = import_react36.default.useState(false);
+  const [busy2, setBusy] = import_react36.default.useState(false);
+  const [failed, setFailed] = import_react36.default.useState("");
+  const [form, setForm] = import_react36.default.useState({});
+  const [saving, setSaving] = import_react36.default.useState(false);
+  const [armed, setArmed] = import_react36.default.useState(false);
+  import_react36.default.useEffect(() => {
     setEditing(false);
     setFailed("");
   }, [detail && detail.id]);
@@ -26294,14 +26406,14 @@ function MetricsSection(props) {
 // src/surfaces/library/details.jsx
 function Field(props) {
   if (props.value == null || props.value === "") return null;
-  return h(import_react36.default.Fragment, null, h("dt", null, props.label), h("dd", { className: props.mono ? "ph-mono" : void 0 }, props.value));
+  return h(import_react37.default.Fragment, null, h("dt", null, props.label), h("dd", { className: props.mono ? "ph-mono" : void 0 }, props.value));
 }
 var figureDragActive = false;
 function figureUrl(figure) {
   return figure && figure.imageUrl || (figure && figure.id ? "/pappers-hall/figure/" + figure.id + ".png?width=480" : "");
 }
 function AbstractBlock(props) {
-  const [open, setOpen] = import_react36.default.useState(false);
+  const [open, setOpen] = import_react37.default.useState(false);
   const t = props.t;
   if (!props.text) {
     return h(
@@ -26329,12 +26441,12 @@ function InfoTab(props) {
   const detail = props.detail;
   const summary = props.summary;
   const controller = props.controller;
-  const [editing, setEditing] = import_react36.default.useState(false);
-  const [titleZh, setTitleZh] = import_react36.default.useState(firstText(detail && detail.titleZh, summary && summary.titleZh));
-  const [saving, setSaving] = import_react36.default.useState(false);
+  const [editing, setEditing] = import_react37.default.useState(false);
+  const [titleZh, setTitleZh] = import_react37.default.useState(firstText(detail && detail.titleZh, summary && summary.titleZh));
+  const [saving, setSaving] = import_react37.default.useState(false);
   const fileInfo = detail && detail.fileInfo || {};
   const sources = Array.isArray(detail && detail.sources) ? detail.sources : [];
-  import_react36.default.useEffect(() => {
+  import_react37.default.useEffect(() => {
     setTitleZh(firstText(detail && detail.titleZh, summary && summary.titleZh));
     setEditing(false);
   }, [detail && detail.id, detail && detail.titleZh, summary && summary.titleZh]);
@@ -26547,7 +26659,7 @@ function TagsTab(props) {
   const t = props.t;
   const detail = props.detail;
   const controller = props.controller;
-  const [value, setValue] = import_react36.default.useState("");
+  const [value, setValue] = import_react37.default.useState("");
   const tags = Array.isArray(detail.tags) ? detail.tags : [];
   const suggestions = (props.tags || []).filter((tag) => tags.indexOf(tag.name) < 0 && (!value || String(tag.name).toLowerCase().includes(value.toLowerCase()))).slice(0, 8);
   const add = () => {
@@ -26745,15 +26857,15 @@ function DetailsPane(props) {
 }
 
 // src/surfaces/library/duplicates.jsx
-var import_react37 = __toESM(require("react"), 1);
+var import_react38 = __toESM(require("react"), 1);
 function DuplicatesPane(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const duplicates = snapshot4.duplicates || { status: "idle", groups: [], error: null };
-  const [primary, setPrimary] = import_react37.default.useState({});
-  const [busy2, setBusy] = import_react37.default.useState("");
-  import_react37.default.useEffect(() => {
+  const [primary, setPrimary] = import_react38.default.useState({});
+  const [busy2, setBusy] = import_react38.default.useState("");
+  import_react38.default.useEffect(() => {
     if (duplicates.status === "idle") controller.loadDuplicates();
   }, [duplicates.status, controller]);
   if (duplicates.status === "loading" || duplicates.status === "idle") {
@@ -26797,18 +26909,18 @@ function DuplicatesPane(props) {
 }
 
 // src/surfaces/library/dialogs.jsx
-var import_react38 = __toESM(require("react"), 1);
+var import_react39 = __toESM(require("react"), 1);
 function useDebounced(value, delay) {
-  const [debounced, setDebounced] = import_react38.default.useState(value);
-  import_react38.default.useEffect(() => {
+  const [debounced, setDebounced] = import_react39.default.useState(value);
+  import_react39.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(value), delay == null ? 240 : delay);
     return () => clearTimeout(timer2);
   }, [value, delay]);
   return debounced;
 }
 function Dialog(props) {
-  const ref = import_react38.default.useRef(null);
-  import_react38.default.useEffect(() => {
+  const ref = import_react39.default.useRef(null);
+  import_react39.default.useEffect(() => {
     const onKey = (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -26833,18 +26945,18 @@ function Dialog(props) {
 }
 function CommandPalette(props) {
   const t = props.t;
-  const [query, setQuery] = import_react38.default.useState("");
-  const [index, setIndex] = import_react38.default.useState(0);
-  const inputRef = import_react38.default.useRef(null);
+  const [query, setQuery] = import_react39.default.useState("");
+  const [index, setIndex] = import_react39.default.useState(0);
+  const inputRef = import_react39.default.useRef(null);
   const commands = (props.commands || []).filter((command) => !query || String(command.label + " " + (command.hint || "")).toLowerCase().indexOf(query.toLowerCase()) >= 0);
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     if (props.open) {
       setQuery("");
       setIndex(0);
       setTimeout(() => inputRef.current && inputRef.current.focus(), 30);
     }
   }, [props.open]);
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     setIndex(0);
   }, [query]);
   if (!props.open) return null;
@@ -26895,17 +27007,17 @@ function CommandPalette(props) {
 function CitationDialog(props) {
   const t = props.t;
   const api = props.api;
-  const [query, setQuery] = import_react38.default.useState("");
+  const [query, setQuery] = import_react39.default.useState("");
   const debounced = useDebounced(query, 260);
-  const [results, setResults] = import_react38.default.useState([]);
-  const [picked, setPicked] = import_react38.default.useState(null);
-  const [style, setStyle] = import_react38.default.useState("bibtex");
-  const [preview, setPreview] = import_react38.default.useState("");
-  const [busy2, setBusy] = import_react38.default.useState(false);
-  const [error, setError] = import_react38.default.useState("");
-  const [tick, setTick] = import_react38.default.useState(0);
-  const dialogRef = import_react38.default.useRef(null);
-  import_react38.default.useEffect(() => {
+  const [results, setResults] = import_react39.default.useState([]);
+  const [picked, setPicked] = import_react39.default.useState(null);
+  const [style, setStyle] = import_react39.default.useState("bibtex");
+  const [preview, setPreview] = import_react39.default.useState("");
+  const [busy2, setBusy] = import_react39.default.useState(false);
+  const [error, setError] = import_react39.default.useState("");
+  const [tick, setTick] = import_react39.default.useState(0);
+  const dialogRef = import_react39.default.useRef(null);
+  import_react39.default.useEffect(() => {
     if (!props.open) return;
     setQuery("");
     setPicked(null);
@@ -26913,7 +27025,7 @@ function CitationDialog(props) {
     setError("");
     setTimeout(() => dialogRef.current && dialogRef.current.focus(), 30);
   }, [props.open]);
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     if (!props.open) return void 0;
     let alive = true;
     api("library.list", { query: debounced.trim() || void 0, state: "active", sort: "recent", limit: 8 }).then((value) => {
@@ -26925,7 +27037,7 @@ function CitationDialog(props) {
       alive = false;
     };
   }, [api, debounced, props.open, tick]);
-  import_react38.default.useEffect(() => {
+  import_react39.default.useEffect(() => {
     if (!picked) {
       setPreview("");
       return void 0;
@@ -27014,15 +27126,15 @@ function GlobalSearch(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const controller = props.controller;
-  const [value, setValue] = import_react39.default.useState(snapshot4.filters.query || "");
-  const external = import_react39.default.useRef(snapshot4.filters.query || "");
-  import_react39.default.useEffect(() => {
+  const [value, setValue] = import_react40.default.useState(snapshot4.filters.query || "");
+  const external = import_react40.default.useRef(snapshot4.filters.query || "");
+  import_react40.default.useEffect(() => {
     if (snapshot4.filters.query !== external.current) {
       external.current = snapshot4.filters.query || "";
       setValue(snapshot4.filters.query || "");
     }
   }, [snapshot4.filters.query]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       if (value !== snapshot4.filters.query) controller.setQuery(value);
     }, 260);
@@ -27041,9 +27153,9 @@ function GlobalSearch(props) {
 }
 function TopbarMenu(props) {
   const t = props.t;
-  const [open, setOpen] = import_react39.default.useState(false);
-  const ref = import_react39.default.useRef(null);
-  import_react39.default.useEffect(() => {
+  const [open, setOpen] = import_react40.default.useState(false);
+  const ref = import_react40.default.useRef(null);
+  import_react40.default.useEffect(() => {
     if (!open) return void 0;
     const close = (event) => {
       if (ref.current && !ref.current.contains(event.target)) setOpen(false);
@@ -27123,8 +27235,8 @@ function StatusBar(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const library = props.library;
-  const [busy2, setBusy] = import_react39.default.useState("");
-  const [errorText, setErrorText] = import_react39.default.useState("");
+  const [busy2, setBusy] = import_react40.default.useState("");
+  const [errorText, setErrorText] = import_react40.default.useState("");
   const status = snapshot4.statusData;
   const counts = snapshot4.counts || status && status.counts || {};
   const index = status && status.index || {};
@@ -27135,7 +27247,7 @@ function StatusBar(props) {
   const running = Number(jobs.running) || 0;
   const paused = jobs.globalPaused === true || jobs.state === "paused";
   const offline = snapshot4.offline;
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     const timer2 = setInterval(() => library.refreshStatus(), STATUS_POLL_MS);
     return () => clearInterval(timer2);
   }, [library]);
@@ -27205,9 +27317,9 @@ function StatusBar(props) {
   );
 }
 function PaneResizer(props) {
-  const [active, setActive] = import_react39.default.useState(false);
-  const start = import_react39.default.useRef(null);
-  const latest = import_react39.default.useRef(null);
+  const [active, setActive] = import_react40.default.useState(false);
+  const start = import_react40.default.useRef(null);
+  const latest = import_react40.default.useRef(null);
   const onMouseDown = (event) => {
     event.preventDefault();
     start.current = { x: event.clientX, width: props.width };
@@ -27250,9 +27362,9 @@ function ContextMenu(props) {
   const menu = props.menu;
   const paper = props.paper;
   const library = props.library;
-  const [submenu, setSubmenu] = import_react39.default.useState(false);
-  const [armed, setArmed] = import_react39.default.useState(false);
-  const ref = import_react39.default.useRef(null);
+  const [submenu, setSubmenu] = import_react40.default.useState(false);
+  const [armed, setArmed] = import_react40.default.useState(false);
+  const ref = import_react40.default.useRef(null);
   const style = { left: Math.min(menu.x, (typeof window !== "undefined" ? window.innerWidth : 800) - 220) + "px", top: Math.min(menu.y, (typeof window !== "undefined" ? window.innerHeight : 600) - 280) + "px" };
   if (!paper) return null;
   const close = () => library.closeContextMenu();
@@ -27272,7 +27384,7 @@ function ContextMenu(props) {
       props.onShowDetails && props.onShowDetails();
     }) }, h(Icon, { name: "tag", size: 14 }), t("library.context.tag")),
     collections.length > 0 ? h(
-      import_react39.default.Fragment,
+      import_react40.default.Fragment,
       null,
       h("button", { type: "button", className: "ph-ctxmenu__item", onClick: () => setSubmenu(!submenu), "aria-expanded": submenu ? "true" : "false" }, h(Icon, { name: "collection", size: 14 }), t("library.context.collection")),
       submenu ? h("div", { className: "ph-ctxmenu__sub" }, collections.map((collection) => h("button", { key: collection.id, type: "button", className: "ph-ctxmenu__item", onClick: act(() => library.assignCollection(collection.id, [paper.id], true).then(() => props.pushToast("success", t("library.collection.assign") + " \xB7 " + collection.name)).catch((error) => props.pushToast("error", t("toast.failed", { message: describeError(t, error) })))) }, h("span", { className: "ph-collection__dot", "data-color": collection.color || "blue" }), collection.name))) : null
@@ -27280,7 +27392,7 @@ function ContextMenu(props) {
     h("button", { type: "button", className: "ph-ctxmenu__item", onClick: act(() => copyText(paper.id).then((ok) => props.pushToast(ok ? "success" : "warning", ok ? t("toast.copied") : t("common.unavailable")))) }, h(Icon, { name: "copy", size: 14 }), t("library.context.copyId")),
     h("div", { className: "ph-ctxmenu__sep" }),
     trashMode ? h(
-      import_react39.default.Fragment,
+      import_react40.default.Fragment,
       null,
       h("button", { type: "button", className: "ph-ctxmenu__item", onClick: act(() => library.setSelection([paper.id]) || library.restoreSelection().then(() => props.pushToast("success", t("toast.restored"))).catch((error) => props.pushToast("error", t("toast.failed", { message: describeError(t, error) })))) }, h(Icon, { name: "restore", size: 14 }), t("library.context.restore")),
       h("button", { type: "button", className: "ph-ctxmenu__item ph-ctxmenu__item--danger", onClick: () => {
@@ -27295,7 +27407,7 @@ function ContextMenu(props) {
 }
 function LibrarySkeleton() {
   return h(
-    import_react39.default.Fragment,
+    import_react40.default.Fragment,
     null,
     h("div", { className: "ph-pane ph-pane--left" }, h("div", { className: "ph-left-skeleton" }, [0, 1, 2, 3, 4].map((index) => h("div", { key: index, className: "ph-details__skeletonrow" }, h("span", { className: "ph-skeleton", style: { width: "16px", height: "16px" } }), h("span", { className: "ph-skeleton", style: { flex: 1, height: "11px" } }))))),
     h("div", { className: "ph-pane ph-pane--mid" }, h("div", { className: "ph-table-skeleton" }, [0, 1, 2, 3, 4, 5, 6, 7].map((index) => h("div", { key: index, className: "ph-table-skeleton__row" }, h("span", { className: "ph-skeleton", style: { width: 14, height: 14 } }), h("div", { className: "ph-table-skeleton__main" }, h("span", { className: "ph-skeleton", style: { width: "58%" } }), h("span", { className: "ph-skeleton", style: { width: "36%", height: 9 } })), h("span", { className: "ph-skeleton", style: { width: 72, height: 10 } }))))),
@@ -27303,8 +27415,8 @@ function LibrarySkeleton() {
   );
 }
 function useNarrowLayout() {
-  const [narrow, setNarrow] = import_react39.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
-  import_react39.default.useEffect(() => {
+  const [narrow, setNarrow] = import_react40.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
+  import_react40.default.useEffect(() => {
     const onResize = () => setNarrow(typeof window !== "undefined" && window.innerWidth <= 1100);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -27316,15 +27428,15 @@ function LibraryShell(props) {
   const t = props.t;
   const api = props.api;
   const library = props.library;
-  const snapshot4 = import_react39.default.useSyncExternalStore(library.subscribe, library.getSnapshot, library.getSnapshot);
+  const snapshot4 = import_react40.default.useSyncExternalStore(library.subscribe, library.getSnapshot, library.getSnapshot);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [newCollectionOpen, setNewCollectionOpen] = import_react39.default.useState(false);
-  const [newCollectionName, setNewCollectionName] = import_react39.default.useState("");
-  const [dragWidth, setDragWidth] = import_react39.default.useState({ left: null, right: null });
-  const [paletteOpen, setPaletteOpen] = import_react39.default.useState(false);
-  const [citationOpen, setCitationOpen] = import_react39.default.useState(false);
-  const [helpOpen, setHelpOpen] = import_react39.default.useState(false);
-  const [inlineNoteId, setInlineNoteId] = import_react39.default.useState(() => {
+  const [newCollectionOpen, setNewCollectionOpen] = import_react40.default.useState(false);
+  const [newCollectionName, setNewCollectionName] = import_react40.default.useState("");
+  const [dragWidth, setDragWidth] = import_react40.default.useState({ left: null, right: null });
+  const [paletteOpen, setPaletteOpen] = import_react40.default.useState(false);
+  const [citationOpen, setCitationOpen] = import_react40.default.useState(false);
+  const [helpOpen, setHelpOpen] = import_react40.default.useState(false);
+  const [inlineNoteId, setInlineNoteId] = import_react40.default.useState(() => {
     if (props.initialNoteId) return String(props.initialNoteId);
     try {
       return String(sessionStorage.getItem("pappers-hall:inline-note") || "");
@@ -27332,16 +27444,16 @@ function LibraryShell(props) {
       return "";
     }
   });
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     try {
       if (inlineNoteId) sessionStorage.setItem("pappers-hall:inline-note", inlineNoteId);
       else sessionStorage.removeItem("pappers-hall:inline-note");
     } catch {
     }
   }, [inlineNoteId]);
-  const filtersKeyRef = import_react39.default.useRef(null);
-  const notePrevLeftRef = import_react39.default.useRef(null);
-  import_react39.default.useEffect(() => {
+  const filtersKeyRef = import_react40.default.useRef(null);
+  const notePrevLeftRef = import_react40.default.useRef(null);
+  import_react40.default.useEffect(() => {
     const key = [snapshot4.filters.view, snapshot4.filters.collectionId, snapshot4.filters.folderId, snapshot4.filters.favorite, snapshot4.filters.reading, snapshot4.filters.query, (snapshot4.filters.tags || []).join("|")].join("");
     if (filtersKeyRef.current === null) {
       filtersKeyRef.current = key;
@@ -27351,10 +27463,10 @@ function LibraryShell(props) {
     filtersKeyRef.current = key;
     setInlineNoteId("");
   }, [snapshot4.filters.view, snapshot4.filters.collectionId, snapshot4.filters.folderId, snapshot4.filters.favorite, snapshot4.filters.reading, snapshot4.filters.query, (snapshot4.filters.tags || []).join("|")]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     if (props.initialNoteId) setInlineNoteId(String(props.initialNoteId));
   }, [props.initialNoteId]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     if (inlineNoteId) {
       if (notePrevLeftRef.current === null) notePrevLeftRef.current = Boolean(snapshot4.ui.leftCollapsed);
       if (!snapshot4.ui.leftCollapsed) library.setUi({ leftCollapsed: true });
@@ -27364,11 +27476,11 @@ function LibraryShell(props) {
       if (!previous) library.setUi({ leftCollapsed: false });
     }
   }, [inlineNoteId]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     if (snapshot4.status === "idle") library.refresh();
     else library.refreshStatus();
   }, []);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     installUndoShortcuts();
     const onKey = (event) => {
       const meta = event.metaKey || event.ctrlKey;
@@ -27392,7 +27504,7 @@ function LibraryShell(props) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     const offView = bus.on("open-library-view", (payload) => {
       if (payload && payload.folderId) {
         library.setFolderFilter(String(payload.folderId));
@@ -27416,7 +27528,7 @@ function LibraryShell(props) {
       offPaper();
     };
   }, [library]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     if (!snapshot4.contextMenu) return void 0;
     const close = () => library.closeContextMenu();
     const onKey = (event) => {
@@ -27430,7 +27542,7 @@ function LibraryShell(props) {
     };
   }, [snapshot4.contextMenu, library]);
   const contextPaper = snapshot4.contextMenu ? snapshot4.items.find((paper) => paper.id === snapshot4.contextMenu.paperId) : null;
-  const citePaper = import_react39.default.useCallback(
+  const citePaper = import_react40.default.useCallback(
     (paper) => {
       api("references.commit", { items: [{ kind: "paper", id: paper.id }], operationId: operationId2("refs") }).then((result) => {
         pendingStore.add(result, [{ kind: "paper", id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title }]);
@@ -27439,7 +27551,7 @@ function LibraryShell(props) {
     },
     [api, push, t]
   );
-  const exportPaper = import_react39.default.useCallback(
+  const exportPaper = import_react40.default.useCallback(
     (paper) => {
       api("export.bibtex", { ids: [paper.id] }).then((result) => {
         if (result && result.content) {
@@ -27450,20 +27562,20 @@ function LibraryShell(props) {
     },
     [api, push, t]
   );
-  const copyCitation = import_react39.default.useCallback((paper, style) => {
+  const copyCitation = import_react40.default.useCallback((paper, style) => {
     api("citation.format", { ids: [paper.id], style: style || "bibtex" }).then((result) => {
       if (!result || !result.content) return notify("info", t("common.unavailable"));
       copyText(String(result.content)).then((ok) => notify(ok ? "success" : "warning", ok ? t("common.copied") : t("common.unavailable")));
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const copyCitationKey = import_react39.default.useCallback((paper) => {
+  const copyCitationKey = import_react40.default.useCallback((paper) => {
     api("citation.key", { ids: [paper.id] }).then((result) => {
       const key = result && Array.isArray(result.keys) && result.keys[0] ? result.keys[0].key : "";
       if (!key) return notify("info", t("common.unavailable"));
       copyText(key).then((ok) => notify(ok ? "success" : "warning", ok ? t("common.copied") + " \xB7 " + key : t("common.unavailable")));
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const exportAnnotations = import_react39.default.useCallback((paper, format, action) => {
+  const exportAnnotations = import_react40.default.useCallback((paper, format, action) => {
     api("export.annotations", { paperId: paper.id, format: format || "markdown" }).then((result) => {
       const content = result && result.content ? String(result.content) : "";
       if (!content) return notify("info", t("annotations.exportEmpty"));
@@ -27475,16 +27587,16 @@ function LibraryShell(props) {
       }
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const insertCitation = import_react39.default.useCallback((paper) => {
+  const insertCitation = import_react40.default.useCallback((paper) => {
     if (!paper) return;
     deliverMaterials([{ kind: "paper", id: paper.id, title: paperTitle(t, paper) }], {}).then((result) => {
       if (!result.ok) return notify("error", t("dnd.failed", { message: result.reason || "" }));
       notify(result.inserted ? "success" : "warning", result.inserted ? t("citation.inserted") : t("dnd.queued", { count: 1 }));
     });
   }, [t]);
-  const updateMetrics = import_react39.default.useCallback((ids) => library.refreshMetrics(ids), [library]);
-  const editMetrics = import_react39.default.useCallback((paperId, fields) => library.updateMetrics(paperId, fields), [library]);
-  const resetMetrics = import_react39.default.useCallback(
+  const updateMetrics = import_react40.default.useCallback((ids) => library.refreshMetrics(ids), [library]);
+  const editMetrics = import_react40.default.useCallback((paperId, fields) => library.updateMetrics(paperId, fields), [library]);
+  const resetMetrics = import_react40.default.useCallback(
     (paperId) => api("metrics.reset", { paperId: String(paperId) }).catch(() => api("metrics.update", { paperId: String(paperId), fields: { impactFactor: null, fiveYearImpactFactor: null, impactFactorYear: null, quartile: null, citationCount: null, hIndex: null, issn: null, publisher: null } })).then(() => library.selectPaper(String(paperId), { tab: "info" })),
     [api, library]
   );
@@ -27519,7 +27631,7 @@ function LibraryShell(props) {
   ].filter(Boolean);
   const openContext = (menu) => library.openContextMenu(menu);
   const openPaper = (paperId, page2) => props.onOpenPaper(paperId, page2);
-  const rootRef = import_react39.default.useRef(null);
+  const rootRef = import_react40.default.useRef(null);
   if (snapshot4.offline) {
     return h(
       "div",
@@ -27688,7 +27800,7 @@ function LibraryShell(props) {
         }
       },
       loadingFirst ? h(LibrarySkeleton, { t }) : h(
-        import_react39.default.Fragment,
+        import_react40.default.Fragment,
         null,
         mobileBackdrop,
         left,
@@ -27716,14 +27828,14 @@ function LibraryShell(props) {
 }
 
 // src/surfaces/figure-search.jsx
-var import_react40 = __toESM(require("react"), 1);
+var import_react41 = __toESM(require("react"), 1);
 function operationId3(prefix) {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
   return (prefix ? prefix + "-" : "") + random;
 }
 function useDebounced2(value, delay) {
-  const [debounced, setDebounced] = import_react40.default.useState(value);
-  import_react40.default.useEffect(() => {
+  const [debounced, setDebounced] = import_react41.default.useState(value);
+  import_react41.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(value), delay == null ? 300 : delay);
     return () => clearTimeout(timer2);
   }, [value, delay]);
@@ -27762,8 +27874,8 @@ function paperTitle3(t, paper) {
   return paper.titleZh || paper.displayTitle || paper.title || t("common.untitled");
 }
 function FigureThumb(props) {
-  const [failed, setFailed] = import_react40.default.useState(false);
-  import_react40.default.useEffect(() => setFailed(false), [props.src]);
+  const [failed, setFailed] = import_react41.default.useState(false);
+  import_react41.default.useEffect(() => setFailed(false), [props.src]);
   if (failed || !props.src) return h(Icon, { name: "figure", size: 24 });
   return h("img", { src: props.src, alt: props.alt || "", loading: "lazy", decoding: "async", draggable: false, onError: () => setFailed(true) });
 }
@@ -27815,16 +27927,16 @@ function FigureSearch(props) {
   const api = props.api;
   const { toasts, push } = useToasts();
   const focus = props.focusFigure || null;
-  const [query, setQuery] = import_react40.default.useState(props.initialQuery || "");
+  const [query, setQuery] = import_react41.default.useState(props.initialQuery || "");
   const debounced = useDebounced2(query, 320);
-  const [upload, setUpload] = import_react40.default.useState(null);
-  const [readOnly, setReadOnly] = import_react40.default.useState(false);
-  const [annotatedOnly, setAnnotatedOnly] = import_react40.default.useState(false);
-  const [mode, setMode] = import_react40.default.useState(focus && focus.figureId ? "figure" : "text");
-  const [revision2, setRevision] = import_react40.default.useState(0);
-  const [state, setState] = import_react40.default.useState({ status: "idle", data: null, error: null });
-  const fileRef = import_react40.default.useRef(null);
-  import_react40.default.useEffect(() => {
+  const [upload, setUpload] = import_react41.default.useState(null);
+  const [readOnly, setReadOnly] = import_react41.default.useState(false);
+  const [annotatedOnly, setAnnotatedOnly] = import_react41.default.useState(false);
+  const [mode, setMode] = import_react41.default.useState(focus && focus.figureId ? "figure" : "text");
+  const [revision2, setRevision] = import_react41.default.useState(0);
+  const [state, setState] = import_react41.default.useState({ status: "idle", data: null, error: null });
+  const fileRef = import_react41.default.useRef(null);
+  import_react41.default.useEffect(() => {
     if (focus && focus.figureId) {
       setMode("figure");
       setQuery("");
@@ -27832,7 +27944,7 @@ function FigureSearch(props) {
       setRevision((value) => value + 1);
     }
   }, [focus && focus.figureId, focus && focus.paperId]);
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
     let alive = true;
     const controller = new AbortController();
     const value = debounced.trim();
@@ -28114,7 +28226,7 @@ function FigureSearch(props) {
 
 // src/surfaces/center.jsx
 function useNavigation() {
-  return import_react41.default.useSyncExternalStore(navigation.subscribe, navigation.getSnapshot, navigation.getSnapshot);
+  return import_react42.default.useSyncExternalStore(navigation.subscribe, navigation.getSnapshot, navigation.getSnapshot);
 }
 function useSessionId(props) {
   const useSessions = typeof props.useSessions === "function" ? props.useSessions : (selector) => selector({});
@@ -28135,15 +28247,15 @@ function PaperCenter(props) {
   const sessionId = useSessionId(props);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
   const route = nav.route || { view: "library" };
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     if (route.view !== "library") return;
     navigation.consumeIntent();
   }, [route.view, nav.seq]);
-  const openPaper = import_react41.default.useCallback((paperId, page2, annotationId) => {
+  const openPaper = import_react42.default.useCallback((paperId, page2, annotationId) => {
     if (!paperId) return;
     navigation.openPaper({ paperId, page: page2 || 1, annotationId: annotationId || null, source: "library" });
   }, []);
-  const openFigure = import_react41.default.useCallback((paperId, figure) => {
+  const openFigure = import_react42.default.useCallback((paperId, figure) => {
     if (!paperId || !figure) return;
     navigation.openPaper({
       paperId,
@@ -28204,7 +28316,7 @@ function PaperCenter(props) {
   }
   if (route.view === "figures") {
     return h(
-      import_react41.default.Fragment,
+      import_react42.default.Fragment,
       null,
       h(LibraryShell, {
         t,
@@ -28227,7 +28339,7 @@ function PaperCenter(props) {
     );
   }
   return h(
-    import_react41.default.Fragment,
+    import_react42.default.Fragment,
     null,
     h(LibraryShell, {
       t,
@@ -28245,7 +28357,7 @@ function PaperCenter(props) {
 }
 
 // src/surfaces/drawer.jsx
-var import_react42 = __toESM(require("react"), 1);
+var import_react43 = __toESM(require("react"), 1);
 function opId3() {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
   return "drawer-" + random;
@@ -28285,8 +28397,8 @@ function Thumb(props) {
   const paperId = props.paperId;
   const primary = props.src || (paperId ? "/pappers-hall/thumb/" + paperId + ".png" : "");
   const fallback = paperId ? "/pappers-hall/page/" + paperId + "/1.png?width=120" : "";
-  const [step, setStep] = import_react42.default.useState(primary ? 0 : fallback ? 1 : 2);
-  import_react42.default.useEffect(() => {
+  const [step, setStep] = import_react43.default.useState(primary ? 0 : fallback ? 1 : 2);
+  import_react43.default.useEffect(() => {
     setStep(primary ? 0 : fallback ? 1 : 2);
   }, [primary, fallback]);
   const src = step === 0 ? primary : step === 1 ? fallback : "";
@@ -28391,23 +28503,23 @@ function DrawerBody(props) {
   const sessionId = props.sessionId;
   const openLibrary = props.openLibrary;
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const translation = import_react42.default.useSyncExternalStore(translationStore.subscribe, translationStore.getSnapshot, translationStore.getSnapshot);
-  const [tab, setTab] = import_react42.default.useState("papers");
-  const [query, setQuery] = import_react42.default.useState("");
-  const [debounced, setDebounced] = import_react42.default.useState("");
-  const [feed, setFeed] = import_react42.default.useState({ status: "loading", data: null, error: null });
-  const [annotations, setAnnotations] = import_react42.default.useState({ status: "loading", items: [], error: null, hasMore: false });
-  const [notes, setNotes] = import_react42.default.useState({ status: "idle", items: [], error: null });
-  const [noteTotal, setNoteTotal] = import_react42.default.useState(0);
-  const [revision2, setRevision] = import_react42.default.useState(0);
-  const [filters, setFilters] = import_react42.default.useState({ quick: "all", collectionId: "", tag: "", color: "", kind: "", paperId: "" });
-  const [selected, setSelected] = import_react42.default.useState([]);
-  const [preview, setPreview] = import_react42.default.useState(() => previewFromLastRoute());
-  const [previewNote, setPreviewNote] = import_react42.default.useState({ status: "idle", note: null, error: null });
-  const releasePreviewStyles = import_react42.default.useMemo(() => ensureNotesStyles(), []);
-  import_react42.default.useEffect(() => () => releasePreviewStyles(), [releasePreviewStyles]);
-  const [collapsed, setCollapsed] = import_react42.default.useState({});
-  import_react42.default.useEffect(() => {
+  const translation = import_react43.default.useSyncExternalStore(translationStore.subscribe, translationStore.getSnapshot, translationStore.getSnapshot);
+  const [tab, setTab] = import_react43.default.useState("papers");
+  const [query, setQuery] = import_react43.default.useState("");
+  const [debounced, setDebounced] = import_react43.default.useState("");
+  const [feed, setFeed] = import_react43.default.useState({ status: "loading", data: null, error: null });
+  const [annotations, setAnnotations] = import_react43.default.useState({ status: "loading", items: [], error: null, hasMore: false });
+  const [notes, setNotes] = import_react43.default.useState({ status: "idle", items: [], error: null });
+  const [noteTotal, setNoteTotal] = import_react43.default.useState(0);
+  const [revision2, setRevision] = import_react43.default.useState(0);
+  const [filters, setFilters] = import_react43.default.useState({ quick: "all", collectionId: "", tag: "", color: "", kind: "", paperId: "" });
+  const [selected, setSelected] = import_react43.default.useState([]);
+  const [preview, setPreview] = import_react43.default.useState(() => previewFromLastRoute());
+  const [previewNote, setPreviewNote] = import_react43.default.useState({ status: "idle", note: null, error: null });
+  const releasePreviewStyles = import_react43.default.useMemo(() => ensureNotesStyles(), []);
+  import_react43.default.useEffect(() => () => releasePreviewStyles(), [releasePreviewStyles]);
+  const [collapsed, setCollapsed] = import_react43.default.useState({});
+  import_react43.default.useEffect(() => {
     if (!preview || preview.kind !== "note") {
       setPreviewNote({ status: "idle", note: null, error: null });
       return void 0;
@@ -28430,15 +28542,15 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [preview]);
-  const scrollPositions = import_react42.default.useRef({});
-  const scrollRef = import_react42.default.useRef(null);
-  const searchRef = import_react42.default.useRef(null);
+  const scrollPositions = import_react43.default.useRef({});
+  const scrollRef = import_react43.default.useRef(null);
+  const searchRef = import_react43.default.useRef(null);
   const selectedKeys = new Set(selected.map((item) => item.kind + ":" + item.id));
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(query.trim()), 260);
     return () => clearTimeout(timer2);
   }, [query]);
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => {
     const onKey = (event) => {
       if ((event.metaKey || event.ctrlKey) && String(event.key).toLowerCase() === "f") {
         event.preventDefault();
@@ -28452,15 +28564,15 @@ function DrawerBody(props) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => {
     translationStore.refresh().catch(() => {
     });
   }, []);
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => {
     const timer2 = setInterval(() => setRevision((value) => value + 1), 3e4);
     return () => clearInterval(timer2);
   }, []);
-  const changeTab = import_react42.default.useCallback((next) => {
+  const changeTab = import_react43.default.useCallback((next) => {
     const node = scrollRef.current;
     if (node) scrollPositions.current[tab] = node.scrollTop;
     setTab(next);
@@ -28470,7 +28582,7 @@ function DrawerBody(props) {
       });
     }
   }, [tab]);
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => {
     let alive = true;
     Promise.resolve(defaultApi("notes.list", { limit: 1 })).then((value) => {
       if (alive) setNoteTotal(Number(value && value.total) || 0);
@@ -28480,7 +28592,7 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [revision2]);
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => {
     let alive = true;
     setFeed((previous) => ({ status: previous.data ? "refreshing" : "loading", data: previous.data, error: null }));
     const previousFeedData = feed.data;
@@ -28546,7 +28658,7 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [debounced, filters.quick, filters.collectionId, filters.tag, filters.folderId, filters.favorite, filters.tags, revision2]);
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => {
     if (tab !== "annotations") return void 0;
     let alive = true;
     setAnnotations((previous) => ({ status: "loading", items: previous.items, error: null, hasMore: previous.hasMore }));
@@ -28575,7 +28687,7 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [tab, debounced, filters.color, filters.kind, filters.paperId, filters.folderId, filters.tags, revision2]);
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => {
     if (tab !== "notes") return void 0;
     let alive = true;
     setNotes({ status: "loading", items: [], error: null });
@@ -28618,18 +28730,18 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [tab, debounced, filters.folderId, filters.tags, revision2]);
-  const openItem = import_react42.default.useCallback((target, page2, annotationId) => {
+  const openItem = import_react43.default.useCallback((target, page2, annotationId) => {
     const paperId = target && (target.paperId || target.id);
     if (!paperId) return;
     navigation.openPaper({ paperId, page: page2 || target.page || 1, annotationId: annotationId || (target.kind === "annotation" ? target.id : null), source: "sidebar" });
     if (openLibrary) openLibrary();
   }, [openLibrary]);
-  const openPreview = import_react42.default.useCallback((item) => {
+  const openPreview = import_react43.default.useCallback((item) => {
     if (!item) return;
     if (item.kind === "note" || String(item.id || "").startsWith("note-")) setPreview({ kind: "note", note: item.note || item });
     else setPreview({ kind: "paper", paper: item, page: 1 });
   }, []);
-  const cite = import_react42.default.useCallback((materials) => {
+  const cite = import_react43.default.useCallback((materials) => {
     const list = (Array.isArray(materials) ? materials : [materials]).filter(Boolean);
     if (list.length === 0) return;
     defaultApi("references.commit", { ...sessionId ? { sessionId } : {}, items: list.map((m) => ({ kind: m.kind, id: m.id, ...m.page ? { page: m.page } : {} })), operationId: opId3() }).then((result) => {
@@ -28887,14 +28999,14 @@ function DrawerBody(props) {
       "div",
       { className: "ph-sidebar__foot" },
       selected.length > 0 ? h(
-        import_react42.default.Fragment,
+        import_react43.default.Fragment,
         null,
         h("span", { className: "ph-caption" }, t("drawer.selected", { count: selected.length })),
         h(Button, { size: "sm", variant: "primary", icon: "quote", onClick: citeSelection }, t("drawer.cite")),
         h(Button, { size: "sm", icon: "external", onClick: () => openLibraryView("all") }, t("drawer.openLibrary")),
         h(IconButton, { icon: "close", title: t("common.clear"), onClick: () => setSelected([]) })
       ) : h(
-        import_react42.default.Fragment,
+        import_react43.default.Fragment,
         null,
         h("span", { className: "ph-caption" }, t("drawer.stats", { papers: counts.papers, annotations: counts.annotations, figures: counts.figures })),
         h("span", { className: "ph-spacer" }),
@@ -28907,7 +29019,7 @@ function DrawerBody(props) {
 }
 
 // src/surfaces/dock.jsx
-var import_react43 = __toESM(require("react"), 1);
+var import_react44 = __toESM(require("react"), 1);
 
 // src/core/cite-token.js
 var TOKEN_PATTERN = /bundle=bn-/;
@@ -29027,7 +29139,7 @@ function bundleSummaryLabel(t, bundle) {
   return parts.join(" \xB7 ");
 }
 function usePendingSnapshot() {
-  return import_react43.default.useSyncExternalStore(pendingStore.subscribe, pendingStore.getSnapshot, pendingStore.getSnapshot);
+  return import_react44.default.useSyncExternalStore(pendingStore.subscribe, pendingStore.getSnapshot, pendingStore.getSnapshot);
 }
 function ComposerEntry(props) {
   const t = props.t;
@@ -29038,7 +29150,7 @@ function ComposerEntry(props) {
     (bundle) => !bundle.added && bundle.token && (!bundle.sessionId || bundle.sessionId === sessionId)
   );
   const pendingKey = pending.map((bundle) => bundle.bundleId).join("|");
-  import_react43.default.useEffect(() => {
+  import_react44.default.useEffect(() => {
     if (sessionId) return;
     const timers = [];
     pending.forEach((bundle) => {
@@ -29073,17 +29185,17 @@ function DockBody(props) {
   const inputActions = props.inputActions;
   const snapshot4 = usePendingSnapshot();
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [expanded, setExpanded] = import_react43.default.useState({});
-  const [busyId, setBusyId] = import_react43.default.useState(null);
-  const [errors, setErrors] = import_react43.default.useState({});
-  const insertingRef = import_react43.default.useRef({});
+  const [expanded, setExpanded] = import_react44.default.useState({});
+  const [busyId, setBusyId] = import_react44.default.useState(null);
+  const [errors, setErrors] = import_react44.default.useState({});
+  const insertingRef = import_react44.default.useRef({});
   const bundles = snapshot4.bundles.filter((bundle) => !bundle.sessionId || bundle.sessionId === props.sessionId);
-  const toggleExpanded = import_react43.default.useCallback((bundleId) => {
+  const toggleExpanded = import_react44.default.useCallback((bundleId) => {
     setExpanded((previous) => Object.assign({}, previous, { [bundleId]: !previous[bundleId] }));
   }, []);
-  import_react43.default.useEffect(() => registerComposerBridge(inputActions), [inputActions]);
-  import_react43.default.useEffect(() => installCitationTokens(), []);
-  import_react43.default.useEffect(() => {
+  import_react44.default.useEffect(() => registerComposerBridge(inputActions), [inputActions]);
+  import_react44.default.useEffect(() => installCitationTokens(), []);
+  import_react44.default.useEffect(() => {
     bundles.forEach((bundle) => {
       if (!bundle.autoInsert || bundle.added || insertingRef.current[bundle.bundleId]) return;
       if (!bundle.token) return;
@@ -29102,7 +29214,7 @@ function DockBody(props) {
       setTimeout(() => attempt(12), 150);
     });
   }, [bundles.map((bundle) => bundle.bundleId + ":" + bundle.added + ":" + Boolean(bundle.autoInsert)).join(","), t]);
-  const attemptInsert = import_react43.default.useCallback(
+  const attemptInsert = import_react44.default.useCallback(
     (bundle) => {
       if (!inputActions || typeof inputActions.captureInsertion !== "function" || typeof inputActions.insertText !== "function") return false;
       if (!bundle || !bundle.token) return false;
@@ -29117,7 +29229,7 @@ function DockBody(props) {
     },
     [inputActions]
   );
-  const insertBundle = import_react43.default.useCallback(
+  const insertBundle = import_react44.default.useCallback(
     (bundle) => {
       if (!bundle || bundle.added || busyId) return;
       if (insertingRef.current[bundle.bundleId]) return;
@@ -29270,11 +29382,11 @@ function DockBody(props) {
 }
 
 // src/surfaces/header-button.jsx
-var import_react44 = __toESM(require("react"), 1);
+var import_react45 = __toESM(require("react"), 1);
 function HeaderDrawerButton(props) {
   const t = props.t;
   const sessionId = props.sessionId;
-  const [failed, setFailed] = import_react44.default.useState(false);
+  const [failed, setFailed] = import_react45.default.useState(false);
   if (!sessionId) return null;
   return h(
     "span",
@@ -29299,7 +29411,7 @@ function HeaderDrawerButton(props) {
 }
 
 // src/surfaces/integration/turn-tail.jsx
-var import_react45 = __toESM(require("react"), 1);
+var import_react46 = __toESM(require("react"), 1);
 
 // src/surfaces/integration/input-triggers.js
 var MENTION_SOURCE = "pappers-hall-papers";
@@ -29648,15 +29760,15 @@ function ToolSourceCard(props) {
   const phase = props.phase;
   const block = props.block;
   const api = props.api;
-  const [citing, setCiting] = import_react45.default.useState("");
-  const [open, setOpen] = import_react45.default.useState(false);
-  const [citeError, setCiteError] = import_react45.default.useState("");
+  const [citing, setCiting] = import_react46.default.useState("");
+  const [open, setOpen] = import_react46.default.useState(false);
+  const [citeError, setCiteError] = import_react46.default.useState("");
   const result = phase === "result" ? parseResult(block) : null;
   const isError = phase === "result" && Boolean(block && block.isError);
   const isUnavailable = Boolean(result && result.status === "unavailable");
   const preparing = phase === "preparing";
   const running = phase === "start";
-  const args = import_react45.default.useMemo(() => {
+  const args = import_react46.default.useMemo(() => {
     if (!block) return null;
     const raw = phase === "result" ? block.call && block.call.argsRaw : block.argsRaw;
     if (typeof raw !== "string" || raw === "") return null;
@@ -29821,8 +29933,8 @@ function FigureBody(props) {
   const page2 = figure.page ?? data.page;
   const caption = firstText4(figure.caption, data.caption);
   const imageUrl = firstText4(figure.imageUrl);
-  const [imageFailed, setImageFailed] = import_react45.default.useState(false);
-  import_react45.default.useEffect(() => {
+  const [imageFailed, setImageFailed] = import_react46.default.useState(false);
+  import_react46.default.useEffect(() => {
     setImageFailed(false);
   }, [imageUrl]);
   return h(
@@ -30066,10 +30178,10 @@ function registerConversationIntegration(ctx, services) {
 }
 
 // src/surfaces/settings/host.jsx
-var import_react47 = __toESM(require("react"), 1);
+var import_react48 = __toESM(require("react"), 1);
 
 // src/surfaces/settings/panel.jsx
-var import_react46 = __toESM(require("react"), 1);
+var import_react47 = __toESM(require("react"), 1);
 
 // src/core/ai-models.js
 function modelForProvider(catalog, providerId) {
@@ -30173,31 +30285,31 @@ function Card(props) {
 }
 function SettingsPanel(props) {
   const t = props.t;
-  const [state, setState] = import_react46.default.useState({ status: "loading", data: null, error: null });
-  const [jobs, setJobs] = import_react46.default.useState([]);
-  const [busy2, setBusy] = import_react46.default.useState("");
-  const [test, setTest] = import_react46.default.useState(null);
-  const [error, setError] = import_react46.default.useState("");
-  const [aiCatalog, setAiCatalog] = import_react46.default.useState({ status: "idle", selection: null, providers: [], available: false, error: null });
-  const [aiProvider, setAiProvider] = import_react46.default.useState("");
-  const [aiModel, setAiModel] = import_react46.default.useState("");
-  const [aiSaving, setAiSaving] = import_react46.default.useState(false);
-  const pollRef = import_react46.default.useRef(null);
-  const load = import_react46.default.useCallback(() => {
+  const [state, setState] = import_react47.default.useState({ status: "loading", data: null, error: null });
+  const [jobs, setJobs] = import_react47.default.useState([]);
+  const [busy2, setBusy] = import_react47.default.useState("");
+  const [test, setTest] = import_react47.default.useState(null);
+  const [error, setError] = import_react47.default.useState("");
+  const [aiCatalog, setAiCatalog] = import_react47.default.useState({ status: "idle", selection: null, providers: [], available: false, error: null });
+  const [aiProvider, setAiProvider] = import_react47.default.useState("");
+  const [aiModel, setAiModel] = import_react47.default.useState("");
+  const [aiSaving, setAiSaving] = import_react47.default.useState(false);
+  const pollRef = import_react47.default.useRef(null);
+  const load = import_react47.default.useCallback(() => {
     setState((previous) => ({ status: previous.data ? "refreshing" : "loading", data: previous.data, error: null }));
     defaultApi("settings.get", {}).then((value) => {
       if (value && value.ok === false) throw Object.assign(new Error(value.error && value.error.message ? value.error.message : "settings.get failed"), { code: value.error && value.error.code });
       setState({ status: "ready", data: value, error: null });
     }).catch((err) => setState({ status: "error", data: null, error: err }));
   }, []);
-  const loadJobs = import_react46.default.useCallback(() => {
+  const loadJobs = import_react47.default.useCallback(() => {
     defaultApi("jobs.list", {}).then((value) => {
       const items2 = Array.isArray(value && value.items) ? value.items : Array.isArray(value && value.jobs) ? value.jobs : [];
       setJobs(items2);
     }).catch(() => {
     });
   }, []);
-  const loadAi = import_react46.default.useCallback(() => {
+  const loadAi = import_react47.default.useCallback(() => {
     setAiCatalog((previous) => Object.assign({}, previous, { status: previous.providers && previous.providers.length > 0 ? "refreshing" : "loading", error: null }));
     defaultApi("ai.providers", {}).then((value) => {
       const providers2 = Array.isArray(value && value.providers) ? value.providers : [];
@@ -30209,7 +30321,7 @@ function SettingsPanel(props) {
       setAiModel(model);
     }).catch((err) => setAiCatalog((previous) => Object.assign({}, previous, { status: "error", error: err })));
   }, []);
-  import_react46.default.useEffect(() => {
+  import_react47.default.useEffect(() => {
     if (!props.open) return void 0;
     load();
     loadJobs();
@@ -30227,8 +30339,8 @@ function SettingsPanel(props) {
     };
   }, [props.open]);
   const runningJob = jobs.find((job) => job && (job.state === "running" || job.state === "queued"));
-  const wasRunning = import_react46.default.useRef(null);
-  import_react46.default.useEffect(() => {
+  const wasRunning = import_react47.default.useRef(null);
+  import_react47.default.useEffect(() => {
     const id = runningJob ? runningJob.id : null;
     if (wasRunning.current && !id) load();
     wasRunning.current = id;
@@ -30363,8 +30475,8 @@ function SettingsPanel(props) {
   const ocrWithJob = Object.assign({}, ocr, { job: jobFor("ocr") });
   const status = index.embedding || index;
   const counts = Object.assign({}, diagnostics.counts || {}, status && status.counts || {});
-  const dialogRef = import_react46.default.useRef(null);
-  import_react46.default.useEffect(() => {
+  const dialogRef = import_react47.default.useRef(null);
+  import_react47.default.useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog === null) return void 0;
     try {
@@ -30415,7 +30527,7 @@ function SettingsPanel(props) {
           "div",
           { className: "ph-settings__body ph-scroll" },
           state.status === "loading" && !state.data ? h("div", { className: "ph-settings__skeleton" }, [0, 1, 2, 3].map((i) => h(Skeleton, { key: i, width: "100%", height: 72, radius: 10 }))) : state.status === "error" && !state.data ? h("div", { className: "ph-settings__error" }, h(Icon, { name: "warning", size: 18 }), h("div", null, h("div", { className: "ph-settings__errorTitle" }, t("settings.loadFailed")), h("div", { className: "ph-caption" }, describeError(t, state.error)), h(Button, { size: "sm", variant: "secondary", icon: "refresh", onClick: load }, t("common.retry")))) : h(
-            import_react46.default.Fragment,
+            import_react47.default.Fragment,
             null,
             h(
               Section,
@@ -30601,9 +30713,9 @@ function closeSettings() {
 }
 function SettingsHost(props) {
   const t = props && props.t;
-  const [id] = import_react47.default.useState(() => hostState.nextId++);
-  const snapshot4 = import_react47.default.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-  import_react47.default.useEffect(() => {
+  const [id] = import_react48.default.useState(() => hostState.nextId++);
+  const snapshot4 = import_react48.default.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  import_react48.default.useEffect(() => {
     if (hostState.hostId === null) {
       hostState = Object.assign({}, hostState, { hostId: id });
       emit4();
@@ -30615,7 +30727,7 @@ function SettingsHost(props) {
       }
     };
   }, [id]);
-  import_react47.default.useEffect(() => bus.on("open-settings", () => openSettings()), []);
+  import_react48.default.useEffect(() => bus.on("open-settings", () => openSettings()), []);
   if (snapshot4.hostId !== id || !snapshot4.open) return null;
   return h(
     "div",
@@ -30653,6 +30765,7 @@ var ZH = {
   "ai.warning.error.title": "AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528",
   "ai.warning.error.body": "{reason}\u3002\u4F60\u53EF\u4EE5\u68C0\u67E5\u6A21\u578B\u4F9B\u5E94\u5546\u8BBE\u7F6E\u540E\u91CD\u8BD5\u3002",
   "ai.warning.error.bodyPlain": "AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF0C\u8BF7\u68C0\u67E5\u6A21\u578B\u4F9B\u5E94\u5546\u8BBE\u7F6E\u3002",
+  "ai.warning.details": "\u9519\u8BEF\u8BE6\u60C5",
   "ai.warning.changeProvider": "\u66F4\u6362\u6A21\u578B\u4F9B\u5E94\u5546",
   "ai.settings.title": "AI \u6A21\u578B\u4E0E\u8BA2\u9605",
   "ai.settings.desc": "Pappers-Hall \u7684 AI \u95EE\u7B54\u4E0E AI \u7CBE\u8BD1\u8DDF\u968F DSH \u7684\u9ED8\u8BA4\u6A21\u578B\uFF1B\u8FD9\u91CC\u4FEE\u6539\u4F1A\u540C\u6B65\u5230 DeepSeek Harness\u3002",
@@ -31977,6 +32090,7 @@ var EN = {
   "ai.warning.error.title": "AI is temporarily unavailable",
   "ai.warning.error.body": "{reason}. Check the model provider settings and retry.",
   "ai.warning.error.bodyPlain": "AI is temporarily unavailable. Check the model provider settings.",
+  "ai.warning.details": "Error details",
   "ai.warning.changeProvider": "Change model provider",
   "ai.settings.title": "AI model & subscription",
   "ai.settings.desc": "Pappers-Hall AI Q&A and AI translation follow the DSH default model; changes here sync to DeepSeek Harness.",
@@ -33281,22 +33395,22 @@ var EN = {
 };
 
 // src/surfaces/notes/workspace.jsx
-var import_react48 = __toESM(require("react"), 1);
+var import_react49 = __toESM(require("react"), 1);
 function useServiceState2(service) {
-  const subscribe2 = import_react48.default.useCallback((listener) => service.subscribe(listener), [service]);
-  const getSnapshot2 = import_react48.default.useCallback(() => service.getSnapshot(), [service]);
-  return import_react48.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
+  const subscribe2 = import_react49.default.useCallback((listener) => service.subscribe(listener), [service]);
+  const getSnapshot2 = import_react49.default.useCallback(() => service.getSnapshot(), [service]);
+  return import_react49.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
 }
 function FolderTree2(props) {
   const t = props.t;
   const tree = props.tree;
-  const [editing, setEditing] = import_react48.default.useState(null);
-  const [armedDelete, setArmedDelete] = import_react48.default.useState("");
-  const inputRef = import_react48.default.useRef(null);
-  import_react48.default.useEffect(() => {
+  const [editing, setEditing] = import_react49.default.useState(null);
+  const [armedDelete, setArmedDelete] = import_react49.default.useState("");
+  const inputRef = import_react49.default.useRef(null);
+  import_react49.default.useEffect(() => {
     if (editing && inputRef.current) inputRef.current.focus();
   }, [editing]);
-  import_react48.default.useEffect(() => {
+  import_react49.default.useEffect(() => {
     if (!armedDelete) return void 0;
     const timer2 = setTimeout(() => setArmedDelete(""), 4500);
     return () => clearTimeout(timer2);
@@ -33317,11 +33431,11 @@ function FolderTree2(props) {
     for (const node of nodes) {
       const isEditing = editing && editing.mode === "rename" && editing.id === node.id;
       rows.push(
-        import_react48.default.createElement(
+        import_react49.default.createElement(
           "div",
           { key: "f-" + node.id, className: "ph-n-tree__row" + (props.folderId === node.id ? " ph-n-tree__row--active" : ""), style: { paddingLeft: 6 + depth * 14 } },
-          import_react48.default.createElement("span", { className: "ph-n-tree__icon" }, import_react48.default.createElement(Icon, { name: depth === 0 ? "folder" : "folderOpen", size: 13 })),
-          isEditing ? import_react48.default.createElement("input", {
+          import_react49.default.createElement("span", { className: "ph-n-tree__icon" }, import_react49.default.createElement(Icon, { name: depth === 0 ? "folder" : "folderOpen", size: 13 })),
+          isEditing ? import_react49.default.createElement("input", {
             ref: inputRef,
             className: "ph-n-tree__input",
             value: editing.value,
@@ -33331,7 +33445,7 @@ function FolderTree2(props) {
               if (event.key === "Escape") setEditing(null);
             },
             onBlur: submit
-          }) : import_react48.default.createElement(
+          }) : import_react49.default.createElement(
             "button",
             {
               type: "button",
@@ -33342,23 +33456,23 @@ function FolderTree2(props) {
             },
             node.name
           ),
-          import_react48.default.createElement("span", { className: "ph-n-tree__count" }, String(node.count || 0)),
-          import_react48.default.createElement(
+          import_react49.default.createElement("span", { className: "ph-n-tree__count" }, String(node.count || 0)),
+          import_react49.default.createElement(
             "span",
             { className: "ph-n-tree__tools" },
-            import_react48.default.createElement(IconButton, {
+            import_react49.default.createElement(IconButton, {
               icon: "plus",
               size: 12,
               title: t("notes.folders.newChild"),
               onClick: () => setEditing({ mode: "create", parentId: node.id, value: "" })
             }),
-            import_react48.default.createElement(IconButton, {
+            import_react49.default.createElement(IconButton, {
               icon: "edit",
               size: 12,
               title: t("notes.folders.rename"),
               onClick: () => setEditing({ mode: "rename", id: node.id, value: node.name })
             }),
-            import_react48.default.createElement(IconButton, {
+            import_react49.default.createElement(IconButton, {
               icon: "trash",
               size: 12,
               title: armedDelete === node.id ? t("notes.folders.deleteConfirm") : t("notes.folders.delete"),
@@ -33377,22 +33491,22 @@ function FolderTree2(props) {
     }
   };
   walk(tree, 0);
-  return import_react48.default.createElement(
+  return import_react49.default.createElement(
     "div",
     { className: "ph-n-tree" },
-    import_react48.default.createElement(
+    import_react49.default.createElement(
       "button",
       { type: "button", className: "ph-n-tree__row" + (props.folderId === "" ? " ph-n-tree__row--active" : ""), onClick: () => props.onSelect("") },
-      import_react48.default.createElement("span", { className: "ph-n-tree__icon" }, import_react48.default.createElement(Icon, { name: "layers", size: 13 })),
-      import_react48.default.createElement("span", { className: "ph-n-tree__label" }, t("notes.folders.all")),
-      import_react48.default.createElement("span", { className: "ph-n-tree__count" }, String(props.total || 0))
+      import_react49.default.createElement("span", { className: "ph-n-tree__icon" }, import_react49.default.createElement(Icon, { name: "layers", size: 13 })),
+      import_react49.default.createElement("span", { className: "ph-n-tree__label" }, t("notes.folders.all")),
+      import_react49.default.createElement("span", { className: "ph-n-tree__count" }, String(props.total || 0))
     ),
     rows,
-    editing && editing.mode === "create" && !editing.parentId ? import_react48.default.createElement(
+    editing && editing.mode === "create" && !editing.parentId ? import_react49.default.createElement(
       "div",
       { className: "ph-n-tree__row" },
-      import_react48.default.createElement("span", { className: "ph-n-tree__icon" }, import_react48.default.createElement(Icon, { name: "folder", size: 13 })),
-      import_react48.default.createElement("input", {
+      import_react49.default.createElement("span", { className: "ph-n-tree__icon" }, import_react49.default.createElement(Icon, { name: "folder", size: 13 })),
+      import_react49.default.createElement("input", {
         ref: inputRef,
         className: "ph-n-tree__input",
         value: editing.value,
@@ -33404,7 +33518,7 @@ function FolderTree2(props) {
         },
         onBlur: submit
       })
-    ) : import_react48.default.createElement(
+    ) : import_react49.default.createElement(
       "button",
       {
         type: "button",
@@ -33412,39 +33526,39 @@ function FolderTree2(props) {
         onClick: () => setEditing({ mode: "create", parentId: null, value: "" }),
         title: t("notes.folders.new")
       },
-      import_react48.default.createElement("span", { className: "ph-n-tree__icon" }, import_react48.default.createElement(Icon, { name: "folderPlus", size: 13 })),
-      import_react48.default.createElement("span", { className: "ph-n-tree__label ph-n-muted" }, t("notes.folders.new"))
+      import_react49.default.createElement("span", { className: "ph-n-tree__icon" }, import_react49.default.createElement(Icon, { name: "folderPlus", size: 13 })),
+      import_react49.default.createElement("span", { className: "ph-n-tree__label ph-n-muted" }, t("notes.folders.new"))
     ),
-    tree.length === 0 ? import_react48.default.createElement("p", { className: "ph-n-folders__empty" }, t("notes.folders.empty")) : null
+    tree.length === 0 ? import_react49.default.createElement("p", { className: "ph-n-folders__empty" }, t("notes.folders.empty")) : null
   );
 }
 function NotesWorkspace(props) {
   const t = props.t;
   const api = props.api;
-  const releaseStyles = import_react48.default.useMemo(() => ensureNotesStyles(), []);
-  const service = import_react48.default.useMemo(() => createNotesService(api), [api]);
+  const releaseStyles = import_react49.default.useMemo(() => ensureNotesStyles(), []);
+  const service = import_react49.default.useMemo(() => createNotesService(api), [api]);
   const serviceState = useServiceState2(service);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [folders, setFolders] = import_react48.default.useState({ status: "idle", tree: [] });
-  const [list, setList] = import_react48.default.useState({ status: "idle", items: [], total: 0, error: null });
-  const [query, setQuery] = import_react48.default.useState("");
-  const [debounced, setDebounced] = import_react48.default.useState("");
-  const [folderId, setFolderId] = import_react48.default.useState("");
-  const [paperFilter, setPaperFilter] = import_react48.default.useState(null);
-  const [activeId, setActiveId] = import_react48.default.useState(() => String(props.initialNoteId || ""));
-  const [active, setActive] = import_react48.default.useState({ status: "idle", note: null, error: null });
-  const [foldersOpen, setFoldersOpen] = import_react48.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1250);
-  const [paperOpen, setPaperOpen] = import_react48.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1420);
-  const [refreshToken, setRefreshToken] = import_react48.default.useState(0);
-  const activeIdRef = import_react48.default.useRef(activeId);
+  const [folders, setFolders] = import_react49.default.useState({ status: "idle", tree: [] });
+  const [list, setList] = import_react49.default.useState({ status: "idle", items: [], total: 0, error: null });
+  const [query, setQuery] = import_react49.default.useState("");
+  const [debounced, setDebounced] = import_react49.default.useState("");
+  const [folderId, setFolderId] = import_react49.default.useState("");
+  const [paperFilter, setPaperFilter] = import_react49.default.useState(null);
+  const [activeId, setActiveId] = import_react49.default.useState(() => String(props.initialNoteId || ""));
+  const [active, setActive] = import_react49.default.useState({ status: "idle", note: null, error: null });
+  const [foldersOpen, setFoldersOpen] = import_react49.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1250);
+  const [paperOpen, setPaperOpen] = import_react49.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1420);
+  const [refreshToken, setRefreshToken] = import_react49.default.useState(0);
+  const activeIdRef = import_react49.default.useRef(activeId);
   activeIdRef.current = activeId;
-  import_react48.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  import_react48.default.useEffect(() => {
+  import_react49.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  import_react49.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(query), 260);
     return () => clearTimeout(timer2);
   }, [query]);
-  const refresh = import_react48.default.useCallback(() => setRefreshToken((value) => value + 1), []);
-  import_react48.default.useEffect(() => {
+  const refresh = import_react49.default.useCallback(() => setRefreshToken((value) => value + 1), []);
+  import_react49.default.useEffect(() => {
     let alive = true;
     service.probe().then((state) => {
       if (!alive || state.status === "unavailable" || state.status === "offline") return;
@@ -33459,7 +33573,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [service, refreshToken]);
-  import_react48.default.useEffect(() => {
+  import_react49.default.useEffect(() => {
     if (serviceState.status !== "ready") return void 0;
     let alive = true;
     setList((previous) => Object.assign({}, previous, { status: "loading", error: null }));
@@ -33491,7 +33605,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [debounced, folderId, paperFilter, refreshToken, service, serviceState.status]);
-  import_react48.default.useEffect(() => {
+  import_react49.default.useEffect(() => {
     if (!activeId) {
       setActive({ status: "idle", note: null, error: null });
       return void 0;
@@ -33507,7 +33621,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [activeId, refreshToken, service]);
-  const updateRow = import_react48.default.useCallback((saved) => {
+  const updateRow = import_react49.default.useCallback((saved) => {
     if (!saved) return;
     setList((previous) => {
       const items2 = previous.items.map(
@@ -33527,7 +33641,7 @@ function NotesWorkspace(props) {
     });
     setActive((previous) => previous.note && previous.note.id === saved.id ? { status: "ready", note: saved, error: null } : previous);
   }, []);
-  const createNote = import_react48.default.useCallback(
+  const createNote = import_react49.default.useCallback(
     (options) => {
       const opts = options || {};
       const paperIds = opts.paperIds || (paperFilter ? [paperFilter.id] : []);
@@ -33545,7 +33659,7 @@ function NotesWorkspace(props) {
     },
     [folderId, paperFilter, push, refresh, service, t]
   );
-  const createFolder = import_react48.default.useCallback(
+  const createFolder = import_react49.default.useCallback(
     (name, parentId) => Promise.resolve(service.createFolder({ name, parentId: parentId || void 0 })).then((folder) => {
       push("success", t("notes.folders.created"));
       refresh();
@@ -33556,14 +33670,14 @@ function NotesWorkspace(props) {
     }),
     [push, refresh, service, t]
   );
-  const renameFolder = import_react48.default.useCallback(
+  const renameFolder = import_react49.default.useCallback(
     (id, name) => Promise.resolve(service.renameFolder({ id, name })).then(() => refresh()).catch((error) => {
       push("error", t("notes.folders.renameFailed", { message: String(error && error.message || error) }));
       throw error;
     }),
     [push, refresh, service, t]
   );
-  const deleteFolder = import_react48.default.useCallback(
+  const deleteFolder = import_react49.default.useCallback(
     (id) => Promise.resolve(service.deleteFolder(id)).then(() => {
       push("success", t("notes.folders.deleted"));
       if (folderId === id) setFolderId("");
@@ -33571,7 +33685,7 @@ function NotesWorkspace(props) {
     }).catch((error) => push("error", t("notes.folders.deleteFailed", { message: String(error && error.message || error) }))),
     [folderId, push, refresh, service, t]
   );
-  const moveNote = import_react48.default.useCallback(
+  const moveNote = import_react49.default.useCallback(
     (targetFolderId) => {
       const note = active.note;
       if (!note) return Promise.resolve(null);
@@ -33595,15 +33709,15 @@ function NotesWorkspace(props) {
     },
     [active.note, folders.tree, push, service, t]
   );
-  const linkPapers = import_react48.default.useCallback(
+  const linkPapers = import_react49.default.useCallback(
     (ids) => Promise.resolve(service.link(activeIdRef.current, ids)),
     [service]
   );
-  const unlinkPapers = import_react48.default.useCallback(
+  const unlinkPapers = import_react49.default.useCallback(
     (ids) => Promise.resolve(service.unlink(activeIdRef.current, ids)),
     [service]
   );
-  const onDeleted = import_react48.default.useCallback(
+  const onDeleted = import_react49.default.useCallback(
     (deleted) => {
       setList((previous) => {
         const items2 = previous.items.filter((item) => item.id !== deleted.id);
@@ -33616,35 +33730,35 @@ function NotesWorkspace(props) {
     },
     [refresh]
   );
-  const openPaper = import_react48.default.useCallback(
+  const openPaper = import_react49.default.useCallback(
     (paperId, page2, annotationId) => {
       if (props.onOpenPaper) props.onOpenPaper(paperId, page2 || 1, annotationId || null);
     },
     [props]
   );
-  const flatFolders = import_react48.default.useMemo(() => flattenFolders(folders.tree || []), [folders.tree]);
-  const folderName = import_react48.default.useMemo(() => {
+  const flatFolders = import_react49.default.useMemo(() => flattenFolders(folders.tree || []), [folders.tree]);
+  const folderName = import_react49.default.useMemo(() => {
     if (!folderId) return "";
     const found = flatFolders.find((folder) => folder.id === folderId);
     return found ? found.name : "";
   }, [flatFolders, folderId]);
   const listTitle = paperFilter ? t("notes.fromPaperTitle", { title: paperFilter.title }) : folderName || t("notes.folders.all");
   const unavailable = serviceState.status === "unavailable" || serviceState.status === "offline";
-  return import_react48.default.createElement(
+  return import_react49.default.createElement(
     "div",
     { className: "ph-n-app" },
-    import_react48.default.createElement(
+    import_react49.default.createElement(
       "div",
       { className: "ph-n-topbar" },
-      import_react48.default.createElement(Button, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack, title: t("notes.library.back") }, t("notes.library.back")),
-      import_react48.default.createElement(
+      import_react49.default.createElement(Button, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack, title: t("notes.library.back") }, t("notes.library.back")),
+      import_react49.default.createElement(
         "div",
         { className: "ph-n-brand" },
-        import_react48.default.createElement(Icon, { name: "note", size: 18, className: "ph-n-brand__mark" }),
-        import_react48.default.createElement("h1", { className: "ph-n-brand__title" }, t("notes.library.title")),
-        import_react48.default.createElement("span", { className: "ph-n-brand__sub" }, t("notes.library.subtitle"))
+        import_react49.default.createElement(Icon, { name: "note", size: 18, className: "ph-n-brand__mark" }),
+        import_react49.default.createElement("h1", { className: "ph-n-brand__title" }, t("notes.library.title")),
+        import_react49.default.createElement("span", { className: "ph-n-brand__sub" }, t("notes.library.subtitle"))
       ),
-      import_react48.default.createElement(SearchInput, {
+      import_react49.default.createElement(SearchInput, {
         className: "ph-n-topbar__search",
         value: query,
         onChange: setQuery,
@@ -33653,54 +33767,54 @@ function NotesWorkspace(props) {
         loading: list.status === "loading",
         "aria-label": t("notes.search.placeholder")
       }),
-      import_react48.default.createElement("span", { className: "ph-n-topbar__spacer" }),
-      import_react48.default.createElement(
+      import_react49.default.createElement("span", { className: "ph-n-topbar__spacer" }),
+      import_react49.default.createElement(
         "div",
         { className: "ph-n-topbar__actions" },
-        import_react48.default.createElement(Button, { variant: "primary", size: "sm", icon: "plus", onClick: () => createNote().catch(() => {
+        import_react49.default.createElement(Button, { variant: "primary", size: "sm", icon: "plus", onClick: () => createNote().catch(() => {
         }), title: t("notes.new") }, t("notes.new")),
-        import_react48.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), active: foldersOpen, onClick: () => setFoldersOpen((value) => !value) }),
-        import_react48.default.createElement(IconButton, { icon: "panelRight", title: paperOpen ? t("notes.papers.panelClose") : t("notes.papers.panelOpen"), active: paperOpen, onClick: () => setPaperOpen((value) => !value) }),
-        import_react48.default.createElement(IconButton, { icon: "refresh", title: t("notes.refresh"), onClick: refresh }),
-        props.onOpenSettings ? import_react48.default.createElement(IconButton, { icon: "settings", title: t("settings.open"), onClick: props.onOpenSettings }) : null
+        import_react49.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), active: foldersOpen, onClick: () => setFoldersOpen((value) => !value) }),
+        import_react49.default.createElement(IconButton, { icon: "panelRight", title: paperOpen ? t("notes.papers.panelClose") : t("notes.papers.panelOpen"), active: paperOpen, onClick: () => setPaperOpen((value) => !value) }),
+        import_react49.default.createElement(IconButton, { icon: "refresh", title: t("notes.refresh"), onClick: refresh }),
+        props.onOpenSettings ? import_react49.default.createElement(IconButton, { icon: "settings", title: t("settings.open"), onClick: props.onOpenSettings }) : null
       )
     ),
-    unavailable ? import_react48.default.createElement(
+    unavailable ? import_react49.default.createElement(
       "div",
       { className: "ph-n-main__empty" },
-      import_react48.default.createElement(EmptyState, {
+      import_react49.default.createElement(EmptyState, {
         icon: "warning",
         tone: "warning",
         title: serviceState.status === "offline" ? t("notes.service.offlineTitle") : t("notes.service.unavailableTitle"),
         desc: serviceState.status === "offline" ? t("notes.service.offlineDesc") : t("notes.service.unavailableDesc"),
-        action: import_react48.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: () => service.probe().then((state) => {
+        action: import_react49.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: () => service.probe().then((state) => {
           if (state.status === "ready") refresh();
         }) }, t("notes.service.retry"))
       })
-    ) : import_react48.default.createElement(
+    ) : import_react49.default.createElement(
       "div",
       { className: "ph-n-body" },
-      import_react48.default.createElement(
+      import_react49.default.createElement(
         "div",
         { className: "ph-n-folders" + (foldersOpen ? "" : " ph-n-folders--closed") },
-        import_react48.default.createElement(
+        import_react49.default.createElement(
           "div",
           { className: "ph-n-folders__head" },
-          import_react48.default.createElement(Icon, { name: "folder", size: 13 }),
-          import_react48.default.createElement("span", null, t("notes.folders.title")),
-          import_react48.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), onClick: () => setFoldersOpen(false) })
+          import_react49.default.createElement(Icon, { name: "folder", size: 13 }),
+          import_react49.default.createElement("span", null, t("notes.folders.title")),
+          import_react49.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), onClick: () => setFoldersOpen(false) })
         ),
-        import_react48.default.createElement(
+        import_react49.default.createElement(
           "div",
           { className: "ph-n-folders__scroll ph-n-scroll" },
-          folders.status === "loading" && folders.tree.length === 0 ? import_react48.default.createElement("div", { className: "ph-n-folders__empty" }, t("common.loading")) : null,
-          folders.status === "error" ? import_react48.default.createElement(
+          folders.status === "loading" && folders.tree.length === 0 ? import_react49.default.createElement("div", { className: "ph-n-folders__empty" }, t("common.loading")) : null,
+          folders.status === "error" ? import_react49.default.createElement(
             "div",
             { className: "ph-n-folders__empty" },
             t("notes.folders.loadFailed"),
-            import_react48.default.createElement(Button, { size: "sm", variant: "ghost", icon: "refresh", onClick: refresh }, t("common.retry"))
+            import_react49.default.createElement(Button, { size: "sm", variant: "ghost", icon: "refresh", onClick: refresh }, t("common.retry"))
           ) : null,
-          import_react48.default.createElement(FolderTree2, {
+          import_react49.default.createElement(FolderTree2, {
             t,
             tree: folders.tree || [],
             folderId,
@@ -33715,43 +33829,43 @@ function NotesWorkspace(props) {
           })
         )
       ),
-      import_react48.default.createElement(
+      import_react49.default.createElement(
         "div",
         { className: "ph-n-listpane" },
-        import_react48.default.createElement(
+        import_react49.default.createElement(
           "div",
           { className: "ph-n-listpane__head" },
-          import_react48.default.createElement("span", { className: "ph-n-listpane__title", title: listTitle }, listTitle),
-          import_react48.default.createElement("span", { className: "ph-n-listpane__count" }, list.status === "ready" ? String(list.items.length) : "\u2026")
+          import_react49.default.createElement("span", { className: "ph-n-listpane__title", title: listTitle }, listTitle),
+          import_react49.default.createElement("span", { className: "ph-n-listpane__count" }, list.status === "ready" ? String(list.items.length) : "\u2026")
         ),
-        paperFilter ? import_react48.default.createElement(
+        paperFilter ? import_react49.default.createElement(
           "div",
           { className: "ph-n-listpane__filter" },
-          import_react48.default.createElement(Icon, { name: "filter", size: 12 }),
-          import_react48.default.createElement("span", { className: "ph-n-chip ph-n-chip--folder" }, import_react48.default.createElement("span", { className: "ph-n-chip__label", title: paperFilter.title }, paperFilter.title)),
-          import_react48.default.createElement(IconButton, { icon: "close", size: 12, title: t("notes.fromPaper.clear"), onClick: () => setPaperFilter(null) })
-        ) : debounced.trim() ? import_react48.default.createElement("div", { className: "ph-n-listpane__filter" }, import_react48.default.createElement(Icon, { name: "search", size: 12 }), import_react48.default.createElement("span", null, t("notes.search.results", { count: list.items.length }))) : null,
-        list.status === "error" ? import_react48.default.createElement(
+          import_react49.default.createElement(Icon, { name: "filter", size: 12 }),
+          import_react49.default.createElement("span", { className: "ph-n-chip ph-n-chip--folder" }, import_react49.default.createElement("span", { className: "ph-n-chip__label", title: paperFilter.title }, paperFilter.title)),
+          import_react49.default.createElement(IconButton, { icon: "close", size: 12, title: t("notes.fromPaper.clear"), onClick: () => setPaperFilter(null) })
+        ) : debounced.trim() ? import_react49.default.createElement("div", { className: "ph-n-listpane__filter" }, import_react49.default.createElement(Icon, { name: "search", size: 12 }), import_react49.default.createElement("span", null, t("notes.search.results", { count: list.items.length }))) : null,
+        list.status === "error" ? import_react49.default.createElement(
           "div",
           { className: "ph-n-listpane__filter" },
-          import_react48.default.createElement(Icon, { name: "warning", size: 12 }),
-          import_react48.default.createElement("span", null, t("notes.loadFailed", { message: String(list.error && list.error.message || "") })),
-          import_react48.default.createElement(IconButton, { icon: "refresh", size: 12, title: t("common.retry"), onClick: refresh })
+          import_react49.default.createElement(Icon, { name: "warning", size: 12 }),
+          import_react49.default.createElement("span", null, t("notes.loadFailed", { message: String(list.error && list.error.message || "") })),
+          import_react49.default.createElement(IconButton, { icon: "refresh", size: 12, title: t("common.retry"), onClick: refresh })
         ) : null,
-        import_react48.default.createElement(
+        import_react49.default.createElement(
           "div",
           { className: "ph-n-list ph-n-scroll" },
-          list.status === "loading" && list.items.length === 0 ? [0, 1, 2, 3].map((index) => import_react48.default.createElement("div", { key: index, className: "ph-n-skeletonrow" })) : null,
-          list.status === "ready" && list.items.length === 0 ? import_react48.default.createElement(EmptyState, {
+          list.status === "loading" && list.items.length === 0 ? [0, 1, 2, 3].map((index) => import_react49.default.createElement("div", { key: index, className: "ph-n-skeletonrow" })) : null,
+          list.status === "ready" && list.items.length === 0 ? import_react49.default.createElement(EmptyState, {
             compact: true,
             icon: "note",
             title: debounced.trim() ? t("notes.search.empty") : t("notes.empty.title"),
             desc: debounced.trim() ? t("notes.search.emptyDesc") : t("notes.empty.desc"),
-            action: import_react48.default.createElement(Button, { size: "sm", variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
+            action: import_react49.default.createElement(Button, { size: "sm", variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
             }) }, t("notes.new"))
           }) : null,
           list.items.map(
-            (item) => import_react48.default.createElement(
+            (item) => import_react49.default.createElement(
               "button",
               {
                 key: item.id,
@@ -33760,40 +33874,40 @@ function NotesWorkspace(props) {
                 onClick: () => setActiveId(item.id),
                 title: item.title || t("notes.untitled")
               },
-              import_react48.default.createElement(
+              import_react49.default.createElement(
                 "span",
                 { className: "ph-n-listrow__top" },
-                import_react48.default.createElement("span", { className: "ph-n-listrow__title" }, item.title || t("notes.untitled")),
-                import_react48.default.createElement("span", { className: "ph-n-listrow__time" }, formatNoteTime(item.updatedAt))
+                import_react49.default.createElement("span", { className: "ph-n-listrow__title" }, item.title || t("notes.untitled")),
+                import_react49.default.createElement("span", { className: "ph-n-listrow__time" }, formatNoteTime(item.updatedAt))
               ),
-              import_react48.default.createElement("span", { className: "ph-n-listrow__preview" }, String(item.preview || "").replace(/\s+/g, " ").slice(0, 160) || t("notes.empty.preview")),
-              import_react48.default.createElement(
+              import_react49.default.createElement("span", { className: "ph-n-listrow__preview" }, String(item.preview || "").replace(/\s+/g, " ").slice(0, 160) || t("notes.empty.preview")),
+              import_react49.default.createElement(
                 "span",
                 { className: "ph-n-listrow__meta" },
-                item.folder ? import_react48.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react48.default.createElement(Icon, { name: "folder", size: 10 }), import_react48.default.createElement("span", null, item.folder.name)) : null,
-                item.paperIds && item.paperIds.length > 0 ? import_react48.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react48.default.createElement(Icon, { name: "book", size: 10 }), import_react48.default.createElement("span", null, t("notes.list.paperCount", { count: item.paperIds.length }))) : null,
-                item.searchHit ? import_react48.default.createElement(Badge, { tone: "soft" }, t("notes.search.hit")) : null,
-                item.hasContentJson ? import_react48.default.createElement("span", { title: t("notes.cards.beautifiedHint") }, import_react48.default.createElement(Icon, { name: "sparkle", size: 10 })) : null
+                item.folder ? import_react49.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react49.default.createElement(Icon, { name: "folder", size: 10 }), import_react49.default.createElement("span", null, item.folder.name)) : null,
+                item.paperIds && item.paperIds.length > 0 ? import_react49.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react49.default.createElement(Icon, { name: "book", size: 10 }), import_react49.default.createElement("span", null, t("notes.list.paperCount", { count: item.paperIds.length }))) : null,
+                item.searchHit ? import_react49.default.createElement(Badge, { tone: "soft" }, t("notes.search.hit")) : null,
+                item.hasContentJson ? import_react49.default.createElement("span", { title: t("notes.cards.beautifiedHint") }, import_react49.default.createElement(Icon, { name: "sparkle", size: 10 })) : null
               )
             )
           )
         )
       ),
-      import_react48.default.createElement(
+      import_react49.default.createElement(
         "div",
         { className: "ph-n-main" },
-        active.status === "loading" ? import_react48.default.createElement("div", { className: "ph-n-editor__loading" }, import_react48.default.createElement(Icon, { name: "note", size: 14 }), import_react48.default.createElement("span", null, t("notes.loadingNote"))) : null,
-        active.status === "error" ? import_react48.default.createElement(
+        active.status === "loading" ? import_react49.default.createElement("div", { className: "ph-n-editor__loading" }, import_react49.default.createElement(Icon, { name: "note", size: 14 }), import_react49.default.createElement("span", null, t("notes.loadingNote"))) : null,
+        active.status === "error" ? import_react49.default.createElement(
           "div",
           { className: "ph-n-main__empty" },
-          import_react48.default.createElement(EmptyState, {
+          import_react49.default.createElement(EmptyState, {
             icon: "warning",
             tone: "error",
             title: t("notes.loadFailed", { message: String(active.error && active.error.message || "") }),
-            action: import_react48.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: refresh }, t("common.retry"))
+            action: import_react49.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: refresh }, t("common.retry"))
           })
         ) : null,
-        active.status === "ready" && active.note ? import_react48.default.createElement(NoteEditor, {
+        active.status === "ready" && active.note ? import_react49.default.createElement(NoteEditor, {
           t,
           api,
           service,
@@ -33809,19 +33923,19 @@ function NotesWorkspace(props) {
           onOpenPaper: openPaper,
           onLinkPapers: linkPapers,
           onUnlinkPapers: unlinkPapers
-        }) : active.status !== "loading" ? import_react48.default.createElement(
+        }) : active.status !== "loading" ? import_react49.default.createElement(
           "div",
           { className: "ph-n-main__empty" },
-          import_react48.default.createElement(EmptyState, {
+          import_react49.default.createElement(EmptyState, {
             icon: "note",
             title: t("notes.select.title"),
             desc: t("notes.select.desc"),
-            action: import_react48.default.createElement(Button, { variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
+            action: import_react49.default.createElement(Button, { variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
             }) }, t("notes.new"))
           })
         ) : null
       ),
-      paperOpen ? import_react48.default.createElement(PaperPanel, {
+      paperOpen ? import_react49.default.createElement(PaperPanel, {
         t,
         api,
         noteId: active.note ? active.note.id : null,
@@ -33848,21 +33962,21 @@ function NotesWorkspace(props) {
         onClose: () => setPaperOpen(false)
       }) : null
     ),
-    import_react48.default.createElement(
+    import_react49.default.createElement(
       "div",
       { className: "ph-n-statusbar" },
-      import_react48.default.createElement(Icon, { name: "note", size: 12 }),
-      import_react48.default.createElement("span", null, t("notes.status.counts", { count: list.total || 0, folders: flatFolders.length })),
-      import_react48.default.createElement("span", { className: "ph-n-statusbar__spacer" }),
-      import_react48.default.createElement(
+      import_react49.default.createElement(Icon, { name: "note", size: 12 }),
+      import_react49.default.createElement("span", null, t("notes.status.counts", { count: list.total || 0, folders: flatFolders.length })),
+      import_react49.default.createElement("span", { className: "ph-n-statusbar__spacer" }),
+      import_react49.default.createElement(
         "span",
         { className: serviceState.status === "ready" ? "" : "ph-n-statusbar__warn", title: serviceState.reason || "" },
         serviceState.status === "ready" ? t("notes.service.ready") : serviceState.status === "unknown" ? t("notes.service.checking") : t("notes.service.notReady")
       ),
-      import_react48.default.createElement("span", null, "\xB7"),
-      import_react48.default.createElement("span", null, t("notes.status.autosaveHint"))
+      import_react49.default.createElement("span", null, "\xB7"),
+      import_react49.default.createElement("span", null, t("notes.status.autosaveHint"))
     ),
-    import_react48.default.createElement(ToastStack, { toasts, onDismiss: dismiss2 })
+    import_react49.default.createElement(ToastStack, { toasts, onDismiss: dismiss2 })
   );
 }
 
@@ -33901,7 +34015,7 @@ function apply(ctx) {
       () => ctx.slots.register(
         { name: "sidebar.panellist", id: PANEL_ID, order: 20, label: () => t("panel.title"), locale: NS },
         withBoundary(function PanelEntry(props) {
-          return (0, import_react50.createElement)(PanelIcon, props);
+          return (0, import_react51.createElement)(PanelIcon, props);
         }, "sidebar settings host")
       )
     ),
@@ -33913,7 +34027,7 @@ function apply(ctx) {
       () => ctx.slots.register(
         { name: "shell.overlay", id: "pappers-hall-settings", order: 40, locale: NS },
         withBoundary(function SettingsOverlay(props) {
-          return (0, import_react50.createElement)(SettingsHost, { t });
+          return (0, import_react51.createElement)(SettingsHost, { t });
         }, "settings overlay")
       )
     ),
@@ -33925,7 +34039,7 @@ function apply(ctx) {
       () => ctx.slots.register(
         { name: "main", key: PANEL_ID, locale: NS },
         withBoundary(function PaperCenterSurface(props) {
-          return (0, import_react50.createElement)(PaperCenter, { ...props, t, api, pending, library });
+          return (0, import_react51.createElement)(PaperCenter, { ...props, t, api, pending, library });
         }, "paper center")
       )
     ),

@@ -18,6 +18,7 @@ export const ZH = {
   "ai.warning.error.title": "AI 服务暂时不可用",
   "ai.warning.error.body": "{reason}。你可以检查模型供应商设置后重试。",
   "ai.warning.error.bodyPlain": "AI 服务暂时不可用，请检查模型供应商设置。",
+  "ai.warning.details": "错误详情",
   "ai.warning.changeProvider": "更换模型供应商",
   "ai.settings.title": "AI 模型与订阅",
   "ai.settings.desc": "Pappers-Hall 的 AI 问答与 AI 精译跟随 DSH 的默认模型；这里修改会同步到 DeepSeek Harness。",

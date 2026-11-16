@@ -27,6 +27,7 @@ import {
 } from './shared.jsx'
 import { SlidingThumb, useSlidingThumb } from '../../core/motion.js'
 import { Markdown } from './markdown.jsx'
+import { AiWarning, providerIssue } from '../../core/ai-warning.jsx'
 
 /** Stable id for one rendered chat message. */
 let messageSeq = 0
@@ -74,9 +75,11 @@ function AnswerBlock(props) {
         : React.createElement(
             'div',
             { className: 'ph-r-ai__answer-warn' },
-            message.status === 'error'
-              ? t('reader.ai.error', { message: reason })
-              : t('reader.ai.unavailable', { reason }),
+            providerIssue(reason)
+              ? t('reader.ai.warning.answerFailed')
+              : message.status === 'error'
+                ? t('reader.ai.error', { message: reason })
+                : t('reader.ai.unavailable', { reason }),
           ),
       ok && sources.length > 0
         ? React.createElement(
@@ -421,7 +424,7 @@ export function AiPanel(props) {
         : null,
     ),
     warningReason
-      ? React.createElement(ProviderWarning, {
+      ? React.createElement(AiWarning, {
           t: t,
           status: warningStatus,
           reason: warningReason,

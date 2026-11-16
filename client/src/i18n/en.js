@@ -18,6 +18,7 @@ export const EN = {
   "ai.warning.error.title": "AI is temporarily unavailable",
   "ai.warning.error.body": "{reason}. Check the model provider settings and retry.",
   "ai.warning.error.bodyPlain": "AI is temporarily unavailable. Check the model provider settings.",
+  "ai.warning.details": "Error details",
   "ai.warning.changeProvider": "Change model provider",
   "ai.settings.title": "AI model & subscription",
   "ai.settings.desc": "Pappers-Hall AI Q&A and AI translation follow the DSH default model; changes here sync to DeepSeek Harness.",

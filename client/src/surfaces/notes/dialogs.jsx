@@ -5,6 +5,7 @@
  * optional Host capability is missing.
  */
 import React from 'react'
+import { AiWarning } from '../../core/ai-warning.jsx'
 import { Icon } from '../../core/icons.jsx'
 import { Badge, Button, EmptyState, IconButton, SearchInput, Spinner } from '../../core/primitives.jsx'
 import { formatNoteTime, sectionsForSelection } from '../../core/notes-model.js'
@@ -248,12 +249,12 @@ export function BeautifyDialog(props) {
     ai.loading
       ? React.createElement('div', { className: 'ph-n-progress' }, React.createElement(Spinner), React.createElement('span', null, t('notes.beautify.checkingAi')))
       : ai.available === false
-        ? React.createElement(
-            'div',
-            { className: 'ph-n-error' },
-            React.createElement(Icon, { name: 'warning', size: 14 }),
-            React.createElement('span', null, t('notes.beautify.unavailable', { reason: ai.reason || t('common.unavailable') })),
-          )
+        ? React.createElement(AiWarning, {
+            t: t,
+            compact: true,
+            status: 'unavailable',
+            reason: ai.reason || t('common.unavailable'),
+          })
         : null,
     React.createElement(
       'div',

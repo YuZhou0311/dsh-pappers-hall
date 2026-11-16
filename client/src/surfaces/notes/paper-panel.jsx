@@ -9,6 +9,7 @@
  * navigation store.
  */
 import React from 'react'
+import { AiWarning } from '../../core/ai-warning.jsx'
 import { Icon } from '../../core/icons.jsx'
 import { Button, EmptyState, IconButton, SearchInput, Spinner } from '../../core/primitives.jsx'
 import { PageTextLayer, selectableWords } from '../reader/text-layer.jsx'
@@ -479,7 +480,7 @@ export function PaperPanel(props) {
                 React.createElement('p', { className: 'ph-n-caption' }, t('notes.papers.regionHint')),
                 region.status === 'loading' ? React.createElement('div', { className: 'ph-n-progress' }, React.createElement(Spinner), React.createElement('span', null, t('common.loading'))) : null,
                 region.status === 'error' || (region.status === 'ready' && region.reason && !region.text)
-                  ? React.createElement('div', { className: 'ph-n-error' }, React.createElement(Icon, { name: 'warning', size: 14 }), React.createElement('span', null, region.reason || t('common.unavailable')))
+                  ? React.createElement(AiWarning, { t: t, compact: true, status: 'error', reason: region.reason || t('common.unavailable') })
                   : null,
                 region.text
                   ? React.createElement('div', { className: 'ph-n-region-result' },
@@ -489,7 +490,7 @@ export function PaperPanel(props) {
                   : null,
                 React.createElement(Button, { size: 'sm', variant: 'soft', icon: 'sparkle', loading: busy === 'ai', onClick: askAiPage }, t('notes.papers.askAi')),
                 ai.status === 'loading' ? React.createElement('div', { className: 'ph-n-progress' }, React.createElement(Spinner), React.createElement('span', null, t('common.loading'))) : null,
-                ai.status === 'error' ? React.createElement('div', { className: 'ph-n-error' }, React.createElement(Icon, { name: 'warning', size: 14 }), React.createElement('span', null, ai.reason)) : null,
+                ai.status === 'error' ? React.createElement(AiWarning, { t: t, compact: true, status: 'error', reason: ai.reason, onRetry: askAiPage }) : null,
                 ai.answer ? React.createElement('div', { className: 'ph-n-region-result__translation' }, ai.answer) : null,
               ),
               React.createElement(
@@ -510,7 +511,7 @@ export function PaperPanel(props) {
                   ? React.createElement('div', { className: 'ph-n-progress' }, React.createElement(Spinner), React.createElement('span', null, t('notes.papers.translating')))
                   : null,
                 translation.status === 'error' || (translation.reason && translation.blocks.length === 0)
-                  ? React.createElement('div', { className: 'ph-n-error' }, React.createElement(Icon, { name: 'warning', size: 14 }), React.createElement('span', null, translation.reason || t('common.unavailable')))
+                  ? React.createElement(AiWarning, { t: t, compact: true, status: 'error', reason: translation.reason || t('common.unavailable'), onRetry: translatePage })
                   : null,
                 translation.blocks.length > 0
                   ? React.createElement(

@@ -302,6 +302,9 @@ export function createAi({ ctx, store, layout, pdf, config = {}, logger }) {
   const cacheTtlHours = Number.isFinite(config.aiCacheTtlHours) ? config.aiCacheTtlHours : 72
   const maxConcurrency = Number.isFinite(config.aiMaxConcurrency) ? config.aiMaxConcurrency : 2
   const memory = new LruCache(240)
+  // Model discovery can be remote; reuse a short-lived catalogue so opening
+  // Settings repeatedly does not re-query every provider adapter.
+  let providerCache = null
   const semaphore = new Semaphore(maxConcurrency)
   let closed = false
 
@@ -413,12 +416,14 @@ export function createAi({ ctx, store, layout, pdf, config = {}, logger }) {
       }
     })()
     if (llm === undefined || typeof llm.listProviders !== 'function') {
-      return { available: false, selection, providers: [], configurable: [], reason: 'llm service is not composed in this profile' }
+      return { available: false, selection, providers: [], reason: 'llm service is not composed in this profile' }
+    }
+    const now = Date.now()
+    if (providerCache !== null && now - providerCache.at < 60_000) {
+      return { available: providerCache.available, selection, providers: providerCache.providers }
     }
     let list = []
-    let configurable = []
     try { list = llm.listProviders() || [] } catch (error) { list = [] }
-    try { configurable = typeof llm.listConfigurableProviders === 'function' ? llm.listConfigurableProviders() || [] : [] } catch { configurable = [] }
     const safe = (value) => {
       try { return JSON.parse(JSON.stringify(value)) } catch { return null }
     }
@@ -437,12 +442,9 @@ export function createAi({ ctx, store, layout, pdf, config = {}, logger }) {
       }
       normalized.push(Object.assign({}, item, { models: models }))
     }
-    return {
-      available: normalized.length > 0,
-      selection,
-      providers: normalized,
-      configurable: Array.isArray(configurable) ? configurable.map(safe).filter(Boolean) : [],
-    }
+    const result = { available: normalized.length > 0, providers: normalized }
+    providerCache = { at: now, available: result.available, providers: normalized }
+    return Object.assign({ selection: selection }, result)
   }
 
   /** Save the DSH default model route, so the plugin and DSH chat stay in sync. */

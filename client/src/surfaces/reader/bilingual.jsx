@@ -12,6 +12,7 @@
  * (“已翻译 N/M 段”), a failed count, a cache badge and the translation model.
  */
 import React from 'react'
+import { AiWarning } from '../../core/ai-warning.jsx'
 import { Badge, Btn, Empty, Icon, Spinner, arrayOf, cx, firstText, looksLikePageMetadata } from './shared.jsx'
 import { engineBadge, engineDetails, engineInitial, engineTitle, providerLabel } from './engines.js'
 
@@ -319,17 +320,14 @@ export function BilingualPanel(props) {
             : null,
         )
       : null,
-    translationStatus === 'unavailable' && unavailableReason
-      ? React.createElement(
-          'div',
-          { className: 'ph-r-bi__unavailable' },
-          t('reader.bilingual.unavailable', { reason: unavailableReason }),
-          React.createElement(
-            Btn,
-            { size: 'sm', variant: 'ghost', icon: 'refresh', onClick: () => props.onTranslatePage(false), style: { marginTop: 6 }, disabled: pageBusy },
-            t('reader.bilingual.retry'),
-          ),
-        )
+    (translationStatus === 'unavailable' || translationStatus === 'error') && unavailableReason
+      ? React.createElement(AiWarning, {
+          t: t,
+          compact: true,
+          status: translationStatus === 'unavailable' ? 'unavailable' : 'error',
+          reason: unavailableReason,
+          onRetry: pageBusy ? undefined : () => props.onTranslatePage(false),
+        })
       : null,
   )
 

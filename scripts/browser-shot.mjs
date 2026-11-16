@@ -338,6 +338,29 @@ async function main() {
         if (payload.found && !String(payload.payload || '').includes('figure')) throw new Error('page figure drag published no figure material')
         await shot('03g-reader-figure-page-drag')
       }
+      if (STEPS.includes('provider-warning')) {
+        const aiTab = await evaluate(`(() => {
+          const button = [...document.querySelectorAll('.ph-r-side__tabs button, .ph-r-side__tabs [role="tab"], button')].find((item) => (item.textContent || '').trim() === 'AI')
+          if (!button) return false
+          button.click()
+          return true
+        })()`)
+        await sleep(800)
+        const asked = await evaluate(`(() => {
+          const input = document.querySelector('.ph-r-ai__input')
+          if (!input) return { input: false }
+          const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set
+          setter.call(input, 'Summarize this paper in one sentence.')
+          input.dispatchEvent(new Event('input', { bubbles: true }))
+          const send = document.querySelector('.ph-r-ai__inputrow button')
+          if (send) send.click()
+          return { input: true, send: Boolean(send) }
+        })()`)
+        await sleep(5000)
+        const warning = await evaluate(`(() => ({ text: (document.querySelector('.ph-providerwarning')?.innerText || '').slice(0, 500), buttons: [...document.querySelectorAll('.ph-providerwarning button')].map((button) => button.textContent.trim()) }))()`)
+        console.log('provider warning:', aiTab, JSON.stringify(asked), JSON.stringify(warning))
+        await shot('03w-provider-warning')
+      }
       if (STEPS.includes('reader-figures')) {
         const tab = await evaluate(`(() => {
           const button = [...document.querySelectorAll('.ph-r-side__tabs button, .ph-r-side__tabs [role="tab"]')].find((item) => (item.textContent || '').trim().startsWith('图表'))

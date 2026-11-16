@@ -4718,6 +4718,40 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-providerwarning--auth { border-color: color-mix(in srgb, var(--dsw-alias-state-danger-primary) 45%, var(--ph-line)); }
 .ph-providerwarning--auth .ph-providerwarning__icon { color: var(--dsw-alias-state-danger-primary); }
 .ph-providerwarning--rate { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 30%, var(--ph-line)); }
+
+/* shared AI warning inside narrow cards/popovers */
+.ph-providerwarning--compact {
+  margin: 6px 0;
+  padding: 8px 9px;
+  gap: 8px;
+  border-radius: 8px;
+}
+.ph-providerwarning--compact .ph-providerwarning__title { font-size: 12px; }
+.ph-providerwarning--compact .ph-providerwarning__body { font-size: 11.5px; }
+.ph-providerwarning--compact .ph-providerwarning__actions { width: 100%; justify-content: flex-start; }
+.ph-providerwarning--compact .ph-providerwarning__actions .ph-btn { min-height: 26px; height: 26px; font-size: 11.5px; }
+.ph-providerwarning--compact .ph-providerwarning__icon { display: none; }
+
+/* Compact AI warnings live in narrow side panels: keep text on its own row
+   instead of letting the action buttons squeeze it into a vertical column. */
+.ph-providerwarning--compact { flex-wrap: wrap; }
+.ph-providerwarning--compact .ph-providerwarning__main { flex: 1 1 100%; }
+.ph-providerwarning--compact .ph-providerwarning__actions { flex: 1 1 100%; }
+.ph-providerwarning__details { margin-top: 6px; font-size: 11px; color: var(--ph-ink-3); }
+.ph-providerwarning__details summary { cursor: pointer; user-select: none; }
+.ph-providerwarning__details code {
+  display: block;
+  margin-top: 4px;
+  padding: 6px 7px;
+  border-radius: 6px;
+  background: var(--ph-surface-2);
+  color: var(--ph-ink-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--ph-font-mono);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
 `
 
 export function installStyles(ctx) {

@@ -15,6 +15,7 @@
  * container width, so zooming and resizing never move annotations.
  */
 import React from 'react'
+import { AiWarning } from '../../core/ai-warning.jsx'
 import {
   AnnotationMarks,
   AnnotationPopover,
@@ -1052,22 +1053,17 @@ export function SelectionResultCard(props) {
         )
       : null,
     !result.loading && !value
-      ? React.createElement(
-          'div',
-          { className: 'ph-r-resultcard__warn' },
-          t('reader.selection.quickUnavailable', { reason: firstText(result.reason, t('reader.ai.reasonFallback')) }),
-          React.createElement(
-            'div',
-            { className: 'ph-r-resultcard__actions', style: { marginTop: 6, borderTop: 'none', paddingTop: 0 } },
-            React.createElement(Btn, { size: 'sm', variant: 'ghost', icon: 'refresh', onClick: props.onRetry }, t('reader.retry')),
-            props.onRefine
-              ? React.createElement(Btn, { size: 'sm', variant: 'soft', icon: 'sparkles', onClick: props.onRefine }, t('reader.selection.aiRefineCta'))
-              : null,
-            props.onOpenSettings
-              ? React.createElement(Btn, { size: 'sm', variant: 'ghost', icon: 'settings', onClick: props.onOpenSettings }, t('ai.warning.changeProvider'))
-              : null,
-          ),
-        )
+      ? React.createElement(AiWarning, {
+          t: t,
+          compact: true,
+          status: 'error',
+          reason: firstText(result.reason, t('reader.ai.reasonFallback')),
+          onRetry: props.onRetry,
+          onOpenSettings: props.onOpenSettings,
+          extra: props.onRefine
+            ? React.createElement(Btn, { size: 'sm', variant: 'soft', icon: 'sparkles', onClick: props.onRefine }, t('reader.selection.aiRefineCta'))
+            : null,
+        })
       : null,
     !result.loading && value
       ? React.createElement('div', { className: 'ph-r-resultcard__body' }, value)

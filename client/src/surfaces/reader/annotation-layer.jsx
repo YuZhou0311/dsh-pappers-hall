@@ -13,6 +13,7 @@
  * positions so text can still be selected across an existing highlight.
  */
 import React from 'react'
+import { AiWarning } from '../../core/ai-warning.jsx'
 import { engineBadge } from './engines.js'
 import {
   ANNOTATION_COLORS,
@@ -364,11 +365,13 @@ export function AnnotationPopover(props) {
             { className: 'ph-r-popover__translation' },
             translation.status === 'translated' || translation.translation
               ? React.createElement('div', { className: 'ph-r-popover__translationtext' }, firstText(translation.translation))
-              : React.createElement(
-                  'div',
-                  { className: 'ph-r-resultcard__warn' },
-                  rt('reader.selection.quickUnavailable', { reason: firstText(translation.reason, rt('reader.ai.reasonFallback')) }),
-                ),
+              : React.createElement(AiWarning, {
+                  t: rt,
+                  compact: true,
+                  status: translation.status === 'unavailable' ? 'unavailable' : 'error',
+                  reason: firstText(translation.reason, rt('reader.ai.reasonFallback')),
+                  onRetry: quickTranslate,
+                }),
             React.createElement(
               'div',
               { className: 'ph-r-popover__translationmeta' },

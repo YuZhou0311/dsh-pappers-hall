@@ -322,6 +322,26 @@ async function main() {
       const after = await evaluate(`(() => { const composer = document.querySelector('[data-composer-input="true"]'); return composer ? composer.innerText.slice(0, 120) : null })()`)
       console.log('setDraft probe:', JSON.stringify(setDraftTest), 'after:', JSON.stringify(after))
     }
+    if (STEPS.includes('probe-attachments')) {
+      const out = await evaluate(`(() => {
+        const node = document.querySelector('.ph-composer-entry')
+        const key = Object.keys(node || {}).find((k) => k.startsWith('__reactFiber'))
+        let fiber = node && node[key]
+        let actions = null
+        for (let i = 0; i < 40 && fiber; i += 1) {
+          if (fiber.memoizedProps && fiber.memoizedProps.inputActions) { actions = fiber.memoizedProps.inputActions; break }
+          fiber = fiber.return
+        }
+        if (!actions) return { ok: false }
+        const results = {}
+        try { results.quoteObj = actions.insertQuote({ text: 'quoted', ref: '@论文中心(bn-abc)' }) } catch (e) { results.quoteObjErr = String(e.message || e) }
+        try { results.attach = actions.addAttachments([{ name: 'x.txt', content: 'hello' }]) } catch (e) { results.attachErr = String(e.message || e) }
+        return results
+      })()`)
+      await sleep(600)
+      const dom = await evaluate(`(() => ({ text: (document.querySelector('[data-composer-input=\"true\"]')?.innerText || '').slice(0, 120), attachments: document.querySelectorAll('[data-composer-attachment], [class*=attachment]').length }))()`)
+      console.log('probe attachments:', JSON.stringify(out), JSON.stringify(dom))
+    }
     if (STEPS.includes('probe-insert-quote')) {
       const result = await evaluate(`(() => {
         const node = document.querySelector('.ph-composer-entry')

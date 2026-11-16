@@ -23,15 +23,15 @@ const COMPOSER_SELECTOR = '[data-composer-input="true"]'
  */
 
 /** One complete protocol token anywhere inside a text run. */
-const TOKEN_IN_TEXT = /@论文中心\([^)\n]{1,120}?bn-[a-f0-9]{12}\)|⟦Pappers-Hall[\s\S]*?⟧/g
+const TOKEN_IN_TEXT = /@论文中心\s+[^\n]{1,60}?(?=\s{2}|\n|$)|⟦Pappers-Hall[\s\S]*?⟧/g
 
 /** Chrome owned by this plugin that must never be rewritten. */
 const PLUGIN_CHROME = '.ph-app, .ph-center, .ph-sidebar, .ph-settings, .ph-dock, .ph-refcard'
 
 function tokenLabel(tokenText) {
   const raw = String(tokenText || '')
-  const inner = raw.startsWith('@论文中心(')
-    ? raw.replace(/^@论文中心\(/, '').replace(/\)$/, '')
+  const inner = raw.startsWith('@论文中心')
+    ? raw.replace(/^@论文中心\s*/, '').replace(/\)$/, '')
     : raw.replace(/^⟦Pappers-Hall\s*/, '').replace(/⟧$/, '')
   const summary = inner
     .replace(/\s*·\s*(bundle=)?bn-[a-f0-9]+/i, '')
@@ -56,8 +56,7 @@ function tokenLabel(tokenText) {
  */
 function decorateTextNode(node, surface) {
   const text = node.nodeValue || ''
-  if (!/bn-[a-f0-9]{12}/.test(text)) return false
-  if (!text.includes('@论文中心(') && !text.includes('⟦Pappers-Hall')) return false
+  if (!text.includes('@论文中心') && !text.includes('⟦Pappers-Hall')) return false
   const parent = node.parentElement
   if (!parent) return false
   if (parent.closest(PLUGIN_CHROME)) return false
@@ -111,7 +110,7 @@ function scanTokens() {
   let node = walker.nextNode()
   while (node) {
     const text = node.nodeValue || ''
-    if (/bn-[a-f0-9]{12}/.test(text) && (text.includes('@论文中心(') || text.includes('⟦Pappers-Hall'))) {
+    if (text.includes('@论文中心') || text.includes('⟦Pappers-Hall')) {
       const parent = node.parentElement
       // The composer is a Lexical editor: splitting its text nodes corrupts the
       // editor state, so the draft keeps the plain (already compact) token.

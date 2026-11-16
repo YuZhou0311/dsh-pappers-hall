@@ -1662,6 +1662,43 @@ export function buildToolDefinitions({ store, search, ctx, layout, logger, confi
 
   return [
     {
+      name: 'papers_references',
+      description:
+        'Return the reference bundle attached from the Pappers-Hall composer, with its material list. ' +
+        'Call this when the user message contains a `@论文中心 …` mention (for example `@论文中心 2 篇论文`); ' +
+        'then pass the returned bundle_id to papers_search with scope:"reference_bundle".',
+      parameters: {
+        type: 'object',
+        properties: {
+          bundle_id: { type: 'string', description: 'Optional explicit bundle id (bn-...). Omit to use the newest bundle of this session.' },
+        },
+        additionalProperties: false,
+      },
+      output: { schema: JSON_OUTPUT_SCHEMA, render: (_args, value) => renderJson(value) },
+      async execute(args, exec) {
+        const bundle = store.referencesLatest({
+          sessionId: sessionIdOf(exec),
+          ...(args && args.bundle_id ? { bundleId: String(args.bundle_id) } : {}),
+        })
+        if (bundle === null) return { status: 'empty', reason: 'no reference bundle is attached to this session' }
+        return {
+          status: 'ok',
+          bundle_id: bundle.bundleId,
+          token: bundle.token,
+          display: bundle.display,
+          count: bundle.materials.length,
+          materials: bundle.materials.slice(0, 40).map((material) => ({
+            kind: material.kind,
+            id: material.id,
+            title: material.title ?? material.figureLabel ?? null,
+            page: material.page ?? null,
+            ...(material.unavailable ? { unavailable: true } : {}),
+          })),
+        }
+      },
+    },
+
+    {
       name: 'papers_search',
       description:
         'Search the Pappers-Hall paper library (titles, full text, figure captions, annotations and notes). ' +

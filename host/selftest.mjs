@@ -338,14 +338,15 @@ async function main() {
       'papers_list',
       'papers_manage',
       'papers_overview',
+      'papers_references',
       'papers_search',
       'papers_translate',
     ].sort()
-    check('14 consolidated papers_* + notes_* tools registered', JSON.stringify(toolNames) === JSON.stringify(expectedTools), toolNames)
+    check('15 consolidated papers_* + notes_* tools registered', JSON.stringify(toolNames) === JSON.stringify(expectedTools), toolNames)
     const agentDiagnostics = await service.api.call('diagnostics')
     check(
       'diagnostics.agent lists tools and promptSection',
-      agentDiagnostics.agent?.tools?.length === 14 &&
+      agentDiagnostics.agent?.tools?.length === 15 &&
         ['papers_search', 'papers_get', 'papers_get_passage', 'papers_list', 'papers_manage', 'papers_pdf', 'notes_search', 'notes_edit'].every((name) => agentDiagnostics.agent.tools.includes(name)) &&
         agentDiagnostics.agent.promptSection === true,
       agentDiagnostics.agent,
@@ -399,7 +400,7 @@ async function main() {
     const fallbackTerms = extractQueryTerms('这是一段中文解释，没有英文术语。', '把作物模型和强化学习连起来的流程图')
     check('AI expansion has a deterministic fallback', fallbackTerms.source === 'fallback' && fallbackTerms.terms.length >= 3, fallbackTerms)
     const promptText = fake.state.promptSections.get('plugin:pappers-hall-materials')?.text ?? ''
-    check('system prompt explains bundle token scope', /bn-[a-z0-9]{12}/.test(promptText) && promptText.includes('reference_bundle'), promptText.slice(0, 120))
+    check('system prompt explains reference mention scope', promptText.includes('@论文中心') && promptText.includes('papers_references') && promptText.includes('reference_bundle'), promptText.slice(0, 120))
 
     // ---- status/diagnostics before import ------------------------------
     const status0 = await service.api.call('status')
@@ -920,15 +921,17 @@ async function main() {
     })
     check('references.commit creates an immutable bundle', typeof bundle.bundleId === 'string' && bundle.materials.length === 2)
     check(
-      'bundle token is compact and carries the bundle id',
-      /^@论文中心\(.+ · bn-[a-f0-9]{12}\)$/.test(bundle.token) && bundle.token.length <= 120,
+      'bundle token is a compact mention without a protocol id',
+      /^@论文中心 .+$/.test(bundle.token) && !/bn-/.test(bundle.token) && bundle.token.length <= 60,
       bundle.token,
     )
     check('bundle token mentions material counts', bundle.token.includes('篇论文') && bundle.token.includes('张图'), bundle.token)
     const resolvedBundle = await service.api.call('references.resolve', { bundleId: bundle.bundleId, sessionId: 'selftest-session' })
     check('references.resolve validates both materials', resolvedBundle.valid.length === 2 && resolvedBundle.invalid.length === 0)
-    const bundleScoped = await tools.get('papers_search').execute({ query: 'ReAct', scope: 'reference_bundle', bundle_id: bundle.token })
-    check('bundle-scoped search accepts the chat token', bundleScoped.items.length > 0 && bundleScoped.bundle?.id === bundle.bundleId, bundleScoped.bundle)
+    const latest = await tools.get('papers_references').execute({})
+    check('papers_references resolves the session bundle', latest.status === 'ok' && latest.bundle_id === bundle.bundleId && latest.count === 2, latest.bundle_id)
+    const bundleScoped = await tools.get('papers_search').execute({ query: 'ReAct', scope: 'reference_bundle', bundle_id: latest.bundle_id })
+    check('bundle-scoped search accepts the resolved bundle id', bundleScoped.items.length > 0 && bundleScoped.bundle?.id === bundle.bundleId, bundleScoped.bundle)
     check('bundle-scoped search only returns bundled materials', bundleScoped.items.every((hit) => hit.paperId === paperId || hit.id === paperId), bundleScoped.items)
     const missingBundle = await tools.get('papers_search').execute({ query: 'ReAct', scope: 'reference_bundle', bundle_id: 'bn-000000000000' })
     check('unknown bundle token returns unavailable', missingBundle.status === 'unavailable', missingBundle.status)

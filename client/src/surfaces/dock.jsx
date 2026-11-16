@@ -75,6 +75,23 @@ export function DockBody(props) {
   }, [])
 
   React.useEffect(() => registerComposerBridge(inputActions), [inputActions])
+
+  // A draft persisted by an older version can still hold raw protocol tokens.
+  // They are not backed by a pending bundle, so drop them once on mount.
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      const composer = document.querySelector('[data-composer-input="true"]')
+      if (!composer) return
+      const text = String(composer.innerText || '')
+      const legacy = text.match(/⟦Pappers-Hall[\s\S]*?⟧/g) || []
+      if (legacy.length === 0) return
+      let next = text
+      legacy.forEach((token) => { next = next.replace(token, '') })
+      next = next.replace(/\n{3,}/g, '\n\n').replace(/^\s+|\s+$/g, '')
+      try { if (inputActions && typeof inputActions.setDraft === 'function') inputActions.setDraft(next) } catch { /* best effort */ }
+    }, 900)
+    return () => clearTimeout(timer)
+  }, [inputActions])
   React.useEffect(() => installCitationTokens(), [])
 
   React.useEffect(() => {

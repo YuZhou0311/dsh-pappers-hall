@@ -29761,19 +29761,18 @@ var import_react44 = __toESM(require("react"), 1);
 
 // src/core/cite-token.js
 var COMPOSER_SELECTOR = '[data-composer-input="true"]';
-var TOKEN_IN_TEXT = /@论文中心\([^)\n]{1,120}?bn-[a-f0-9]{12}\)|⟦Pappers-Hall[\s\S]*?⟧/g;
+var TOKEN_IN_TEXT = /@论文中心\s+[^\n]{1,60}?(?=\s{2}|\n|$)|⟦Pappers-Hall[\s\S]*?⟧/g;
 var PLUGIN_CHROME = ".ph-app, .ph-center, .ph-sidebar, .ph-settings, .ph-dock, .ph-refcard";
 function tokenLabel(tokenText) {
   const raw = String(tokenText || "");
-  const inner = raw.startsWith("@\u8BBA\u6587\u4E2D\u5FC3(") ? raw.replace(/^@论文中心\(/, "").replace(/\)$/, "") : raw.replace(/^⟦Pappers-Hall\s*/, "").replace(/⟧$/, "");
+  const inner = raw.startsWith("@\u8BBA\u6587\u4E2D\u5FC3") ? raw.replace(/^@论文中心\s*/, "").replace(/\)$/, "") : raw.replace(/^⟦Pappers-Hall\s*/, "").replace(/⟧$/, "");
   const summary = inner.replace(/\s*·\s*(bundle=)?bn-[a-f0-9]+/i, "").replace(/\s+/g, " ").trim();
   if (summary === "") return "\u5F15\u7528\u6750\u6599";
   return summary.length > 46 ? summary.slice(0, 45) + "\u2026" : summary;
 }
 function decorateTextNode(node, surface) {
   const text2 = node.nodeValue || "";
-  if (!/bn-[a-f0-9]{12}/.test(text2)) return false;
-  if (!text2.includes("@\u8BBA\u6587\u4E2D\u5FC3(") && !text2.includes("\u27E6Pappers-Hall")) return false;
+  if (!text2.includes("@\u8BBA\u6587\u4E2D\u5FC3") && !text2.includes("\u27E6Pappers-Hall")) return false;
   const parent = node.parentElement;
   if (!parent) return false;
   if (parent.closest(PLUGIN_CHROME)) return false;
@@ -29825,7 +29824,7 @@ function scanTokens() {
   let node = walker.nextNode();
   while (node) {
     const text2 = node.nodeValue || "";
-    if (/bn-[a-f0-9]{12}/.test(text2) && (text2.includes("@\u8BBA\u6587\u4E2D\u5FC3(") || text2.includes("\u27E6Pappers-Hall"))) {
+    if (text2.includes("@\u8BBA\u6587\u4E2D\u5FC3") || text2.includes("\u27E6Pappers-Hall")) {
       const parent = node.parentElement;
       if (parent && !parent.closest(COMPOSER_SELECTOR)) queue2.push({ node, surface: "history" });
     }
@@ -29928,6 +29927,25 @@ function DockBody(props) {
     setExpanded((previous) => Object.assign({}, previous, { [bundleId]: !previous[bundleId] }));
   }, []);
   import_react44.default.useEffect(() => registerComposerBridge(inputActions), [inputActions]);
+  import_react44.default.useEffect(() => {
+    const timer2 = setTimeout(() => {
+      const composer2 = document.querySelector('[data-composer-input="true"]');
+      if (!composer2) return;
+      const text2 = String(composer2.innerText || "");
+      const legacy = text2.match(/⟦Pappers-Hall[\s\S]*?⟧/g) || [];
+      if (legacy.length === 0) return;
+      let next = text2;
+      legacy.forEach((token) => {
+        next = next.replace(token, "");
+      });
+      next = next.replace(/\n{3,}/g, "\n\n").replace(/^\s+|\s+$/g, "");
+      try {
+        if (inputActions && typeof inputActions.setDraft === "function") inputActions.setDraft(next);
+      } catch {
+      }
+    }, 900);
+    return () => clearTimeout(timer2);
+  }, [inputActions]);
   import_react44.default.useEffect(() => installCitationTokens(), []);
   import_react44.default.useEffect(() => {
     bundles.forEach((bundle) => {

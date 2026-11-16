@@ -4709,6 +4709,47 @@ export function createStore({ db, layout, fts5, config = {}, logger, manifest = 
     },
 
     /**
+     * `references.latest` — the newest active bundle for a session.
+     *
+     * The draft carries a compact `@论文中心 2 篇论文` mention instead of a long
+     * protocol token, so the model needs one way to find the bundle the user
+     * just attached. This returns it, with its full material list.
+     *
+     * @param {{sessionId?:string, bundleId?:string}} params lookup request.
+     * @returns {object|null} bundle identity and materials, or null.
+     */
+    referencesLatest(params = {}) {
+      const explicit = String(params.bundleId ?? '')
+      let row
+      if (explicit !== '') {
+        row = db.prepare('SELECT * FROM bundles WHERE id = ?').get(explicit)
+      } else if (typeof params.sessionId === 'string' && params.sessionId !== '') {
+        row = db
+          .prepare("SELECT * FROM bundles WHERE session_id = ? AND state = 'active' ORDER BY created_at DESC, rowid DESC LIMIT 1")
+          .get(params.sessionId)
+      } else {
+        row = db.prepare("SELECT * FROM bundles WHERE state = 'active' ORDER BY created_at DESC, rowid DESC LIMIT 1").get()
+      }
+      if (row === undefined) return null
+      const items = db.prepare('SELECT * FROM bundle_items WHERE bundle_id = ? ORDER BY ordinal').all(row.id)
+      const materials = items.map((item) => {
+        try {
+          return resolveBundleItem(db, item.kind, item.ref_id, item.page).material
+        } catch {
+          return { kind: item.kind, id: item.ref_id, unavailable: true }
+        }
+      })
+      return {
+        bundleId: row.id,
+        sessionId: row.session_id ?? null,
+        display: row.display ?? '',
+        token: row.token,
+        createdAt: row.created_at,
+        materials,
+      }
+    },
+
+    /**
      * `references.append` — add materials to an existing pending bundle.
      *
      * The Client keeps one bundle while the user is composing, so repeated
@@ -5259,7 +5300,7 @@ function describeBundle(materials) {
  * bundle id to `papers_search` / `papers_get_passage` / `papers_get_figure`.
  * @param {string} bundleId bundle id (`bn-...`).
  * @param {object[]} materials resolved bundle materials.
- * @returns {string} token such as `@论文中心(2 篇论文 + 1 张图 · bn-ab12cd34ef56)`.
+ * @returns {string} token such as `@论文中心 2 篇论文 + 1 张图`.
  */
 export function buildBundleToken(bundleId, materials) {
   const counts = { paper: 0, figure: 0, annotation: 0, note: 0 }
@@ -5284,11 +5325,13 @@ export function buildBundleToken(bundleId, materials) {
   const summary = parts.length === 0 ? `${materials.length} 项材料` : parts.join(' + ')
   // Compact mention form: no box glyphs, reads as a normal @-reference in the
   // draft, and still carries the bundle id the model needs. Keep the id intact.
-  const prefix = '@论文中心('
-  const suffix = ` · ${bundleId})`
-  const room = Math.max(1, 100 - prefix.length - suffix.length)
+  // Compact mention: the draft stays readable and the bundle id is resolved by
+  // the `papers_references` tool (newest bundle of this session) instead of
+  // being printed into the message.
+  const prefix = '@论文中心 '
+  const room = Math.max(1, 60 - prefix.length)
   const clipped = summary.length > room ? summary.slice(0, Math.max(1, room - 1)) + '…' : summary
-  return `${prefix}${clipped}${suffix}`
+  return `${prefix}${clipped}`
 }
 
 /**

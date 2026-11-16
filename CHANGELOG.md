@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **OCR speed**: the fixed OCR tier is PP-OCRv6 **tiny** (det 1.8 MB + rec 4.5 MB): 5–8 s per scanned page instead of 21–26 s, same lines and 99.9 % character recall against the text layer on a real paper page.
+- **OCR speed**: the fixed OCR tier is PP-OCRv6 **tiny** (det 1.8 MB + rec 4.5 MB): ≈4 s per scanned page instead of 21–26 s, same lines and 99.9 % character recall against the text layer on a real paper page.
 - **Optional local component**: one install from the settings panel adds PyMuPDF (PDF extraction), PP-OCRv6 (scanned pages) and PP-DocLayout-S (layout regions). Fixed models with pinned SHA-256, offline, uninstallable; Poppler stays the fallback backend.
 - The Python worker (`host/py_worker.py`) replaces the marked-up text and the old OCR worker; layout regions now correct reader roles (titles, captions, tables, running heads).
 

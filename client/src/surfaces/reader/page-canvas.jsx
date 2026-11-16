@@ -893,6 +893,7 @@ function PageViewImpl(props) {
                 onSend: () => props.onSelectionAction('sendQuickTranslation'),
                 onRetry: () => props.onSelectionAction('retryQuickTranslation'),
                 onRefine: () => props.onSelectionAction('refineQuickTranslation'),
+                onOpenSettings: props.onOpenSettings,
               }),
         )
       : null,
@@ -1061,6 +1062,9 @@ export function SelectionResultCard(props) {
             React.createElement(Btn, { size: 'sm', variant: 'ghost', icon: 'refresh', onClick: props.onRetry }, t('reader.retry')),
             props.onRefine
               ? React.createElement(Btn, { size: 'sm', variant: 'soft', icon: 'sparkles', onClick: props.onRefine }, t('reader.selection.aiRefineCta'))
+              : null,
+            props.onOpenSettings
+              ? React.createElement(Btn, { size: 'sm', variant: 'ghost', icon: 'settings', onClick: props.onOpenSettings }, t('ai.warning.changeProvider'))
               : null,
           ),
         )

@@ -2436,6 +2436,7 @@ function ReaderShellInner(props) {
         activeAnnotationId,
         selection,
         selectionResult,
+        onOpenSettings: props.onOpenSettings,
         popover: popoverProp,
         noteDraft,
         search,

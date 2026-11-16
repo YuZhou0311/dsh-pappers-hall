@@ -21961,7 +21961,8 @@ function PageViewImpl(props) {
         onReplace: () => props.onSelectionAction("replaceQuickTranslation"),
         onSend: () => props.onSelectionAction("sendQuickTranslation"),
         onRetry: () => props.onSelectionAction("retryQuickTranslation"),
-        onRefine: () => props.onSelectionAction("refineQuickTranslation")
+        onRefine: () => props.onSelectionAction("refineQuickTranslation"),
+        onOpenSettings: props.onOpenSettings
       })
     ) : null,
     pagePopover ? import_react28.default.createElement(AnnotationPopover, {
@@ -22071,7 +22072,8 @@ function SelectionResultCard(props) {
         "div",
         { className: "ph-r-resultcard__actions", style: { marginTop: 6, borderTop: "none", paddingTop: 0 } },
         import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "refresh", onClick: props.onRetry }, t("reader.retry")),
-        props.onRefine ? import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine }, t("reader.selection.aiRefineCta")) : null
+        props.onRefine ? import_react28.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine }, t("reader.selection.aiRefineCta")) : null,
+        props.onOpenSettings ? import_react28.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "settings", onClick: props.onOpenSettings }, t("ai.warning.changeProvider")) : null
       )
     ) : null,
     !result.loading && value ? import_react28.default.createElement("div", { className: "ph-r-resultcard__body" }, value) : null,
@@ -24882,6 +24884,7 @@ function ReaderShellInner(props) {
         activeAnnotationId,
         selection,
         selectionResult,
+        onOpenSettings: props.onOpenSettings,
         popover: popoverProp,
         noteDraft,
         search,

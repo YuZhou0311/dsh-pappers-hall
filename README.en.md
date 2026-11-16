@@ -85,13 +85,13 @@ Natural-language requests such as “add a figure from the paper here” also wo
 
 ## 04 / Start the conversation with the material
 
-Select papers, figures, annotations or notes, choose **Cite to conversation**, then **Add to draft**. The source-aware reference lets the Agent read the relevant material as it works.
+Select papers, figures, annotations or notes and choose **Cite to conversation**: the material lands in the draft as one citation token that can be extended or removed with the × next to it. The source-aware reference lets the Agent read the relevant material as it works.
 
 > Explain this paper's mechanism, applicable conditions and limitations, with references to the original evidence.
 
-[![Paper reference added to a research question draft, captured in Chrome light mode](docs/assets/screenshots/conversation-light.png)](docs/assets/screenshots/conversation-light.png)
+[![Paper reference shown as a blue citation token in the draft, with an attached card above it](docs/assets/screenshots/conversation-light.png)](docs/assets/screenshots/conversation-light.png)
 
-<p align="center"><sub>All product screenshots are actual Chrome captures of the Chinese UI in light mode, at a 1440 × 900 desktop viewport and 2× resolution. Numbers inside the sample note describe its paper, not plugin performance. The conversation screenshot shows an unsent draft.</sub></p>
+<p align="center"><sub>All product screenshots are actual captures of the Chinese UI in light mode at a desktop viewport and 2× resolution. Numbers inside the sample note describe its paper, not plugin performance. The conversation screenshot shows an unsent draft with the attached reference.</sub></p>
 
 <br>
 

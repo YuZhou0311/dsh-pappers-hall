@@ -41,7 +41,7 @@ Pappers-Hall 是 DeepSeek Harness 里的 AI 科研工作台。本套物料以戴
 | [论文资料库](../assets/screenshots/library-light.png) | 文件夹、阅读状态、文献列表与论文详情 |
 | [原文与图表](../assets/screenshots/reader-figures-light.png) | 原始 PDF、页缩略图、图表目录与标注工具 |
 | [并排笔记工作台](../assets/screenshots/notes-workbench-light.png) | 结构化研究笔记与关联论文并排阅读 |
-| [材料引用到对话](../assets/screenshots/conversation-light.png) | 论文材料加入提问草稿，尚未发送 |
+| [材料引用到对话](../assets/screenshots/conversation-light.png) | 论文材料在草稿里显示为蓝色引用标签，上方卡片显示已加入草稿 |
 
 示例笔记中的实验数字来自论文阅读内容，不是插件性能指标。截图来自当前开发实例；某个预发布包具体包含的功能以其 Release 说明为准。
 

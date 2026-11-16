@@ -104,17 +104,17 @@
 
 ## 04 / 让 AI 从你正在研究的材料出发
 
-从论文中心或对话侧栏选取材料，点击「引用到对话」，再「加入草稿」。材料引用会把来源上下文交给 Agent，方便它继续读取对应论文、段落、图表、批注与笔记。
+从论文中心或对话侧栏选取材料，点击「引用到对话」，材料会作为一个引用标签直接进入草稿，可以继续叠加，也可以点标签旁的 × 取消。材料引用会把来源上下文交给 Agent，方便它继续读取对应论文、段落、图表、批注与笔记。
 
 你可以这样开启一轮研究：
 
 > 请根据这篇论文梳理核心机制、适用条件与局限，并给出可追溯的原文依据。
 
 <p align="center">
-  <a href="docs/assets/screenshots/conversation-light.png"><img src="docs/assets/screenshots/conversation-light.png" alt="Chrome 浅色实景：论文材料已加入科研提问草稿，尚未发送" width="100%"></a>
+  <a href="docs/assets/screenshots/conversation-light.png"><img src="docs/assets/screenshots/conversation-light.png" alt="浅色实景：论文材料引用在草稿里显示为蓝色引用标签，上方卡片显示已加入草稿" width="100%"></a>
 </p>
 
-<p align="center"><sub>以上均为 Chrome 浅色模式实拍：1440 × 900 桌面视口，2× 清晰度。示例笔记中的数字属于论文阅读内容，不代表插件性能；最后一张展示发送前的草稿。</sub></p>
+<p align="center"><sub>以上均为浅色模式实拍：桌面视口，2× 清晰度。示例笔记中的数字属于论文阅读内容，不代表插件性能；最后一张展示发送前的引用草稿。</sub></p>
 
 <br>
 

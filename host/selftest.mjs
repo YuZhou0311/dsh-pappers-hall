@@ -1851,7 +1851,9 @@ async function main() {
         settingsInitial.models.embedding.installed === false &&
           settingsInitial.models.embedding.installable === true &&
           settingsInitial.models.ocr.installed === false &&
-          settingsInitial.models.ocr.engine === 'rapidocr-onnxruntime' &&
+          settingsInitial.models.ocr.engine === 'PP-OCRv6' &&
+          settingsInitial.models.python?.kind === 'python' &&
+          settingsInitial.models.python?.installed === false &&
           typeof settingsInitial.models.ocr.reason === 'string',
         { embedding: settingsInitial.models.embedding.installed, ocr: settingsInitial.models.ocr.installed, reason: settingsInitial.models.ocr.reason },
       )
@@ -1927,6 +1929,17 @@ async function main() {
       check('models.install ocr queues its own job', ocrInstall.status === 'queued' && ocrInstall.job?.kind === 'model.install', ocrInstall.status)
       const ocrCancelled = await service.api.call('models.cancel', { kind: 'ocr' })
       check('models.cancel cancels the OCR install job', ocrCancelled.status === 'cancelled', ocrCancelled.status)
+      const pythonInstall = await service.api.call('models.install', { kind: 'python' })
+      check('models.install python queues the local component job', pythonInstall.status === 'queued' && pythonInstall.job?.kind === 'model.install', pythonInstall.status)
+      const pythonStatus = await service.api.call('models.pythonStatus', {})
+      check(
+        'models.pythonStatus reports capabilities honestly',
+        pythonStatus.component?.installed === false && pythonStatus.component?.engine === 'PP-OCRv6' && pythonStatus.facts?.layoutModel?.sha256?.length === 64,
+        pythonStatus.component,
+      )
+      const pythonUninstall = await service.api.call('models.uninstallPython', {})
+      check('models.uninstallPython is idempotent when nothing is installed', Array.isArray(pythonUninstall.removed), pythonUninstall)
+      await service.api.call('models.cancel', { kind: 'python' })
       const invalidInstall = await service.api.call('models.install', { kind: 'magic' })
       check('models.install rejects unknown kinds', invalidInstall.status === 'invalid' && /unsupported/.test(invalidInstall.reason), invalidInstall)
       const rebuild = await service.api.call('models.rebuildIndex', {})

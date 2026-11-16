@@ -67,9 +67,41 @@ function importErrorCode(error) {
  * @param {object} options.manifest manifest index ({byId,bySha256,byTitle,fields,available}).
  * @returns {object} ingest service.
  */
-export function createIngest({ store, search, pdf, queue, layout, config = {}, logger, manifest }) {
+export function createIngest({ store, search, pdf, queue, layout, config = {}, logger, manifest, docLayout = null }) {
   const maxFiguresPerPaper = Number.isFinite(config.maxFiguresPerPaper) ? config.maxFiguresPerPaper : 80
   const figureDpi = Number.isFinite(config.figureDpi) ? config.figureDpi : 120
+
+  /**
+   * Detect layout regions for every page of one document.
+   *
+   * Returns `null` when the PP-DocLayout-S model is not installed, so the
+   * structural roles stay purely heuristic. A per-page failure only drops that
+   * page's regions; it never fails the import.
+   *
+   * @param {string} filePath absolute PDF path.
+   * @param {number} pageCount number of pages.
+   * @param {object} [api] job API for cancellation/heartbeats.
+   * @returns {Promise<Array<Array<object>|null>|null>} role regions per page.
+   */
+  async function documentRegions(filePath, pageCount, api) {
+    if (docLayout === null || docLayout === undefined || typeof docLayout.available !== 'function') return null
+    if (config.docLayout === false || docLayout.available() !== true) return null
+    const pages = []
+    for (let page = 1; page <= pageCount; page += 1) {
+      if (typeof api?.throwIfCancelled === 'function') api.throwIfCancelled()
+      let converted = null
+      try {
+        const detected = await docLayout.pageRegions({ filePath, page })
+        if (Array.isArray(detected) && detected.length > 0) {
+          converted = typeof docLayout.toRoleRegions === 'function' ? docLayout.toRoleRegions(detected) : detected
+        }
+      } catch (error) {
+        logger?.debug?.(`pappers-hall: layout regions skipped for page ${page}: ${String(error?.message ?? error)}`)
+      }
+      pages.push(converted)
+    }
+    return pages
+  }
 
   /** Register the job handlers this pipeline owns. */
   function registerHandlers() {
@@ -555,7 +587,12 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
     const layoutByPage = new Map(flatPages.map((page) => [page.page, page]))
 
     /** Per-page reader structure (v0.2), generated from the real layout. */
-    const structures = layoutDocument.pages.map((page, index) => ({ ...buildReaderStructure(page), page: index + 1 }))
+    const regionPages = await documentRegions(filePath, layoutDocument.pages.length, api)
+    const structures = layoutDocument.pages.map((page, index) => ({
+      ...buildReaderStructure(page, { regions: regionPages?.[index] ?? null }),
+      page: index + 1,
+      ...(regionPages?.[index] ? { regions: regionPages[index] } : {}),
+    }))
     const structureByPage = new Map(structures.map((structure, index) => [index + 1, structure]))
 
     // Assemble one page row per physical page. A missing text layer is a real
@@ -1128,7 +1165,12 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
       try {
         const layoutDocument = await pdf.layoutDocument(version.file_path)
         if (layoutDocument.failed || layoutDocument.pages.length === 0) throw new PdfToolError('bbox-layout extraction failed', 'failed', { paperId })
-        const structures = layoutDocument.pages.map((page, index) => ({ ...buildReaderStructure(page), page: index + 1 }))
+        const regionPages = await documentRegions(version.file_path, layoutDocument.pages.length, api)
+        const structures = layoutDocument.pages.map((page, index) => ({
+          ...buildReaderStructure(page, { regions: regionPages?.[index] ?? null }),
+          page: index + 1,
+          ...(regionPages?.[index] ? { regions: regionPages[index] } : {}),
+        }))
         store.updatePageLayouts(
           paperId,
           structures.map((structure, index) => ({

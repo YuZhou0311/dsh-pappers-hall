@@ -104,7 +104,7 @@ function dispatchNoteDelete(params, store, notes) {
  * @param {object} [services.notes] notes workbench service (v0.17).
  * @returns {{handlers:Map<string,Function>, call:(method:string, params?:object)=>Promise<object>, envelope:(method:string,params?:object)=>Promise<object>, methods:string[]}} API facade.
  */
-export function createApi({ store, search, ingest, queue, settings, models, ocr, notes, noteAgent, layout }) {
+export function createApi({ store, search, ingest, queue, settings, models, ocr, notes, noteAgent, layout, python = null }) {
   const handlers = new Map([
     // ---- read-only -------------------------------------------------
     ['status', () => store.status()],
@@ -260,6 +260,8 @@ export function createApi({ store, search, ingest, queue, settings, models, ocr,
     ['models.cancel', (params) => models.cancel(params ?? {})],
     ['models.rebuildIndex', (params) => models.rebuildIndex(params ?? {})],
     ['ocr.index', (params) => ocr.index(params ?? {})],
+    ['models.pythonStatus', () => ({ component: ocr.status(), facts: typeof models.pythonModelFacts === 'function' ? models.pythonModelFacts() : null, capabilities: python?.capabilities ?? null }), ],
+    ['models.uninstallPython', async () => (typeof models.uninstallPython === 'function' ? models.uninstallPython() : { removed: [], bytes: 0 })],
     ['translation.test', (params) => store.translationTest(params ?? {})],
     ['embedding.index', (params) => store.embeddingIndex(params)],
     ['translate.providers', () => store.translateProviders()],

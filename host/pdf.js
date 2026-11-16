@@ -15,7 +15,7 @@ import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { inflateSync } from 'node:zlib'
-import { parseLayoutXml } from './layout.js'
+import { parseLayoutXml, layoutFromWordPages } from './layout.js'
 import { atomicWriteFile, clampInt } from './paths.js'
 
 /** Default timeout for one external PDF command (contract §5: 120s). */
@@ -198,7 +198,7 @@ function failureFromOutcome(outcome, command, filePath) {
  * @param {number} [options.timeoutMs] per-command deadline.
  * @returns {object} poppler facade.
  */
-export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT_COMMAND_TIMEOUT_MS }) {
+export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT_COMMAND_TIMEOUT_MS, python = null }) {
   const binaries = {
     pdfinfo: commands.pdfinfo ?? 'pdfinfo',
     pdftotext: commands.pdftotext ?? 'pdftotext',
@@ -206,6 +206,9 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
   }
   /** Last detection result; `undefined` until `detect()` runs. */
   let detection
+  /** Optional Python bridge (PyMuPDF); used only after `detect()` approves it. */
+  const py = python
+  let pythonBackend = false
 
   /** Run one poppler command, throwing a classified error on a non-zero exit. */
   async function call(argv, { filePath, allowFailure = false, timeoutMs: overrideTimeoutMs } = {}) {
@@ -221,6 +224,28 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
      * @returns {Promise<{available:boolean, version:string|null, missing:string[], versions:object}>}
      */
     async detect() {
+      // PyMuPDF first: when the user installed the Python component it is both
+      // faster and stricter than parsing poppler's XHTML, and it removes the
+      // external binary requirement. Poppler stays as the fallback.
+      if (py !== null && py !== undefined && typeof py.start === 'function' && py.installed()) {
+        try {
+          await py.start()
+          if (py.capabilities.pdf) {
+            pythonBackend = true
+            detection = {
+              backend: 'pymupdf',
+              available: true,
+              version: py.versions.pymupdf ?? null,
+              missing: [],
+              versions: { pymupdf: py.versions.pymupdf ?? null },
+            }
+            return detection
+          }
+        } catch (error) {
+          logger?.warn?.(`pappers-hall: PyMuPDF backend unavailable, falling back to poppler: ${String(error?.message ?? error)}`)
+        }
+        pythonBackend = false
+      }
       const versions = {}
       const missing = []
       for (const [name, binary] of Object.entries(binaries)) {
@@ -234,7 +259,7 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
         if (match !== null) versions[name] = match[1]
         // `-v` may exit non-zero on some builds; only the version text matters here.
       }
-      detection = { available: missing.length === 0, version: versions.pdftotext ?? versions.pdftoppm ?? versions.pdfinfo ?? null, missing, versions }
+      detection = { backend: 'poppler', available: missing.length === 0, version: versions.pdftotext ?? versions.pdftoppm ?? versions.pdfinfo ?? null, missing, versions }
       if (!detection.available) logger?.warn?.(`pappers-hall: missing PDF tools: ${missing.join(', ')}`)
       return detection
     },
@@ -250,6 +275,21 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
      * @returns {Promise<object>} parsed pdfinfo facts.
      */
     async info(filePath) {
+      if (pythonBackend) {
+        const facts = await py.invoke('info', { path: filePath })
+        return {
+          pageCount: Number(facts.pageCount) || 0,
+          title: facts.title ?? null,
+          author: facts.author ?? null,
+          subject: facts.subject ?? null,
+          creator: facts.creator ?? null,
+          producer: facts.producer ?? null,
+          encrypted: facts.encrypted === true,
+          pdfVersion: facts.pdfVersion ?? null,
+          pageWidth: facts.pageWidth ?? null,
+          pageHeight: facts.pageHeight ?? null,
+        }
+      }
       const outcome = await call([binaries.pdfinfo, '-f', '1', '-l', '1', filePath], { filePath })
       const text = outcome.stdout.toString('utf8')
       const read = (label) => {
@@ -280,6 +320,11 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
      * @returns {Promise<{pageCount:number, pages:string[]}>} page texts, 1-based order.
      */
     async textPages(filePath) {
+      if (pythonBackend) {
+        const result = await py.invoke('text', { path: filePath })
+        const pages = Array.isArray(result.pages) ? result.pages : []
+        return { pageCount: pages.length, pages }
+      }
       const outcome = await call([binaries.pdftotext, '-layout', '-enc', 'UTF-8', filePath, '-'], { filePath })
       const pages = splitTextPages(outcome.stdout.toString('utf8'))
       return { pageCount: pages.length, pages }
@@ -294,6 +339,16 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
      * @returns {Promise<{pages:Array<object>, bytes:number, failed:boolean}>} parsed layout pages.
      */
     async layoutDocument(filePath) {
+      if (pythonBackend) {
+        try {
+          const result = await py.invoke('layout', { path: filePath }, { timeoutMs: timeoutMs * 2 })
+          const pages = layoutFromWordPages(Array.isArray(result.pages) ? result.pages : [])
+          const usable = pages.filter((page) => (page.flows ?? []).some((flow) => (flow.blocks ?? []).length > 0))
+          return { pages, bytes: JSON.stringify(result).length, failed: usable.length === 0 }
+        } catch (error) {
+          logger?.warn?.(`pappers-hall: PyMuPDF layout failed, retrying with poppler: ${String(error?.message ?? error)}`)
+        }
+      }
       const outcome = await call([binaries.pdftotext, '-bbox-layout', '-enc', 'UTF-8', filePath, '-'], {
         filePath,
         allowFailure: true,
@@ -325,6 +380,14 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
      */
     async renderPage({ filePath, page, width, outputPath, timeoutMs: overrideTimeoutMs }) {
       const targetWidth = clampInt(width, 120, 3000, 1400)
+      if (pythonBackend) {
+        try {
+          const size = await py.invoke('render', { path: filePath, page, width: targetWidth, output: outputPath }, { timeoutMs: overrideTimeoutMs ?? timeoutMs })
+          return { width: Number(size.width) || targetWidth, height: Number(size.height) || 0 }
+        } catch (error) {
+          logger?.warn?.(`pappers-hall: PyMuPDF render failed, retrying with poppler: ${String(error?.message ?? error)}`)
+        }
+      }
       return withTempDir(async (directory) => {
         const prefix = path.join(directory, 'page')
         await call(
@@ -372,6 +435,18 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
       const pageWidthPt = pageSize?.width ?? bbox.x + bbox.w
       const pageHeightPt = pageSize?.height ?? bbox.y + bbox.h
       const resolvedDpi = Number.isFinite(targetWidth) && targetWidth > 0 ? (targetWidth / Math.max(1, bbox.w)) * 72 : dpi
+      if (pythonBackend) {
+        try {
+          const x0 = Math.max(0, bbox.x)
+          const y0 = Math.max(0, bbox.y)
+          const x1 = Math.min(pageWidthPt, bbox.x + bbox.w)
+          const y1 = Math.min(pageHeightPt, bbox.y + bbox.h)
+          const size = await py.invoke('crop', { path: filePath, page, box: [x0, y0, x1, y1], output: outputPath, dpi: resolvedDpi })
+          return { width: Number(size.width) || 1, height: Number(size.height) || 1 }
+        } catch (error) {
+          logger?.warn?.(`pappers-hall: PyMuPDF crop failed, retrying with poppler: ${String(error?.message ?? error)}`)
+        }
+      }
       const scale = resolvedDpi / 72
       const pagePixels = Math.max(1, Math.round(pageWidthPt * scale))
       const pagePixelHeight = Math.max(1, Math.round(pageHeightPt * scale))
@@ -420,6 +495,13 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
      */
     async pageDhash(filePath, page) {
       try {
+        if (pythonBackend) {
+          return await withTempDir(async (directory) => {
+            const output = path.join(directory, 'hash.png')
+            await py.invoke('render', { path: filePath, page, width: 9, output }, { timeoutMs })
+            return dhashFromPng(await readFile(output))
+          })
+        }
         return await withTempDir(async (directory) => {
           const prefix = path.join(directory, 'hash')
           await call(
@@ -442,6 +524,13 @@ export function createPdfTools({ run, commands = {}, logger, timeoutMs = DEFAULT
      */
     async cropDhash({ filePath, page, bbox, pageSize, dpi = 28 }) {
       try {
+        if (pythonBackend) {
+          return await withTempDir(async (directory) => {
+            const output = path.join(directory, 'hash.png')
+            await py.invoke('crop', { path: filePath, page, box: [bbox.x, bbox.y, bbox.x + bbox.w, bbox.y + bbox.h], output, dpi }, { timeoutMs })
+            return dhashFromPng(await readFile(output))
+          })
+        }
         return await withTempDir(async (directory) => {
           const pageWidthPt = pageSize?.width ?? bbox.x + bbox.w
           const pageHeightPt = pageSize?.height ?? bbox.y + bbox.h

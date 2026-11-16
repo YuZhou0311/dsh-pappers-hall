@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Optional local component**: one install from the settings panel adds PyMuPDF (PDF extraction), PP-OCRv6 (scanned pages) and PP-DocLayout-S (layout regions). Fixed models with pinned SHA-256, offline, uninstallable; Poppler stays the fallback backend.
+- The Python worker (`host/py_worker.py`) replaces the marked-up text and the old OCR worker; layout regions now correct reader roles (titles, captions, tables, running heads).
+
 ## 0.1.0
 
 - First public pre-release of the Pappers-Hall research workbench.

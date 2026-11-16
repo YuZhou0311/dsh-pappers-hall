@@ -5819,6 +5819,7 @@ ICONS.scan = ICONS.pages;
 ICONS.globe = ICONS.link;
 ICONS.sparkles = ICONS.sparkle;
 ICONS.chart = ICONS.grid;
+ICONS.cpu = [["rect", { x: 6.5, y: 6.5, width: 11, height: 11, rx: 2 }], ["path", "M10 3.5v3M14 3.5v3M10 17.5v3M14 17.5v3M3.5 10h3M3.5 14h3M17.5 10h3M17.5 14h3"]];
 function Icon(props) {
   const size = Number(props.size) || 16;
   const shapes = ICONS[props.name] || ICONS.book;
@@ -31187,7 +31188,7 @@ function Card(props) {
       h("span", { className: "ph-capcard__icon" }, h(Icon, { name: props.icon, size: 18 })),
       h("div", { className: "ph-capcard__titlewrap" }, h("div", { className: "ph-capcard__title" }, props.title, props.optional ? h("span", { className: "ph-caption" }, t("settings.optional")) : null), h("div", { className: "ph-caption" }, props.description)),
       h(Badge, { tone: status.tone }, stateLabel(t, status)),
-      props.model ? h(Toggle, { checked: Boolean(model.enabled), label: props.title, onChange: props.onToggleEnabled }) : null
+      props.model && typeof props.onToggleEnabled === "function" ? h(Toggle, { checked: Boolean(model.enabled), label: props.title, onChange: props.onToggleEnabled }) : null
     ),
     h(
       "div",
@@ -31317,6 +31318,18 @@ function SettingsPanel(props) {
       notify("error", t("settings.installFailed", { message: describeError(t, err) }), null, 5e3);
     }).then(() => setBusy(""));
   };
+  const uninstallPython = () => {
+    setBusy("uninstall-python");
+    setError("");
+    defaultApi("models.uninstallPython", {}).then(() => {
+      notify("info", t("settings.python.uninstalled"), null, 4e3);
+      load();
+      loadJobs();
+    }).catch((err) => {
+      setError(describeError(t, err));
+      notify("error", t("settings.installFailed", { message: describeError(t, err) }), null, 5e3);
+    }).then(() => setBusy(""));
+  };
   const cancel = (kind) => {
     defaultApi("models.cancel", { kind }).then(loadJobs).catch((err) => setError(describeError(t, err)));
   };
@@ -31423,7 +31436,7 @@ function SettingsPanel(props) {
   const jobFor = (kind) => {
     const model = models && models[kind] || null;
     if (model && model.job && ACTIVE_JOB(model.job)) return model.job;
-    const direct = jobs.find((job) => ACTIVE_JOB(job) && job.kind === (kind === "ocr" ? "ocr.index" : "embedding.index"));
+    const direct = jobs.find((job) => ACTIVE_JOB(job) && job.kind === (kind === "ocr" ? "ocr.index" : kind === "python" ? "model.install" : "embedding.index"));
     if (direct) return direct;
     return jobs.find((job) => ACTIVE_JOB(job) && job.kind === "model.install" && (job.modelKind === kind || job.model === kind)) || null;
   };
@@ -31432,9 +31445,11 @@ function SettingsPanel(props) {
   const channelLabels = { fts: t("settings.channel.fts"), vector: t("settings.channel.vector"), ocr: t("settings.channel.ocr"), translation: t("settings.channel.translation") };
   const embedding = models.embedding || {};
   const ocr = models.ocr || {};
+  const python = models.python || {};
   const providerList = Array.isArray(translation.providers) ? translation.providers : [];
   const capabilities = diagnostics.capabilities || {};
   const translationState = capabilities.translation ? String(capabilities.translation) : providerList.some((provider) => provider.enabled && provider.available !== false) ? "ready" : providerList.some((provider) => provider.enabled) ? "degraded" : "disabled";
+  const pythonState = python.installed ? python.available === false ? "unavailable" : "ready" : "notInstalled";
   const ocrState = ocr.installed ? ocr.available === false ? "unavailable" : ocr.enabled ? "ready" : "disabled" : "notInstalled";
   const aiProviders = Array.isArray(aiCatalog.providers) ? aiCatalog.providers : [];
   const aiSelection = aiCatalog.selection || {};
@@ -31584,13 +31599,34 @@ function SettingsPanel(props) {
               }),
               h(Card, {
                 t,
+                icon: "cpu",
+                title: t("settings.python.title"),
+                description: t("settings.python.desc"),
+                model: Object.assign({}, python, { job: jobFor("python") }),
+                optional: true,
+                facts: [
+                  [t("settings.python.pdfBackend"), python.engines && python.engines.pdf ? python.engines.pdf : t("settings.python.fallbackPdf")],
+                  [t("settings.python.ocrEngine"), python.engines && python.engines.ocr ? python.engines.ocr : "\u2014"],
+                  [t("settings.python.layoutEngine"), python.engines && python.engines.layout ? python.engines.layout : "\u2014"],
+                  [t("settings.size"), bytes(python.sizeBytes)]
+                ],
+                onCancel: cancel,
+                actions: [
+                  h(Button, { key: "install", size: "sm", variant: "primary", icon: "download", loading: busy2 === "install-python", disabled: Boolean(runningJob), onClick: () => install("python") }, python.installed ? t("settings.python.reinstall") : t("settings.python.install")),
+                  python.installed ? h(Button, { key: "uninstall", size: "sm", icon: "trash", loading: busy2 === "uninstall-python", disabled: Boolean(runningJob), onClick: uninstallPython }, t("settings.python.uninstall")) : null,
+                  h("span", { key: "hint", className: "ph-caption" }, t("settings.python.hint"))
+                ]
+              }),
+              h(Card, {
+                t,
                 icon: "scan",
                 title: t("settings.ocr.title"),
                 description: t("settings.ocr.desc"),
                 model: ocrWithJob,
                 optional: true,
                 facts: [
-                  [t("settings.engine"), ocr.engine || "rapidocr-onnxruntime"],
+                  [t("settings.engine"), ocr.engine || "PP-OCRv6"],
+                  [t("settings.python.layoutEngine"), ocr.layoutModel ? "PP-DocLayout-S" : "\u2014"],
                   [t("settings.size"), bytes(ocr.sizeBytes)],
                   [t("settings.scanPages"), ocr.scanPages != null ? String(ocr.scanPages) : "\u2014"],
                   [t("settings.indexedPages"), ocr.job && ocr.job.state === "running" ? "\u2026" : ocr.indexedPages != null ? String(ocr.indexedPages) : "\u2014"]
@@ -31598,7 +31634,6 @@ function SettingsPanel(props) {
                 onToggleEnabled: (value) => toggleModel("ocr", value),
                 onCancel: cancel,
                 actions: [
-                  h(Button, { key: "install", size: "sm", variant: "primary", icon: "download", loading: busy2 === "install-ocr", disabled: Boolean(runningJob), onClick: () => install("ocr") }, ocr.installed ? t("settings.reinstallOcr") : t("settings.installOcr")),
                   h(Button, { key: "idx", size: "sm", icon: "scan", loading: busy2 === "ocr-index", disabled: !ocr.available || !ocr.enabled, onClick: ocrIndex }, t("settings.ocrIndex")),
                   h("span", { key: "hint", className: "ph-caption" }, t("settings.ocrHint"))
                 ]
@@ -32739,6 +32774,17 @@ var ZH = {
   "settings.reinstallEmbedding": "\u4FEE\u590D / \u91CD\u65B0\u5B89\u88C5",
   "settings.rebuildIndex": "\u91CD\u5EFA\u7D22\u5F15",
   "settings.embeddingHint": "\u672A\u5C31\u7EEA\u65F6\u53EF\u8FD0\u884C {script} \u6216\u70B9\u51FB\u5B89\u88C5\u3002",
+  "settings.python.title": "\u672C\u5730\u589E\u5F3A\u7EC4\u4EF6\uFF08PDF \xB7 OCR \xB7 \u7248\u9762\uFF09",
+  "settings.python.desc": "\u4E00\u6B21\u5B89\u88C5\u63D0\u4F9B\u4E09\u9879\u80FD\u529B\uFF1APyMuPDF \u89E3\u6790 PDF\u3001PP-OCRv6 \u8BC6\u522B\u626B\u63CF\u9875\u3001PP-DocLayout-S \u5206\u6790\u7248\u9762\u3002\u6A21\u578B\u56FA\u5B9A\u4E0B\u8F7D\uFF0C\u65E0\u9009\u62E9\u5668\u3002",
+  "settings.python.pdfBackend": "PDF \u89E3\u6790",
+  "settings.python.fallbackPdf": "Poppler\uFF08\u7CFB\u7EDF\u547D\u4EE4\uFF09",
+  "settings.python.ocrEngine": "OCR \u5F15\u64CE",
+  "settings.python.layoutEngine": "\u7248\u9762\u6A21\u578B",
+  "settings.python.install": "\u4E0B\u8F7D\u5E76\u5B89\u88C5\u672C\u5730\u7EC4\u4EF6",
+  "settings.python.reinstall": "\u4FEE\u590D / \u91CD\u65B0\u5B89\u88C5",
+  "settings.python.uninstall": "\u5378\u8F7D",
+  "settings.python.uninstalled": "\u672C\u5730\u7EC4\u4EF6\u5DF2\u5378\u8F7D\uFF0CPDF \u89E3\u6790\u56DE\u5230 Poppler",
+  "settings.python.hint": "\u53EF\u9009\u7EC4\u4EF6\uFF1APyMuPDF \u4E3A AGPL-3.0\uFF0C\u4EC5\u5B89\u88C5\u5728\u672C\u5730\u72EC\u7ACB\u73AF\u5883\uFF0C\u4E0D\u968F\u63D2\u4EF6\u5206\u53D1\u3002",
   "settings.ocr.title": "OCR\uFF08\u626B\u63CF\u7248 PDF\uFF09",
   "settings.ocr.desc": "\u8BC6\u522B\u626B\u63CF\u7248\u9875\u9762\u6587\u5B57\u540E\u53EF\u641C\u7D22\u4E0E\u5F15\u7528\uFF1B\u9700\u4E3B\u52A8\u5B89\u88C5\u53EF\u9009\u7EC4\u4EF6",
   "settings.scanPages": "\u626B\u63CF\u9875",
@@ -34081,6 +34127,17 @@ var EN = {
   "settings.reinstallEmbedding": "Repair / reinstall",
   "settings.rebuildIndex": "Rebuild index",
   "settings.embeddingHint": "If not ready run {script} or use install.",
+  "settings.python.title": "Local component (PDF \xB7 OCR \xB7 layout)",
+  "settings.python.desc": "One install provides three capabilities: PyMuPDF for PDF extraction, PP-OCRv6 for scanned pages and PP-DocLayout-S for layout analysis. Models are fixed; there is no picker.",
+  "settings.python.pdfBackend": "PDF backend",
+  "settings.python.fallbackPdf": "Poppler (system tools)",
+  "settings.python.ocrEngine": "OCR engine",
+  "settings.python.layoutEngine": "Layout model",
+  "settings.python.install": "Download & install local component",
+  "settings.python.reinstall": "Repair / reinstall",
+  "settings.python.uninstall": "Uninstall",
+  "settings.python.uninstalled": "Local component removed; PDF extraction is back on Poppler",
+  "settings.python.hint": "Optional component: PyMuPDF is AGPL-3.0 and is installed into a private local environment, never bundled.",
   "settings.ocr.title": "OCR (scanned PDFs)",
   "settings.ocr.desc": "Read scanned pages so they become searchable and citable; optional component, requires installation",
   "settings.scanPages": "Scanned pages",

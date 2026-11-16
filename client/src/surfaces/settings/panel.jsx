@@ -94,7 +94,7 @@ function Card(props) {
       h('span', { className: 'ph-capcard__icon' }, h(Icon, { name: props.icon, size: 18 })),
       h('div', { className: 'ph-capcard__titlewrap' }, h('div', { className: 'ph-capcard__title' }, props.title, props.optional ? h('span', { className: 'ph-caption' }, t('settings.optional')) : null), h('div', { className: 'ph-caption' }, props.description)),
       h(Badge, { tone: status.tone }, stateLabel(t, status)),
-      props.model ? h(Toggle, { checked: Boolean(model.enabled), label: props.title, onChange: props.onToggleEnabled }) : null,
+      props.model && typeof props.onToggleEnabled === 'function' ? h(Toggle, { checked: Boolean(model.enabled), label: props.title, onChange: props.onToggleEnabled }) : null,
     ),
     h('div', { className: 'ph-capcard__facts' },
       (props.facts || []).map(([label, value]) => h('div', { key: label, className: 'ph-fact' }, h('span', { className: 'ph-fact__label' }, label), h('span', { className: 'ph-fact__value' }, value))),
@@ -238,6 +238,15 @@ export function SettingsPanel(props) {
       .then(() => setBusy(''))
   }
 
+  const uninstallPython = () => {
+    setBusy('uninstall-python')
+    setError('')
+    defaultApi('models.uninstallPython', {})
+      .then(() => { notify('info', t('settings.python.uninstalled'), null, 4000); load(); loadJobs() })
+      .catch((err) => { setError(describeError(t, err)); notify('error', t('settings.installFailed', { message: describeError(t, err) }), null, 5000) })
+      .then(() => setBusy(''))
+  }
+
   const cancel = (kind) => {
     defaultApi('models.cancel', { kind: kind }).then(loadJobs).catch((err) => setError(describeError(t, err)))
   }
@@ -348,7 +357,7 @@ export function SettingsPanel(props) {
   const jobFor = (kind) => {
     const model = (models && models[kind]) || null
     if (model && model.job && ACTIVE_JOB(model.job)) return model.job
-    const direct = jobs.find((job) => ACTIVE_JOB(job) && job.kind === (kind === 'ocr' ? 'ocr.index' : 'embedding.index'))
+    const direct = jobs.find((job) => ACTIVE_JOB(job) && job.kind === (kind === 'ocr' ? 'ocr.index' : kind === 'python' ? 'model.install' : 'embedding.index'))
     if (direct) return direct
     return jobs.find((job) => ACTIVE_JOB(job) && job.kind === 'model.install' && (job.modelKind === kind || job.model === kind)) || null
   }
@@ -357,6 +366,7 @@ export function SettingsPanel(props) {
   const channelLabels = { fts: t('settings.channel.fts'), vector: t('settings.channel.vector'), ocr: t('settings.channel.ocr'), translation: t('settings.channel.translation') }
   const embedding = models.embedding || {}
   const ocr = models.ocr || {}
+  const python = models.python || {}
   const providerList = Array.isArray(translation.providers) ? translation.providers : []
   const capabilities = diagnostics.capabilities || {}
   const translationState = capabilities.translation
@@ -366,6 +376,7 @@ export function SettingsPanel(props) {
       : providerList.some((provider) => provider.enabled)
         ? 'degraded'
         : 'disabled'
+  const pythonState = python.installed ? (python.available === false ? 'unavailable' : 'ready') : 'notInstalled'
   const ocrState = ocr.installed
     ? (ocr.available === false ? 'unavailable' : (ocr.enabled ? 'ready' : 'disabled'))
     : 'notInstalled'
@@ -486,9 +497,25 @@ export function SettingsPanel(props) {
                     ],
                   }),
                   h(Card, {
+                    t: t, icon: 'cpu', title: t('settings.python.title'), description: t('settings.python.desc'), model: Object.assign({}, python, { job: jobFor('python') }), optional: true,
+                    facts: [
+                      [t('settings.python.pdfBackend'), python.engines && python.engines.pdf ? python.engines.pdf : t('settings.python.fallbackPdf')],
+                      [t('settings.python.ocrEngine'), python.engines && python.engines.ocr ? python.engines.ocr : '—'],
+                      [t('settings.python.layoutEngine'), python.engines && python.engines.layout ? python.engines.layout : '—'],
+                      [t('settings.size'), bytes(python.sizeBytes)],
+                    ],
+                    onCancel: cancel,
+                    actions: [
+                      h(Button, { key: 'install', size: 'sm', variant: 'primary', icon: 'download', loading: busy === 'install-python', disabled: Boolean(runningJob), onClick: () => install('python') }, python.installed ? t('settings.python.reinstall') : t('settings.python.install')),
+                      python.installed ? h(Button, { key: 'uninstall', size: 'sm', icon: 'trash', loading: busy === 'uninstall-python', disabled: Boolean(runningJob), onClick: uninstallPython }, t('settings.python.uninstall')) : null,
+                      h('span', { key: 'hint', className: 'ph-caption' }, t('settings.python.hint')),
+                    ],
+                  }),
+                  h(Card, {
                     t: t, icon: 'scan', title: t('settings.ocr.title'), description: t('settings.ocr.desc'), model: ocrWithJob, optional: true,
                     facts: [
-                      [t('settings.engine'), ocr.engine || 'rapidocr-onnxruntime'],
+                      [t('settings.engine'), ocr.engine || 'PP-OCRv6'],
+                      [t('settings.python.layoutEngine'), ocr.layoutModel ? 'PP-DocLayout-S' : '—'],
                       [t('settings.size'), bytes(ocr.sizeBytes)],
                       [t('settings.scanPages'), ocr.scanPages != null ? String(ocr.scanPages) : '—'],
                       [t('settings.indexedPages'), (ocr.job && ocr.job.state === 'running') ? '…' : (ocr.indexedPages != null ? String(ocr.indexedPages) : '—')],
@@ -496,7 +523,6 @@ export function SettingsPanel(props) {
                     onToggleEnabled: (value) => toggleModel('ocr', value),
                     onCancel: cancel,
                     actions: [
-                      h(Button, { key: 'install', size: 'sm', variant: 'primary', icon: 'download', loading: busy === 'install-ocr', disabled: Boolean(runningJob), onClick: () => install('ocr') }, ocr.installed ? t('settings.reinstallOcr') : t('settings.installOcr')),
                       h(Button, { key: 'idx', size: 'sm', icon: 'scan', loading: busy === 'ocr-index', disabled: !ocr.available || !ocr.enabled, onClick: ocrIndex }, t('settings.ocrIndex')),
                       h('span', { key: 'hint', className: 'ph-caption' }, t('settings.ocrHint')),
                     ],

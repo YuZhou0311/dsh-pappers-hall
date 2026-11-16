@@ -34,6 +34,8 @@ import { createSettings } from './settings.js'
 import { createIngest } from './ingest.js'
 import { createJobQueue } from './jobs.js'
 import { createCommandRunner, createPdfTools } from './pdf.js'
+import { createPythonBridge } from './py.js'
+import { createDocLayout } from './doc-layout.js'
 import { ensureLayout, layoutFor, readJsonIfPresent, readPluginVersion, resolveDataDir, resolveFixtureDir, clampInt } from './paths.js'
 import { createSearch } from './search.js'
 import { createStore, emptyManifest, manifestIndex } from './store.js'
@@ -180,6 +182,16 @@ export function resolveConfig(config = {}) {
     figureSearchMaxDistance: clampInt(config.figureSearchMaxDistance ?? 10, 0, 32, 10),
     bodyLimitBytes: clampInt(config.bodyLimitBytes ?? DEFAULT_BODY_LIMIT_BYTES, 1_048_576, 200 * 1024 * 1024, DEFAULT_BODY_LIMIT_BYTES),
     commandTimeoutMs: clampInt(config.commandTimeoutMs ?? 120_000, 5_000, 600_000, 120_000),
+    // Optional Python component (PyMuPDF + PP-OCRv6 + PP-DocLayout-S). Paths are
+    // derived from the data directory unless explicitly configured.
+    pythonVenvDir: typeof config.pythonVenvDir === 'string' && config.pythonVenvDir !== ''
+      ? config.pythonVenvDir
+      : path.join(resolveDataDir(config), 'python', 'venv'),
+    pythonModelDir: typeof config.pythonModelDir === 'string' && config.pythonModelDir !== ''
+      ? config.pythonModelDir
+      : path.join(resolveDataDir(config), 'python', 'models'),
+    pythonExecutable: typeof config.pythonExecutable === 'string' && config.pythonExecutable !== '' ? config.pythonExecutable : undefined,
+    modelBaseUrl: typeof config.modelBaseUrl === 'string' && config.modelBaseUrl !== '' ? config.modelBaseUrl : undefined,
     // v0.2 AI channel (LLM direct). All limits are explicit so a slow profile
     // can never turn a paper read into an unbounded model wait.
     aiTimeoutMs: clampInt(config.aiTimeoutMs ?? 25_000, 2_000, 180_000, 25_000),
@@ -347,14 +359,25 @@ async function applyHostNow(ctx, config) {
   // The command runner prefers ctx.subprocess when composed; node fallback keeps
   // a minimal profile and the selftest functional.
   const run = createCommandRunner({ ctx, logger, defaultTimeoutMs: resolved.commandTimeoutMs })
-  const pdf = createPdfTools({ run, commands: resolved.pdfTools, logger, timeoutMs: resolved.commandTimeoutMs })
-  trace('detecting poppler')
+  // Optional Python component (PyMuPDF + PP-OCRv6 + PP-DocLayout-S). Installed by
+  // the user from the settings panel; when absent every consumer falls back to
+  // the Poppler CLI and no OCR happens.
+  const python = createPythonBridge({
+    venvDir: resolved.pythonVenvDir,
+    modelDir: resolved.pythonModelDir,
+    python: resolved.pythonExecutable,
+    logger,
+    timeoutMs: Math.max(60_000, Number(resolved.commandTimeoutMs) || 120_000),
+  })
+  const docLayout = createDocLayout({ python, logger })
+  const pdf = createPdfTools({ run, commands: resolved.pdfTools, logger, timeoutMs: resolved.commandTimeoutMs, python })
+  trace('detecting PDF backend')
   let detection
   try {
     detection = await pdf.detect()
-    trace('poppler', detection.available, detection.version)
+    trace('pdf backend', detection.backend, detection.available, detection.version)
   } catch (error) {
-    detection = { available: false, version: null, missing: [], versions: {} }
+    detection = { backend: 'none', available: false, version: null, missing: [], versions: {} }
     logger.warn(`pappers-hall: PDF tool detection failed: ${String(error?.message ?? error)}`)
   }
 
@@ -405,12 +428,12 @@ async function applyHostNow(ctx, config) {
     leaseMs: resolved.leaseMs,
   })
   embedding.install(queue)
-  const ocr = createOcr({ db, pdf, search, queue, layout, settings, config: resolved, logger })
+  const ocr = createOcr({ db, python, docLayout, search, queue, layout, settings, config: resolved, logger })
   ocr.registerHandlers(queue)
-  const models = createModels({ db, queue, embedding, ocr, settings, config: resolved, logger })
+  const models = createModels({ db, queue, embedding, ocr, python, settings, config: resolved, logger })
   models.registerHandlers(queue)
-  settings.bind({ embedding, translate, search, store, models, ocr, queue })
-  const ingest = createIngest({ store, search, pdf, queue, layout, config: resolved, logger, manifest })
+  settings.bind({ embedding, translate, search, store, models, ocr, queue, python, docLayout, pdf })
+  const ingest = createIngest({ store, search, pdf, queue, layout, config: resolved, logger, manifest, docLayout })
   ingest.registerHandlers()
   trace('writer stack ready')
   store.attach({ search, ingest, queue, pdf, ai, translate, embedding, classify, settings, ocr, models, notes, ctx })
@@ -420,7 +443,7 @@ async function applyHostNow(ctx, config) {
   } catch (error) {
     logger?.warn?.(`pappers-hall: embedding auto-index failed: ${String(error?.message ?? error)}`)
   }
-  const api = createApi({ store, search, ingest, queue, settings, models, ocr, notes, noteAgent, layout })
+  const api = createApi({ store, search, ingest, queue, settings, models, ocr, notes, noteAgent, layout, python })
   const webHandler = createWebHandler({
     api,
     store,

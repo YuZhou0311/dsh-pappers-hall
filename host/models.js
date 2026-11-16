@@ -21,7 +21,6 @@ import { nowIso } from './paths.js'
 
 const HOST_DIR = path.dirname(fileURLToPath(import.meta.url))
 const PLUGIN_ROOT = path.resolve(HOST_DIR, '..')
-const WORKER_SCRIPT = path.join(HOST_DIR, 'ocr_worker.py')
 
 /** Resolve one model-install job row into the API shape. */
 function mapJob(row) {
@@ -110,53 +109,6 @@ function runProcess(argv, { env, timeoutMs = 1_800_000, onLine, signal } = {}) {
   })
 }
 
-/** Read the OCR worker ready line (smoke test). */
-function verifyOcrWorker(pythonPath, signal) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(pythonPath, [WORKER_SCRIPT], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env } })
-    const reader = readline.createInterface({ input: proc.stdout })
-    let settled = false
-    let stderr = ''
-    const finish = (error) => {
-      if (settled) return
-      settled = true
-      clearTimeout(timer)
-      reader.close()
-      try {
-        proc.stdin.write(`${JSON.stringify({ op: 'shutdown' })}\n`)
-        proc.stdin.end()
-      } catch {}
-      if (error !== null) {
-        try {
-          proc.kill('SIGKILL')
-        } catch {}
-        reject(error)
-      } else resolve()
-    }
-    const timer = setTimeout(() => finish(new Error('OCR worker did not report ready within 120s')), 120_000)
-    const onAbort = () => finish(new Error('cancelled'))
-    signal?.addEventListener?.('abort', onAbort, { once: true })
-    reader.on('line', (line) => {
-      let message
-      try {
-        message = JSON.parse(line)
-      } catch {
-        return
-      }
-      if (message.op === 'ready') {
-        if (message.ok === false) finish(new Error(`OCR worker failed to start: ${message.error ?? 'unknown error'}`))
-        else finish(null)
-      }
-    })
-    proc.stderr.on('data', (chunk) => {
-      stderr = (stderr + String(chunk)).slice(-2000)
-    })
-    proc.on('error', (error) => finish(error instanceof Error ? error : new Error(String(error))))
-    proc.on('close', (code) => {
-      if (!settled) finish(new Error(`OCR worker exited before ready (code ${code}): ${stderr.slice(-600)}`))
-    })
-  })
-}
 
 /**
  * Create the model installation service.
@@ -170,13 +122,21 @@ function verifyOcrWorker(pythonPath, signal) {
  * @param {object} [options.logger] logger.
  * @returns {object} models service.
  */
-export function createModels({ db, queue, embedding, ocr, settings, config = {}, logger }) {
+export function createModels({ db, queue, embedding, ocr, python, settings, config = {}, logger }) {
   const embeddingPython = typeof config.embeddingPython === 'string' && config.embeddingPython !== '' ? config.embeddingPython : path.join(homedir(), '.dsh', 'pappers-hall', 'embedding', 'venv', 'bin', 'python')
   const embeddingVenv = path.dirname(path.dirname(embeddingPython))
   const embeddingCache = typeof config.embeddingCacheDir === 'string' && config.embeddingCacheDir !== '' ? config.embeddingCacheDir : path.join(homedir(), '.dsh', 'pappers-hall', 'models')
   const setupScript = path.join(PLUGIN_ROOT, 'scripts', 'setup-embedding.sh')
   const python3 = typeof config.python3 === 'string' && config.python3 !== '' ? config.python3 : 'python3'
-  const ocrPaths = ocr !== null && ocr !== undefined && typeof ocr.paths === 'object' ? ocr.paths : null
+  const pythonVenvDir = typeof config.pythonVenvDir === 'string' && config.pythonVenvDir !== ''
+    ? config.pythonVenvDir
+    : path.join(homedir(), '.dsh', 'pappers-hall', 'python', 'venv')
+  const pythonModelDir = typeof config.pythonModelDir === 'string' && config.pythonModelDir !== ''
+    ? config.pythonModelDir
+    : path.join(homedir(), '.dsh', 'pappers-hall', 'python', 'models')
+  const modelBaseUrl = typeof config.modelBaseUrl === 'string' && config.modelBaseUrl !== ''
+    ? config.modelBaseUrl.replace(/\/$/, '')
+    : 'https://huggingface.co/stefanj0/PP-DocLayout-S-ONNX/resolve/main'
   let sizeCache = null
 
   /** Raw active install job for one model kind. */
@@ -249,51 +209,144 @@ export function createModels({ db, queue, embedding, ocr, settings, config = {},
     return { kind: 'embedding', installedAt: nowIso(), setupScript }
   }
 
-  /** Install the OCR venv + rapidocr-onnxruntime package. */
-  async function runOcrInstall(job, api) {
-    if (ocrPaths === null) throw new Error('OCR service is not initialized')
-    const ocrDir = ocrPaths.ocrDir
-    const venvDir = path.join(ocrDir, 'venv')
-    const venvPython = path.join(venvDir, 'bin', 'python')
-    const venvPip = path.join(venvDir, 'bin', 'pip')
+  /** Fixed companion model downloaded for the layout stage (see release models-v1). */
+  const LAYOUT_MODEL = {
+    // Public mirror of the same paddle2onnx conversion; the checksum pins it.
+    file: 'pp-doclayout-s.onnx',
+    remote: 'pp_doclayout_s.onnx',
+    sha256: '33688dbee1c23e34b81777e97cb428eb40f24b242c02b5f623484959e830aec8',
+    bytes: 4_917_852,
+  }
+
+  /** Download one file with a SHA-256 check; partial downloads never land. */
+  async function downloadVerified(url, destination, expectedSha, signal, onProgress) {
+    const { createHash } = await import('node:crypto')
+    const { mkdir, rename, rm, writeFile } = await import('node:fs/promises')
+    await mkdir(path.dirname(destination), { recursive: true })
+    const response = await fetch(url, { redirect: 'follow', signal })
+    if (!response.ok) throw new Error(`download failed (${response.status}) for ${url}`)
+    const total = Number(response.headers.get('content-length') ?? 0)
+    const chunks = []
+    let received = 0
+    const reader = response.body?.getReader()
+    if (reader === undefined) {
+      const buffer = Buffer.from(await response.arrayBuffer())
+      chunks.push(buffer)
+      received = buffer.length
+    } else {
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done === true) break
+        const chunk = Buffer.from(value)
+        chunks.push(chunk)
+        received += chunk.length
+        onProgress?.(received, total)
+      }
+    }
+    const buffer = Buffer.concat(chunks)
+    const digest = createHash('sha256').update(buffer).digest('hex')
+    if (expectedSha !== undefined && digest !== expectedSha) {
+      throw new Error(`checksum mismatch for ${path.basename(destination)}: ${digest}`)
+    }
+    const temporary = `${destination}.download`
+    await writeFile(temporary, buffer)
+    await rename(temporary, destination)
+    await rm(temporary, { force: true }).catch(() => {})
+    return { bytes: buffer.length, sha256: digest }
+  }
+
+  /**
+   * Install the optional Python component: PyMuPDF (PDF extraction) plus
+   * rapidocr's PP-OCRv6 models (OCR) plus the PP-DocLayout-S model (layout).
+   *
+   * The models are fixed on purpose — there is no picker, so a first install is
+   * one click and every install produces the same, verifiable result.
+   */
+  async function runPythonInstall(job, api) {
+    const venvPython = path.join(pythonVenvDir, 'bin', 'python')
+    const venvPip = path.join(pythonVenvDir, 'bin', 'pip')
+    const steps = 6
     let step = 0
-    api.updateProgress(job, 0, 4, 'steps')
-    const advance = () => {
-      step = Math.min(4, step + 1)
-      api.updateProgress(job, step, 4, 'steps')
+    const advance = (unit = 'steps') => {
+      step = Math.min(steps, step + 1)
+      api.updateProgress(job, step, steps, unit)
       api.heartbeat(job)
     }
     api.throwIfCancelled(job)
     const { mkdir } = await import('node:fs/promises')
-    await mkdir(ocrDir, { recursive: true })
+    await mkdir(path.dirname(pythonVenvDir), { recursive: true })
     if (!existsSync(venvPython)) {
-      const created = await runProcess([python3, '-m', 'venv', venvDir], { signal: job.signal, timeoutMs: 5 * 60_000 })
+      const created = await runProcess([python3, '-m', 'venv', pythonVenvDir], { signal: job.signal, timeoutMs: 5 * 60_000 })
       if (created.code !== 0) throw new Error(`python -m venv failed: ${created.stderr.slice(-600)}`)
     }
     advance()
     api.throwIfCancelled(job)
-    const pip = await runProcess([venvPip, 'install', '--quiet', 'rapidocr-onnxruntime'], { signal: job.signal, timeoutMs: 30 * 60_000 })
-    if (pip.code !== 0) throw new Error(`pip install rapidocr-onnxruntime failed: ${pip.stderr.slice(-700)}`)
+    const packages = ['--quiet', '--upgrade', 'pymupdf>=1.24', 'rapidocr>=3.0']
+    const pip = await runProcess([venvPip, 'install', ...packages], { signal: job.signal, timeoutMs: 30 * 60_000 })
+    if (pip.code !== 0) throw new Error(`pip install failed: ${pip.stderr.slice(-700)}`)
     advance()
     api.throwIfCancelled(job)
-    await verifyOcrWorker(venvPython, job.signal)
+    // Layout model: fixed file + checksum from the models-v1 release.
+    const layoutModelPath = path.join(pythonModelDir, LAYOUT_MODEL.file)
+    if (!existsSync(layoutModelPath)) {
+      await downloadVerified(`${modelBaseUrl}/${LAYOUT_MODEL.remote}`, layoutModelPath, LAYOUT_MODEL.sha256, job.signal)
+    }
     advance()
+    api.throwIfCancelled(job)
+    // Warm-up: start the worker and let rapidocr fetch its fixed PP-OCRv6
+    // weights now, so the first OCR job does not surprise the user with a
+    // download (and so a broken install fails here instead of later).
+    if (python !== undefined && python !== null && typeof python.start === 'function') {
+      try { python.stop?.() } catch {}
+      await python.start()
+      const warmed = await python.invoke('ensureModels', {}, { timeoutMs: 30 * 60_000 })
+      const report = warmed.report ?? {}
+      if (report.ocr !== 'ready') throw new Error(`OCR model warm-up failed: ${String(report.ocr)}`)
+      if (report.layout !== 'ready') logger?.warn?.(`pappers-hall: layout model unavailable: ${String(report.layout)}`)
+    }
+    advance()
+    api.throwIfCancelled(job)
     let version = null
     try {
-      const printed = await runProcess([venvPython, '-c', "import rapidocr_onnxruntime as m; print(getattr(m,'__version__',''))"], { timeoutMs: 60_000 })
+      const printed = await runProcess([venvPython, '-c', "import pymupdf, rapidocr; print(pymupdf.VersionBind, getattr(rapidocr,'__version__',''))"], { timeoutMs: 60_000 })
       if (printed.code === 0) version = printed.stdout.trim().split('\n').pop() || null
     } catch {}
+    writeSetting(db, 'models.python.installedAt', nowIso())
+    if (version !== null) writeSetting(db, 'models.python.version', version)
     writeSetting(db, 'models.ocr.installedAt', nowIso())
     if (version !== null) writeSetting(db, 'models.ocr.version', version)
+    sizeCache = null
     advance()
-    return { kind: 'ocr', installedAt: nowIso(), version }
+    return { kind: 'python', installedAt: nowIso(), version }
+  }
+
+  /**
+   * Remove the managed virtualenv and models.
+   * @returns {Promise<{removed:string[], bytes:number}>} removal summary.
+   */
+  async function uninstallPython() {
+    const { rm } = await import('node:fs/promises')
+    const removed = []
+    for (const target of [pythonVenvDir, path.dirname(pythonModelDir) === pythonModelDir ? pythonModelDir : pythonModelDir]) {
+      try {
+        await rm(target, { recursive: true, force: true })
+        removed.push(target)
+      } catch (error) {
+        logger?.warn?.(`pappers-hall: could not remove ${target}: ${String(error?.message ?? error)}`)
+      }
+    }
+    try { python?.stop?.() } catch {}
+    writeSetting(db, 'models.python.installedAt', '')
+    sizeCache = null
+    return { removed, bytes: 0 }
   }
 
   /** Persistent install handler. */
   async function processInstallJob(job, api) {
     const kind = job.payload?.kind
     if (kind === 'embedding') return runEmbeddingInstall(job, api)
-    if (kind === 'ocr') return runOcrInstall(job, api)
+    // `ocr` stays a supported alias so existing settings/deep links keep working.
+    if (kind === 'python' || kind === 'ocr') return runPythonInstall(job, api)
     throw new Error(`unsupported model kind ${String(kind)}`)
   }
 
@@ -306,7 +359,7 @@ export function createModels({ db, queue, embedding, ocr, settings, config = {},
   /** `models.install` — enqueue a real install job. */
   function install(params = {}) {
     const kind = String(params.kind ?? '')
-    if (kind !== 'embedding' && kind !== 'ocr') return { status: 'invalid', reason: `unsupported model kind ${kind || '(empty)'}`, job: null }
+    if (kind !== 'embedding' && kind !== 'python' && kind !== 'ocr') return { status: 'invalid', reason: `unsupported model kind ${kind || '(empty)'}`, job: null }
     if (queue === undefined || queue === null) return { status: 'unavailable', reason: 'background job queue is not available', job: null }
     const operationId = typeof params.operationId === 'string' && params.operationId.trim() !== '' ? params.operationId.trim() : ''
     const operationKey = operationId === '' ? null : `models.install.op.${operationId}`
@@ -339,7 +392,7 @@ export function createModels({ db, queue, embedding, ocr, settings, config = {},
   /** `models.cancel` — cancel an active install job. */
   function cancel(params = {}) {
     const kind = String(params.kind ?? '')
-    if (kind !== 'embedding' && kind !== 'ocr') return { status: 'invalid', reason: `unsupported model kind ${kind || '(empty)'}`, job: null }
+    if (kind !== 'embedding' && kind !== 'python' && kind !== 'ocr') return { status: 'invalid', reason: `unsupported model kind ${kind || '(empty)'}`, job: null }
     const active = activeInstallRow(kind)
     if (active === undefined) return { status: 'idle', job: null, reason: '没有正在进行的安装任务' }
     const job = queue.cancel(active.id)
@@ -366,6 +419,17 @@ export function createModels({ db, queue, embedding, ocr, settings, config = {},
     activeInstallJob,
     activeInstallRow,
     embeddingSizeBytes,
-    paths: { embeddingPython, embeddingVenv, embeddingCache, setupScript, ocrDir: ocrPaths?.ocrDir ?? null },
+    uninstallPython,
+    /** Fixed model facts for the settings panel. */
+    pythonModelFacts() {
+      return {
+        layoutModel: { ...LAYOUT_MODEL, url: `${modelBaseUrl}/${LAYOUT_MODEL.remote}` },
+        venvDir: pythonVenvDir,
+        modelDir: pythonModelDir,
+        installedAt: readSetting(db, 'models.python.installedAt') ?? null,
+        version: readSetting(db, 'models.python.version') ?? null,
+      }
+    },
+    paths: { embeddingPython, embeddingVenv, embeddingCache, setupScript, pythonVenvDir, pythonModelDir, modelBaseUrl, ocrDir: null },
   }
 }

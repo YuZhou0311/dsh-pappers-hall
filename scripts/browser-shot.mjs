@@ -1324,6 +1324,27 @@ async function main() {
       await captureButtons('figures')
     }
 
+    if (STEPS.includes('probe-settings-dom')) {
+      await ensureConversation()
+      await sleep(600)
+      await evaluate(`(() => { window.__phErrors = []; window.addEventListener('error', (e) => window.__phErrors.push(String(e.message))); window.addEventListener('unhandledrejection', (e) => window.__phErrors.push(String(e.reason))); return true })()`)
+      await evaluate(`(() => { const b = document.querySelector('button[aria-label="打开论文抽屉"], button[aria-label="Open the paper drawer"]'); if (b) b.click(); return Boolean(b) })()`)
+      await sleep(900)
+      await evaluate(`(() => { const b = document.querySelector('button[aria-label="设置"], button[aria-label="Settings"]'); if (b) b.click(); return Boolean(b) })()`)
+      await sleep(2500)
+      const info = await evaluate(`(() => {
+        const dialog = document.querySelector('.ph-settings')
+        return {
+          errors: window.__phErrors,
+          text: (dialog?.innerText || '').slice(0, 900),
+          cards: dialog ? dialog.querySelectorAll('.ph-card').length : 0,
+          skeleton: dialog ? dialog.querySelectorAll('[class*=skeleton], .ph-card__skeleton').length : 0,
+          bodyText: (document.querySelector('.ph-settings__body')?.innerText || '').slice(0, 400),
+        }
+      })()`)
+      console.log('settings dom:', JSON.stringify(info))
+      await shot('probe-settings-dom')
+    }
     if (want('settings') || STEPS.includes('all')) {
       await ensureConversation()
       await sleep(800)

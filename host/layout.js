@@ -131,6 +131,71 @@ function toBox(attributes) {
 }
 
 /**
+ * Build the same page/flow/block/line tree from PyMuPDF word boxes.
+ *
+ * The PyMuPDF bridge returns flat words with `block`/`line` indices instead of
+ * Poppler's XHTML, so everything downstream (flatten, reader structure, figure
+ * captions) stays backend-agnostic.
+ *
+ * @param {Array<{page:number,width:number|null,height:number|null,words:Array<object>}>} pages word pages.
+ * @returns {Array<{page:number,width:number|null,height:number|null,flows:Array<{blocks:object[]}>}>} layout pages.
+ */
+export function layoutFromWordPages(pages) {
+  const output = []
+  for (const [index, page] of (pages ?? []).entries()) {
+    const byBlock = new Map()
+    for (const word of page.words ?? []) {
+      const text = String(word.t ?? '').trim()
+      if (text === '') continue
+      const blockKey = Number.isFinite(Number(word.block)) ? Number(word.block) : 0
+      const lineKey = Number.isFinite(Number(word.line)) ? Number(word.line) : 0
+      if (!byBlock.has(blockKey)) byBlock.set(blockKey, new Map())
+      const lines = byBlock.get(blockKey)
+      if (!lines.has(lineKey)) lines.set(lineKey, [])
+      lines.get(lineKey).push({
+        x: round2(Number(word.x) || 0),
+        y: round2(Number(word.y) || 0),
+        w: round2(Number(word.w) || 0),
+        h: round2(Number(word.h) || 0),
+        text,
+      })
+    }
+    const blocks = []
+    for (const [, lineMap] of byBlock) {
+      const lines = []
+      for (const words of lineMap.values()) {
+        if (words.length === 0) continue
+        const x = Math.min(...words.map((word) => word.x))
+        const y = Math.min(...words.map((word) => word.y))
+        const right = Math.max(...words.map((word) => word.x + word.w))
+        const bottom = Math.max(...words.map((word) => word.y + word.h))
+        lines.push({
+          bbox: { x: round2(x), y: round2(y), w: round2(right - x), h: round2(bottom - y) },
+          words,
+          text: reconstructLineText(words),
+        })
+      }
+      if (lines.length === 0) continue
+      lines.sort((left, right) => left.bbox.y - right.bbox.y || left.bbox.x - right.bbox.x)
+      const x = Math.min(...lines.map((line) => line.bbox.x))
+      const y = Math.min(...lines.map((line) => line.bbox.y))
+      const right = Math.max(...lines.map((line) => line.bbox.x + line.bbox.w))
+      const bottom = Math.max(...lines.map((line) => line.bbox.y + line.bbox.h))
+      blocks.push({ bbox: { x: round2(x), y: round2(y), w: round2(right - x), h: round2(bottom - y) }, lines })
+    }
+    blocks.sort((left, right) => left.bbox.y - right.bbox.y || left.bbox.x - right.bbox.x)
+    if (blocks.length === 0 && !Number.isFinite(page.width)) continue
+    output.push({
+      page: index + 1,
+      width: Number.isFinite(page.width) ? round2(page.width) : null,
+      height: Number.isFinite(page.height) ? round2(page.height) : null,
+      flows: blocks.length > 0 ? [{ blocks }] : [],
+    })
+  }
+  return output
+}
+
+/**
  * Parse `pdftotext -bbox-layout` output into pages/flows/blocks/lines/words.
  *
  * Documents that only expose word boxes (older poppler output) are grouped into
@@ -291,7 +356,7 @@ function classifyRole(block, pageWidth, pageHeight) {
  * @param {number} [options.maxBlocks] safety cap.
  * @returns {{blocks:object[], words:object[], lines:object[], columns:1|2, width:number, height:number, layoutVersion:number}}
  */
-export function buildReaderStructure(page, { maxBlocks = 400 } = {}) {
+export function buildReaderStructure(page, { maxBlocks = 400, regions = null } = {}) {
   const width = Number(page.width) > 0 ? Number(page.width) : 612
   const height = Number(page.height) > 0 ? Number(page.height) : 792
   /** @type {Array<{raw:object, bbox:object, role:string, text:string}>} */
@@ -300,7 +365,17 @@ export function buildReaderStructure(page, { maxBlocks = 400 } = {}) {
     for (const block of flow.blocks ?? []) {
       const text = blockText(block.lines ?? [])
       if (text === '') continue
-      const role = classifyRole(block, width, height)
+      let role = classifyRole(block, width, height)
+      // A detected layout region (PP-DocLayout-S) corrects the geometric guess.
+      if (Array.isArray(regions) && regions.length > 0) {
+        const cx = block.bbox.x + block.bbox.w / 2
+        const cy = block.bbox.y + block.bbox.h / 2
+        const hit = regions.find((region) => {
+          const box = region?.box
+          return Array.isArray(box) && cx >= box[0] && cx <= box[2] && cy >= box[1] && cy <= box[3]
+        })
+        if (hit !== undefined && typeof hit.role === 'string' && hit.role !== '') role = hit.role
+      }
       candidates.push({ raw: block, bbox: block.bbox, role, text })
     }
   }

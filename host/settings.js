@@ -111,6 +111,44 @@ export function createSettings({ db, config = {}, logger, identity = {}, layout 
     }
   }
 
+  /**
+   * Composed status of the optional Python component.
+   *
+   * One install provides three capabilities (PDF extraction, OCR, layout), so
+   * the panel shows them together and the Host switches backends automatically.
+   */
+  function pythonComponentStatus() {
+    const models = bound.models
+    const bridge = bound.python
+    const ocrStatus = bound.ocr !== null && typeof bound.ocr.status === 'function' ? bound.ocr.status() : null
+    const facts = models !== null && typeof models.pythonModelFacts === 'function' ? models.pythonModelFacts() : null
+    const capabilities = bridge !== null && bridge !== undefined ? bridge.capabilities : { pdf: false, ocr: false, layout: false }
+    const installed = bridge !== null && bridge !== undefined && typeof bridge.installed === 'function' ? bridge.installed() : false
+    const job = models !== null && typeof models.activeInstallJob === 'function' ? models.activeInstallJob('python') : null
+    return {
+      kind: 'python',
+      installed: installed === true,
+      available: installed === true && capabilities.pdf === true,
+      engines: {
+        pdf: capabilities.pdf === true ? 'PyMuPDF' : null,
+        ocr: capabilities.ocr === true ? (ocrStatus?.engine ?? 'PP-OCRv6') : null,
+        layout: capabilities.layout === true ? 'PP-DocLayout-S' : null,
+      },
+      versions: bridge !== null && bridge !== undefined ? bridge.versions : {},
+      model: facts !== null && facts.layoutModel !== undefined ? facts.layoutModel.file : null,
+      modelSha256: facts !== null && facts.layoutModel !== undefined ? facts.layoutModel.sha256 : null,
+      modelUrl: facts !== null && facts.layoutModel !== undefined ? facts.layoutModel.url : null,
+      sizeBytes: ocrStatus !== null ? ocrStatus.sizeBytes ?? null : null,
+      installedAt: facts !== null ? facts.installedAt : null,
+      version: facts !== null ? facts.version : null,
+      license: 'PyMuPDF is AGPL-3.0 (Artifex); it is installed by the user into a private virtualenv and never bundled.',
+      installable: true,
+      supported: true,
+      job,
+      reason: installed === true ? null : '可选：安装后 PDF 解析改用 PyMuPDF，并为扫描页提供 PP-OCRv6 文字识别与 PP-DocLayout-S 版面分析',
+    }
+  }
+
   /** Composed OCR status for `models.ocr`. */
   function ocrModelStatus() {
     const ocr = bound.ocr
@@ -200,7 +238,7 @@ export function createSettings({ db, config = {}, logger, identity = {}, layout 
   function get() {
     return {
       features: features(),
-      models: { embedding: embeddingModelStatus(), ocr: ocrModelStatus() },
+      models: { embedding: embeddingModelStatus(), ocr: ocrModelStatus(), python: pythonComponentStatus() },
       translation: translationPanel(),
       index: indexBlock(),
       diagnostics: diagnosticsBlock(),

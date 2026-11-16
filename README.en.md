@@ -103,7 +103,7 @@ Select papers, figures, annotations or notes and choose **Cite to conversation**
 | **Local PDF tools** | Inspect, read in batches, and view figures before importing a paper with your confirmation. |
 | **Research Agent tools** | 14 public tools cover paper search, passages, figures, library management, annotations, translation and notes. |
 | **Interactive note blocks** | Sortable tables, comparisons, forms, multi-series charts, task state and image galleries, with saved interaction state. |
-| **OCR and semantic search** | Require optional components to be installed and enabled. Missing capabilities are reported explicitly or use the available basic search path. |
+| **OCR and semantic search** | Require optional components to be installed and enabled. Missing capabilities are reported explicitly or use the available basic search path. OCR uses the fixed PP-OCRv6 models and layout analysis uses PP-DocLayout-S. |
 | **Chinese and English interface** | Both interface languages are available. This README uses the same light-mode screenshots as the Chinese edition. |
 
 <a id="start"></a>
@@ -115,6 +115,21 @@ Select papers, figures, annotations or notes and choose **Cite to conversation**
 - **DeepSeek Harness:** the declared compatibility range is `>=0.2.2-rc.2 <0.3.0`; the verified host version is `0.2.2-rc.2`. DSH itself is a developer preview.
 - **Node.js ≥24**, plus Poppler's `pdfinfo`, `pdftotext` and `pdftoppm` available to DSH.
 - Configure a suitable model in DSH before using translation, AI reading or note formatting. Add OCR, embeddings and image-capable models as needed.
+
+### Optional local component (recommended)
+
+Settings → Capabilities → **Local component (PDF · OCR · layout)** installs three capabilities in one click:
+
+| Capability | Component | Notes |
+|---|---|---|
+| PDF extraction | **PyMuPDF** | Replaces the Poppler CLI: text blocks, word boxes, images and rendering in one pass; falls back to Poppler when absent |
+| Scanned pages | **PP-OCRv6** (det + rec, small) | Recognises pages without a text layer; results feed search and the reader fallback |
+| Layout analysis | **PP-DocLayout-S** | Labels titles, body text, figures, tables, headers and footers to correct paragraph roles |
+
+- The models are **fixed** — no picker: they are downloaded once into the local data directory and verified by SHA-256
+- Everything runs offline; no document content is uploaded
+- PyMuPDF is **AGPL-3.0** (Artifex): it is installed by the user into a private local Python environment and never bundled with the plugin
+- Uninstalling returns PDF extraction to Poppler; already stored OCR text is kept
 
 On macOS, install Poppler with:
 

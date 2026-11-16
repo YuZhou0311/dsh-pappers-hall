@@ -1757,7 +1757,7 @@ export function createStore({ db, layout, fts5, config = {}, logger, manifest = 
 
     /** `diagnostics`: versions/capabilities/data dir/schema version. */
     diagnostics() {
-      const detections = attached.pdf?.detection ?? { available: false, version: null, missing: [], versions: {} }
+      const detections = attached.pdf?.detection ?? { backend: 'none', available: false, version: null, missing: [], versions: {} }
       const translatorAvailable = typeof ctx?.get === 'function' && ctx.get('translator') !== undefined
       let freeTranslationProviders = []
       try {
@@ -1774,7 +1774,9 @@ export function createStore({ db, layout, fts5, config = {}, logger, manifest = 
         versions: [
           { name: 'node', version: process.versions.node, license: 'MIT' },
           { name: 'node:sqlite', version: process.versions.sqlite ?? 'bundled', license: 'MIT' },
-          { name: 'poppler', version: detections.version ?? 'unavailable', license: 'GPL-2.0-or-later' },
+          [
+            { name: detections.backend === 'pymupdf' ? 'pymupdf' : 'poppler', version: detections.version ?? 'unavailable', license: detections.backend === 'pymupdf' ? 'AGPL-3.0 (user-installed)' : 'GPL-2.0-or-later' },
+          ],
           { name: 'pappers-hall', version: identity.pluginVersion ?? '0.1.0', license: 'MIT' },
         ],
         host: {
@@ -1783,6 +1785,7 @@ export function createStore({ db, layout, fts5, config = {}, logger, manifest = 
           platform: `${process.platform}-${process.arch}`,
         },
         capabilities: {
+          pdfBackend: detections.backend ?? 'poppler',
           pdfText: detections.available ? 'ready' : 'unavailable',
           pageRender: detections.available ? 'ready' : 'unavailable',
           figureCrop: detections.available ? 'ready' : 'unavailable',

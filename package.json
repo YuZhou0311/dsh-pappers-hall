@@ -81,7 +81,8 @@
     "test:agent": "node test/note-agent.mjs",
     "test:rich": "node test/note-rich.mjs",
     "test:figures": "node test/figures-crop.mjs",
-    "test:bridge": "node test/note-context.mjs"
+    "test:bridge": "node test/note-context.mjs",
+    "check:python": "node scripts/check-python-backend.mjs"
   },
   "packageManager": "npm@11.20.0",
   "repository": {

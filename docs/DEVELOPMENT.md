@@ -162,3 +162,36 @@ MIT — see [LICENSE](../LICENSE). Changelog: [CHANGELOG.md](../CHANGELOG.md). C
 For GitHub discovery, add the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to the public repository. There is no official plugin store review process; publishing means a normal npm/GitHub-tarball bundle installation. DeepSeek Harness is a developer preview; pin a tested DSH version when deploying.
 
 Claiming to be an official DeepSeek plugin is not permitted; this is a community plugin.
+
+## Optional Python component (PyMuPDF · PP-OCRv6 · PP-DocLayout-S)
+
+The Host can delegate PDF extraction, OCR and layout analysis to one optional
+Python worker. Nothing is bundled; the user installs it from the settings panel.
+
+```
+settings panel ── models.install {kind:"python"}
+                  ├─ python -m venv <dataDir>/python/venv
+                  ├─ pip install pymupdf rapidocr
+                  ├─ download PP-DocLayout-S ONNX (SHA-256 pinned) → <dataDir>/python/models
+                  └─ warm-up (loads det/rec/cls + layout, ~35 MB on disk)
+
+host/py.js  ── spawns host/py_worker.py once, JSON-lines, per-call timeouts
+   ├── host/pdf.js      uses it for info/textPages/layout*/render*/dhash when present
+   ├── host/doc-layout.js  PP-DocLayout-S regions → reader roles
+   └── host/ocr.js      PP-OCRv6 per page → paper_pages.ocr_text
+```
+
+Fallbacks: without the component, `host/pdf.js` keeps using Poppler, layout roles
+stay heuristic and OCR reports `unavailable` — the paper centre stays complete.
+
+Protocol (one JSON object per line): `ping`, `info`, `text`, `layout`, `render`,
+`crop`, `regions`, `ocrPage`, `ensureModels`, `shutdown`. Every reply carries
+`ok` plus the request `id`.
+
+Configuration: `pythonVenvDir`, `pythonModelDir`, `pythonExecutable`,
+`modelBaseUrl` (private model mirror), `docLayout: false` (disable region
+passes), `ocrRenderWidth`.
+
+Verification: `python3 -m venv /tmp/phvenv && /tmp/phvenv/bin/pip install pymupdf rapidocr`,
+then
+`PAPPERS_TEST_VENV=/tmp/phvenv PAPPERS_TEST_MODELS=/tmp/phmodels PAPPERS_TEST_PDF=paper.pdf node scripts/check-python-backend.mjs`.

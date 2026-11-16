@@ -296,6 +296,26 @@ async function main() {
       console.log('library state:', JSON.stringify(state).slice(0, 1200))
       await shot('02-library')
       await captureButtons('library')
+      if (STEPS.includes('library-details')) {
+        const selected = await evaluate(`(() => {
+          const row = document.querySelector('.ph-rowitem')
+          if (!row) return false
+          row.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
+          return true
+        })()`)
+        await sleep(700)
+        const detail = await evaluate(`(() => ({ hasOpen: document.body.innerText.includes('打开阅读器'), hasMore: document.body.innerText.includes('更多操作'), actionButtons: [...document.querySelectorAll('.ph-detailactions .ph-btn, .ph-detailmore .ph-btn')].map((b) => b.textContent.trim()).slice(0, 12) }))()`)
+        console.log('details after row click:', selected, JSON.stringify(detail))
+        await shot('02b-details-actions')
+        const batch = await evaluate(`(() => {
+          const check = document.querySelector('.ph-rowitem input[type=checkbox]')
+          if (!check) return false
+          check.click()
+          return true
+        })()`)
+        await sleep(500)
+        await shot('02c-batch-bar')
+      }
     }
 
     if (want('reader') || want('all')) {

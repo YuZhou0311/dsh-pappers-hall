@@ -444,6 +444,7 @@ export const EN = {
   "library.details.annotationCite": "Reference this annotation",
   "library.details.notesEmpty": "No notes yet",
   "library.details.notesHint": "Notes and annotations appear here.",
+  "library.details.more": "More actions",
   "library.details.actions": "Actions",
   "library.details.open": "Open reader",
   "library.details.cite": "Reference in conversation",

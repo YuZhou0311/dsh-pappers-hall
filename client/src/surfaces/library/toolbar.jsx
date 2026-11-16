@@ -112,7 +112,8 @@ export function ImportControl(props) {
     h(
       Button,
       {
-        variant: 'primary',
+        variant: 'soft',
+        size: 'sm',
         icon: 'import',
         loading: importing,
         className: 'ph-importbtn',

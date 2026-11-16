@@ -312,39 +312,27 @@ function InfoTab(props) {
       : null,
     h(
       'div',
-      { className: 'ph-detailblock' },
+      { className: 'ph-detailblock ph-detailblock--actions' },
       h('div', { className: 'ph-detailblock__head' }, h(Icon, { name: 'settings', size: 13 }), h('span', null, t('library.details.actions'))),
       h(
         'div',
-        { className: 'ph-actiongrid' },
-        h(Button, { variant: 'primary', icon: 'book', onClick: () => props.onOpenPaper(detail.id, 1) }, t('library.details.open')),
-        h(Button, { icon: 'quote', onClick: () => props.onCite(detail) }, t('library.details.cite')),
-        h(Button, { icon: 'copy', onClick: () => props.onCopyCitation && props.onCopyCitation(detail, 'bibtex') }, t('library.details.copyBibtex')),
-        h(Button, { icon: 'key', onClick: () => props.onCopyCitationKey && props.onCopyCitationKey(detail) }, t('library.details.copyCitationKey')),
-        h(Button, { icon: 'download', onClick: () => props.onExport(detail) }, t('library.details.export')),
-        h(Button, { icon: 'external', disabled: !detail.id, onClick: () => { if (typeof window !== 'undefined') window.open('/pappers-hall/pdf/' + encodeURIComponent(detail.id), '_blank', 'noopener') } }, t('library.details.openPdf')),
+        { className: 'ph-detailactions' },
+        h(Button, { size: 'sm', variant: 'primary', icon: 'book', className: 'ph-detailactions__primary', onClick: () => props.onOpenPaper(detail.id, 1) }, t('library.details.open')),
+        h(Button, { size: 'sm', icon: 'quote', onClick: () => props.onCite(detail) }, t('library.details.cite')),
+      ),
+      h(
+        'details',
+        { className: 'ph-detailmore' },
+        h('summary', null, t('library.details.more')),
         h(
-          Button,
-          {
-            icon: 'copy',
-            onClick: () => {
-              copyText(fileInfo.path || '').then((ok) => props.pushToast(ok ? 'success' : 'warning', ok ? t('library.details.pathCopied') : t('common.unavailable')))
-            },
-          },
-          t('library.details.copyPath'),
-        ),
-        h(
-          Button,
-          {
-            icon: detail.read ? 'circle' : 'checkCircle',
-            onClick: () => {
-              controller
-                .setRead(detail.id, !detail.read)
-                .then(() => props.pushToast('success', t('library.details.readUpdated')))
-                .catch((error) => props.pushToast('error', t('toast.failed', { message: describeError(t, error) })))
-            },
-          },
-          detail.read ? t('library.details.markUnread') : t('library.details.markRead'),
+          'div',
+          { className: 'ph-actiongrid ph-actiongrid--secondary' },
+          h(Button, { size: 'sm', icon: 'copy', onClick: () => props.onCopyCitation && props.onCopyCitation(detail, 'bibtex') }, t('library.details.copyBibtex')),
+          h(Button, { size: 'sm', icon: 'key', onClick: () => props.onCopyCitationKey && props.onCopyCitationKey(detail) }, t('library.details.copyCitationKey')),
+          h(Button, { size: 'sm', icon: 'download', onClick: () => props.onExport(detail) }, t('library.details.export')),
+          h(Button, { size: 'sm', icon: 'external', disabled: !detail.id, onClick: () => { if (typeof window !== 'undefined') window.open('/pappers-hall/pdf/' + encodeURIComponent(detail.id), '_blank', 'noopener') } }, t('library.details.openPdf')),
+          h(Button, { size: 'sm', icon: 'copy', onClick: () => { copyText(fileInfo.path || '').then((ok) => props.pushToast(ok ? 'success' : 'warning', ok ? t('library.details.pathCopied') : t('common.unavailable'))) } }, t('library.details.copyPath')),
+          h(Button, { size: 'sm', icon: detail.read ? 'circle' : 'checkCircle', onClick: () => { controller.setRead(detail.id, !detail.read).then(() => props.pushToast('success', t('library.details.readUpdated'))).catch((error) => props.pushToast('error', t('toast.failed', { message: describeError(t, error) }))) } }, detail.read ? t('library.details.markUnread') : t('library.details.markRead')),
         ),
       ),
     ),

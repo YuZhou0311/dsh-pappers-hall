@@ -5121,6 +5121,151 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   .ph-toast { animation: none; }
   .ph-table__head { backdrop-filter: none; }
 }
+
+/* ==================================== 13 quiet hierarchy & compact actions */
+/* Default controls stay quiet; the accent is reserved for one primary action
+   in a region. This removes the block-of-blue effect from ordinary resting UI. */
+.ph-btn--primary {
+  background-image: none;
+  background: var(--ph-accent);
+  box-shadow: none;
+  color: var(--ph-accent-ink);
+}
+.ph-btn--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ph-accent) 88%, #000000);
+  box-shadow: none;
+  translate: none;
+}
+.ph-btn--primary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--ph-accent) 82%, #000000);
+}
+.ph-importbtn {
+  height: 28px;
+  padding-inline: 10px;
+  border-radius: var(--ph-r-sm);
+}
+
+/* Persistent selection is a quiet tint, not a click-state fill. */
+.ph-rowitem--selected {
+  background: color-mix(in srgb, var(--ph-accent) 4%, var(--ph-bg));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ph-accent) 10%, transparent);
+}
+.ph-rowitem--selected:hover {
+  background: color-mix(in srgb, var(--ph-accent) 6%, var(--ph-bg));
+}
+.ph-rowitem--selected::before { display: none; }
+.ph-rowitem:hover { background: color-mix(in srgb, var(--ph-ink) 3%, var(--ph-bg)); }
+
+/* Sidebar selection: a label/icon shift, plus a very light tint. */
+.ph-navitem--active,
+.ph-collection--active {
+  background: color-mix(in srgb, var(--ph-accent) 4.5%, var(--ph-bg));
+  box-shadow: none;
+}
+.ph-navitem--active .ph-navitem__label { color: var(--ph-accent-text); }
+.ph-navitem--active .ph-navitem__icon { color: var(--ph-accent-text); }
+
+/* Detail rail: one primary action, one secondary; everything else is tucked
+   behind a native disclosure so the rail reads as information, not buttons. */
+.ph-detailactions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 6px;
+}
+.ph-detailactions .ph-btn { width: 100%; justify-content: center; }
+.ph-detailmore { margin-top: 2px; }
+.ph-detailmore > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 6px 2px;
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-11);
+  user-select: none;
+}
+.ph-detailmore > summary::-webkit-details-marker { display: none; }
+.ph-detailmore > summary::before {
+  content: '+';
+  display: inline-block;
+  width: 14px;
+  color: var(--ph-ink-4);
+}
+.ph-detailmore[open] > summary::before { content: '−'; }
+.ph-detailmore > summary:hover { color: var(--ph-ink); }
+.ph-actiongrid--secondary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 4px;
+}
+.ph-actiongrid--secondary .ph-btn {
+  height: 26px;
+  padding: 0 7px;
+  font-size: var(--ph-fs-11);
+  justify-content: flex-start;
+}
+
+/* Batch bar: same actions, smaller footprint. */
+.ph-batch {
+  gap: 5px;
+  row-gap: 4px;
+  padding: 5px 7px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ph-surface-1) 94%, var(--ph-bg));
+  box-shadow: 0 12px 34px -22px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.ph-batch .ph-btn {
+  height: 26px;
+  padding: 0 7px;
+  font-size: var(--ph-fs-11);
+  gap: 4px;
+}
+.ph-batch .ph-btn .ph-btn__label { max-width: 108px; }
+.ph-batch__count { font-size: var(--ph-fs-11); color: var(--ph-ink-2); }
+.ph-batch__divider { height: 14px; }
+
+/* Navigation selection reads as location, not a colored block. */
+.ph-navitem--active,
+.ph-collection--active {
+  background: var(--ph-surface-2);
+  box-shadow: inset 0 0 0 1px var(--ph-line-soft);
+}
+.ph-navitem--active:hover,
+.ph-collection--active:hover {
+  background: var(--ph-surface-3);
+}
+.ph-navitem--active .ph-navitem__label,
+.ph-collection--active .ph-collection__name {
+  color: var(--ph-accent-text);
+  font-weight: var(--ph-fw-semi);
+}
+
+/* Primary action is ink, not a saturated block. Accent remains for location,
+   focus, links and selection, so a blue rectangle no longer dominates a panel. */
+.ph-btn--primary {
+  background: var(--ph-ink);
+  background-image: none;
+  color: var(--ph-bg);
+  box-shadow: none;
+}
+.ph-btn--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ph-ink) 86%, var(--ph-accent));
+  color: var(--ph-bg);
+  box-shadow: none;
+  translate: none;
+}
+.ph-btn--primary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--ph-ink) 78%, var(--ph-accent));
+}
+
+/* Active navigation is a text/icon locator, not a filled tile. */
+.ph-navitem--active,
+.ph-collection--active {
+  background: transparent;
+  box-shadow: none;
+}
+.ph-navitem--active:hover,
+.ph-collection--active:hover {
+  background: var(--ph-surface-2);
+}
 `
 
 export function installStyles(ctx) {

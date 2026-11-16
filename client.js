@@ -5207,6 +5207,151 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   .ph-toast { animation: none; }
   .ph-table__head { backdrop-filter: none; }
 }
+
+/* ==================================== 13 quiet hierarchy & compact actions */
+/* Default controls stay quiet; the accent is reserved for one primary action
+   in a region. This removes the block-of-blue effect from ordinary resting UI. */
+.ph-btn--primary {
+  background-image: none;
+  background: var(--ph-accent);
+  box-shadow: none;
+  color: var(--ph-accent-ink);
+}
+.ph-btn--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ph-accent) 88%, #000000);
+  box-shadow: none;
+  translate: none;
+}
+.ph-btn--primary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--ph-accent) 82%, #000000);
+}
+.ph-importbtn {
+  height: 28px;
+  padding-inline: 10px;
+  border-radius: var(--ph-r-sm);
+}
+
+/* Persistent selection is a quiet tint, not a click-state fill. */
+.ph-rowitem--selected {
+  background: color-mix(in srgb, var(--ph-accent) 4%, var(--ph-bg));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ph-accent) 10%, transparent);
+}
+.ph-rowitem--selected:hover {
+  background: color-mix(in srgb, var(--ph-accent) 6%, var(--ph-bg));
+}
+.ph-rowitem--selected::before { display: none; }
+.ph-rowitem:hover { background: color-mix(in srgb, var(--ph-ink) 3%, var(--ph-bg)); }
+
+/* Sidebar selection: a label/icon shift, plus a very light tint. */
+.ph-navitem--active,
+.ph-collection--active {
+  background: color-mix(in srgb, var(--ph-accent) 4.5%, var(--ph-bg));
+  box-shadow: none;
+}
+.ph-navitem--active .ph-navitem__label { color: var(--ph-accent-text); }
+.ph-navitem--active .ph-navitem__icon { color: var(--ph-accent-text); }
+
+/* Detail rail: one primary action, one secondary; everything else is tucked
+   behind a native disclosure so the rail reads as information, not buttons. */
+.ph-detailactions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 6px;
+}
+.ph-detailactions .ph-btn { width: 100%; justify-content: center; }
+.ph-detailmore { margin-top: 2px; }
+.ph-detailmore > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 6px 2px;
+  color: var(--ph-ink-3);
+  font-size: var(--ph-fs-11);
+  user-select: none;
+}
+.ph-detailmore > summary::-webkit-details-marker { display: none; }
+.ph-detailmore > summary::before {
+  content: '+';
+  display: inline-block;
+  width: 14px;
+  color: var(--ph-ink-4);
+}
+.ph-detailmore[open] > summary::before { content: '\u2212'; }
+.ph-detailmore > summary:hover { color: var(--ph-ink); }
+.ph-actiongrid--secondary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 4px;
+}
+.ph-actiongrid--secondary .ph-btn {
+  height: 26px;
+  padding: 0 7px;
+  font-size: var(--ph-fs-11);
+  justify-content: flex-start;
+}
+
+/* Batch bar: same actions, smaller footprint. */
+.ph-batch {
+  gap: 5px;
+  row-gap: 4px;
+  padding: 5px 7px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ph-surface-1) 94%, var(--ph-bg));
+  box-shadow: 0 12px 34px -22px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.ph-batch .ph-btn {
+  height: 26px;
+  padding: 0 7px;
+  font-size: var(--ph-fs-11);
+  gap: 4px;
+}
+.ph-batch .ph-btn .ph-btn__label { max-width: 108px; }
+.ph-batch__count { font-size: var(--ph-fs-11); color: var(--ph-ink-2); }
+.ph-batch__divider { height: 14px; }
+
+/* Navigation selection reads as location, not a colored block. */
+.ph-navitem--active,
+.ph-collection--active {
+  background: var(--ph-surface-2);
+  box-shadow: inset 0 0 0 1px var(--ph-line-soft);
+}
+.ph-navitem--active:hover,
+.ph-collection--active:hover {
+  background: var(--ph-surface-3);
+}
+.ph-navitem--active .ph-navitem__label,
+.ph-collection--active .ph-collection__name {
+  color: var(--ph-accent-text);
+  font-weight: var(--ph-fw-semi);
+}
+
+/* Primary action is ink, not a saturated block. Accent remains for location,
+   focus, links and selection, so a blue rectangle no longer dominates a panel. */
+.ph-btn--primary {
+  background: var(--ph-ink);
+  background-image: none;
+  color: var(--ph-bg);
+  box-shadow: none;
+}
+.ph-btn--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ph-ink) 86%, var(--ph-accent));
+  color: var(--ph-bg);
+  box-shadow: none;
+  translate: none;
+}
+.ph-btn--primary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--ph-ink) 78%, var(--ph-accent));
+}
+
+/* Active navigation is a text/icon locator, not a filled tile. */
+.ph-navitem--active,
+.ph-collection--active {
+  background: transparent;
+  box-shadow: none;
+}
+.ph-navitem--active:hover,
+.ph-collection--active:hover {
+  background: var(--ph-surface-2);
+}
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -26069,7 +26214,8 @@ function ImportControl(props) {
     h(
       Button,
       {
-        variant: "primary",
+        variant: "soft",
+        size: "sm",
         icon: "import",
         loading: importing,
         className: "ph-importbtn",
@@ -27019,38 +27165,33 @@ function InfoTab(props) {
     ) : null,
     h(
       "div",
-      { className: "ph-detailblock" },
+      { className: "ph-detailblock ph-detailblock--actions" },
       h("div", { className: "ph-detailblock__head" }, h(Icon, { name: "settings", size: 13 }), h("span", null, t("library.details.actions"))),
       h(
         "div",
-        { className: "ph-actiongrid" },
-        h(Button, { variant: "primary", icon: "book", onClick: () => props.onOpenPaper(detail.id, 1) }, t("library.details.open")),
-        h(Button, { icon: "quote", onClick: () => props.onCite(detail) }, t("library.details.cite")),
-        h(Button, { icon: "copy", onClick: () => props.onCopyCitation && props.onCopyCitation(detail, "bibtex") }, t("library.details.copyBibtex")),
-        h(Button, { icon: "key", onClick: () => props.onCopyCitationKey && props.onCopyCitationKey(detail) }, t("library.details.copyCitationKey")),
-        h(Button, { icon: "download", onClick: () => props.onExport(detail) }, t("library.details.export")),
-        h(Button, { icon: "external", disabled: !detail.id, onClick: () => {
-          if (typeof window !== "undefined") window.open("/pappers-hall/pdf/" + encodeURIComponent(detail.id), "_blank", "noopener");
-        } }, t("library.details.openPdf")),
+        { className: "ph-detailactions" },
+        h(Button, { size: "sm", variant: "primary", icon: "book", className: "ph-detailactions__primary", onClick: () => props.onOpenPaper(detail.id, 1) }, t("library.details.open")),
+        h(Button, { size: "sm", icon: "quote", onClick: () => props.onCite(detail) }, t("library.details.cite"))
+      ),
+      h(
+        "details",
+        { className: "ph-detailmore" },
+        h("summary", null, t("library.details.more")),
         h(
-          Button,
-          {
-            icon: "copy",
-            onClick: () => {
-              copyText(fileInfo.path || "").then((ok) => props.pushToast(ok ? "success" : "warning", ok ? t("library.details.pathCopied") : t("common.unavailable")));
-            }
-          },
-          t("library.details.copyPath")
-        ),
-        h(
-          Button,
-          {
-            icon: detail.read ? "circle" : "checkCircle",
-            onClick: () => {
-              controller.setRead(detail.id, !detail.read).then(() => props.pushToast("success", t("library.details.readUpdated"))).catch((error) => props.pushToast("error", t("toast.failed", { message: describeError(t, error) })));
-            }
-          },
-          detail.read ? t("library.details.markUnread") : t("library.details.markRead")
+          "div",
+          { className: "ph-actiongrid ph-actiongrid--secondary" },
+          h(Button, { size: "sm", icon: "copy", onClick: () => props.onCopyCitation && props.onCopyCitation(detail, "bibtex") }, t("library.details.copyBibtex")),
+          h(Button, { size: "sm", icon: "key", onClick: () => props.onCopyCitationKey && props.onCopyCitationKey(detail) }, t("library.details.copyCitationKey")),
+          h(Button, { size: "sm", icon: "download", onClick: () => props.onExport(detail) }, t("library.details.export")),
+          h(Button, { size: "sm", icon: "external", disabled: !detail.id, onClick: () => {
+            if (typeof window !== "undefined") window.open("/pappers-hall/pdf/" + encodeURIComponent(detail.id), "_blank", "noopener");
+          } }, t("library.details.openPdf")),
+          h(Button, { size: "sm", icon: "copy", onClick: () => {
+            copyText(fileInfo.path || "").then((ok) => props.pushToast(ok ? "success" : "warning", ok ? t("library.details.pathCopied") : t("common.unavailable")));
+          } }, t("library.details.copyPath")),
+          h(Button, { size: "sm", icon: detail.read ? "circle" : "checkCircle", onClick: () => {
+            controller.setRead(detail.id, !detail.read).then(() => props.pushToast("success", t("library.details.readUpdated"))).catch((error) => props.pushToast("error", t("toast.failed", { message: describeError(t, error) })));
+          } }, detail.read ? t("library.details.markUnread") : t("library.details.markRead"))
         )
       )
     )
@@ -31697,6 +31838,7 @@ var ZH = {
   "library.details.annotationCite": "\u5F15\u7528\u8FD9\u6761\u6279\u6CE8",
   "library.details.notesEmpty": "\u6682\u65E0\u7B14\u8BB0",
   "library.details.notesHint": "\u7B14\u8BB0\u4F1A\u4E0E\u6279\u6CE8\u4E00\u8D77\u51FA\u73B0\u5728\u8FD9\u91CC\u3002",
+  "library.details.more": "\u66F4\u591A\u64CD\u4F5C",
   "library.details.actions": "\u64CD\u4F5C",
   "library.details.open": "\u6253\u5F00\u9605\u8BFB\u5668",
   "library.details.cite": "\u5F15\u7528\u5230\u5BF9\u8BDD",
@@ -33035,6 +33177,7 @@ var EN = {
   "library.details.annotationCite": "Reference this annotation",
   "library.details.notesEmpty": "No notes yet",
   "library.details.notesHint": "Notes and annotations appear here.",
+  "library.details.more": "More actions",
   "library.details.actions": "Actions",
   "library.details.open": "Open reader",
   "library.details.cite": "Reference in conversation",

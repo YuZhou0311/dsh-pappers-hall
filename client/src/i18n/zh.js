@@ -444,6 +444,7 @@ export const ZH = {
   "library.details.annotationCite": "引用这条批注",
   "library.details.notesEmpty": "暂无笔记",
   "library.details.notesHint": "笔记会与批注一起出现在这里。",
+  "library.details.more": "更多操作",
   "library.details.actions": "操作",
   "library.details.open": "打开阅读器",
   "library.details.cite": "引用到对话",

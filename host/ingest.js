@@ -81,14 +81,15 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
    * @param {string} filePath absolute PDF path.
    * @param {number} pageCount number of pages.
    * @param {object} [api] job API for cancellation/heartbeats.
+   * @param {object} [job] running job (required by `api.throwIfCancelled`).
    * @returns {Promise<Array<Array<object>|null>|null>} role regions per page.
    */
-  async function documentRegions(filePath, pageCount, api) {
+  async function documentRegions(filePath, pageCount, api, job) {
     if (docLayout === null || docLayout === undefined || typeof docLayout.available !== 'function') return null
     if (config.docLayout === false || docLayout.available() !== true) return null
     const pages = []
     for (let page = 1; page <= pageCount; page += 1) {
-      if (typeof api?.throwIfCancelled === 'function') api.throwIfCancelled()
+      if (typeof api?.throwIfCancelled === 'function') api.throwIfCancelled(job)
       let converted = null
       try {
         const detected = await docLayout.pageRegions({ filePath, page })
@@ -587,7 +588,7 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
     const layoutByPage = new Map(flatPages.map((page) => [page.page, page]))
 
     /** Per-page reader structure (v0.2), generated from the real layout. */
-    const regionPages = await documentRegions(filePath, layoutDocument.pages.length, api)
+    const regionPages = await documentRegions(filePath, layoutDocument.pages.length, api, job)
     const structures = layoutDocument.pages.map((page, index) => ({
       ...buildReaderStructure(page, { regions: regionPages?.[index] ?? null }),
       page: index + 1,
@@ -1165,7 +1166,7 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
       try {
         const layoutDocument = await pdf.layoutDocument(version.file_path)
         if (layoutDocument.failed || layoutDocument.pages.length === 0) throw new PdfToolError('bbox-layout extraction failed', 'failed', { paperId })
-        const regionPages = await documentRegions(version.file_path, layoutDocument.pages.length, api)
+        const regionPages = await documentRegions(version.file_path, layoutDocument.pages.length, api, job)
         const structures = layoutDocument.pages.map((page, index) => ({
           ...buildReaderStructure(page, { regions: regionPages?.[index] ?? null }),
           page: index + 1,
@@ -1195,8 +1196,9 @@ export function createIngest({ store, search, pdf, queue, layout, config = {}, l
       } catch (error) {
         if (error?.name === 'AbortError' || error?.code === 'cancelled') throw error
         store.setPaperStructure(paperId, 'failed', {})
-        results.push({ paperId, ok: false, reason: String(error?.message ?? error) })
-        logger?.warn?.(`pappers-hall: structure job failed for ${paperId}: ${String(error?.message ?? error)}`)
+        const trace = String(error?.stack ?? '').split('\n').slice(1, 4).map((line) => line.trim()).join(' | ')
+        results.push({ paperId, ok: false, reason: String(error?.message ?? error), trace })
+        logger?.warn?.(`pappers-hall: structure job failed for ${paperId}: ${String(error?.message ?? error)} ${trace}`)
       }
       api.updateProgress(job, index + 1, paperIds.length, 'papers')
     }

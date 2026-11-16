@@ -281,9 +281,19 @@ export function createModels({ db, queue, embedding, ocr, python, settings, conf
     }
     advance()
     api.throwIfCancelled(job)
-    const packages = ['--quiet', '--upgrade', 'pymupdf>=1.24', 'rapidocr>=3.0']
+    // `rapidocr` does not pull an inference engine by itself; onnxruntime is
+    // the CPU runtime both OCR and PP-DocLayout-S use.
+    const packages = ['--quiet', '--upgrade', 'pymupdf>=1.24', 'rapidocr>=3.0', 'onnxruntime>=1.17']
     const pip = await runProcess([venvPip, 'install', ...packages], { signal: job.signal, timeoutMs: 30 * 60_000 })
     if (pip.code !== 0) throw new Error(`pip install failed: ${pip.stderr.slice(-700)}`)
+    // Verify the two runtimes the worker actually imports: a resolver can finish
+    // "successfully" while a wheel was skipped, and the failure would otherwise
+    // only surface at the first OCR call.
+    const probe = await runProcess(
+      [venvPython, '-c', 'import pymupdf, rapidocr, onnxruntime; print(pymupdf.VersionBind, onnxruntime.__version__)'],
+      { timeoutMs: 120_000 },
+    )
+    if (probe.code !== 0) throw new Error(`python packages are incomplete: ${probe.stderr.slice(-700) || probe.stdout.slice(-400)}`)
     advance()
     api.throwIfCancelled(job)
     // Layout model: fixed file + checksum from the models-v1 release.

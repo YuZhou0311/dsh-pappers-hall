@@ -123,7 +123,7 @@ Settings → Capabilities → **Local component (PDF · OCR · layout)** install
 | Capability | Component | Notes |
 |---|---|---|
 | PDF extraction | **PyMuPDF** | Replaces the Poppler CLI: text blocks, word boxes, images and rendering in one pass; falls back to Poppler when absent |
-| Scanned pages | **PP-OCRv6** (det + rec, tiny) | Recognises pages without a text layer; results feed search and the reader fallback; about 4 s per page (≈1.5 min for a 23-page paper) |
+| Scanned pages | **PP-OCRv6** (det + rec, tiny) | Recognises pages without a text layer; results feed search, the reader text layer, abstract and outline; about 4 s per page (≈1.5 min for a 23-page paper) |
 | Layout analysis | **PP-DocLayout-S** | Labels titles, body text, figures, tables, headers and footers to correct paragraph roles |
 
 - The models are **fixed** — no picker: they are downloaded once into the local data directory and verified by SHA-256

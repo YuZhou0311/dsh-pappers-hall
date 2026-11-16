@@ -227,7 +227,7 @@ async function main() {
     const db = service.domain.db
 
     // ---- schema v8 ---------------------------------------------------
-    check('schemaVersion is 8', Number(db.prepare('PRAGMA user_version').get()?.user_version) === 8)
+    check('schemaVersion is 9', Number(db.prepare('PRAGMA user_version').get()?.user_version) === 9)
     const tables = new Set(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((row) => row.name))
     for (const table of ['note_docs', 'note_folders', 'note_paper_links', 'note_revisions', 'note_embeddings', 'note_fts', 'notes']) {
       check(`table ${table} exists`, tables.has(table))
@@ -540,7 +540,7 @@ async function main() {
       let legacyDb = openDatabase(legacyPath)
       const legacyFts = probeFts5(legacyDb)
       const firstMigration = migrate(legacyDb, { fts5: legacyFts })
-      check('fresh database migrates to v8', firstMigration.version === 8 && Number(legacyDb.prepare('PRAGMA user_version').get()?.user_version) === 8)
+      check('fresh database migrates to v9', firstMigration.version === 9 && Number(legacyDb.prepare('PRAGMA user_version').get()?.user_version) === 9)
       const stamp = new Date().toISOString()
       legacyDb
         .prepare(
@@ -560,7 +560,7 @@ async function main() {
       legacyDb = openDatabase(legacyPath)
       const upgraded = migrate(legacyDb, { fts5: legacyFts })
       const upgradedTables = new Set(legacyDb.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((row) => row.name))
-      check('v7 → v8 migration rewrote user_version=8', upgraded.version === 8 && Number(legacyDb.prepare('PRAGMA user_version').get()?.user_version) === 8)
+      check('v7 → v9 migration rewrote user_version=9', upgraded.version === 9 && Number(legacyDb.prepare('PRAGMA user_version').get()?.user_version) === 9)
       check('v7 → v8 migration recreates the workbench tables', ['note_docs', 'note_folders', 'note_paper_links', 'note_revisions', 'note_embeddings', 'note_fts'].every((table) => upgradedTables.has(table)), [...upgradedTables].filter((name) => name.startsWith('note')))
       check('v7 → v8 migration keeps legacy rows untouched', legacyDb.prepare('SELECT COUNT(*) AS count FROM notes WHERE id = ?').get('nt-cccccccccccc').count === 1 &&
         legacyDb.prepare('SELECT text FROM notes WHERE id = ?').get('nt-cccccccccccc').text === 'legacy text survives' &&

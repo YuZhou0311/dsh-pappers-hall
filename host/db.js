@@ -11,7 +11,7 @@
 import { DatabaseSync } from 'node:sqlite'
 
 /** Current schema version written to `PRAGMA user_version`. */
-export const SCHEMA_VERSION = 8
+export const SCHEMA_VERSION = 9
 
 /** Tables that exist in every schema version. */
 const CORE_SCHEMA = `
@@ -456,6 +456,19 @@ export function readUserVersion(db) {
 }
 
 /**
+ * v9: OCR geometry for scanned pages.
+ *
+ * `ocr_text` alone cannot rebuild a reader layout, so the line boxes and the
+ * PP-DocLayout-S regions are kept next to it; the reader then shows real blocks
+ * for pages that have no text layer.
+ * @param {DatabaseSync} db open connection.
+ */
+function applyV9Columns(db) {
+  ensureColumn(db, 'paper_pages', 'ocr_lines_json', 'TEXT')
+  ensureColumn(db, 'paper_pages', 'ocr_regions_json', 'TEXT')
+}
+
+/**
  * Migrate the schema to {@link SCHEMA_VERSION}.
  *
  * Migration is monotonic and idempotent; a database created by a newer build is
@@ -496,6 +509,7 @@ export function migrate(db, { fts5 }) {
       applyV7Columns(db)
       db.exec(V7_SCHEMA)
       applyV8Schema(db, { fts5: fts5 === true })
+      applyV9Columns(db)
       const now = new Date().toISOString()
       db.prepare('INSERT OR REPLACE INTO settings(key, value, updated_at) VALUES (?, ?, ?)').run(
         'schemaVersion',

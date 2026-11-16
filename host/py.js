@@ -14,7 +14,7 @@
  * @module pappers-hall/host/py
  */
 import { spawn } from 'node:child_process'
-import { existsSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline'
 import { fileURLToPath } from 'node:url'
@@ -60,8 +60,14 @@ export function createPythonBridge({ venvDir, modelDir, python, logger, timeoutM
   function venvBytes() {
     const walk = (dir, depth) => {
       if (depth > 6 || !existsSync(dir)) return 0
+      let entries
+      try {
+        entries = readdirSync(dir, { withFileTypes: true })
+      } catch {
+        return 0
+      }
       let total = 0
-      for (const entry of statSync(dir, { throwIfNoEntry: false }) ? require('node:fs').readdirSync(dir, { withFileTypes: true }) : []) {
+      for (const entry of entries) {
         const full = path.join(dir, entry.name)
         try {
           total += entry.isDirectory() ? walk(full, depth + 1) : statSync(full).size
@@ -115,7 +121,12 @@ export function createPythonBridge({ venvDir, modelDir, python, logger, timeoutM
       const text = chunk.toString('utf8').trim()
       if (text !== '') logger?.debug?.(`pappers-hall python: ${text.slice(-400)}`)
     })
+    // A stopped worker must not fail requests that belong to its replacement:
+    // the installer restarts the bridge right after `stop()`, and a late exit
+    // event used to reject the new worker's readiness ping.
+    const isCurrent = () => child === handle
     const failAll = (reason) => {
+      if (!isCurrent()) return
       ready = false
       lastError = reason
       crashCount += 1
@@ -189,9 +200,10 @@ export function createPythonBridge({ venvDir, modelDir, python, logger, timeoutM
   /** Stop the worker (best effort). */
   function stop() {
     ready = false
-    try { child?.stdin.write('{"op":"shutdown"}\n') } catch { /* ignore */ }
-    try { child?.kill() } catch { /* ignore */ }
+    const current = child
     child = null
+    try { current?.stdin.write('{"op":"shutdown"}\n') } catch { /* ignore */ }
+    try { current?.kill() } catch { /* ignore */ }
     reader?.close()
     reader = null
   }

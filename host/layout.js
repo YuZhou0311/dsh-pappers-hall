@@ -21,11 +21,11 @@ import { clampInt } from './paths.js'
 /**
  * Version of the derived layout format; bump when parsing/semantics change.
  *
- * v4 adds PP-DocLayout-S region roles (headings/captions/tables/running heads)
- * on top of the geometric heuristics, so existing papers are regenerated once
- * after the upgrade.
+ * v5 keeps the PP-DocLayout-S region pass (introduced in v4) and marks the
+ * stored regions on the page structure, so older structures are regenerated
+ * once and the reader can tell whether a page was analysed with the model.
  */
-export const LAYOUT_VERSION = 4
+export const LAYOUT_VERSION = 5
 
 /** Round a coordinate to two decimals (layer volume control). */
 export function round2(value) {
@@ -199,6 +199,137 @@ export function layoutFromWordPages(pages) {
     })
   }
   return output
+}
+
+/**
+ * Build a reader structure for a page that has no text layer.
+ *
+ * Scanned pages only exist as pixels: the OCR pass returns line boxes (PDF
+ * points) plus the PP-DocLayout-S regions. This assembles the same reader shape
+ * the text backend produces, so a scanned page gets selectable lines, heading
+ * roles and captions instead of a single wall of text.
+ *
+ * @param {object} options structure inputs.
+ * @param {Array<{text:string,box:number[]}>} options.lines OCR lines in PDF points.
+ * @param {Array<{role:string,box:number[]}>} [options.regions] role regions in PDF points.
+ * @param {number} options.width page width in PDF points.
+ * @param {number} options.height page height in PDF points.
+ * @param {number} [options.page] 1-based page number used in block ids.
+ * @returns {object} reader structure ({blocks, words, lines, columns, width, height, layoutVersion}).
+ */
+export function buildOcrStructure({ lines = [], regions = [], width = 612, height = 792, page = 1 } = {}) {
+  const safeWidth = Number(width) > 0 ? Number(width) : 612
+  const safeHeight = Number(height) > 0 ? Number(height) : 792
+  const lineItems = (lines ?? [])
+    .filter((line) => line && Array.isArray(line.box) && line.box.length === 4 && String(line.text ?? '').trim() !== '')
+    .map((line) => ({
+      text: String(line.text).trim(),
+      bbox: {
+        x: round2(line.box[0]),
+        y: round2(line.box[1]),
+        w: round2(Math.max(0.5, line.box[2] - line.box[0])),
+        h: round2(Math.max(0.5, line.box[3] - line.box[1])),
+      },
+    }))
+  if (lineItems.length === 0) return { blocks: [], words: [], lines: [], columns: 1, width: safeWidth, height: safeHeight, layoutVersion: LAYOUT_VERSION }
+
+  const buckets = new Map()
+  const roleOf = new Map()
+  const order = []
+  const roleRegions = (regions ?? []).filter((region) => region && Array.isArray(region.box) && typeof region.role === 'string')
+  roleRegions.forEach((region, index) => {
+    const key = `r${index}`
+    buckets.set(key, [])
+    roleOf.set(key, region.role)
+    order.push(key)
+  })
+  const catchAll = 'rest'
+  buckets.set(catchAll, [])
+  roleOf.set(catchAll, 'body')
+
+  for (const line of lineItems) {
+    const cx = line.bbox.x + line.bbox.w / 2
+    const cy = line.bbox.y + line.bbox.h / 2
+    // Prefer a specific region (heading/caption/table); a plain `body` region
+    // only wins when nothing more specific covers the line.
+    const container = roleRegions.find((region) => {
+      const [x0, y0, x1, y1] = region.box
+      return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1 && region.role !== 'body'
+    }) ?? roleRegions.find((region) => {
+      const [x0, y0, x1, y1] = region.box
+      return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1
+    })
+    const key = container === undefined ? catchAll : `r${roleRegions.indexOf(container)}`
+    buckets.get(key).push(line)
+  }
+
+  const blocks = []
+  let index = 0
+  for (const key of order) {
+    const items = (buckets.get(key) ?? []).sort((left, right) => left.bbox.y - right.bbox.y || left.bbox.x - right.bbox.x)
+    if (items.length === 0) continue
+    const role = roleOf.get(key) ?? 'body'
+    const box = {
+      x: round2(Math.min(...items.map((line) => line.bbox.x))),
+      y: round2(Math.min(...items.map((line) => line.bbox.y))),
+      w: 0,
+      h: 0,
+    }
+    box.w = round2(Math.max(...items.map((line) => line.bbox.x + line.bbox.w)) - box.x)
+    box.h = round2(Math.max(...items.map((line) => line.bbox.y + line.bbox.h)) - box.y)
+    blocks.push({
+      id: `p${page}b${index}`,
+      role,
+      column: box.x + box.w / 2 < safeWidth / 2 ? 0 : 1,
+      fullWidth: box.w >= safeWidth * 0.62,
+      bbox: box,
+      text: items.map((line) => line.text).join('\n'),
+      lines: items.map((line) => ({ bbox: line.bbox, text: line.text })),
+    })
+    index += 1
+  }
+  // Lines outside every region: keep them as paragraphs split on vertical gaps so a
+  // full-page scan without layout regions still reads as paragraphs.
+  const leftovers = (buckets.get(catchAll) ?? []).sort((left, right) => left.bbox.y - right.bbox.y || left.bbox.x - right.bbox.x)
+  if (leftovers.length > 0) {
+    let current = []
+    const flush = () => {
+      if (current.length === 0) return
+      const x = Math.min(...current.map((line) => line.bbox.x))
+      const y = Math.min(...current.map((line) => line.bbox.y))
+      const right = Math.max(...current.map((line) => line.bbox.x + line.bbox.w))
+      const bottom = Math.max(...current.map((line) => line.bbox.y + line.bbox.h))
+      blocks.push({
+        id: `p${page}b${index}`,
+        role: 'body',
+        column: x + (right - x) / 2 < safeWidth / 2 ? 0 : 1,
+        fullWidth: right - x >= safeWidth * 0.62,
+        bbox: { x: round2(x), y: round2(y), w: round2(right - x), h: round2(bottom - y) },
+        text: current.map((line) => line.text).join('\n'),
+        lines: current.map((line) => ({ bbox: line.bbox, text: line.text })),
+      })
+      index += 1
+      current = []
+    }
+    for (const line of leftovers) {
+      const previous = current[current.length - 1]
+      const gap = previous === undefined ? 0 : line.bbox.y - (previous.bbox.y + previous.bbox.h)
+      if (previous !== undefined && gap > Math.max(6, previous.bbox.h * 0.8)) flush()
+      current.push(line)
+    }
+    flush()
+  }
+
+  blocks.sort((left, right) => (left.role === 'header' ? -1 : right.role === 'header' ? 1 : 0) || left.bbox.y - right.bbox.y || left.bbox.x - right.bbox.x)
+  return {
+    blocks,
+    words: lineItems.flatMap((line) => [{ x: line.bbox.x, y: line.bbox.y, w: line.bbox.w, h: line.bbox.h, text: line.text }]),
+    lines: lineItems.map((line) => ({ bbox: line.bbox, text: line.text })),
+    columns: blocks.some((block) => block.column === 1) && blocks.some((block) => block.column === 0) ? 2 : 1,
+    width: safeWidth,
+    height: safeHeight,
+    layoutVersion: LAYOUT_VERSION,
+  }
 }
 
 /**

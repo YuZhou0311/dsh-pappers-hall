@@ -186,11 +186,11 @@ class Worker:
                 pass
             self._rapidocr = RapidOCR(params=params)
             try:
-                import rapidocr as package
+                from importlib.metadata import version as package_version  # noqa: PLC0415
 
-                self.rapidocr_version = getattr(package, '__version__', '?')
+                self.rapidocr_version = package_version('rapidocr')
             except Exception:
-                self.rapidocr_version = '?'
+                self.rapidocr_version = None
         return self._rapidocr
 
     def page_image(self, path, page, dpi=200):

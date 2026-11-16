@@ -166,6 +166,7 @@ export function createSettings({ db, config = {}, logger, identity = {}, layout 
       supported: true,
       job,
       reason: status !== null ? status.reason ?? null : 'OCR service is not initialized',
+      layoutModel: status !== null ? status.layoutModel === true : false,
       scanPages: status !== null ? status.scanPages ?? 0 : 0,
       indexedPages: status !== null ? status.indexedPages ?? 0 : 0,
     }

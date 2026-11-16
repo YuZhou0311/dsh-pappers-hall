@@ -306,7 +306,7 @@ async function main() {
     check('database file created in dataDir', (await fileExists(service.dbPath)) === true, service.dbPath)
     const userVersion = service.domain.db.prepare('PRAGMA user_version').get()?.user_version
     const tableNames = service.domain.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((row) => row.name)
-    check('migration wrote user_version=8', Number(userVersion) === 8, userVersion)
+    check('migration wrote user_version=9', Number(userVersion) === 9, userVersion)
     check(
       'v0.17 notes workbench tables exist',
       ['note_docs', 'note_folders', 'note_paper_links', 'note_revisions', 'note_embeddings'].every((table) => tableNames.includes(table)),
@@ -2020,7 +2020,7 @@ async function main() {
     const second = await applyHost(secondFake.ctx, { dataDir })
     const preserved = await second.api.call('library.list', {})
     check('remount after dispose preserves library data', preserved.total === 1, preserved.total)
-    check('remount keeps user_version=8 and v0.8 note tables', Number(second.domain.db.prepare('PRAGMA user_version').get()?.user_version) === 8 &&
+    check('remount keeps user_version=9 and v0.8 note tables', Number(second.domain.db.prepare('PRAGMA user_version').get()?.user_version) === 9 &&
       ['note_docs', 'note_revisions', 'note_embeddings'].every((table) =>
         second.domain.db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(table) !== undefined,
       ))

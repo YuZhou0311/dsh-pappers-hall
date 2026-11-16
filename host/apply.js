@@ -428,7 +428,7 @@ async function applyHostNow(ctx, config) {
     leaseMs: resolved.leaseMs,
   })
   embedding.install(queue)
-  const ocr = createOcr({ db, python, docLayout, search, queue, layout, settings, config: resolved, logger })
+  const ocr = createOcr({ db, python, docLayout, search, queue, layout, settings, config: resolved, logger, store })
   ocr.registerHandlers(queue)
   const models = createModels({ db, queue, embedding, ocr, python, settings, config: resolved, logger })
   models.registerHandlers(queue)
@@ -436,7 +436,7 @@ async function applyHostNow(ctx, config) {
   const ingest = createIngest({ store, search, pdf, queue, layout, config: resolved, logger, manifest, docLayout })
   ingest.registerHandlers()
   trace('writer stack ready')
-  store.attach({ search, ingest, queue, pdf, ai, translate, embedding, classify, settings, ocr, models, notes, ctx })
+  store.attach({ search, ingest, queue, pdf, ai, translate, embedding, classify, settings, ocr, models, notes, ctx, docLayout })
   try {
     const autoIndex = embedding.autoIndexIfNeeded()
     if (autoIndex !== undefined && autoIndex !== null && autoIndex.job !== undefined && autoIndex.job !== null) trace('embedding auto-index queued', autoIndex.job.id)

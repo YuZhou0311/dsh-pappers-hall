@@ -14,6 +14,7 @@
 import path from 'node:path'
 import { homedir } from 'node:os'
 import { readSetting, writeSetting } from './db.js'
+import { buildOcrStructure, buildOutline, extractAbstract, LAYOUT_VERSION } from './layout.js'
 import { nowIso } from './paths.js'
 
 /** Engine identifier exposed by the settings panel. */
@@ -38,7 +39,7 @@ function defaultPythonDir() {
  * @param {object} [options.logger] logger.
  * @returns {object} OCR service.
  */
-export function createOcr({ db, python, docLayout, search, queue, layout, settings, config = {}, logger }) {
+export function createOcr({ db, python, docLayout, search, queue, layout, settings, config = {}, logger, store = null }) {
   const pythonDir = typeof config.pythonDir === 'string' && config.pythonDir !== '' ? config.pythonDir : defaultPythonDir()
   const renderWidth = Math.max(600, Math.min(2400, Number(config.ocrRenderWidth) || 1600))
   let lastError = null
@@ -166,7 +167,11 @@ export function createOcr({ db, python, docLayout, search, queue, layout, settin
     }))
     return {
       text: String(result.text ?? ''),
+      // `blocks` stay in rendered-pixel space for the region-repair helpers;
+      // `lines` keep the worker's PDF-point boxes, which is what the reader
+      // structure needs (page width/height are PDF points too).
       blocks,
+      lines: Array.isArray(result.lines) ? result.lines : [],
       regions: Array.isArray(result.regions) ? result.regions : [],
       width: renderWidth,
       height: Math.round((renderWidth * pageHeightPt) / pageWidthPt),
@@ -216,7 +221,8 @@ export function createOcr({ db, python, docLayout, search, queue, layout, settin
       if (filePath === null) return null
       const entry = await ocrPage(filePath, pageNumber, pageSizeOf(id, pageNumber))
       if (entry.text.trim() !== '') {
-        db.prepare('UPDATE paper_pages SET ocr_text = ?, ocr_updated_at = ? WHERE paper_id = ? AND page = ?').run(entry.text, nowIso(), id, pageNumber)
+        db.prepare('UPDATE paper_pages SET ocr_text = ?, ocr_updated_at = ?, ocr_lines_json = ?, ocr_regions_json = ? WHERE paper_id = ? AND page = ?')
+          .run(entry.text, nowIso(), JSON.stringify(entry.lines ?? entry.blocks), JSON.stringify(entry.regions), id, pageNumber)
       }
       if (blockCache.size >= BLOCK_CACHE_MAX) {
         const oldest = blockCache.keys().next().value
@@ -256,7 +262,8 @@ export function createOcr({ db, python, docLayout, search, queue, layout, settin
         const result = await ocrPage(filePath, pageNumber, pageSizeOf(id, pageNumber))
         const text = String(result.text ?? '').trim()
         if (text === '') return null
-        db.prepare('UPDATE paper_pages SET ocr_text = ?, ocr_updated_at = ? WHERE paper_id = ? AND page = ?').run(text, nowIso(), id, pageNumber)
+        db.prepare('UPDATE paper_pages SET ocr_text = ?, ocr_updated_at = ?, ocr_lines_json = ?, ocr_regions_json = ? WHERE paper_id = ? AND page = ?')
+          .run(text, nowIso(), JSON.stringify(result.lines ?? result.blocks), JSON.stringify(result.regions), id, pageNumber)
         try { search?.indexPages?.(id) } catch {}
         return text
       } catch (error) {
@@ -268,6 +275,74 @@ export function createOcr({ db, python, docLayout, search, queue, layout, settin
     })()
     pageLocks.set(key, task)
     return task
+  }
+
+  /**
+   * Store a reader structure built from OCR lines for pages without a text layer.
+   *
+   * Text pages keep the structure the PDF backend produced; only pages whose
+   * native text is empty are replaced, so running OCR can never downgrade a
+   * digital paper.
+   * @param {string} paperId paper id.
+   * @returns {number} number of pages updated.
+   */
+  function persistScannedStructure(paperId) {
+    const version = db.prepare('SELECT id FROM paper_versions WHERE paper_id = ? ORDER BY created_at DESC LIMIT 1').get(paperId)
+    const pages = db
+      .prepare('SELECT page, width, height, text, ocr_text, ocr_lines_json, ocr_regions_json FROM paper_pages WHERE paper_id = ? ORDER BY page')
+      .all(paperId)
+    if (pages.length === 0) return 0
+    const update = db.prepare(
+      'UPDATE paper_pages SET layout_json = ?, structure_state = ?, structure_version = ?, block_count = ?, word_count = ? WHERE paper_id = ? AND page = ?',
+    )
+    let updated = 0
+    const structures = []
+    for (const page of pages) {
+      const native = typeof page.text === 'string' ? page.text.trim() : ''
+      const ocr = typeof page.ocr_text === 'string' ? page.ocr_text.trim() : ''
+      if (native !== '' || ocr === '') continue
+      let lines = []
+      let regions = []
+      try { lines = JSON.parse(page.ocr_lines_json ?? '[]') } catch { lines = [] }
+      try { regions = JSON.parse(page.ocr_regions_json ?? '[]') } catch { regions = [] }
+      if (!Array.isArray(lines) || lines.length === 0) continue
+      const labelRoles = docLayout !== null && docLayout !== undefined && docLayout.ROLE_BY_LABEL ? docLayout.ROLE_BY_LABEL : {}
+      const structure = buildOcrStructure({
+        lines,
+        regions: Array.isArray(regions)
+          ? regions.map((region) => ({
+              role: region.role ?? labelRoles[region.label] ?? 'body',
+              box: region.box,
+            }))
+          : [],
+        width: Number(page.width) || 612,
+        height: Number(page.height) || 792,
+        page: Number(page.page),
+      })
+      if (structure.blocks.length === 0) continue
+      update.run(JSON.stringify(structure), 'ready', LAYOUT_VERSION, structure.blocks.length, structure.words.length, paperId, page.page)
+      structures.push({ ...structure, page: Number(page.page) })
+      updated += 1
+    }
+    if (updated === 0) return 0
+    // Derive the outline/abstract from the OCR structure so a scanned paper gets
+    // the same navigation a text paper has.
+    try {
+      const outline = buildOutline(structures)
+      const extracted = extractAbstract(structures)
+      if (store !== null && store !== undefined && typeof store.setPaperStructure === 'function') {
+        store.setPaperStructure(paperId, 'ready', extracted.text === null
+          ? { outline, abstractSource: 'ocr' }
+          : { outline, abstract: extracted.text, abstractSource: 'ocr' })
+      } else {
+        db.prepare("UPDATE papers SET structure_state = 'ready', outline_json = ?, updated_at = ? WHERE id = ?")
+          .run(JSON.stringify(outline), nowIso(), paperId)
+      }
+    } catch (error) {
+      logger?.debug?.(`pappers-hall: scanned outline failed for ${paperId}: ${String(error?.message ?? error)}`)
+      try { db.prepare("UPDATE papers SET structure_state = 'ready' WHERE id = ?").run(paperId) } catch {}
+    }
+    return updated
   }
 
   /** OCR index job handler. */
@@ -292,7 +367,8 @@ export function createOcr({ db, python, docLayout, search, queue, layout, settin
         if (result.text.trim() === '') {
           failed.push({ paperId: item.paper_id, page: item.page, error: 'OCR produced no text' })
         } else {
-          db.prepare('UPDATE paper_pages SET ocr_text = ?, ocr_updated_at = ? WHERE paper_id = ? AND page = ?').run(result.text, nowIso(), item.paper_id, item.page)
+          db.prepare('UPDATE paper_pages SET ocr_text = ?, ocr_updated_at = ?, ocr_lines_json = ?, ocr_regions_json = ? WHERE paper_id = ? AND page = ?')
+            .run(result.text, nowIso(), JSON.stringify(result.lines ?? result.blocks), JSON.stringify(result.regions), item.paper_id, item.page)
           updatedPapers.add(item.paper_id)
           indexed += 1
         }
@@ -303,7 +379,13 @@ export function createOcr({ db, python, docLayout, search, queue, layout, settin
       api.updateProgress(job, done, total, 'pages')
       api.heartbeat(job)
     }
-    for (const paperId of updatedPapers) search?.indexPages?.(paperId)
+    for (const paperId of updatedPapers) {
+      search?.indexPages?.(paperId)
+      // Scanned papers have no text layer to derive a layout from; use the OCR
+      // lines plus the detected regions so the reader gets real blocks, headings
+      // and captions instead of one unparsed block of text.
+      try { persistScannedStructure(paperId) } catch (error) { logger?.debug?.(`pappers-hall: scanned structure failed for ${paperId}: ${String(error?.message ?? error)}`) }
+    }
     writeSetting(db, 'models.ocr.lastIndexAt', nowIso())
     writeSetting(db, 'models.ocr.lastIndexedPages', indexed)
     if (indexed > 0) lastError = null

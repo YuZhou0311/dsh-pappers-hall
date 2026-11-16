@@ -37,6 +37,7 @@ import { commitReferenceBatch } from '../../core/reference-actions.js'
 import { Outline } from './outline.jsx'
 import { readFlag, writeFlag } from '../../core/notes-model.js'
 import { SlidingThumb, useSlidingThumb } from '../../core/motion.js'
+import { OnboardingCoach } from '../onboarding-card.jsx'
 import { PageCanvas } from './page-canvas.jsx'
 import { ReaderToolbar } from './toolbar.jsx'
 import { Thumbnails } from './thumbnails.jsx'
@@ -2361,6 +2362,7 @@ function ReaderShellInner(props) {
       ),
       'data-ph-reader': paperId,
     },
+    React.createElement(OnboardingCoach, { t: props.t, paperId: paperId }),
     React.createElement(ReaderToolbar, {
       t: rt,
       paper,

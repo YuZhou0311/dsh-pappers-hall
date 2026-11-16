@@ -5633,6 +5633,66 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   .ph-onb__feature, .ph-onb__tourcard { padding: 11px 12px; }
   .ph-onb__tour { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ======================= onboarding task checklist ========================= */
+.ph-onbcard {
+  margin: 10px 10px 2px;
+  border: 1px solid color-mix(in srgb, var(--ph-accent) 22%, var(--ph-line));
+  border-radius: var(--ph-r-md);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ph-accent) 5%, var(--ph-surface-1)), var(--ph-surface-1));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+.ph-onbcard__head { display: flex; align-items: center; gap: 7px; padding: 9px 10px; }
+.ph-onbcard__title { display: inline-flex; align-items: center; gap: 6px; font-size: var(--ph-fs-12); font-weight: var(--ph-fw-medium); color: var(--ph-ink); flex: 1; min-width: 0; }
+.ph-onbcard__title .ph-icon { color: var(--ph-accent); }
+.ph-onbcard__count { font-size: var(--ph-fs-11); color: var(--ph-ink-3); font-variant-numeric: tabular-nums; }
+.ph-onbcard--collapsed .ph-onbcard__head { padding-bottom: 9px; }
+.ph-onbcard__tasks { display: grid; gap: 2px; padding: 0 6px 6px; }
+.ph-onbtask { display: flex; align-items: center; gap: 8px; padding: 6px 6px; border-radius: 8px; }
+.ph-onbtask.is-next { background: var(--ph-surface-1); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ph-accent) 26%, var(--ph-line)); }
+.ph-onbtask__dot { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex: none; border-radius: 999px; border: 1px solid var(--ph-line); background: var(--ph-surface-1); color: var(--ph-accent); }
+.ph-onbtask.is-done .ph-onbtask__dot { border-color: transparent; background: color-mix(in srgb, var(--ph-accent) 16%, transparent); }
+.ph-onbtask__label { flex: 1; min-width: 0; font-size: var(--ph-fs-12); line-height: 1.3; color: var(--ph-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-onbtask.is-done .ph-onbtask__label { color: var(--ph-ink-4); text-decoration: line-through; text-decoration-thickness: 1px; }
+.ph-onbtask.is-next .ph-onbtask__label { color: var(--ph-ink); }
+.ph-onbtask > .ph-iconbtn { flex: none; width: 22px; height: 22px; }
+.ph-onbcard__progress { display: flex; align-items: center; gap: 8px; padding: 0 12px 8px; }
+.ph-onbcard__bar { flex: 1; height: 4px; border-radius: 999px; background: var(--ph-surface-3); overflow: hidden; }
+.ph-onbcard__bar span { display: block; height: 100%; border-radius: inherit; background: var(--ph-accent); transition: width 320ms ease; }
+.ph-onbcard__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px 10px; }
+.ph-onbcard__foot .ph-caption { font-size: 10.5px; color: var(--ph-ink-4); }
+.ph-onbcard__link { border: 0; background: transparent; padding: 2px; color: var(--ph-ink-4); font: inherit; font-size: 10.5px; cursor: pointer; border-radius: 4px; }
+.ph-onbcard__link:hover { color: var(--ph-ink-2); text-decoration: underline; text-underline-offset: 2px; }
+.ph-onbcard__error { margin: 0 12px 8px; font-size: 11px; color: #b91c1c; }
+
+.ph-onbcoach {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--ph-accent) 26%, var(--ph-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ph-surface-1) 92%, var(--ph-accent) 8%);
+  box-shadow: 0 8px 24px -18px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  animation: ph-onb-fade 160ms ease-out both;
+  max-width: min(420px, calc(100% - 36px));
+}
+.ph-onbcoach__icon { display: inline-flex; color: var(--ph-accent); flex: none; }
+.ph-onbcoach__text { font-size: var(--ph-fs-12); color: var(--ph-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-onbcoach__count { font-size: 10.5px; color: var(--ph-ink-4); font-variant-numeric: tabular-nums; flex: none; }
+.ph-onbcoach__close { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 0; border-radius: 999px; background: transparent; color: var(--ph-ink-4); cursor: pointer; flex: none; }
+.ph-onbcoach__close:hover { background: var(--ph-surface-3); color: var(--ph-ink-2); }
+
+@media (max-width: 760px) {
+  .ph-onbcoach { left: 10px; right: 10px; bottom: 10px; max-width: none; }
+  .ph-onbcoach__text { white-space: normal; }
+}
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -12322,6 +12382,7 @@ function CollectionsPane(props) {
     h(
       "div",
       { className: "ph-left__scroll ph-scroll" },
+      props.onboardingCard || null,
       h(
         "div",
         { className: "ph-left__section ph-left__section--browse" },
@@ -15800,7 +15861,7 @@ function NoteInline(props) {
 }
 
 // src/surfaces/notes/paper-panel.jsx
-var import_react33 = __toESM(require("react"), 1);
+var import_react34 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/text-layer.jsx
 var import_react19 = __toESM(require("react"), 1);
@@ -17563,7 +17624,7 @@ var PageTextLayer = import_react19.default.memo(PageTextLayerImpl, (previous, ne
 });
 
 // src/surfaces/reader/shell.jsx
-var import_react32 = __toESM(require("react"), 1);
+var import_react33 = __toESM(require("react"), 1);
 
 // src/surfaces/reader/styles.js
 var STYLE_ID2 = "ph-reader-styles";
@@ -22307,8 +22368,257 @@ function Outline(props) {
   );
 }
 
-// src/surfaces/reader/page-canvas.jsx
+// src/surfaces/onboarding-card.jsx
 var import_react29 = __toESM(require("react"), 1);
+
+// src/core/onboarding.js
+var EMPTY = { loaded: false, visible: false, tasks: [], doneCount: 0, total: 6, allDone: false, next: null, sample: null, state: null };
+function createStore3() {
+  let state = EMPTY;
+  let listeners6 = /* @__PURE__ */ new Set();
+  let timer2 = null;
+  let inFlight = null;
+  function publish3(next) {
+    state = Object.assign({}, state, next);
+    listeners6.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[pappers-hall] onboarding listener failed", error);
+      }
+    });
+  }
+  function apply2(payload) {
+    if (payload === null || typeof payload !== "object") return;
+    publish3({
+      loaded: true,
+      visible: payload.visible === true,
+      tasks: Array.isArray(payload.tasks) ? payload.tasks : [],
+      doneCount: Number(payload.doneCount) || 0,
+      total: Number(payload.total) || 6,
+      allDone: payload.allDone === true,
+      next: payload.next ?? null,
+      sample: payload.sample ?? null,
+      state: payload.state ?? null
+    });
+  }
+  async function refresh() {
+    if (inFlight !== null) return inFlight;
+    inFlight = defaultApi("onboarding.status").then((payload) => {
+      apply2(payload);
+      return payload;
+    }).catch(() => null).then((value) => {
+      inFlight = null;
+      return value;
+    });
+    return inFlight;
+  }
+  function stopPolling() {
+    if (timer2 !== null) {
+      clearInterval(timer2);
+      timer2 = null;
+    }
+  }
+  function startPolling(intervalMs = 2500) {
+    if (timer2 !== null) return;
+    timer2 = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden === true) return;
+      refresh();
+    }, intervalMs);
+    refresh();
+  }
+  return {
+    subscribe(listener) {
+      listeners6.add(listener);
+      return () => listeners6.delete(listener);
+    },
+    getSnapshot() {
+      return state;
+    },
+    refresh,
+    startPolling,
+    stopPolling,
+    /** Import the bundled sample PDF, remember it, and return its paper id. */
+    async importSample() {
+      const current2 = state.sample || {};
+      if (typeof current2.path !== "string" || current2.path === "") throw new Error("sample path unavailable");
+      const result = await defaultApi("library.import", { paths: [current2.path] });
+      const accepted = result && result.acceptedItems || [];
+      const duplicates = result && result.duplicates || [];
+      const paperId = accepted.length > 0 ? accepted[0].paperId : duplicates.length > 0 ? duplicates[0].paperId : null;
+      if (paperId !== null) await defaultApi("onboarding.sampleImported", { paperId });
+      await refresh();
+      return paperId;
+    },
+    async dismiss() {
+      await defaultApi("onboarding.update", { patch: { dismissedAt: (/* @__PURE__ */ new Date()).toISOString(), expanded: false } }).catch(() => {
+      });
+      await refresh();
+    },
+    async finish() {
+      await defaultApi("onboarding.finish").catch(() => {
+      });
+      await refresh();
+    },
+    async reset() {
+      await defaultApi("onboarding.reset").catch(() => {
+      });
+      await refresh();
+    },
+    async toggleExpanded(expanded) {
+      await defaultApi("onboarding.update", { patch: { expanded: expanded === true } }).catch(() => {
+      });
+      await refresh();
+    }
+  };
+}
+var onboardingStore = createStore3();
+
+// src/surfaces/onboarding-card.jsx
+var TASK_ORDER = ["component", "sample", "read", "annotate", "note", "cite"];
+var TASK_ICONS = { component: "cpu", sample: "download", read: "book", annotate: "highlighter", note: "note", cite: "quote" };
+function useOnboarding() {
+  const snapshot4 = import_react29.default.useSyncExternalStore(onboardingStore.subscribe, onboardingStore.getSnapshot, onboardingStore.getSnapshot);
+  import_react29.default.useEffect(() => {
+    onboardingStore.startPolling();
+    return () => onboardingStore.stopPolling();
+  }, []);
+  return snapshot4;
+}
+function TaskRow(props) {
+  const t = props.t;
+  const { task, isNext, busy: busy2, onAction } = props;
+  const label = t("onboarding.task." + task.id);
+  const hint = t("onboarding.task." + task.id + ".hint");
+  return h(
+    "div",
+    { className: "ph-onbtask" + (task.done ? " is-done" : "") + (isNext ? " is-next" : ""), title: label + "\n" + hint },
+    h("span", { className: "ph-onbtask__dot", "aria-hidden": "true" }, task.done ? h(Icon, { name: "check", size: 11 }) : null),
+    h("span", { className: "ph-onbtask__label" }, label),
+    task.done ? null : h(IconButton, {
+      icon: TASK_ICONS[task.id] || "arrowRight",
+      title: t("onboarding.task." + task.id + ".action"),
+      "aria-label": t("onboarding.task." + task.id + ".action"),
+      disabled: busy2 === task.id,
+      active: isNext,
+      onClick: () => onAction(task.id)
+    })
+  );
+}
+function OnboardingChecklist(props) {
+  const t = props.t;
+  const snapshot4 = useOnboarding();
+  const [busy2, setBusy] = import_react29.default.useState("");
+  const [error, setError] = import_react29.default.useState("");
+  const openPaper = props.onOpenPaper;
+  const expanded = snapshot4.state === null ? true : snapshot4.state.expanded !== false;
+  const tasks = TASK_ORDER.map((id) => {
+    const found = (snapshot4.tasks || []).find((task) => task.id === id);
+    return { id, done: found !== void 0 && found.done === true };
+  });
+  if (snapshot4.loaded !== true || snapshot4.visible !== true) return null;
+  const openSample = () => {
+    const paperId = snapshot4.sample && snapshot4.sample.paperId ? snapshot4.sample.paperId : null;
+    if (paperId !== null && typeof openPaper === "function") {
+      openPaper(paperId, 1);
+      return true;
+    }
+    return false;
+  };
+  const run = (taskId) => {
+    setError("");
+    if (taskId === "component") {
+      bus.emit("open-settings");
+      return;
+    }
+    if (taskId === "sample") {
+      setBusy("sample");
+      onboardingStore.importSample().then((paperId) => {
+        if (paperId !== null && typeof props.onImported === "function") props.onImported(paperId);
+      }).catch((failure) => setError(describeError(t, failure))).then(() => setBusy(""));
+      return;
+    }
+    if (taskId === "cite") {
+      bus.emit("pappers-hall:open-drawer");
+      return;
+    }
+    if (openSample() !== true) {
+      setBusy("sample");
+      onboardingStore.importSample().then((paperId) => {
+        if (paperId !== null && typeof openPaper === "function") openPaper(paperId, 1);
+      }).catch((failure) => setError(describeError(t, failure))).then(() => setBusy(""));
+    }
+  };
+  const percent = Math.round(snapshot4.doneCount / Math.max(1, snapshot4.total) * 100);
+  return h(
+    "div",
+    { className: "ph-onbcard" + (expanded ? "" : " ph-onbcard--collapsed"), role: "region", "aria-label": t("onboarding.card.title") },
+    h(
+      "div",
+      { className: "ph-onbcard__head" },
+      h(
+        "span",
+        { className: "ph-onbcard__title" },
+        h(Icon, { name: "compass", size: 14 }),
+        h("span", null, t("onboarding.card.title"))
+      ),
+      h("span", { className: "ph-onbcard__count" }, t("onboarding.card.count", { done: snapshot4.doneCount, total: snapshot4.total })),
+      h(IconButton, {
+        icon: expanded ? "chevronUp" : "chevronDown",
+        title: expanded ? t("onboarding.card.collapse") : t("onboarding.card.expand"),
+        onClick: () => onboardingStore.toggleExpanded(!expanded)
+      })
+    ),
+    expanded ? h(
+      import_react29.default.Fragment,
+      null,
+      h("div", { className: "ph-onbcard__tasks" }, tasks.map(
+        (task) => h(TaskRow, {
+          key: task.id,
+          t,
+          task,
+          isNext: snapshot4.next === task.id,
+          busy: busy2,
+          onAction: run
+        })
+      )),
+      h(
+        "div",
+        { className: "ph-onbcard__progress" },
+        h("div", { className: "ph-onbcard__bar" }, h("span", { style: { width: Math.max(4, percent) + "%" } })),
+        h("span", { className: "ph-caption" }, percent + "%")
+      ),
+      error !== "" ? h("div", { className: "ph-onbcard__error", role: "alert" }, error) : null,
+      h(
+        "div",
+        { className: "ph-onbcard__foot" },
+        snapshot4.allDone ? h(Button, { size: "sm", variant: "primary", icon: "check", onClick: () => onboardingStore.finish() }, t("onboarding.card.finish")) : h("span", { className: "ph-caption", title: t("onboarding.card.hint") }, t("onboarding.card.auto")),
+        h("button", { type: "button", className: "ph-onbcard__link", onClick: () => onboardingStore.dismiss() }, t("onboarding.card.dismiss"))
+      )
+    ) : null
+  );
+}
+function OnboardingCoach(props) {
+  const t = props.t;
+  const snapshot4 = useOnboarding();
+  const paperId = props.paperId ? String(props.paperId) : "";
+  if (snapshot4.loaded !== true || snapshot4.visible !== true) return null;
+  const sampleId = snapshot4.sample && snapshot4.sample.paperId ? String(snapshot4.sample.paperId) : "";
+  if (sampleId === "" || paperId !== sampleId) return null;
+  const next = snapshot4.next;
+  if (next === null || next === "component" || next === "sample") return null;
+  return h(
+    "div",
+    { className: "ph-onbcoach", role: "status" },
+    h("span", { className: "ph-onbcoach__icon" }, h(Icon, { name: TASK_ICONS[next] || "compass", size: 13 })),
+    h("span", { className: "ph-onbcoach__text" }, t("onboarding.coach." + next)),
+    h("span", { className: "ph-onbcoach__count" }, t("onboarding.card.count", { done: snapshot4.doneCount, total: snapshot4.total })),
+    h("button", { type: "button", className: "ph-onbcoach__close", onClick: () => onboardingStore.dismiss(), "aria-label": t("onboarding.card.dismiss") }, h(Icon, { name: "close", size: 12 }))
+  );
+}
+
+// src/surfaces/reader/page-canvas.jsx
+var import_react30 = __toESM(require("react"), 1);
 var PAGE_GAP = 16;
 var PAGE_TOP_PADDING = 18;
 var PAGE_BOTTOM_PADDING = 48;
@@ -22332,7 +22642,7 @@ function scrollElementTo(element2, top, smooth) {
   element2.scrollTop = value;
 }
 function usePageDescriptors(pages, total) {
-  return import_react29.default.useMemo(() => {
+  return import_react30.default.useMemo(() => {
     const list = arrayOf3(pages);
     if (list.length > 0) {
       return list.map((item, index) => {
@@ -22351,7 +22661,7 @@ function usePageDescriptors(pages, total) {
   }, [pages, total]);
 }
 function useAnnotationsByPage(annotations) {
-  return import_react29.default.useMemo(() => {
+  return import_react30.default.useMemo(() => {
     const map = /* @__PURE__ */ new Map();
     for (const annotation of arrayOf3(annotations)) {
       if (!annotation) continue;
@@ -22398,26 +22708,26 @@ function PageViewImpl(props) {
     reducedMotion
   } = props;
   const page2 = pageInfo.page;
-  const pageRef = import_react29.default.useRef(null);
-  const imgRef = import_react29.default.useRef(null);
-  const [imageState, setImageState] = import_react29.default.useState("loading");
-  const [imageVersion, setImageVersion] = import_react29.default.useState(0);
-  const [imageSlow, setImageSlow] = import_react29.default.useState(false);
-  const [areaDrag, setAreaDrag] = import_react29.default.useState(null);
-  const areaRectRef = import_react29.default.useRef(null);
-  const [hover, setHover] = import_react29.default.useState(null);
-  const hoverFrame = import_react29.default.useRef(0);
-  const hoverPoint = import_react29.default.useRef(null);
-  const dragRef = import_react29.default.useRef(null);
-  const [selecting, setSelecting] = import_react29.default.useState(false);
-  const [dragSelect, setDragSelect] = import_react29.default.useState(null);
-  const selectRef = import_react29.default.useRef(null);
-  const selectFrame = import_react29.default.useRef(0);
-  const [noteGhost, setNoteGhost] = import_react29.default.useState(null);
+  const pageRef = import_react30.default.useRef(null);
+  const imgRef = import_react30.default.useRef(null);
+  const [imageState, setImageState] = import_react30.default.useState("loading");
+  const [imageVersion, setImageVersion] = import_react30.default.useState(0);
+  const [imageSlow, setImageSlow] = import_react30.default.useState(false);
+  const [areaDrag, setAreaDrag] = import_react30.default.useState(null);
+  const areaRectRef = import_react30.default.useRef(null);
+  const [hover, setHover] = import_react30.default.useState(null);
+  const hoverFrame = import_react30.default.useRef(0);
+  const hoverPoint = import_react30.default.useRef(null);
+  const dragRef = import_react30.default.useRef(null);
+  const [selecting, setSelecting] = import_react30.default.useState(false);
+  const [dragSelect, setDragSelect] = import_react30.default.useState(null);
+  const selectRef = import_react30.default.useRef(null);
+  const selectFrame = import_react30.default.useRef(0);
+  const [noteGhost, setNoteGhost] = import_react30.default.useState(null);
   const interactive = mode === "select";
   const rawLayer = layerEntry && layerEntry.status === "ready" ? layerEntry.data : null;
   const pageData = pageDataEntry && pageDataEntry.status === "ready" ? pageDataEntry.data : null;
-  const layer = import_react29.default.useMemo(() => {
+  const layer = import_react30.default.useMemo(() => {
     if (!rawLayer) return null;
     const width2 = num(rawLayer.width, pageInfo.width);
     const height2 = num(rawLayer.height, pageInfo.height);
@@ -22427,8 +22737,8 @@ function PageViewImpl(props) {
     if (rawLayer.width === width2 && rawLayer.height === height2) return rawLayer;
     return Object.assign({}, rawLayer, { width: width2, height: height2 });
   }, [pageInfo.height, pageInfo.width, rawLayer]);
-  const selectable = import_react29.default.useMemo(() => selectableWords(layer), [layer]);
-  import_react29.default.useEffect(() => {
+  const selectable = import_react30.default.useMemo(() => selectableWords(layer), [layer]);
+  import_react30.default.useEffect(() => {
     setImageState("loading");
     setImageSlow(false);
     setImageVersion(0);
@@ -22439,12 +22749,12 @@ function PageViewImpl(props) {
     setSelecting(false);
     setNoteGhost(null);
   }, [paperId, page2]);
-  const retryImage = import_react29.default.useCallback(() => {
+  const retryImage = import_react30.default.useCallback(() => {
     setImageState("loading");
     setImageSlow(false);
     setImageVersion((value) => value + 1);
   }, []);
-  const pointOf = import_react29.default.useCallback((event) => {
+  const pointOf = import_react30.default.useCallback((event) => {
     const element2 = pageRef.current;
     if (!element2) return null;
     const box = element2.getBoundingClientRect();
@@ -22454,7 +22764,7 @@ function PageViewImpl(props) {
       y: clamp((event.clientY - box.top) / box.height, 0, 1)
     };
   }, []);
-  const selectionForPoints = import_react29.default.useCallback(
+  const selectionForPoints = import_react30.default.useCallback(
     (start, current2) => {
       const rectNorm = pointRect(start, current2);
       if (!rectNorm || !selectable || selectable.words.length === 0) return null;
@@ -22540,7 +22850,7 @@ function PageViewImpl(props) {
     },
     [selectable]
   );
-  const anchorPx = import_react29.default.useCallback(
+  const anchorPx = import_react30.default.useCallback(
     (anchor, placement) => {
       if (!anchor) return null;
       const half = placement && placement.halfWidth ? placement.halfWidth : 150;
@@ -22556,7 +22866,7 @@ function PageViewImpl(props) {
     },
     [height, width]
   );
-  const openAnnotationAt = import_react29.default.useCallback(
+  const openAnnotationAt = import_react30.default.useCallback(
     (point) => {
       const annotation = annotationAt(annotations, point);
       if (!annotation) return false;
@@ -22568,7 +22878,7 @@ function PageViewImpl(props) {
     },
     [annotations, props]
   );
-  const handleMouseDown = import_react29.default.useCallback(
+  const handleMouseDown = import_react30.default.useCallback(
     (event) => {
       if (event.button !== 0) return;
       const target = event.target;
@@ -22651,7 +22961,7 @@ function PageViewImpl(props) {
     },
     [mode, openAnnotationAt, page2, pointOf, props, selectionForPoints]
   );
-  import_react29.default.useEffect(() => {
+  import_react30.default.useEffect(() => {
     if (!areaDrag) return void 0;
     const onMove = (event) => {
       const start = dragRef.current;
@@ -22681,7 +22991,7 @@ function PageViewImpl(props) {
       window.removeEventListener("mouseup", onUp);
     };
   }, [areaDrag !== null, pointOf, props]);
-  const handleClick = import_react29.default.useCallback(
+  const handleClick = import_react30.default.useCallback(
     (event) => {
       if (mode !== "note") return;
       const target = event.target;
@@ -22691,7 +23001,7 @@ function PageViewImpl(props) {
     },
     [mode, pointOf, props]
   );
-  const handleMouseMove = import_react29.default.useCallback(
+  const handleMouseMove = import_react30.default.useCallback(
     (event) => {
       if (selecting || event.buttons) {
         if (hover) setHover(null);
@@ -22726,7 +23036,7 @@ function PageViewImpl(props) {
     },
     [hover, interactive, mode, pointOf, props.annotations, selecting]
   );
-  const clearHover = import_react29.default.useCallback(() => {
+  const clearHover = import_react30.default.useCallback(() => {
     setHover(null);
     setNoteGhost(null);
   }, []);
@@ -22734,7 +23044,7 @@ function PageViewImpl(props) {
   const pageSelection = selection && selection.page === page2 ? selection : null;
   const pagePopover = popover && popover.annotation && popover.annotation.page === page2 ? popover : null;
   const pageNoteDraft = noteDraft && noteDraft.page === page2 ? noteDraft : null;
-  const pageSearchHits = import_react29.default.useMemo(() => {
+  const pageSearchHits = import_react30.default.useMemo(() => {
     if (!search || !search.query || !search.hits) return null;
     return search.hits.map((hit, index) => ({ hit, index })).filter((entry) => entry.hit.page === page2).map((entry) => Object.assign({}, entry.hit, { order: entry.index }));
   }, [page2, search]);
@@ -22786,7 +23096,7 @@ function PageViewImpl(props) {
   const baseImageSrc = pageUrlOf(paperId, Object.assign({ page: page2 }, pageInfo, { imageUrl: pageInfo.imageUrl }));
   const imageSrc = imageVersion > 0 ? baseImageSrc + (baseImageSrc.indexOf("?") >= 0 ? "&" : "?") + "retry=" + imageVersion : baseImageSrc;
   const showImageSkeleton = imageState === "loading";
-  import_react29.default.useEffect(() => {
+  import_react30.default.useEffect(() => {
     setImageSlow(false);
     const node = imgRef.current;
     if (!node) return void 0;
@@ -22811,7 +23121,7 @@ function PageViewImpl(props) {
     };
   }, [imageSrc, imageVersion]);
   const layerStatus = layerEntry ? layerEntry.status : "idle";
-  return import_react29.default.createElement(
+  return import_react30.default.createElement(
     "div",
     {
       ref: pageRef,
@@ -22829,7 +23139,7 @@ function PageViewImpl(props) {
       onMouseMove: handleMouseMove,
       onMouseLeave: clearHover
     },
-    import_react29.default.createElement(
+    import_react30.default.createElement(
       "img",
       {
         key: "img-" + imageVersion,
@@ -22853,23 +23163,23 @@ function PageViewImpl(props) {
         }
       }
     ),
-    showImageSkeleton ? import_react29.default.createElement("div", { className: "ph-r-page__skeleton" }) : null,
-    showImageSkeleton && imageSlow ? import_react29.default.createElement(
+    showImageSkeleton ? import_react30.default.createElement("div", { className: "ph-r-page__skeleton" }) : null,
+    showImageSkeleton && imageSlow ? import_react30.default.createElement(
       "div",
       { className: "ph-r-page__slow", role: "status" },
-      import_react29.default.createElement(Spinner2, { size: 14 }),
-      import_react29.default.createElement("span", null, t("reader.page.slow")),
-      import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
+      import_react30.default.createElement(Spinner2, { size: 14 }),
+      import_react30.default.createElement("span", null, t("reader.page.slow")),
+      import_react30.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
     ) : null,
-    imageState === "error" ? import_react29.default.createElement(
+    imageState === "error" ? import_react30.default.createElement(
       "div",
       { className: "ph-r-page__error" },
-      import_react29.default.createElement(Icon2, { name: "warning", size: 18 }),
-      import_react29.default.createElement("span", null, t("reader.page.imageFailed")),
-      import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
+      import_react30.default.createElement(Icon2, { name: "warning", size: 18 }),
+      import_react30.default.createElement("span", null, t("reader.page.imageFailed")),
+      import_react30.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: retryImage }, t("reader.page.imageRetry"))
     ) : null,
-    interactive ? import_react29.default.createElement(FigureDragRegions, { t, figures: props.figures, paperId, page: page2 }) : null,
-    import_react29.default.createElement(PageTextLayer, {
+    interactive ? import_react30.default.createElement(FigureDragRegions, { t, figures: props.figures, paperId, page: page2 }) : null,
+    import_react30.default.createElement(PageTextLayer, {
       key: "text-" + page2,
       page: page2,
       words: selectable.words,
@@ -22883,13 +23193,13 @@ function PageViewImpl(props) {
     (() => {
       const overlayRects = dragSelect && dragSelect.rects ? dragSelect.rects : pageSelection ? pageSelection.rects : null;
       if (!overlayRects || overlayRects.length === 0) return null;
-      return import_react29.default.createElement(
+      return import_react30.default.createElement(
         "div",
         { className: "ph-r-selrect", "data-ph-text-selection": String(dragSelect ? dragSelect.wordCount : pageSelection ? pageSelection.wordCount || 0 : 0) },
-        overlayRects.map((rect, index) => import_react29.default.createElement("span", { key: index, className: "ph-r-selrect__box", style: rectStyle(rect) }))
+        overlayRects.map((rect, index) => import_react30.default.createElement("span", { key: index, className: "ph-r-selrect__box", style: rectStyle(rect) }))
       );
     })(),
-    dragSelect && dragSelect.wordCount > 0 ? import_react29.default.createElement(
+    dragSelect && dragSelect.wordCount > 0 ? import_react30.default.createElement(
       "span",
       {
         className: "ph-r-selcount",
@@ -22900,23 +23210,23 @@ function PageViewImpl(props) {
       },
       t("reader.selection.selectedWords", { count: dragSelect.wordCount })
     ) : null,
-    noteGhost && mode === "note" && !noteDraft ? import_react29.default.createElement("span", {
+    noteGhost && mode === "note" && !noteDraft ? import_react30.default.createElement("span", {
       className: "ph-r-note-ghost",
       style: { left: (noteGhost.x * 100).toFixed(2) + "%", top: (noteGhost.y * 100).toFixed(2) + "%" },
       "aria-hidden": "true"
-    }, import_react29.default.createElement(Icon2, { name: "sticky", size: 12 })) : null,
-    import_react29.default.createElement(AnnotationMarks, {
+    }, import_react30.default.createElement(Icon2, { name: "sticky", size: 12 })) : null,
+    import_react30.default.createElement(AnnotationMarks, {
       page: page2,
       annotations: pageAnnotations,
       activeId: activeAnnotationId
     }),
-    figureHighlight ? import_react29.default.createElement(FigureHighlightOverlay, { t, figureFocus: figureHighlight, page: page2 }) : null,
-    pageSearchHits && pageSearchHits.length > 0 ? import_react29.default.createElement(
+    figureHighlight ? import_react30.default.createElement(FigureHighlightOverlay, { t, figureFocus: figureHighlight, page: page2 }) : null,
+    pageSearchHits && pageSearchHits.length > 0 ? import_react30.default.createElement(
       "div",
       { className: "ph-r-hits" },
       pageSearchHits.map(
         (hit) => hit.rects.map(
-          (rect, index) => import_react29.default.createElement("span", {
+          (rect, index) => import_react30.default.createElement("span", {
             key: hit.order + ":" + index,
             className: cx("ph-r-hit", hit.order === activeHitOrder && "ph-r-hit--active"),
             style: rectStyle(rect)
@@ -22924,20 +23234,20 @@ function PageViewImpl(props) {
         )
       )
     ) : null,
-    areaDrag ? import_react29.default.createElement("span", { className: "ph-r-area-drag", style: rectStyle(areaDrag) }) : null,
-    active || pageSearchHits ? import_react29.default.createElement(
+    areaDrag ? import_react30.default.createElement("span", { className: "ph-r-area-drag", style: rectStyle(areaDrag) }) : null,
+    active || pageSearchHits ? import_react30.default.createElement(
       "span",
       { className: "ph-r-page__chip" },
-      import_react29.default.createElement(Icon2, { name: "pages", size: 11 }),
+      import_react30.default.createElement(Icon2, { name: "pages", size: 11 }),
       String(page2)
     ) : null,
-    active && !layer ? import_react29.default.createElement(
+    active && !layer ? import_react30.default.createElement(
       "span",
       { className: "ph-r-page__structure" },
       layerStatus === "loading" || layerStatus === "idle" ? t("reader.page.textLayer.loading") : t("reader.page.textLayer.unavailable")
     ) : null,
-    showTooltip ? import_react29.default.createElement(AnnotationTooltip, { annotation: showTooltip.annotation, style: tooltipStyle }) : null,
-    selectionToolbar ? import_react29.default.createElement(
+    showTooltip ? import_react30.default.createElement(AnnotationTooltip, { annotation: showTooltip.annotation, style: tooltipStyle }) : null,
+    selectionToolbar ? import_react30.default.createElement(
       "div",
       {
         className: cx("ph-r-float", "ph-r-card", "ph-r-selbar"),
@@ -22945,9 +23255,9 @@ function PageViewImpl(props) {
         "data-ph-overlay": "selection",
         onMouseDown: (event) => event.preventDefault()
       },
-      import_react29.default.createElement("span", { className: "ph-r-selbar__count" }, t("reader.selection.selectedWords", { count: pageSelection ? pageSelection.wordCount || 0 : 0 })),
-      import_react29.default.createElement("span", { className: "ph-r-selbar__sep" }),
-      import_react29.default.createElement(
+      import_react30.default.createElement("span", { className: "ph-r-selbar__count" }, t("reader.selection.selectedWords", { count: pageSelection ? pageSelection.wordCount || 0 : 0 })),
+      import_react30.default.createElement("span", { className: "ph-r-selbar__sep" }),
+      import_react30.default.createElement(
         "button",
         {
           type: "button",
@@ -22955,43 +23265,43 @@ function PageViewImpl(props) {
           onClick: () => props.onSelectionAction("quickTranslate"),
           title: t("reader.selection.quickTranslateHint")
         },
-        import_react29.default.createElement(Icon2, { name: "sparkles", size: 14 }),
-        import_react29.default.createElement("span", null, t("reader.selection.quickTranslate"))
+        import_react30.default.createElement(Icon2, { name: "sparkles", size: 14 }),
+        import_react30.default.createElement("span", null, t("reader.selection.quickTranslate"))
       ),
-      import_react29.default.createElement(ColorPenRow, {
+      import_react30.default.createElement(ColorPenRow, {
         t,
         onPick: (color) => props.onSelectionAction("highlight", { color })
       }),
-      import_react29.default.createElement("span", { className: "ph-r-selbar__sep" }),
-      import_react29.default.createElement(
+      import_react30.default.createElement("span", { className: "ph-r-selbar__sep" }),
+      import_react30.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("copy"), title: t("reader.selection.copy") },
-        import_react29.default.createElement(Icon2, { name: "copy", size: 14 }),
-        import_react29.default.createElement("span", null, t("reader.selection.copy"))
+        import_react30.default.createElement(Icon2, { name: "copy", size: 14 }),
+        import_react30.default.createElement("span", null, t("reader.selection.copy"))
       ),
-      import_react29.default.createElement(
+      import_react30.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("explain"), title: t("reader.selection.explain") },
-        import_react29.default.createElement(Icon2, { name: "book", size: 14 }),
-        import_react29.default.createElement("span", null, t("reader.selection.explain"))
+        import_react30.default.createElement(Icon2, { name: "book", size: 14 }),
+        import_react30.default.createElement("span", null, t("reader.selection.explain"))
       ),
-      import_react29.default.createElement(
+      import_react30.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("ask"), title: t("reader.selection.ask") },
-        import_react29.default.createElement(Icon2, { name: "note", size: 14 }),
-        import_react29.default.createElement("span", null, t("reader.selection.ask"))
+        import_react30.default.createElement(Icon2, { name: "note", size: 14 }),
+        import_react30.default.createElement("span", null, t("reader.selection.ask"))
       ),
-      import_react29.default.createElement(
+      import_react30.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => props.onSelectionAction("cite"), title: t("reader.selection.cite") },
-        import_react29.default.createElement(Icon2, { name: "quote", size: 14 }),
-        import_react29.default.createElement("span", null, t("reader.selection.cite"))
+        import_react30.default.createElement(Icon2, { name: "quote", size: 14 }),
+        import_react30.default.createElement("span", null, t("reader.selection.cite"))
       )
     ) : null,
-    pageSelection && selectionResult && selectionResult.page === page2 ? import_react29.default.createElement(
-      import_react29.default.Fragment,
+    pageSelection && selectionResult && selectionResult.page === page2 ? import_react30.default.createElement(
+      import_react30.default.Fragment,
       null,
-      selectionResult.replace ? import_react29.default.createElement(
+      selectionResult.replace ? import_react30.default.createElement(
         "div",
         {
           className: "ph-r-card ph-r-replacecard",
@@ -23003,16 +23313,16 @@ function PageViewImpl(props) {
           "data-ph-overlay": "selection-replace",
           onMouseDown: (event) => event.stopPropagation()
         },
-        import_react29.default.createElement(
+        import_react30.default.createElement(
           "div",
           { className: "ph-r-resultcard__head" },
-          import_react29.default.createElement(Icon2, { name: "translate", size: 13 }),
-          import_react29.default.createElement("strong", null, t("reader.selection.translated")),
-          import_react29.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
-          import_react29.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.closeReplace"), onClick: () => props.onSelectionAction("closeReplace") })
+          import_react30.default.createElement(Icon2, { name: "translate", size: 13 }),
+          import_react30.default.createElement("strong", null, t("reader.selection.translated")),
+          import_react30.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
+          import_react30.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.closeReplace"), onClick: () => props.onSelectionAction("closeReplace") })
         ),
-        import_react29.default.createElement("div", { className: "ph-r-replacecard__text" }, firstText3(selectionResult.translation))
-      ) : import_react29.default.createElement(SelectionResultCard, {
+        import_react30.default.createElement("div", { className: "ph-r-replacecard__text" }, firstText3(selectionResult.translation))
+      ) : import_react30.default.createElement(SelectionResultCard, {
         t,
         result: selectionResult,
         width,
@@ -23027,7 +23337,7 @@ function PageViewImpl(props) {
         onOpenSettings: props.onOpenSettings
       })
     ) : null,
-    pagePopover ? import_react29.default.createElement(AnnotationPopover, {
+    pagePopover ? import_react30.default.createElement(AnnotationPopover, {
       t,
       annotation: pagePopover.annotation,
       busy: Boolean(pagePopover.busy),
@@ -23045,7 +23355,7 @@ function PageViewImpl(props) {
       onAiTranslate: props.onAiTranslateAnnotation ? () => props.onAiTranslateAnnotation(pagePopover.annotation) : void 0,
       onUndoDelete: () => props.onDeleteAnnotation(pagePopover.annotation)
     }) : null,
-    pageNoteDraft && notePosition ? import_react29.default.createElement(NoteComposer, {
+    pageNoteDraft && notePosition ? import_react30.default.createElement(NoteComposer, {
       t,
       color: noteDraft.color,
       style: notePosition,
@@ -23054,15 +23364,15 @@ function PageViewImpl(props) {
     }) : null
   );
 }
-var PageView = import_react29.default.memo(PageViewImpl, (previous, next) => {
+var PageView = import_react30.default.memo(PageViewImpl, (previous, next) => {
   return previous.paperId === next.paperId && previous.pageInfo === next.pageInfo && previous.width === next.width && previous.height === next.height && previous.active === next.active && previous.mode === next.mode && previous.reducedMotion === next.reducedMotion && previous.pageDataEntry === next.pageDataEntry && previous.layerEntry === next.layerEntry && previous.activeAnnotationId === next.activeAnnotationId && previous.selection === next.selection && previous.selectionResult === next.selectionResult && previous.popover === next.popover && previous.noteDraft === next.noteDraft && previous.search === next.search && previous.figures === next.figures && previous.t === next.t && sameAnnotations(previous.annotations, next.annotations);
 });
 function ColorPenRow(props) {
-  return import_react29.default.createElement(
+  return import_react30.default.createElement(
     "div",
     { className: "ph-r-pens", role: "group", "aria-label": props.t("reader.selection.colors") },
     ["yellow", "green", "blue", "red", "purple"].map(
-      (color) => import_react29.default.createElement("button", {
+      (color) => import_react30.default.createElement("button", {
         key: color,
         type: "button",
         className: "ph-r-pen ph-r-pen--" + color,
@@ -23075,8 +23385,8 @@ function ColorPenRow(props) {
 }
 function SelectionResultCard(props) {
   const { t, result, anchor, width, height } = props;
-  const [now, setNow] = import_react29.default.useState(() => Date.now());
-  import_react29.default.useEffect(() => {
+  const [now, setNow] = import_react30.default.useState(() => Date.now());
+  import_react30.default.useEffect(() => {
     if (!result.loading) return void 0;
     const timer2 = setInterval(() => setNow(Date.now()), 200);
     return () => clearInterval(timer2);
@@ -23092,7 +23402,7 @@ function SelectionResultCard(props) {
   const translated = result.status === "translated" || Boolean(value);
   const engineText = translated && (result.engine || result.provider) ? engineBadge(result.engine, result.model, result.latencyMs, result.cached) : "";
   const loadingText = result.aiRefine ? t("reader.selection.refining") : t("reader.selection.quickTranslating");
-  return import_react29.default.createElement(
+  return import_react30.default.createElement(
     "div",
     {
       className: cx("ph-r-float", "ph-r-card", "ph-r-resultcard"),
@@ -23100,49 +23410,49 @@ function SelectionResultCard(props) {
       "data-ph-overlay": "selection-result",
       onMouseDown: (event) => event.stopPropagation()
     },
-    import_react29.default.createElement(
+    import_react30.default.createElement(
       "div",
       { className: "ph-r-resultcard__head" },
-      import_react29.default.createElement(Icon2, { name: "sparkles", size: 13 }),
-      import_react29.default.createElement("strong", null, result.aiRefine ? t("reader.selection.aiRefine") : t("reader.selection.quickTranslate")),
-      engineText ? import_react29.default.createElement("span", { className: "ph-r-resultcard__engine", title: engineDetails(result.engine, result.model) }, engineText) : null,
-      result.freeOnly || result.mode === "free" || result.engine && result.engine.free ? import_react29.default.createElement(
+      import_react30.default.createElement(Icon2, { name: "sparkles", size: 13 }),
+      import_react30.default.createElement("strong", null, result.aiRefine ? t("reader.selection.aiRefine") : t("reader.selection.quickTranslate")),
+      engineText ? import_react30.default.createElement("span", { className: "ph-r-resultcard__engine", title: engineDetails(result.engine, result.model) }, engineText) : null,
+      result.freeOnly || result.mode === "free" || result.engine && result.engine.free ? import_react30.default.createElement(
         "span",
         { className: "ph-r-resultcard__free", title: t("reader.selection.freeFastHint") },
         t("reader.selection.freeFast") + (!translated && elapsedLabel ? " \xB7 " + elapsedLabel : "")
       ) : null,
-      result.provider === "llm" && result.fast ? import_react29.default.createElement("span", { className: "ph-r-ai__fast" }, t("reader.selection.fastMode")) : null,
-      import_react29.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
-      import_react29.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.close"), onClick: props.onClose })
+      result.provider === "llm" && result.fast ? import_react30.default.createElement("span", { className: "ph-r-ai__fast" }, t("reader.selection.fastMode")) : null,
+      import_react30.default.createElement("span", { className: "ph-r-resultcard__spacer" }),
+      import_react30.default.createElement(IconBtn, { icon: "close", title: t("reader.selection.close"), onClick: props.onClose })
     ),
-    result.loading ? import_react29.default.createElement(
+    result.loading ? import_react30.default.createElement(
       "div",
       { className: "ph-r-resultcard__loading" },
-      import_react29.default.createElement(Spinner2, { size: 12 }),
-      import_react29.default.createElement("span", null, loadingText),
-      elapsedLabel ? import_react29.default.createElement(
+      import_react30.default.createElement(Spinner2, { size: 12 }),
+      import_react30.default.createElement("span", null, loadingText),
+      elapsedLabel ? import_react30.default.createElement(
         "span",
         { className: "ph-r-resultcard__meta" },
         (result.provider ? providerLabel2(result.provider) + " \xB7 " : "") + elapsedLabel
       ) : null
     ) : null,
-    !result.loading && !value ? import_react29.default.createElement(AiWarning, {
+    !result.loading && !value ? import_react30.default.createElement(AiWarning, {
       t,
       compact: true,
       status: "error",
       reason: firstText3(result.reason, t("reader.ai.reasonFallback")),
       onRetry: props.onRetry,
       onOpenSettings: props.onOpenSettings,
-      extra: props.onRefine ? import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine }, t("reader.selection.aiRefineCta")) : null
+      extra: props.onRefine ? import_react30.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine }, t("reader.selection.aiRefineCta")) : null
     }) : null,
-    !result.loading && value ? import_react29.default.createElement("div", { className: "ph-r-resultcard__body" }, value) : null,
-    !result.loading && value ? import_react29.default.createElement(
+    !result.loading && value ? import_react30.default.createElement("div", { className: "ph-r-resultcard__body" }, value) : null,
+    !result.loading && value ? import_react30.default.createElement(
       "div",
       { className: "ph-r-resultcard__actions" },
-      import_react29.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: props.onCopy }, t("reader.selection.copyTranslation")),
-      import_react29.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "translate", onClick: props.onReplace }, t("reader.selection.replace")),
-      import_react29.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: props.onSend }, t("reader.selection.sendToChat")),
-      props.onRefine && !result.aiRefine ? import_react29.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine, title: t("reader.selection.aiRefineHint") }, t("reader.selection.aiRefine")) : null
+      import_react30.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "copy", onClick: props.onCopy }, t("reader.selection.copyTranslation")),
+      import_react30.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "translate", onClick: props.onReplace }, t("reader.selection.replace")),
+      import_react30.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "quote", onClick: props.onSend }, t("reader.selection.sendToChat")),
+      props.onRefine && !result.aiRefine ? import_react30.default.createElement(Btn, { size: "sm", variant: "soft", icon: "sparkles", onClick: props.onRefine, title: t("reader.selection.aiRefineHint") }, t("reader.selection.aiRefine")) : null
     ) : null
   );
 }
@@ -23221,7 +23531,7 @@ function FigureDragRegions(props) {
         baseDrag.onDragStart(event);
       }
     });
-    regions.push(import_react29.default.createElement(
+    regions.push(import_react30.default.createElement(
       "div",
       Object.assign(
         {
@@ -23238,7 +23548,7 @@ function FigureDragRegions(props) {
         },
         regionDrag
       ),
-      import_react29.default.createElement(
+      import_react30.default.createElement(
         "span",
         { className: "ph-r-figdrag__chip", "aria-hidden": "true" },
         label ? t("reader.figure.dragChip", { label }) : t("reader.figure.dragChipNoLabel")
@@ -23246,14 +23556,14 @@ function FigureDragRegions(props) {
     ));
   }
   if (regions.length === 0) return null;
-  return import_react29.default.createElement("div", { className: "ph-r-figdrags" }, regions);
+  return import_react30.default.createElement("div", { className: "ph-r-figdrags" }, regions);
 }
 function FigureHighlightOverlay(props) {
   const t = props.t;
   const focus = props.figureFocus;
   const focusKey = focus && focus.figureId ? String(focus.figureId) + ":" + String(focus.seq || "") + ":" + String(props.page == null ? "" : props.page) : "";
-  const [expired, setExpired] = import_react29.default.useState(false);
-  import_react29.default.useEffect(() => {
+  const [expired, setExpired] = import_react30.default.useState(false);
+  import_react30.default.useEffect(() => {
     setExpired(false);
     if (focusKey === "") return void 0;
     const timer2 = setTimeout(() => setExpired(true), 4600);
@@ -23265,32 +23575,32 @@ function FigureHighlightOverlay(props) {
   const style = figureRectStyle(focus.bbox);
   if (!style) return null;
   const label = focus.figureLabel ? t("reader.figure.highlightLabel", { label: focus.figureLabel }) : t("reader.figure.highlight");
-  return import_react29.default.createElement(
+  return import_react30.default.createElement(
     "div",
     { className: "ph-r-fighl", style, "data-ph-figure-focus": String(focus.figureId || ""), "aria-hidden": "true" },
-    import_react29.default.createElement("span", { className: "ph-r-fighl__label" }, label)
+    import_react30.default.createElement("span", { className: "ph-r-fighl__label" }, label)
   );
 }
 function PageCanvas(props) {
-  const scrollRef = import_react29.default.useRef(null);
-  const layoutRef = import_react29.default.useRef([]);
-  const previousLayoutRef = import_react29.default.useRef(null);
-  const rafRef = import_react29.default.useRef(0);
-  const scrolledRef = import_react29.default.useRef(false);
-  const [scrollTop, setScrollTop] = import_react29.default.useState(0);
-  const [viewport, setViewport] = import_react29.default.useState({ width: 0, height: 0 });
+  const scrollRef = import_react30.default.useRef(null);
+  const layoutRef = import_react30.default.useRef([]);
+  const previousLayoutRef = import_react30.default.useRef(null);
+  const rafRef = import_react30.default.useRef(0);
+  const scrolledRef = import_react30.default.useRef(false);
+  const [scrollTop, setScrollTop] = import_react30.default.useState(0);
+  const [viewport, setViewport] = import_react30.default.useState({ width: 0, height: 0 });
   const size = useElementSizeCompat(scrollRef);
-  import_react29.default.useEffect(() => {
+  import_react30.default.useEffect(() => {
     setViewport({ width: size.width, height: size.height });
   }, [size.width, size.height]);
   const descriptors = usePageDescriptors(props.pages, props.total);
-  const baseWidth = import_react29.default.useMemo(() => {
+  const baseWidth = import_react30.default.useMemo(() => {
     if (viewport.width > 0) {
       return clamp(viewport.width - CANVAS_SIDE_PADDING * 2, MIN_BASE_WIDTH, MAX_BASE_WIDTH);
     }
     return 640;
   }, [viewport.width]);
-  const layout = import_react29.default.useMemo(() => {
+  const layout = import_react30.default.useMemo(() => {
     const list = [];
     let top = PAGE_TOP_PADDING;
     for (const descriptor of descriptors) {
@@ -23303,7 +23613,7 @@ function PageCanvas(props) {
   }, [baseWidth, descriptors, props.zoom]);
   layoutRef.current = layout;
   const contentHeight = layout.length > 0 ? layout[layout.length - 1].top + layout[layout.length - 1].height + PAGE_BOTTOM_PADDING : 0;
-  import_react29.default.useLayoutEffect(() => {
+  import_react30.default.useLayoutEffect(() => {
     const element2 = scrollRef.current;
     const previous = previousLayoutRef.current;
     if (!element2 || !previous || previous.length === 0 || layout.length === 0) {
@@ -23329,7 +23639,7 @@ function PageCanvas(props) {
     }
     previousLayoutRef.current = layout;
   }, [layout, scrollTop]);
-  import_react29.default.useEffect(() => {
+  import_react30.default.useEffect(() => {
     const jump = props.jump;
     if (!jump || !jump.page) return;
     const element2 = scrollRef.current;
@@ -23339,7 +23649,7 @@ function PageCanvas(props) {
     setScrollTop(layout[index].top);
     props.onPageChange(jump.page);
   }, [props.jump && props.jump.seq]);
-  import_react29.default.useEffect(() => {
+  import_react30.default.useEffect(() => {
     const focus = props.focus;
     if (!focus || !focus.page || !focus.rect) return;
     const element2 = scrollRef.current;
@@ -23348,7 +23658,7 @@ function PageCanvas(props) {
     const item = layout[index];
     scrollElementTo(element2, item.top + focus.rect.y * item.height - 140, !props.reducedMotion);
   }, [props.focus && props.focus.seq]);
-  const handleScroll = import_react29.default.useCallback(() => {
+  const handleScroll = import_react30.default.useCallback(() => {
     const element2 = scrollRef.current;
     if (!element2) return;
     if (rafRef.current) return;
@@ -23374,7 +23684,7 @@ function PageCanvas(props) {
     if (typeof requestAnimationFrame === "function") rafRef.current = requestAnimationFrame(run);
     else run();
   }, [props]);
-  const visibleRange = import_react29.default.useMemo(() => {
+  const visibleRange = import_react30.default.useMemo(() => {
     if (layout.length === 0) return { start: 0, end: -1 };
     const height = viewport.height > 0 ? viewport.height : 900;
     const top = scrollTop - height * VIRTUAL_BUFFER;
@@ -23402,7 +23712,7 @@ function PageCanvas(props) {
     }
     return { start, end };
   }, [layout, props.page, scrollTop, viewport.height]);
-  import_react29.default.useEffect(() => {
+  import_react30.default.useEffect(() => {
     const list = layoutRef.current;
     for (let index = visibleRange.start; index <= visibleRange.end; index += 1) {
       const item = list[index];
@@ -23412,7 +23722,7 @@ function PageCanvas(props) {
     }
   }, [props.ensureLayer, props.ensurePage, props.dataVersion, visibleRange]);
   const annotationsByPage = useAnnotationsByPage(props.annotations);
-  const figuresByPage = import_react29.default.useMemo(() => {
+  const figuresByPage = import_react30.default.useMemo(() => {
     const map = /* @__PURE__ */ new Map();
     for (const figure of arrayOf3(props.figures)) {
       const figurePage = Math.round(num(figure && figure.page, 0));
@@ -23429,7 +23739,7 @@ function PageCanvas(props) {
     const visible = index >= visibleRange.start && index <= visibleRange.end;
     if (!visible) {
       children.push(
-        import_react29.default.createElement(
+        import_react30.default.createElement(
           "div",
           {
             key: "ph-" + descriptor.page,
@@ -23443,7 +23753,7 @@ function PageCanvas(props) {
       continue;
     }
     children.push(
-      import_react29.default.createElement(PageView, {
+      import_react30.default.createElement(PageView, {
         key: "ph-" + descriptor.page,
         t: props.t,
         paperId: props.paperId,
@@ -23483,7 +23793,7 @@ function PageCanvas(props) {
       })
     );
   }
-  return import_react29.default.createElement(
+  return import_react30.default.createElement(
     "div",
     {
       ref: scrollRef,
@@ -23491,7 +23801,7 @@ function PageCanvas(props) {
       onScroll: handleScroll,
       "data-ph-scroll": "canvas"
     },
-    import_react29.default.createElement(
+    import_react30.default.createElement(
       "div",
       { className: "ph-r-pages", style: { minHeight: contentHeight } },
       children
@@ -23499,8 +23809,8 @@ function PageCanvas(props) {
   );
 }
 function useElementSizeCompat(ref) {
-  const [size, setSize] = import_react29.default.useState({ width: 0, height: 0 });
-  import_react29.default.useEffect(() => {
+  const [size, setSize] = import_react30.default.useState({ width: 0, height: 0 });
+  import_react30.default.useEffect(() => {
     const element2 = ref.current;
     if (!element2) return void 0;
     let frame2 = 0;
@@ -23535,7 +23845,7 @@ function useElementSizeCompat(ref) {
 }
 
 // src/surfaces/reader/toolbar.jsx
-var import_react30 = __toESM(require("react"), 1);
+var import_react31 = __toESM(require("react"), 1);
 function authorLine2(authors) {
   const list = arrayOf3(authors);
   const names = [];
@@ -23567,10 +23877,10 @@ function ReaderToolbar(props) {
   const total = Math.max(1, Math.round(num(props.total, 1)));
   const page2 = Math.max(1, Math.min(total, Math.round(num(props.page, 1))));
   const search = props.search || { open: false, query: "", hits: [], index: 0 };
-  const searchInputRef = import_react30.default.useRef(null);
+  const searchInputRef = import_react31.default.useRef(null);
   const noteContext = props.noteContext || null;
   const linkedToNote = Boolean(noteContext && paper && Array.isArray(noteContext.paperIds) && noteContext.paperIds.includes(paper.id));
-  import_react30.default.useEffect(() => {
+  import_react31.default.useEffect(() => {
     if (!search.open) return;
     const timer2 = setTimeout(() => {
       const element2 = searchInputRef.current;
@@ -23592,14 +23902,14 @@ function ReaderToolbar(props) {
   const venue = firstText3(paper && paper.venue, paper && paper.containerTitle);
   if (venue) metaParts.push(venue);
   if (paper && paper.pageCount) metaParts.push(rt("reader.pagesCount", { count: paper.pageCount }));
-  return import_react30.default.createElement(
+  return import_react31.default.createElement(
     "div",
     { className: "ph-r-toolbar", role: "toolbar", "aria-label": rt("reader.mode.label") },
     /* ---------------- identity row ---------------- */
-    import_react30.default.createElement(
+    import_react31.default.createElement(
       "div",
       { className: "ph-r-toolbar__row ph-r-toolbar__row--main" },
-      import_react30.default.createElement(
+      import_react31.default.createElement(
         Btn,
         {
           className: "ph-r-toolbar__back",
@@ -23611,27 +23921,27 @@ function ReaderToolbar(props) {
         },
         rt("reader.back")
       ),
-      import_react30.default.createElement(
+      import_react31.default.createElement(
         "div",
         { className: "ph-r-toolbar__titles" },
-        import_react30.default.createElement(
+        import_react31.default.createElement(
           "div",
           { className: "ph-r-toolbar__titleline" },
-          import_react30.default.createElement("h1", { className: "ph-r-toolbar__title", title: String(title2) }, title2),
-          import_react30.default.createElement("span", { className: "ph-r-toolbar__badge" }, rt("reader.pageOf", { page: page2, total }))
+          import_react31.default.createElement("h1", { className: "ph-r-toolbar__title", title: String(title2) }, title2),
+          import_react31.default.createElement("span", { className: "ph-r-toolbar__badge" }, rt("reader.pageOf", { page: page2, total }))
         ),
-        import_react30.default.createElement(
+        import_react31.default.createElement(
           "div",
           { className: "ph-r-toolbar__meta", title: original ? original + (metaParts.length ? " \xB7 " + metaParts.join(" \xB7 ") : "") : metaParts.join(" \xB7 ") },
-          original ? import_react30.default.createElement("span", { style: { opacity: 0.85, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, original) : null,
-          original && metaParts.length ? import_react30.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, "\xB7") : null,
-          metaParts.length ? import_react30.default.createElement("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, metaParts.join(" \xB7 ")) : null
+          original ? import_react31.default.createElement("span", { style: { opacity: 0.85, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, original) : null,
+          original && metaParts.length ? import_react31.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, "\xB7") : null,
+          metaParts.length ? import_react31.default.createElement("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" } }, metaParts.join(" \xB7 ")) : null
         )
       ),
-      import_react30.default.createElement(
+      import_react31.default.createElement(
         "div",
         { className: "ph-r-toolbar__actions" },
-        import_react30.default.createElement(
+        import_react31.default.createElement(
           Btn,
           {
             size: "sm",
@@ -23643,7 +23953,7 @@ function ReaderToolbar(props) {
           },
           "AI"
         ),
-        props.onOpenSettings ? import_react30.default.createElement(IconBtn, {
+        props.onOpenSettings ? import_react31.default.createElement(IconBtn, {
           icon: "settings",
           title: "\u8BBE\u7F6E",
           "aria-label": "\u8BBE\u7F6E",
@@ -23652,19 +23962,19 @@ function ReaderToolbar(props) {
       )
     ),
     /* ---------------- tool row ---------------- */
-    import_react30.default.createElement(
+    import_react31.default.createElement(
       "div",
       { className: "ph-r-toolbar__row ph-r-toolbar__row--tools" },
-      import_react30.default.createElement(
+      import_react31.default.createElement(
         "div",
         { className: "ph-r-pager", role: "group", "aria-label": rt("reader.pageOf", { page: page2, total }) },
-        import_react30.default.createElement(IconBtn, {
+        import_react31.default.createElement(IconBtn, {
           icon: "chevronLeft",
           title: rt("reader.prevPage"),
           disabled: page2 <= 1 || props.loading,
           onClick: () => props.onPage(Math.max(1, page2 - 1))
         }),
-        import_react30.default.createElement("input", {
+        import_react31.default.createElement("input", {
           key: "page-input-" + page2,
           className: "ph-r-pager__input",
           type: "text",
@@ -23682,20 +23992,20 @@ function ReaderToolbar(props) {
           },
           onBlur: (event) => commitPage(event.currentTarget.value)
         }),
-        import_react30.default.createElement("span", { className: "ph-r-pager__total" }, "/ " + total),
-        import_react30.default.createElement(IconBtn, {
+        import_react31.default.createElement("span", { className: "ph-r-pager__total" }, "/ " + total),
+        import_react31.default.createElement(IconBtn, {
           icon: "chevronRight",
           title: rt("reader.nextPage"),
           disabled: page2 >= total || props.loading,
           onClick: () => props.onPage(Math.min(total, page2 + 1))
         })
       ),
-      import_react30.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
-      import_react30.default.createElement(
+      import_react31.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
+      import_react31.default.createElement(
         "div",
         { className: "ph-r-zoom", role: "group", "aria-label": rt("reader.zoomValue", { percent: Math.round(props.zoom * 100) }) },
-        import_react30.default.createElement(IconBtn, { icon: "zoomOut", title: rt("reader.zoomOut"), onClick: () => props.onZoomStep(-1) }),
-        import_react30.default.createElement(
+        import_react31.default.createElement(IconBtn, { icon: "zoomOut", title: rt("reader.zoomOut"), onClick: () => props.onZoomStep(-1) }),
+        import_react31.default.createElement(
           "button",
           {
             type: "button",
@@ -23705,12 +24015,12 @@ function ReaderToolbar(props) {
           },
           Math.round(num(props.zoom, 1) * 100) + "%"
         ),
-        import_react30.default.createElement(IconBtn, { icon: "zoomIn", title: rt("reader.zoomIn"), onClick: () => props.onZoomStep(1) }),
-        import_react30.default.createElement(IconBtn, { icon: "fit", title: rt("reader.zoomFit"), onClick: props.onZoomFit })
+        import_react31.default.createElement(IconBtn, { icon: "zoomIn", title: rt("reader.zoomIn"), onClick: () => props.onZoomStep(1) }),
+        import_react31.default.createElement(IconBtn, { icon: "fit", title: rt("reader.zoomFit"), onClick: props.onZoomFit })
       ),
-      import_react30.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
-      import_react30.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite"), className: "ph-r-toolbar__cite" }, rt("reader.cite")),
-      import_react30.default.createElement(
+      import_react31.default.createElement("span", { className: "ph-r-toolbar__meta-sep" }, ""),
+      import_react31.default.createElement(Btn, { size: "sm", variant: "soft", icon: "quote", onClick: props.onCite, title: rt("reader.cite"), className: "ph-r-toolbar__cite" }, rt("reader.cite")),
+      import_react31.default.createElement(
         "a",
         {
           className: "ph-r-btn ph-r-btn--ghost ph-r-btn--sm ph-r-toolbar__pdf",
@@ -23719,15 +24029,15 @@ function ReaderToolbar(props) {
           rel: "noopener noreferrer",
           title: rt("reader.openPdf")
         },
-        import_react30.default.createElement(Icon2, { name: "external", size: 14 }),
-        import_react30.default.createElement("span", { className: "ph-r-btn__label" }, rt("reader.openPdf"))
+        import_react31.default.createElement(Icon2, { name: "external", size: 14 }),
+        import_react31.default.createElement("span", { className: "ph-r-btn__label" }, rt("reader.openPdf"))
       ),
-      import_react30.default.createElement("span", { className: "ph-r-toolbar__spacer" }),
-      search.open ? import_react30.default.createElement(
+      import_react31.default.createElement("span", { className: "ph-r-toolbar__spacer" }),
+      search.open ? import_react31.default.createElement(
         "div",
         { className: "ph-r-find" },
-        import_react30.default.createElement(Icon2, { name: "search", size: 13, className: "ph-r-find__icon" }),
-        import_react30.default.createElement("input", {
+        import_react31.default.createElement(Icon2, { name: "search", size: 13, className: "ph-r-find__icon" }),
+        import_react31.default.createElement("input", {
           ref: searchInputRef,
           className: "ph-r-find__input",
           type: "text",
@@ -23746,16 +24056,16 @@ function ReaderToolbar(props) {
             }
           }
         }),
-        import_react30.default.createElement(
+        import_react31.default.createElement(
           "span",
           { className: cx("ph-r-find__count", search.query && search.hits.length === 0 && "ph-r-find__count--empty") },
           !search.query ? "" : search.hits.length === 0 ? rt("reader.search.none") : rt("reader.search.count", { index: Math.min(search.index + 1, search.hits.length), total: search.hits.length })
         ),
-        import_react30.default.createElement(IconBtn, { icon: "chevronUp", title: rt("reader.search.prev"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(-1) }),
-        import_react30.default.createElement(IconBtn, { icon: "chevronDown", title: rt("reader.search.next"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(1) }),
-        import_react30.default.createElement(IconBtn, { icon: "close", title: rt("reader.search.close"), onClick: () => props.onSearchToggle(false) })
-      ) : import_react30.default.createElement(IconBtn, { icon: "search", title: rt("reader.search"), onClick: () => props.onSearchToggle(true) }),
-      import_react30.default.createElement(IconBtn, {
+        import_react31.default.createElement(IconBtn, { icon: "chevronUp", title: rt("reader.search.prev"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(-1) }),
+        import_react31.default.createElement(IconBtn, { icon: "chevronDown", title: rt("reader.search.next"), disabled: search.hits.length === 0, onClick: () => props.onSearchNext(1) }),
+        import_react31.default.createElement(IconBtn, { icon: "close", title: rt("reader.search.close"), onClick: () => props.onSearchToggle(false) })
+      ) : import_react31.default.createElement(IconBtn, { icon: "search", title: rt("reader.search"), onClick: () => props.onSearchToggle(true) }),
+      import_react31.default.createElement(IconBtn, {
         icon: "sidePanel",
         title: rt("reader.sidePanelToggle"),
         active: props.sideOpen,
@@ -23766,7 +24076,7 @@ function ReaderToolbar(props) {
 }
 
 // src/surfaces/reader/thumbnails.jsx
-var import_react31 = __toESM(require("react"), 1);
+var import_react32 = __toESM(require("react"), 1);
 var THUMB_INSET = 30;
 var OVERSCAN = 250;
 var FALLBACK_RAIL_WIDTH = 118;
@@ -23792,25 +24102,25 @@ function offsetsOf(pages, total, railWidth) {
 }
 function Thumbnails(props) {
   const t = props.t;
-  const scrollRef = import_react31.default.useRef(null);
-  const listRef = import_react31.default.useRef(null);
-  const [scrollTop, setScrollTop] = import_react31.default.useState(0);
+  const scrollRef = import_react32.default.useRef(null);
+  const listRef = import_react32.default.useRef(null);
+  const [scrollTop, setScrollTop] = import_react32.default.useState(0);
   const size = useElementSize(scrollRef);
   const railWidth = size.width > 0 ? size.width : FALLBACK_RAIL_WIDTH;
-  const layout = import_react31.default.useMemo(() => offsetsOf(props.pages, props.total, railWidth), [props.pages, props.total, railWidth]);
+  const layout = import_react32.default.useMemo(() => offsetsOf(props.pages, props.total, railWidth), [props.pages, props.total, railWidth]);
   const activeIndex = layout.items.findIndex((item) => item.page === props.page);
-  const visible = import_react31.default.useMemo(() => {
+  const visible = import_react32.default.useMemo(() => {
     const height = size.height > 0 ? size.height : 900;
     const top = scrollTop - OVERSCAN;
     const bottom = scrollTop + height + OVERSCAN;
     return layout.items.filter((item) => item.offset + item.itemHeight >= top && item.offset <= bottom);
   }, [layout.items, scrollTop, size.height]);
-  const handleScroll = import_react31.default.useCallback(() => {
+  const handleScroll = import_react32.default.useCallback(() => {
     const element2 = scrollRef.current;
     if (!element2) return;
     setScrollTop(element2.scrollTop || 0);
   }, []);
-  import_react31.default.useEffect(() => {
+  import_react32.default.useEffect(() => {
     const element2 = scrollRef.current;
     const item = layout.items[activeIndex];
     if (!element2 || !item) return;
@@ -23820,7 +24130,7 @@ function Thumbnails(props) {
     if (item.offset < top + 8) element2.scrollTop = Math.max(0, item.offset - 8);
     else if (item.offset + item.itemHeight > top + height - 8) element2.scrollTop = item.offset + item.itemHeight - height + 8;
   }, [activeIndex, layout.items, props.page]);
-  return import_react31.default.createElement(
+  return import_react32.default.createElement(
     "div",
     {
       ref: scrollRef,
@@ -23830,10 +24140,10 @@ function Thumbnails(props) {
       "aria-label": t("reader.thumbnails"),
       "data-ph-scroll": "rail"
     },
-    import_react31.default.createElement(
+    import_react32.default.createElement(
       "div",
       { ref: listRef, className: "ph-r-rail__inner", style: { height: layout.totalHeight } },
-      activeIndex >= 0 ? import_react31.default.createElement("span", {
+      activeIndex >= 0 ? import_react32.default.createElement("span", {
         className: "ph-r-rail__indicator",
         style: {
           height: 30,
@@ -23843,7 +24153,7 @@ function Thumbnails(props) {
       }) : null,
       visible.map((item) => {
         const active = item.page === props.page;
-        return import_react31.default.createElement(
+        return import_react32.default.createElement(
           "button",
           {
             key: item.page,
@@ -23855,10 +24165,10 @@ function Thumbnails(props) {
             "aria-current": active ? "page" : void 0,
             "data-ph-thumb": String(item.page)
           },
-          import_react31.default.createElement(
+          import_react32.default.createElement(
             "span",
             { className: "ph-r-rail__thumb", style: { height: item.imageHeight } },
-            import_react31.default.createElement(
+            import_react32.default.createElement(
               "span",
               {
                 style: {
@@ -23870,7 +24180,7 @@ function Thumbnails(props) {
                 "aria-hidden": "true"
               }
             ),
-            import_react31.default.createElement("img", {
+            import_react32.default.createElement("img", {
               src: item.imageUrl || pageImageUrl(props.paperId, item.page, 220),
               alt: "",
               loading: "lazy",
@@ -23887,14 +24197,14 @@ function Thumbnails(props) {
               }
             })
           ),
-          import_react31.default.createElement(
+          import_react32.default.createElement(
             "span",
             { className: "ph-r-rail__num" },
             String(item.page)
           )
         );
       }),
-      layout.items.length === 0 ? import_react31.default.createElement(Icon2, { name: "pages", size: 20 }) : null
+      layout.items.length === 0 ? import_react32.default.createElement(Icon2, { name: "pages", size: 20 }) : null
     )
   );
 }
@@ -23905,17 +24215,17 @@ var TOOLS_TIP_FLAG = "reader.tools.tip.v1";
 var NO_ANNOTATIONS = [];
 var DEFAULT_COLOR = "yellow";
 function useReaderNotices(onToast) {
-  const [toasts, setToasts] = import_react32.default.useState([]);
-  const timers = import_react32.default.useRef(/* @__PURE__ */ new Map());
+  const [toasts, setToasts] = import_react33.default.useState([]);
+  const timers = import_react33.default.useRef(/* @__PURE__ */ new Map());
   const external = typeof onToast === "function";
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     const pending = timers.current;
     return () => {
       pending.forEach((timer2) => clearTimeout(timer2));
       pending.clear();
     };
   }, []);
-  const notify2 = import_react32.default.useCallback(
+  const notify2 = import_react33.default.useCallback(
     (kind, text2, action) => {
       const message = String(text2 || "");
       if (!message) return;
@@ -23944,53 +24254,53 @@ function useReaderNotices(onToast) {
     },
     [external, onToast]
   );
-  const dismiss2 = import_react32.default.useCallback((id) => {
+  const dismiss2 = import_react33.default.useCallback((id) => {
     setToasts((previous) => previous.filter((toast) => toast.id !== id));
   }, []);
   return { notify: notify2, toasts, dismiss: dismiss2, external };
 }
 function StateScreen(props) {
-  return import_react32.default.createElement(
+  return import_react33.default.createElement(
     "div",
     { className: "ph-r-reader" },
-    import_react32.default.createElement(
+    import_react33.default.createElement(
       "div",
       { className: "ph-r-toolbar" },
-      import_react32.default.createElement(
+      import_react33.default.createElement(
         "div",
         { className: "ph-r-toolbar__row ph-r-toolbar__row--main" },
-        import_react32.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack }, props.t("reader.back"))
+        import_react33.default.createElement(Btn, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack }, props.t("reader.back"))
       )
     ),
-    import_react32.default.createElement(
+    import_react33.default.createElement(
       "div",
       { style: { flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 } },
-      props.loading ? import_react32.default.createElement(
+      props.loading ? import_react33.default.createElement(
         "div",
         { style: { display: "flex", alignItems: "center", gap: 10, color: "var(--dsw-alias-label-secondary)" }, role: "status" },
-        import_react32.default.createElement(Spinner2, { size: 16 }),
-        import_react32.default.createElement("span", null, props.t("reader.loading"))
-      ) : import_react32.default.createElement(Empty, {
+        import_react33.default.createElement(Spinner2, { size: 16 }),
+        import_react33.default.createElement("span", null, props.t("reader.loading"))
+      ) : import_react33.default.createElement(Empty, {
         icon: props.icon || "warning",
         tone: props.tone,
         title: props.title,
         desc: props.desc,
-        action: props.retry ? import_react32.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: props.retry }, props.t("reader.retry")) : null
+        action: props.retry ? import_react33.default.createElement(Btn, { size: "sm", variant: "soft", icon: "refresh", onClick: props.retry }, props.t("reader.retry")) : null
       })
     )
   );
 }
 function useNavigationSnapshot(navigation2) {
-  const subscribe2 = import_react32.default.useCallback(
+  const subscribe2 = import_react33.default.useCallback(
     (listener) => navigation2 && typeof navigation2.subscribe === "function" ? navigation2.subscribe(listener) : () => {
     },
     [navigation2]
   );
-  const getSnapshot2 = import_react32.default.useCallback(
+  const getSnapshot2 = import_react33.default.useCallback(
     () => navigation2 && typeof navigation2.getSnapshot === "function" ? navigation2.getSnapshot() : null,
     [navigation2]
   );
-  return import_react32.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
+  return import_react33.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
 }
 function annotationRequest(base, draft) {
   const rects = arrayOf3(draft.rects).map(normalizeRect).filter(Boolean);
@@ -24011,7 +24321,7 @@ function annotationRequest(base, draft) {
   if (params.kind === "note" && rects.length === 0) return params;
   return params;
 }
-var ReaderBoundary = class extends import_react32.default.Component {
+var ReaderBoundary = class extends import_react33.default.Component {
   constructor(props) {
     super(props);
     this.state = { error: null, epoch: 0 };
@@ -24029,7 +24339,7 @@ var ReaderBoundary = class extends import_react32.default.Component {
   render() {
     if (this.state.error) {
       const rt = this.props.t;
-      return import_react32.default.createElement(StateScreen, {
+      return import_react33.default.createElement(StateScreen, {
         t: rt,
         icon: "warning",
         tone: "error",
@@ -24043,26 +24353,26 @@ var ReaderBoundary = class extends import_react32.default.Component {
   }
 };
 function ReaderShell(props) {
-  const rt = import_react32.default.useMemo(() => buildReaderT(props.t), [props.t]);
-  return import_react32.default.createElement(ReaderBoundary, {
+  const rt = import_react33.default.useMemo(() => buildReaderT(props.t), [props.t]);
+  return import_react33.default.createElement(ReaderBoundary, {
     t: rt,
     onBack: props.onBack,
-    render: (key) => import_react32.default.createElement(ReaderShellInner, Object.assign({}, props, { key }))
+    render: (key) => import_react33.default.createElement(ReaderShellInner, Object.assign({}, props, { key }))
   });
 }
 function ReaderShellInner(props) {
-  const rt = import_react32.default.useMemo(() => buildReaderT(props.t), [props.t]);
+  const rt = import_react33.default.useMemo(() => buildReaderT(props.t), [props.t]);
   const trSlider = useSlidingThumb();
-  const releaseStyles = import_react32.default.useMemo(() => ensureReaderStyles(), []);
-  import_react32.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  const apiCall = import_react32.default.useMemo(() => createApiCaller(props.api), [props.api]);
+  const releaseStyles = import_react33.default.useMemo(() => ensureReaderStyles(), []);
+  import_react33.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  const apiCall = import_react33.default.useMemo(() => createApiCaller(props.api), [props.api]);
   const reducedMotion = usePrefersReducedMotion();
   const notices = useReaderNotices(props.onToast);
   const notify2 = notices.notify;
   const undoApi = useReaderUndo(props.undo);
   const translationPreference = useTranslationPreference(props.translation, apiCall);
   const preferredProvider = translationPreference.provider;
-  const notifyUndo = import_react32.default.useCallback(
+  const notifyUndo = import_react33.default.useCallback(
     (kind, text2) => {
       notify2(kind, text2, {
         label: rt("reader.undo.undo"),
@@ -24084,50 +24394,50 @@ function ReaderShellInner(props) {
   const detail = openState.data || null;
   const paper = detail && detail.paper || props.paper || null;
   const versionId = firstText3(detail && detail.version && detail.version.id);
-  const pages = import_react32.default.useMemo(() => arrayOf3(detail && detail.pages), [detail]);
-  const total = import_react32.default.useMemo(() => {
+  const pages = import_react33.default.useMemo(() => arrayOf3(detail && detail.pages), [detail]);
+  const total = import_react33.default.useMemo(() => {
     const count = Math.round(num(pages.length > 0 ? pages.length : paper && paper.pageCount, 1));
     return Math.max(1, count);
   }, [pages, paper]);
-  const [figureFocus, setFigureFocus] = import_react32.default.useState(null);
-  const [paperFigures, setPaperFigures] = import_react32.default.useState({ paperId: "", items: [] });
-  const [noteContext, setNoteContextState] = import_react32.default.useState(() => getNoteContext());
-  const figureFocusTimer = import_react32.default.useRef(null);
-  const [page2, setPage] = import_react32.default.useState(() => {
+  const [figureFocus, setFigureFocus] = import_react33.default.useState(null);
+  const [paperFigures, setPaperFigures] = import_react33.default.useState({ paperId: "", items: [] });
+  const [noteContext, setNoteContextState] = import_react33.default.useState(() => getNoteContext());
+  const figureFocusTimer = import_react33.default.useRef(null);
+  const [page2, setPage] = import_react33.default.useState(() => {
     const explicit = Math.round(num(props.initialPage, 0));
     if (explicit > 0) return explicit;
     const restored = props.paperId ? readReadingPosition(props.paperId) : 0;
     return restored > 0 ? restored : 1;
   });
-  const jumpSeq = import_react32.default.useRef(0);
-  const [jump, setJump] = import_react32.default.useState(null);
-  const pageRef = import_react32.default.useRef(page2);
+  const jumpSeq = import_react33.default.useRef(0);
+  const [jump, setJump] = import_react33.default.useState(null);
+  const pageRef = import_react33.default.useRef(page2);
   pageRef.current = page2;
-  const totalRef = import_react32.default.useRef(total);
+  const totalRef = import_react33.default.useRef(total);
   totalRef.current = total;
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     if (typeof props.onPageChange === "function") props.onPageChange(page2);
   }, [page2, props.onPageChange]);
-  const goToPage = import_react32.default.useCallback((target, options) => {
+  const goToPage = import_react33.default.useCallback((target, options) => {
     const next = clamp(Math.round(num(target, 1)), 1, totalRef.current);
     setPage(next);
     jumpSeq.current += 1;
     setJump({ page: next, seq: jumpSeq.current, smooth: !(options && options.instant) });
   }, []);
-  const [zoom, setZoom] = import_react32.default.useState(1);
-  const zoomStep = import_react32.default.useCallback((direction) => {
+  const [zoom, setZoom] = import_react33.default.useState(1);
+  const zoomStep = import_react33.default.useCallback((direction) => {
     setZoom((previous) => {
       const next = Math.round((previous + direction * ZOOM_STEP) * 100) / 100;
       return clamp(next, ZOOM_MIN, ZOOM_MAX);
     });
   }, []);
-  const zoomFit = import_react32.default.useCallback(() => setZoom(1), []);
-  const [mode, setMode] = import_react32.default.useState("source");
-  const changeMode = import_react32.default.useCallback((next) => {
+  const zoomFit = import_react33.default.useCallback(() => setZoom(1), []);
+  const [mode, setMode] = import_react33.default.useState("source");
+  const changeMode = import_react33.default.useCallback((next) => {
     setMode(next);
   }, []);
-  const [tool, setTool] = import_react32.default.useState("select");
-  const changeTool = import_react32.default.useCallback(
+  const [tool, setTool] = import_react33.default.useState("select");
+  const changeTool = import_react33.default.useCallback(
     (next) => {
       setTool(next);
       if (next === "area") notify2("info", rt("reader.areaModeActive"));
@@ -24136,50 +24446,50 @@ function ReaderShellInner(props) {
     },
     [notify2, rt]
   );
-  const [sideOpen, setSideOpen] = import_react32.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1150);
-  const [sideTab, setSideTab] = import_react32.default.useState(() => {
+  const [sideOpen, setSideOpen] = import_react33.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1150);
+  const [sideTab, setSideTab] = import_react33.default.useState(() => {
     const requested = firstText3(props.initialTab);
     return SIDE_TABS.indexOf(requested) >= 0 ? requested : "outline";
   });
-  const [penColor, setPenColorState] = import_react32.default.useState(DEFAULT_COLOR);
-  const setPenColor = import_react32.default.useCallback((color) => {
+  const [penColor, setPenColorState] = import_react33.default.useState(DEFAULT_COLOR);
+  const setPenColor = import_react33.default.useCallback((color) => {
     const value = firstText3(color, DEFAULT_COLOR);
     lastColor.current = value;
     setPenColorState(value);
   }, []);
-  const [toolsTip, setToolsTip] = import_react32.default.useState(() => !readFlag(TOOLS_TIP_FLAG));
-  const dismissToolsTip = import_react32.default.useCallback(() => {
+  const [toolsTip, setToolsTip] = import_react33.default.useState(() => !readFlag(TOOLS_TIP_FLAG));
+  const dismissToolsTip = import_react33.default.useCallback(() => {
     writeFlag(TOOLS_TIP_FLAG, true);
     setToolsTip(false);
   }, []);
-  const showToolsTip = import_react32.default.useCallback(() => setToolsTip(true), []);
-  const openSide = import_react32.default.useCallback((tab) => {
+  const showToolsTip = import_react33.default.useCallback(() => setToolsTip(true), []);
+  const openSide = import_react33.default.useCallback((tab) => {
     setSideOpen(true);
     if (tab) setSideTab(tab);
   }, []);
-  const toggleSide = import_react32.default.useCallback(() => setSideOpen((value) => !value), []);
-  const [scrolled, setScrolled] = import_react32.default.useState(false);
-  const handleScrolledChange = import_react32.default.useCallback((value) => setScrolled(Boolean(value)), []);
-  const pageCache = import_react32.default.useRef(/* @__PURE__ */ new Map());
-  const layerCache = import_react32.default.useRef(/* @__PURE__ */ new Map());
-  const [dataVersion, setDataVersion] = import_react32.default.useState(0);
-  const bumpData = import_react32.default.useCallback(() => setDataVersion((value) => value + 1), []);
-  const getPageData = import_react32.default.useCallback(
+  const toggleSide = import_react33.default.useCallback(() => setSideOpen((value) => !value), []);
+  const [scrolled, setScrolled] = import_react33.default.useState(false);
+  const handleScrolledChange = import_react33.default.useCallback((value) => setScrolled(Boolean(value)), []);
+  const pageCache = import_react33.default.useRef(/* @__PURE__ */ new Map());
+  const layerCache = import_react33.default.useRef(/* @__PURE__ */ new Map());
+  const [dataVersion, setDataVersion] = import_react33.default.useState(0);
+  const bumpData = import_react33.default.useCallback(() => setDataVersion((value) => value + 1), []);
+  const getPageData = import_react33.default.useCallback(
     (pageNo) => {
       const entry = pageCache.current.get(pageNo);
       return entry && entry.paperId === paperId ? entry : null;
     },
     [paperId]
   );
-  const getLayer = import_react32.default.useCallback(
+  const getLayer = import_react33.default.useCallback(
     (pageNo) => {
       const entry = layerCache.current.get(pageNo);
       return entry && entry.paperId === paperId ? entry : null;
     },
     [paperId]
   );
-  const structureRefreshes = import_react32.default.useRef(/* @__PURE__ */ new Map());
-  const ensurePage = import_react32.default.useCallback(
+  const structureRefreshes = import_react33.default.useRef(/* @__PURE__ */ new Map());
+  const ensurePage = import_react33.default.useCallback(
     (pageNo) => {
       if (!paperId || !pageNo) return;
       const existing = pageCache.current.get(pageNo);
@@ -24208,9 +24518,9 @@ function ReaderShellInner(props) {
     },
     [apiCall, bumpData, paperId]
   );
-  const ensurePageRef = import_react32.default.useRef(ensurePage);
+  const ensurePageRef = import_react33.default.useRef(ensurePage);
   ensurePageRef.current = ensurePage;
-  const ensureLayer = import_react32.default.useCallback(
+  const ensureLayer = import_react33.default.useCallback(
     (pageNo) => {
       if (!paperId || !pageNo) return;
       const existing = layerCache.current.get(pageNo);
@@ -24227,14 +24537,14 @@ function ReaderShellInner(props) {
     },
     [apiCall, bumpData, paperId]
   );
-  const retryPage = import_react32.default.useCallback(
+  const retryPage = import_react33.default.useCallback(
     (pageNo) => {
       pageCache.current.delete(pageNo);
       ensurePage(pageNo);
     },
     [ensurePage]
   );
-  const retryLayer = import_react32.default.useCallback(
+  const retryLayer = import_react33.default.useCallback(
     (pageNo) => {
       layerCache.current.delete(pageNo);
       ensureLayer(pageNo);
@@ -24246,26 +24556,26 @@ function ReaderShellInner(props) {
     [paperId],
     { enabled: Boolean(paperId) }
   );
-  const outlineItems = import_react32.default.useMemo(() => arrayOf3(outlineState.data && outlineState.data.items), [outlineState.data]);
-  const [annotationReload, setAnnotationReload] = import_react32.default.useState(0);
+  const outlineItems = import_react33.default.useMemo(() => arrayOf3(outlineState.data && outlineState.data.items), [outlineState.data]);
+  const [annotationReload, setAnnotationReload] = import_react33.default.useState(0);
   const annotationsState = useAsync(
     (signal) => paperId ? apiCall("annotations.list", versionId ? { paperId, versionId } : { paperId }, { signal }) : Promise.resolve([]),
     [paperId, versionId, annotationReload],
     { enabled: Boolean(paperId) }
   );
-  const [annotations, setAnnotations] = import_react32.default.useState(NO_ANNOTATIONS);
-  import_react32.default.useEffect(() => {
+  const [annotations, setAnnotations] = import_react33.default.useState(NO_ANNOTATIONS);
+  import_react33.default.useEffect(() => {
     if (annotationsState.status === "ready") setAnnotations(normalizeAnnotations(annotationsState.data));
   }, [annotationsState.status, annotationsState.data]);
-  const lastColor = import_react32.default.useRef(DEFAULT_COLOR);
-  const intentSeq = import_react32.default.useRef(0);
-  const [annotationIntent, setAnnotationIntent] = import_react32.default.useState(() => {
+  const lastColor = import_react33.default.useRef(DEFAULT_COLOR);
+  const intentSeq = import_react33.default.useRef(0);
+  const [annotationIntent, setAnnotationIntent] = import_react33.default.useState(() => {
     const initial = firstText3(props.annotationId);
     if (!initial) return null;
     intentSeq.current += 1;
     return { id: initial, seq: intentSeq.current };
   });
-  const createAnnotation = import_react32.default.useCallback(
+  const createAnnotation = import_react33.default.useCallback(
     (draft) => {
       const params = annotationRequest({ paperId, versionId, page: pageRef.current }, draft);
       const optimistic = normalizeAnnotation(
@@ -24322,7 +24632,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, paperId, versionId]
   );
-  const updateAnnotation = import_react32.default.useCallback(
+  const updateAnnotation = import_react33.default.useCallback(
     (annotation, patch) => {
       const previous = annotation;
       setAnnotations(
@@ -24368,7 +24678,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, rt]
   );
-  const deleteAnnotation = import_react32.default.useCallback(
+  const deleteAnnotation = import_react33.default.useCallback(
     (annotation) => {
       let index = -1;
       setAnnotations((list) => {
@@ -24426,18 +24736,18 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, rt]
   );
-  const [popover, setPopover] = import_react32.default.useState(null);
-  const popoverAnnotation = import_react32.default.useMemo(() => {
+  const [popover, setPopover] = import_react33.default.useState(null);
+  const popoverAnnotation = import_react33.default.useMemo(() => {
     if (!popover) return null;
     const found = annotations.find((annotation) => annotation.id === popover.id);
     return found || null;
   }, [annotations, popover]);
-  const popoverProp = import_react32.default.useMemo(() => {
+  const popoverProp = import_react33.default.useMemo(() => {
     if (!popoverAnnotation || !popover) return null;
     return { annotation: popoverAnnotation, anchor: popover.anchor, autoFocus: Boolean(popover.autoFocus) };
   }, [popoverAnnotation, popover]);
   const activeAnnotationId = popoverAnnotation ? popoverAnnotation.id : null;
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     if (!annotationIntent) return;
     if (annotationsState.status === "error") {
       setAnnotationIntent(null);
@@ -24455,8 +24765,8 @@ function ReaderShellInner(props) {
   }, [annotations, annotationIntent, annotationsState.status, goToPage]);
   const navigation2 = props.navigation;
   const navSnapshot = useNavigationSnapshot(navigation2);
-  const navConsumed = import_react32.default.useRef(0);
-  import_react32.default.useEffect(() => {
+  const navConsumed = import_react33.default.useRef(0);
+  import_react33.default.useEffect(() => {
     if (!navigation2 || !navSnapshot || !navSnapshot.seq) return;
     if (navConsumed.current === navSnapshot.seq) return;
     const route = navSnapshot.route || {};
@@ -24490,15 +24800,15 @@ function ReaderShellInner(props) {
       figureFocusTimer.current = setTimeout(() => setFigureFocus(null), 4600);
     }
   }, [goToPage, navSnapshot, navigation2, notify2, paperId, rt]);
-  import_react32.default.useEffect(() => () => {
+  import_react33.default.useEffect(() => () => {
     if (figureFocusTimer.current) clearTimeout(figureFocusTimer.current);
   }, []);
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     const sync = () => setNoteContextState(getNoteContext());
     sync();
     return subscribeNoteContext(sync);
   }, []);
-  const linkCurrentPaper = import_react32.default.useCallback(() => {
+  const linkCurrentPaper = import_react33.default.useCallback(() => {
     if (!noteContext || typeof noteContext.linkPaper !== "function") {
       notify2("warning", rt("reader.linkNote.noNote"));
       return;
@@ -24511,14 +24821,14 @@ function ReaderShellInner(props) {
       }
     }).catch((error) => notify2("error", rt("reader.linkNote.failed", { message: describeError2(error) })));
   }, [noteContext, paperId, notify2, rt]);
-  const insertFigureIntoNote = import_react32.default.useCallback((material) => {
+  const insertFigureIntoNote = import_react33.default.useCallback((material) => {
     if (!noteContext || typeof noteContext.insertFigure !== "function") {
       notify2("warning", rt("reader.linkNote.noNote"));
       return;
     }
     Promise.resolve(noteContext.insertFigure(material)).then(() => notify2("success", rt("reader.figures.inserted"))).catch((error) => notify2("error", rt("reader.figures.insertFailed", { message: describeError2(error) })));
   }, [noteContext, notify2, rt]);
-  const linkAnnotationToNote = import_react32.default.useCallback((annotation) => {
+  const linkAnnotationToNote = import_react33.default.useCallback((annotation) => {
     if (!noteContext || typeof noteContext.insertQuote !== "function") {
       notify2("warning", rt("reader.linkNote.noNote"));
       return;
@@ -24536,34 +24846,34 @@ function ReaderShellInner(props) {
       annotationId: annotation && annotation.id
     })).then(() => notify2("success", rt("reader.linkNote.quoteDone", { title: noteContext.title || rt("reader.linkNote.untitled") }))).catch((error) => notify2("error", rt("reader.linkNote.quoteFailed", { message: describeError2(error) })));
   }, [noteContext, notify2, rt, paper, page2]);
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     if (!figureFocus) return;
     if (Math.round(num(page2, 1)) !== figureFocus.page) setFigureFocus(null);
   }, [page2, figureFocus]);
-  const openAnnotation = import_react32.default.useCallback((annotation, anchor) => {
+  const openAnnotation = import_react33.default.useCallback((annotation, anchor) => {
     setPopover({ id: annotation.id, anchor, autoFocus: false });
   }, []);
-  const closePopover = import_react32.default.useCallback(() => setPopover(null), []);
-  const [selection, setSelection] = import_react32.default.useState(null);
-  const [selectionResult, setSelectionResult] = import_react32.default.useState(null);
-  const handleSelection = import_react32.default.useCallback((next) => {
+  const closePopover = import_react33.default.useCallback(() => setPopover(null), []);
+  const [selection, setSelection] = import_react33.default.useState(null);
+  const [selectionResult, setSelectionResult] = import_react33.default.useState(null);
+  const handleSelection = import_react33.default.useCallback((next) => {
     setSelection(next);
     if (!next) setSelectionResult(null);
   }, []);
-  const clearSelection = import_react32.default.useCallback(() => {
+  const clearSelection = import_react33.default.useCallback(() => {
     setSelection(null);
     setSelectionResult(null);
     clearNativeSelection();
   }, []);
-  const [aiRequest, setAiRequest] = import_react32.default.useState(null);
-  const aiSeq = import_react32.default.useRef(0);
-  const askAi = import_react32.default.useCallback((request2) => {
+  const [aiRequest, setAiRequest] = import_react33.default.useState(null);
+  const aiSeq = import_react33.default.useRef(0);
+  const askAi = import_react33.default.useCallback((request2) => {
     aiSeq.current += 1;
     setAiRequest(Object.assign({}, request2, { seq: aiSeq.current }));
     setSideOpen(true);
     setSideTab("ai");
   }, []);
-  const commitMaterials = import_react32.default.useCallback(
+  const commitMaterials = import_react33.default.useCallback(
     async (materials) => {
       const list = arrayOf3(materials).filter((material) => material && material.id).map((material) => {
         const item = { kind: material.kind || "paper", id: String(material.id) };
@@ -24592,13 +24902,13 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, props.pending, props.sessionId, rt]
   );
-  const citePaperPage = import_react32.default.useCallback(() => {
+  const citePaperPage = import_react33.default.useCallback(() => {
     const title2 = firstText3(paper && paper.titleZh, paper && paper.title);
     commitMaterials([{ kind: "paper", id: paperId, page: page2, title: title2 }]).catch((error) => {
       notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) }));
     });
   }, [commitMaterials, notify2, page2, paper, paperId, rt]);
-  const citeAnnotation = import_react32.default.useCallback(
+  const citeAnnotation = import_react33.default.useCallback(
     (annotation) => {
       commitMaterials([
         {
@@ -24611,7 +24921,7 @@ function ReaderShellInner(props) {
     },
     [commitMaterials, notify2, rt]
   );
-  const citeAiAnswer = import_react32.default.useCallback(
+  const citeAiAnswer = import_react33.default.useCallback(
     (message) => {
       const materials = [{ kind: "paper", id: paperId, page: page2, title: firstText3(paper && paper.titleZh, paper && paper.title) }];
       for (const source of arrayOf3(message && message.sources)) {
@@ -24624,9 +24934,9 @@ function ReaderShellInner(props) {
     [commitMaterials, notify2, page2, paper, paperId, rt]
   );
   const TRANSLATABLE_ROLES2 = ["body", "heading", "caption"];
-  const [translations, setTranslations] = import_react32.default.useState({});
-  const translationSequence = import_react32.default.useRef(0);
-  const translatableBlocksFor = import_react32.default.useCallback(
+  const [translations, setTranslations] = import_react33.default.useState({});
+  const translationSequence = import_react33.default.useRef(0);
+  const translatableBlocksFor = import_react33.default.useCallback(
     (pageNo) => {
       const entry = getPageData(pageNo);
       if (!entry || entry.status !== "ready" || !entry.data) return [];
@@ -24636,7 +24946,7 @@ function ReaderShellInner(props) {
     },
     [getPageData]
   );
-  const updateTranslationPage = import_react32.default.useCallback((pageNo, updater) => {
+  const updateTranslationPage = import_react33.default.useCallback((pageNo, updater) => {
     setTranslations((previous) => {
       const current2 = previous[pageNo] || {
         status: "idle",
@@ -24652,7 +24962,7 @@ function ReaderShellInner(props) {
       return Object.assign({}, previous, { [pageNo]: next });
     });
   }, []);
-  const normalizeBlockEntry = import_react32.default.useCallback(
+  const normalizeBlockEntry = import_react33.default.useCallback(
     (block, item, fallbackEngine, fallbackReason, fallbackModel) => {
       const translation2 = firstText3(item && item.translation);
       const engine = readEngine(item, fallbackEngine && fallbackEngine.provider || "auto");
@@ -24671,7 +24981,7 @@ function ReaderShellInner(props) {
     },
     [rt]
   );
-  const summarizeEngines = import_react32.default.useCallback((blocks, entries2) => {
+  const summarizeEngines = import_react33.default.useCallback((blocks, entries2) => {
     const labels = [];
     const models = [];
     for (const block of blocks) {
@@ -24684,7 +24994,7 @@ function ReaderShellInner(props) {
     const firstEntry = blocks.map((block) => entries2[String(block.id)]).find((entry) => entry && entry.status === "translated");
     return { label: labels.join(" + "), model: models.join(", "), engine: firstEntry ? firstEntry.engine || null : null };
   }, []);
-  const runPageTranslation = import_react32.default.useCallback(
+  const runPageTranslation = import_react33.default.useCallback(
     async (pageNo, options) => {
       if (!paperId) return null;
       const opts = options || {};
@@ -24802,7 +25112,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, notify2, preferredProvider, props.sessionId, rt, summarizeEngines, translatableBlocksFor, updateTranslationPage]
   );
-  const legacyPerBlockTranslate = import_react32.default.useCallback(
+  const legacyPerBlockTranslate = import_react33.default.useCallback(
     async (blocks, pageNo, provider, token) => {
       const entries2 = {};
       const queue2 = blocks.slice().sort((left, right) => String(right.text || "").length - String(left.text || "").length);
@@ -24866,7 +25176,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, normalizeBlockEntry, paperId, props.sessionId, rt, summarizeEngines, updateTranslationPage]
   );
-  const translateBlockInternal = import_react32.default.useCallback(
+  const translateBlockInternal = import_react33.default.useCallback(
     async (block, pageNo, providerOverride) => {
       if (!paperId || !block || block.id == null) return null;
       const target = pageNo || pageRef.current;
@@ -24916,7 +25226,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, normalizeBlockEntry, preferredProvider, props.sessionId, rt, summarizeEngines, translatableBlocksFor, updateTranslationPage]
   );
-  const translatePage = import_react32.default.useCallback(
+  const translatePage = import_react33.default.useCallback(
     (force, options) => {
       if (!paperId) return;
       const opts = options || {};
@@ -24943,15 +25253,15 @@ function ReaderShellInner(props) {
     },
     [notify2, paperId, preferredProvider, rt, runPageTranslation, translateBlockInternal, translatableBlocksFor, translations]
   );
-  const translateAiPage = import_react32.default.useCallback(() => {
+  const translateAiPage = import_react33.default.useCallback(() => {
     return translatePage(true, { provider: "llm" });
   }, [translatePage]);
-  const translateBlock = import_react32.default.useCallback(
+  const translateBlock = import_react33.default.useCallback(
     (block) => translateBlockInternal(block, pageRef.current, preferredProvider || "auto"),
     [preferredProvider, translateBlockInternal]
   );
-  const detectedCache = import_react32.default.useRef(/* @__PURE__ */ new Map());
-  const detectLanguage2 = import_react32.default.useCallback(
+  const detectedCache = import_react33.default.useRef(/* @__PURE__ */ new Map());
+  const detectLanguage2 = import_react33.default.useCallback(
     async (text2) => {
       const value = String(text2 || "").trim();
       if (!value) return "empty";
@@ -24979,7 +25289,7 @@ function ReaderShellInner(props) {
     },
     [apiCall]
   );
-  const quickTranslateText = import_react32.default.useCallback(
+  const quickTranslateText = import_react33.default.useCallback(
     async (text2, pageNo, options) => {
       const opts = options || {};
       const quote = String(text2 || "").trim();
@@ -25140,7 +25450,7 @@ function ReaderShellInner(props) {
     },
     [apiCall, detectLanguage2, paperId, props.paper, props.sessionId, rt]
   );
-  const quickTranslateSelection = import_react32.default.useCallback(
+  const quickTranslateSelection = import_react33.default.useCallback(
     (options) => {
       const opts = options || {};
       if (!selection) return;
@@ -25178,7 +25488,7 @@ function ReaderShellInner(props) {
     },
     [notify2, preferredProvider, quickTranslateText, rt, selection]
   );
-  const refineQuickTranslation = import_react32.default.useCallback(() => {
+  const refineQuickTranslation = import_react33.default.useCallback(() => {
     const quote = selection ? selection.quote : selectionResult && selectionResult.quote;
     const targetPage = selection ? selection.page : selectionResult && selectionResult.page;
     if (!quote) return;
@@ -25191,21 +25501,21 @@ function ReaderShellInner(props) {
       );
     });
   }, [quickTranslateText, selection, selectionResult]);
-  const quickTranslateAnnotation = import_react32.default.useCallback(
+  const quickTranslateAnnotation = import_react33.default.useCallback(
     (annotation) => {
       const text2 = firstText3(annotation && annotation.quote, annotation && annotation.comment);
       return quickTranslateText(text2, annotation && annotation.page, { detect: false, rects: annotation && annotation.rects });
     },
     [quickTranslateText]
   );
-  const aiTranslateAnnotation = import_react32.default.useCallback(
+  const aiTranslateAnnotation = import_react33.default.useCallback(
     (annotation) => {
       const text2 = firstText3(annotation && annotation.quote, annotation && annotation.comment);
       return quickTranslateText(text2, annotation && annotation.page, { detect: false, provider: "llm", fast: true, refine: true, rects: annotation && annotation.rects });
     },
     [quickTranslateText]
   );
-  const highlightSelection = import_react32.default.useCallback(
+  const highlightSelection = import_react33.default.useCallback(
     (color) => {
       if (!selection) return;
       const chosen = color || lastColor.current || DEFAULT_COLOR;
@@ -25230,7 +25540,7 @@ function ReaderShellInner(props) {
     },
     [createAnnotation, notifyUndo, notify2, rt, selection]
   );
-  const citeSelection = import_react32.default.useCallback(() => {
+  const citeSelection = import_react33.default.useCallback(() => {
     if (!selection) return;
     const chosen = lastColor.current || DEFAULT_COLOR;
     const target = {
@@ -25254,7 +25564,7 @@ function ReaderShellInner(props) {
       return commitMaterials([{ kind: "annotation", id: saved.id, page: saved.page, title: target.quote }]);
     }).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
   }, [commitMaterials, createAnnotation, notifyUndo, notify2, rt, selection]);
-  const sendQuickTranslation = import_react32.default.useCallback(() => {
+  const sendQuickTranslation = import_react33.default.useCallback(() => {
     if (!selection || !selectionResult) return;
     const target = { page: selection.page || pageRef.current, quote: selection.quote, rects: selection.rects };
     const translationText = firstText3(selectionResult.translation);
@@ -25273,7 +25583,7 @@ function ReaderShellInner(props) {
       });
     }).catch((error) => notify2("error", rt("reader.toast.citeFailed", { message: describeError2(error) })));
   }, [commitMaterials, createAnnotation, notifyUndo, notify2, rt, selection, selectionResult]);
-  const handleSelectionAction = import_react32.default.useCallback(
+  const handleSelectionAction = import_react33.default.useCallback(
     (action, payload) => {
       if (action === "closeResult") {
         setSelectionResult(null);
@@ -25330,7 +25640,7 @@ function ReaderShellInner(props) {
     },
     [askAi, citeSelection, highlightSelection, notify2, notifyUndo, quickTranslateSelection, refineQuickTranslation, rt, selection, selectionResult, sendQuickTranslation]
   );
-  const createArea = import_react32.default.useCallback(
+  const createArea = import_react33.default.useCallback(
     (rect) => {
       const normalized = normalizeRect(rect);
       if (!normalized || normalized.w < 0.01 || normalized.h < 8e-3) {
@@ -25352,12 +25662,12 @@ function ReaderShellInner(props) {
     },
     [createAnnotation, notifyUndo, notify2, rt]
   );
-  const [noteDraft, setNoteDraft] = import_react32.default.useState(null);
-  const createNote = import_react32.default.useCallback((point) => {
+  const [noteDraft, setNoteDraft] = import_react33.default.useState(null);
+  const createNote = import_react33.default.useCallback((point) => {
     setNoteDraft({ page: pageRef.current, point, color: lastColor.current || DEFAULT_COLOR });
   }, []);
-  const cancelNote = import_react32.default.useCallback(() => setNoteDraft(null), []);
-  const saveNote = import_react32.default.useCallback(
+  const cancelNote = import_react33.default.useCallback(() => setNoteDraft(null), []);
+  const saveNote = import_react33.default.useCallback(
     (payload) => {
       const point = payload.point || { x: 0.5, y: 0.5 };
       const rect = normalizeRect({
@@ -25387,26 +25697,26 @@ function ReaderShellInner(props) {
     },
     [createAnnotation, notifyUndo, notify2, rt]
   );
-  const askAnnotation = import_react32.default.useCallback(
+  const askAnnotation = import_react33.default.useCallback(
     (annotation) => {
       askAi({ type: "ask", quote: firstText3(annotation.quote, annotation.comment), prompt: "", auto: false });
     },
     [askAi]
   );
-  const explainAnnotation = import_react32.default.useCallback(
+  const explainAnnotation = import_react33.default.useCallback(
     (annotation) => {
       askAi({ type: "explain", quote: firstText3(annotation.quote, annotation.comment), auto: true });
     },
     [askAi]
   );
-  const copyAnnotation = import_react32.default.useCallback(
+  const copyAnnotation = import_react33.default.useCallback(
     (annotation) => {
       const text2 = firstText3(annotation.quote, annotation.comment);
       copyText2(text2).then((ok) => notify2(ok ? "success" : "error", ok ? rt("reader.annot.copyDone") : rt("reader.toast.copyFailed")));
     },
     [notify2, rt]
   );
-  const onAnnotationSelect = import_react32.default.useCallback(
+  const onAnnotationSelect = import_react33.default.useCallback(
     (annotation) => {
       if (annotation.page !== pageRef.current) goToPage(annotation.page);
       const anchor = annotation.rects && annotation.rects.length > 0 ? annotation.rects[0] : { x: 0.5, y: 0.25, w: 0, h: 0 };
@@ -25414,7 +25724,7 @@ function ReaderShellInner(props) {
     },
     [goToPage]
   );
-  const deleteFromPopover = import_react32.default.useCallback(
+  const deleteFromPopover = import_react33.default.useCallback(
     (annotation) => {
       setPopover(null);
       deleteAnnotation(annotation).catch(() => {
@@ -25422,10 +25732,10 @@ function ReaderShellInner(props) {
     },
     [deleteAnnotation]
   );
-  const emptySearch = import_react32.default.useCallback(() => ({ open: false, query: "", hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }), []);
-  const [search, setSearch] = import_react32.default.useState(emptySearch);
-  const focusSeq = import_react32.default.useRef(0);
-  import_react32.default.useEffect(() => {
+  const emptySearch = import_react33.default.useCallback(() => ({ open: false, query: "", hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }), []);
+  const [search, setSearch] = import_react33.default.useState(emptySearch);
+  const focusSeq = import_react33.default.useRef(0);
+  import_react33.default.useEffect(() => {
     if (!search.open) return;
     const query = search.query;
     if (!query.trim()) {
@@ -25460,7 +25770,7 @@ function ReaderShellInner(props) {
       });
     });
   }, [paperId, page2, search.open, search.query, dataVersion]);
-  const toggleSearch = import_react32.default.useCallback(
+  const toggleSearch = import_react33.default.useCallback(
     (open) => {
       setSearch((previous) => {
         if (open) return Object.assign({}, previous, { open: true, focus: previous.focus });
@@ -25469,10 +25779,10 @@ function ReaderShellInner(props) {
     },
     [emptySearch]
   );
-  const setSearchQuery = import_react32.default.useCallback((query) => {
+  const setSearchQuery = import_react33.default.useCallback((query) => {
     setSearch((previous) => Object.assign({}, previous, { query, hits: [], index: 0, focus: null, forPage: 0, forVersion: -1 }));
   }, []);
-  const searchNext = import_react32.default.useCallback(
+  const searchNext = import_react33.default.useCallback(
     (delta) => {
       setSearch((previous) => {
         if (!previous.open || previous.hits.length === 0) {
@@ -25491,7 +25801,7 @@ function ReaderShellInner(props) {
     },
     [notify2, rt]
   );
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     if (typeof window === "undefined") return void 0;
     const onKeyDown = (event) => {
       const target = event.target;
@@ -25582,8 +25892,8 @@ function ReaderShellInner(props) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [changeTool, clearSelection, goToPage, highlightSelection, noteDraft, notify2, penColor, popover, rt, search.open, selection, tool, toggleSearch, undoApi, zoomStep]);
-  const resetKeyRef = import_react32.default.useRef(paperId);
-  import_react32.default.useEffect(() => {
+  const resetKeyRef = import_react33.default.useRef(paperId);
+  import_react33.default.useEffect(() => {
     if (!paperId) return;
     if (resetKeyRef.current === paperId) return;
     resetKeyRef.current = paperId;
@@ -25613,24 +25923,24 @@ function ReaderShellInner(props) {
       setAnnotationIntent(null);
     }
   }, [paperId]);
-  const jumpedRef = import_react32.default.useRef("");
-  import_react32.default.useEffect(() => {
+  const jumpedRef = import_react33.default.useRef("");
+  import_react33.default.useEffect(() => {
     if (openState.status !== "ready" || !paperId) return;
     if (jumpedRef.current === paperId) return;
     jumpedRef.current = paperId;
     const target = clamp(pageRef.current, 1, total);
     goToPage(target, { instant: true });
   }, [openState.status, paperId, total]);
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     if (page2 > total) setPage(total);
   }, [page2, total]);
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     if (!paperId) return void 0;
     const timer2 = setTimeout(() => saveReadingPosition(paperId, page2), 500);
     return () => clearTimeout(timer2);
   }, [paperId, page2]);
-  const markedRef = import_react32.default.useRef("");
-  import_react32.default.useEffect(() => {
+  const markedRef = import_react33.default.useRef("");
+  import_react33.default.useEffect(() => {
     if (openState.status !== "ready" || !paperId) return void 0;
     let alive = true;
     Promise.resolve(apiCall("figures.list", { paperId })).then((result) => {
@@ -25644,7 +25954,7 @@ function ReaderShellInner(props) {
       alive = false;
     };
   }, [apiCall, openState.status, paperId]);
-  import_react32.default.useEffect(() => {
+  import_react33.default.useEffect(() => {
     if (openState.status !== "ready" || !paperId || markedRef.current === paperId) return;
     markedRef.current = paperId;
     try {
@@ -25684,7 +25994,7 @@ function ReaderShellInner(props) {
     onNoteCancel: cancelNote
   };
   if (!paperId) {
-    return import_react32.default.createElement(StateScreen, {
+    return import_react33.default.createElement(StateScreen, {
       t: rt,
       icon: "warning",
       tone: "error",
@@ -25695,7 +26005,7 @@ function ReaderShellInner(props) {
   }
   if (openState.status === "error" && !detail) {
     const offline = isOfflineError(openState.error);
-    return import_react32.default.createElement(StateScreen, {
+    return import_react33.default.createElement(StateScreen, {
       t: rt,
       icon: "warning",
       tone: "error",
@@ -25706,14 +26016,14 @@ function ReaderShellInner(props) {
     });
   }
   if (!detail && openState.status === "loading") {
-    return import_react32.default.createElement(StateScreen, { t: rt, loading: true, onBack: props.onBack });
+    return import_react33.default.createElement(StateScreen, { t: rt, loading: true, onBack: props.onBack });
   }
   let sideBody = null;
   if (sideTab === "outline") {
-    sideBody = import_react32.default.createElement(
+    sideBody = import_react33.default.createElement(
       "div",
       { className: "ph-r-side__scroll ph-r-scroll" },
-      import_react32.default.createElement(Outline, {
+      import_react33.default.createElement(Outline, {
         t: rt,
         items: outlineItems,
         page: page2,
@@ -25724,11 +26034,11 @@ function ReaderShellInner(props) {
       })
     );
   } else if (sideTab === "annotations") {
-    sideBody = import_react32.default.createElement(
+    sideBody = import_react33.default.createElement(
       "div",
       { className: "ph-r-side__scroll ph-r-scroll" },
-      import_react32.default.createElement("div", { className: "ph-r-side__hint" }, rt("reader.annot.hint")),
-      import_react32.default.createElement(AnnotationListPanel, {
+      import_react33.default.createElement("div", { className: "ph-r-side__hint" }, rt("reader.annot.hint")),
+      import_react33.default.createElement(AnnotationListPanel, {
         t: rt,
         annotations,
         page: page2,
@@ -25741,7 +26051,7 @@ function ReaderShellInner(props) {
       })
     );
   } else if (sideTab === "notes") {
-    sideBody = import_react32.default.createElement(ReaderNotesPanel, {
+    sideBody = import_react33.default.createElement(ReaderNotesPanel, {
       t: rawT,
       api: apiCall,
       paperId,
@@ -25754,10 +26064,10 @@ function ReaderShellInner(props) {
       }
     });
   } else if (sideTab === "figures") {
-    sideBody = import_react32.default.createElement(
+    sideBody = import_react33.default.createElement(
       "div",
       { className: "ph-r-side__scroll ph-r-scroll" },
-      import_react32.default.createElement(ReaderFiguresPanel, {
+      import_react33.default.createElement(ReaderFiguresPanel, {
         t: rt,
         api: apiCall,
         paperId,
@@ -25773,7 +26083,7 @@ function ReaderShellInner(props) {
       })
     );
   } else {
-    sideBody = import_react32.default.createElement(AiPanel, {
+    sideBody = import_react33.default.createElement(AiPanel, {
       t: rt,
       api: apiCall,
       paperId,
@@ -25789,7 +26099,7 @@ function ReaderShellInner(props) {
       onOpenSettings: props.onOpenSettings
     });
   }
-  const translationSheet = mode === "source" ? null : import_react32.default.createElement(
+  const translationSheet = mode === "source" ? null : import_react33.default.createElement(
     "div",
     {
       className: "ph-r-tr",
@@ -25799,12 +26109,12 @@ function ReaderShellInner(props) {
       },
       "data-ph-translation-sheet": "true"
     },
-    import_react32.default.createElement(
+    import_react33.default.createElement(
       "div",
       { className: "ph-r-tr__head" },
-      import_react32.default.createElement(Icon2, { name: "translate", size: 14 }),
-      import_react32.default.createElement("span", { className: "ph-r-tr__title" }, rt("reader.translation.sheet")),
-      import_react32.default.createElement(
+      import_react33.default.createElement(Icon2, { name: "translate", size: 14 }),
+      import_react33.default.createElement("span", { className: "ph-r-tr__title" }, rt("reader.translation.sheet")),
+      import_react33.default.createElement(
         "div",
         {
           className: cx("ph-r-tr__modes", trSlider.rect && "ph-r-tr__modes--sliding"),
@@ -25812,8 +26122,8 @@ function ReaderShellInner(props) {
           role: "group",
           "aria-label": rt("reader.translation.sheet")
         },
-        import_react32.default.createElement(SlidingThumb, { rect: trSlider.rect, popKey: mode }),
-        import_react32.default.createElement(
+        import_react33.default.createElement(SlidingThumb, { rect: trSlider.rect, popKey: mode }),
+        import_react33.default.createElement(
           "button",
           {
             type: "button",
@@ -25823,7 +26133,7 @@ function ReaderShellInner(props) {
           },
           rt("reader.translation.mode.compare")
         ),
-        import_react32.default.createElement(
+        import_react33.default.createElement(
           "button",
           {
             type: "button",
@@ -25834,13 +26144,13 @@ function ReaderShellInner(props) {
           rt("reader.translation.mode.translation")
         )
       ),
-      import_react32.default.createElement("span", { className: "ph-r-tr__spacer" }),
-      import_react32.default.createElement(IconBtn, { icon: "close", title: rt("reader.translation.close"), onClick: () => changeMode("source") })
+      import_react33.default.createElement("span", { className: "ph-r-tr__spacer" }),
+      import_react33.default.createElement(IconBtn, { icon: "close", title: rt("reader.translation.close"), onClick: () => changeMode("source") })
     ),
-    import_react32.default.createElement(
+    import_react33.default.createElement(
       "div",
       { className: "ph-r-tr__body ph-r-scroll" },
-      import_react32.default.createElement(BilingualPanel, {
+      import_react33.default.createElement(BilingualPanel, {
         t: rt,
         page: page2,
         total,
@@ -25858,7 +26168,7 @@ function ReaderShellInner(props) {
       })
     )
   );
-  return import_react32.default.createElement(
+  return import_react33.default.createElement(
     "div",
     {
       className: cx(
@@ -25869,7 +26179,8 @@ function ReaderShellInner(props) {
       ),
       "data-ph-reader": paperId
     },
-    import_react32.default.createElement(ReaderToolbar, {
+    import_react33.default.createElement(OnboardingCoach, { t: props.t, paperId }),
+    import_react33.default.createElement(ReaderToolbar, {
       t: rt,
       paper,
       total,
@@ -25898,21 +26209,21 @@ function ReaderShellInner(props) {
       onToggleSide: toggleSide,
       onOpenSettings: props.onOpenSettings
     }),
-    tool !== "select" ? import_react32.default.createElement(
+    tool !== "select" ? import_react33.default.createElement(
       "div",
       { className: "ph-r-modehint" },
-      import_react32.default.createElement(Icon2, { name: tool === "area" ? "area" : "sticky", size: 14 }),
-      import_react32.default.createElement("span", null, tool === "area" ? rt("reader.areaModeActive") : rt("reader.noteModeActive")),
-      import_react32.default.createElement(
+      import_react33.default.createElement(Icon2, { name: tool === "area" ? "area" : "sticky", size: 14 }),
+      import_react33.default.createElement("span", null, tool === "area" ? rt("reader.areaModeActive") : rt("reader.noteModeActive")),
+      import_react33.default.createElement(
         "button",
         { type: "button", className: "ph-r-toolbtn", onClick: () => changeTool("select") },
         rt("reader.exitMode")
       )
     ) : null,
-    import_react32.default.createElement(
+    import_react33.default.createElement(
       "div",
       { className: "ph-r-body" },
-      import_react32.default.createElement(Thumbnails, {
+      import_react33.default.createElement(Thumbnails, {
         t: rt,
         paperId,
         pages: pagesForRail,
@@ -25920,7 +26231,7 @@ function ReaderShellInner(props) {
         page: page2,
         onSelect: (target) => goToPage(target)
       }),
-      import_react32.default.createElement(PageCanvas, {
+      import_react33.default.createElement(PageCanvas, {
         t: rt,
         paperId,
         pages,
@@ -25950,13 +26261,13 @@ function ReaderShellInner(props) {
         onScrolledChange: handleScrolledChange,
         actions: canvasActions
       }),
-      import_react32.default.createElement(
+      import_react33.default.createElement(
         "aside",
         { className: cx("ph-r-side", !sideOpen && "ph-r-side--closed"), "aria-label": rt("reader.sidePanel") },
-        import_react32.default.createElement(
+        import_react33.default.createElement(
           "div",
           { className: "ph-r-side__head" },
-          import_react32.default.createElement(Tabs, {
+          import_react33.default.createElement(Tabs, {
             items: sideTabs,
             value: sideTab,
             onChange: (id) => {
@@ -25966,12 +26277,12 @@ function ReaderShellInner(props) {
             "aria-label": rt("reader.sidePanel"),
             className: "ph-r-side__tabs"
           }),
-          import_react32.default.createElement(IconBtn, { icon: "close", title: rt("reader.sidePanelToggle"), onClick: toggleSide })
+          import_react33.default.createElement(IconBtn, { icon: "close", title: rt("reader.sidePanelToggle"), onClick: toggleSide })
         ),
-        import_react32.default.createElement("div", { className: "ph-r-side__body" }, sideBody)
+        import_react33.default.createElement("div", { className: "ph-r-side__body" }, sideBody)
       ),
       translationSheet,
-      import_react32.default.createElement(FloatingAnnotationTools, {
+      import_react33.default.createElement(FloatingAnnotationTools, {
         t: rt,
         tool,
         selectionActive: Boolean(selection && selection.quote),
@@ -25986,19 +26297,19 @@ function ReaderShellInner(props) {
         translationOpen: mode !== "source"
       })
     ),
-    notices.toasts.length > 0 ? import_react32.default.createElement(
+    notices.toasts.length > 0 ? import_react33.default.createElement(
       "div",
       { className: "ph-r-toasts", "aria-live": "polite" },
       notices.toasts.map(
-        (toast) => import_react32.default.createElement(
+        (toast) => import_react33.default.createElement(
           "div",
           { key: toast.id, className: cx("ph-r-toast", "ph-r-toast--" + toast.kind) },
-          import_react32.default.createElement(Icon2, {
+          import_react33.default.createElement(Icon2, {
             name: toast.kind === "success" ? "check" : toast.kind === "error" || toast.kind === "warning" ? "warning" : "note",
             size: 13
           }),
-          import_react32.default.createElement("span", null, toast.text),
-          toast.action ? import_react32.default.createElement(
+          import_react33.default.createElement("span", null, toast.text),
+          toast.action ? import_react33.default.createElement(
             "button",
             {
               type: "button",
@@ -26044,28 +26355,28 @@ var ANNOTATION_COLORS2 = {
 function PaperPanel(props) {
   const t = props.t;
   const api = props.api;
-  const [query, setQuery] = import_react33.default.useState("");
-  const [folders, setFolders] = import_react33.default.useState([]);
-  const [folderId, setFolderId] = import_react33.default.useState("");
-  const [annotatedOnly, setAnnotatedOnly] = import_react33.default.useState(false);
-  const [readFilter, setReadFilter] = import_react33.default.useState("");
-  const [results, setResults] = import_react33.default.useState({ status: "idle", items: [], error: "" });
-  const [open, setOpen] = import_react33.default.useState(null);
-  const [page2, setPage] = import_react33.default.useState(1);
-  const [pageState, setPageState] = import_react33.default.useState({ status: "idle", text: "", source: "", error: "" });
-  const [translation, setTranslation] = import_react33.default.useState({ status: "idle", blocks: [], reason: "" });
-  const [annotations, setAnnotations] = import_react33.default.useState({ status: "idle", items: [], error: "" });
-  const [busy2, setBusy] = import_react33.default.useState("");
-  const [linkedPaperIds, setLinkedPaperIds] = import_react33.default.useState(() => Array.isArray(props.linkedPaperIds) ? props.linkedPaperIds : []);
-  const [selection, setSelection] = import_react33.default.useState(null);
-  const [region, setRegion] = import_react33.default.useState({ status: "idle", text: "", translation: "", reason: "" });
-  const [ai, setAi] = import_react33.default.useState({ status: "idle", answer: "", reason: "" });
-  const dragRef = import_react33.default.useRef(null);
-  const imageWrapRef = import_react33.default.useRef(null);
-  const [layer, setLayer] = import_react33.default.useState(null);
-  const [renderWidth, setRenderWidth] = import_react33.default.useState(0);
-  const restoredRef = import_react33.default.useRef(false);
-  import_react33.default.useEffect(() => {
+  const [query, setQuery] = import_react34.default.useState("");
+  const [folders, setFolders] = import_react34.default.useState([]);
+  const [folderId, setFolderId] = import_react34.default.useState("");
+  const [annotatedOnly, setAnnotatedOnly] = import_react34.default.useState(false);
+  const [readFilter, setReadFilter] = import_react34.default.useState("");
+  const [results, setResults] = import_react34.default.useState({ status: "idle", items: [], error: "" });
+  const [open, setOpen] = import_react34.default.useState(null);
+  const [page2, setPage] = import_react34.default.useState(1);
+  const [pageState, setPageState] = import_react34.default.useState({ status: "idle", text: "", source: "", error: "" });
+  const [translation, setTranslation] = import_react34.default.useState({ status: "idle", blocks: [], reason: "" });
+  const [annotations, setAnnotations] = import_react34.default.useState({ status: "idle", items: [], error: "" });
+  const [busy2, setBusy] = import_react34.default.useState("");
+  const [linkedPaperIds, setLinkedPaperIds] = import_react34.default.useState(() => Array.isArray(props.linkedPaperIds) ? props.linkedPaperIds : []);
+  const [selection, setSelection] = import_react34.default.useState(null);
+  const [region, setRegion] = import_react34.default.useState({ status: "idle", text: "", translation: "", reason: "" });
+  const [ai, setAi] = import_react34.default.useState({ status: "idle", answer: "", reason: "" });
+  const dragRef = import_react34.default.useRef(null);
+  const imageWrapRef = import_react34.default.useRef(null);
+  const [layer, setLayer] = import_react34.default.useState(null);
+  const [renderWidth, setRenderWidth] = import_react34.default.useState(0);
+  const restoredRef = import_react34.default.useRef(false);
+  import_react34.default.useEffect(() => {
     if (!props.noteId || restoredRef.current) return void 0;
     restoredRef.current = true;
     let saved = null;
@@ -26088,14 +26399,14 @@ function PaperPanel(props) {
       alive = false;
     };
   }, [props.noteId, api]);
-  import_react33.default.useEffect(() => {
+  import_react34.default.useEffect(() => {
     try {
       if (open) sessionStorage.setItem("pappers-hall:notes-open-paper", JSON.stringify({ paperId: open.id, page: page2 }));
       else sessionStorage.removeItem("pappers-hall:notes-open-paper");
     } catch {
     }
   }, [open, page2]);
-  import_react33.default.useEffect(() => {
+  import_react34.default.useEffect(() => {
     let alive = true;
     Promise.resolve(api("library.folders.tree", {})).then((result) => {
       if (!alive) return;
@@ -26116,7 +26427,7 @@ function PaperPanel(props) {
       alive = false;
     };
   }, [api]);
-  import_react33.default.useEffect(() => {
+  import_react34.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       setResults((previous) => Object.assign({}, previous, { status: "loading", error: "" }));
       Promise.resolve(api("library.list", { query: query.trim(), limit: 100, ...folderId ? { folderId } : {} })).then((result) => {
@@ -26135,7 +26446,7 @@ function PaperPanel(props) {
     setPage(1);
     setTranslation({ status: "idle", blocks: [], reason: "" });
   };
-  import_react33.default.useEffect(() => {
+  import_react34.default.useEffect(() => {
     if (!open) return void 0;
     let alive = true;
     setPageState({ status: "loading", text: "", source: "", error: "" });
@@ -26162,7 +26473,7 @@ function PaperPanel(props) {
       alive = false;
     };
   }, [api, open, page2]);
-  import_react33.default.useEffect(() => {
+  import_react34.default.useEffect(() => {
     if (!open) return void 0;
     let alive = true;
     setLayer(null);
@@ -26175,7 +26486,7 @@ function PaperPanel(props) {
       alive = false;
     };
   }, [api, open, page2]);
-  import_react33.default.useEffect(() => {
+  import_react34.default.useEffect(() => {
     const element2 = imageWrapRef.current;
     if (!element2 || typeof ResizeObserver === "undefined") return void 0;
     const observer2 = new ResizeObserver((entries2) => {
@@ -26199,7 +26510,7 @@ function PaperPanel(props) {
     const target = Math.max(1, Math.min(open.total || 1, next));
     if (target !== page2) setPage(target);
   };
-  const selectable = import_react33.default.useMemo(() => selectableWords(layer), [layer]);
+  const selectable = import_react34.default.useMemo(() => selectableWords(layer), [layer]);
   const pageHeight = layer && layer.width > 0 && renderWidth > 0 ? renderWidth * (layer.height / layer.width) : 0;
   const onPageMouseUp = () => {
     if (!open || !layer) return;
@@ -26232,7 +26543,7 @@ function PaperPanel(props) {
       setAi({ status: "ready", answer: String(result.answer || ""), reason: "" });
     }).catch((error) => setAi({ status: "error", answer: "", reason: String(error && error.message || error) })).then(() => setBusy(""));
   };
-  import_react33.default.useEffect(() => {
+  import_react34.default.useEffect(() => {
     if (!props.noteId) {
       setLinkedPaperIds([]);
       return void 0;
@@ -26262,15 +26573,15 @@ function PaperPanel(props) {
     }).then(() => setBusy(""));
   };
   if (open) {
-    return import_react33.default.createElement(
+    return import_react34.default.createElement(
       "div",
       { className: "ph-n-embedded-reader" },
-      import_react33.default.createElement(
+      import_react34.default.createElement(
         "div",
         { className: "ph-n-embedded-reader__bar" },
-        import_react33.default.createElement(IconButton, { icon: "chevronLeft", title: t("notes.papers.backToList"), onClick: () => setOpen(null) }),
-        import_react33.default.createElement("span", { className: "ph-n-embedded-reader__title" }, paperTitle2(t, open.paper)),
-        props.noteId ? import_react33.default.createElement(Button, {
+        import_react34.default.createElement(IconButton, { icon: "chevronLeft", title: t("notes.papers.backToList"), onClick: () => setOpen(null) }),
+        import_react34.default.createElement("span", { className: "ph-n-embedded-reader__title" }, paperTitle2(t, open.paper)),
+        props.noteId ? import_react34.default.createElement(Button, {
           size: "sm",
           variant: linkedPaperIds.indexOf(open.id) >= 0 ? "soft" : "primary",
           icon: linkedPaperIds.indexOf(open.id) >= 0 ? "checkCircle" : "link",
@@ -26279,10 +26590,10 @@ function PaperPanel(props) {
           onClick: linkOpenPaper
         }, linkedPaperIds.indexOf(open.id) >= 0 ? t("notes.papers.linkedDone") : t("notes.papers.linkCurrent")) : null
       ),
-      import_react33.default.createElement(
+      import_react34.default.createElement(
         "div",
         { className: "ph-n-embedded-reader__body" },
-        import_react33.default.createElement(ReaderShell, {
+        import_react34.default.createElement(ReaderShell, {
           t,
           api,
           paperId: open.id,
@@ -26295,20 +26606,20 @@ function PaperPanel(props) {
       )
     );
   }
-  return import_react33.default.createElement(
+  return import_react34.default.createElement(
     "div",
     { className: "ph-n-paperpane" },
-    import_react33.default.createElement(
+    import_react34.default.createElement(
       "div",
       { className: "ph-n-paperpane__head" },
-      import_react33.default.createElement(Icon, { name: "book", size: 14 }),
-      import_react33.default.createElement("span", { className: "ph-n-paperpane__title" }, t("notes.papers.panel")),
-      props.onClose ? import_react33.default.createElement(IconButton, { icon: "panelRight", title: t("notes.papers.panelClose"), onClick: props.onClose }) : null
+      import_react34.default.createElement(Icon, { name: "book", size: 14 }),
+      import_react34.default.createElement("span", { className: "ph-n-paperpane__title" }, t("notes.papers.panel")),
+      props.onClose ? import_react34.default.createElement(IconButton, { icon: "panelRight", title: t("notes.papers.panelClose"), onClick: props.onClose }) : null
     ),
-    import_react33.default.createElement(
+    import_react34.default.createElement(
       "div",
       { className: "ph-n-paperpane__search" },
-      import_react33.default.createElement(SearchInput, {
+      import_react34.default.createElement(SearchInput, {
         value: query,
         onChange: setQuery,
         placeholder: t("notes.papers.panelSearch"),
@@ -26316,43 +26627,43 @@ function PaperPanel(props) {
         loading: results.status === "loading"
       })
     ),
-    import_react33.default.createElement(
+    import_react34.default.createElement(
       "div",
       { className: "ph-n-paperpane__filters" },
-      import_react33.default.createElement(
+      import_react34.default.createElement(
         "select",
         { className: "ph-select ph-select--inline", value: folderId, "aria-label": t("folders.pick"), onChange: (event) => setFolderId(event.target.value) },
-        import_react33.default.createElement("option", { value: "" }, t("folders.all")),
-        folders.map((folder) => import_react33.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
+        import_react34.default.createElement("option", { value: "" }, t("folders.all")),
+        folders.map((folder) => import_react34.default.createElement("option", { key: folder.id, value: folder.id }, "\u3000".repeat(folder.depth || 0) + folder.name))
       ),
-      import_react33.default.createElement(
+      import_react34.default.createElement(
         "select",
         { className: "ph-select ph-select--inline", value: readFilter, "aria-label": t("library.batch.reading"), onChange: (event) => setReadFilter(event.target.value) },
-        import_react33.default.createElement("option", { value: "" }, t("folders.anyState")),
-        import_react33.default.createElement("option", { value: "unread" }, t("library.smart.toRead")),
-        import_react33.default.createElement("option", { value: "read" }, t("library.smart.read"))
+        import_react34.default.createElement("option", { value: "" }, t("folders.anyState")),
+        import_react34.default.createElement("option", { value: "unread" }, t("library.smart.toRead")),
+        import_react34.default.createElement("option", { value: "read" }, t("library.smart.read"))
       ),
-      import_react33.default.createElement(
+      import_react34.default.createElement(
         "label",
         { className: "ph-n-paperpane__annot" },
-        import_react33.default.createElement("input", { type: "checkbox", checked: annotatedOnly, onChange: (event) => setAnnotatedOnly(event.target.checked) }),
+        import_react34.default.createElement("input", { type: "checkbox", checked: annotatedOnly, onChange: (event) => setAnnotatedOnly(event.target.checked) }),
         t("notes.papers.annotatedOnly")
       )
     ),
-    import_react33.default.createElement(
+    import_react34.default.createElement(
       "div",
       { className: "ph-n-paperpane__body" },
-      import_react33.default.createElement(
+      import_react34.default.createElement(
         "div",
         { className: "ph-n-paperpane__scroll ph-n-scroll" },
-        !open ? import_react33.default.createElement(
+        !open ? import_react34.default.createElement(
           "div",
           { className: "ph-n-paperlist" },
-          results.status === "loading" && results.items.length === 0 ? import_react33.default.createElement("div", { className: "ph-n-progress" }, import_react33.default.createElement(Spinner), import_react33.default.createElement("span", null, t("common.loading"))) : null,
-          results.status === "error" ? import_react33.default.createElement("div", { className: "ph-n-error" }, import_react33.default.createElement(Icon, { name: "warning", size: 14 }), import_react33.default.createElement("span", null, results.error)) : null,
-          results.status === "ready" && results.items.length === 0 ? import_react33.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch"), desc: t("notes.papers.panelHint") }) : null,
+          results.status === "loading" && results.items.length === 0 ? import_react34.default.createElement("div", { className: "ph-n-progress" }, import_react34.default.createElement(Spinner), import_react34.default.createElement("span", null, t("common.loading"))) : null,
+          results.status === "error" ? import_react34.default.createElement("div", { className: "ph-n-error" }, import_react34.default.createElement(Icon, { name: "warning", size: 14 }), import_react34.default.createElement("span", null, results.error)) : null,
+          results.status === "ready" && results.items.length === 0 ? import_react34.default.createElement(EmptyState, { compact: true, icon: "search", title: t("notes.papers.noMatch"), desc: t("notes.papers.panelHint") }) : null,
           results.items.map(
-            (paper) => import_react33.default.createElement(
+            (paper) => import_react34.default.createElement(
               "button",
               {
                 key: paper.id,
@@ -26361,47 +26672,47 @@ function PaperPanel(props) {
                 onClick: () => openPaper(paper),
                 title: paperTitle2(t, paper)
               },
-              import_react33.default.createElement(
+              import_react34.default.createElement(
                 "span",
                 { className: "ph-n-paperrow__thumb" },
-                paper.thumbnailUrl ? import_react33.default.createElement("img", { src: paper.thumbnailUrl, alt: "", loading: "lazy" }) : null
+                paper.thumbnailUrl ? import_react34.default.createElement("img", { src: paper.thumbnailUrl, alt: "", loading: "lazy" }) : null
               ),
-              import_react33.default.createElement(
+              import_react34.default.createElement(
                 "span",
                 { className: "ph-n-paperrow__text" },
-                import_react33.default.createElement("span", { className: "ph-n-paperrow__title" }, paperTitle2(t, paper)),
-                import_react33.default.createElement("span", { className: "ph-n-paperrow__meta" }, [paper.year, paper.venue, Number(paper.annotationCount) > 0 ? "\u6279\u6CE8 " + paper.annotationCount : ""].filter(Boolean).join(" \xB7 ") || t("common.noVenue"))
+                import_react34.default.createElement("span", { className: "ph-n-paperrow__title" }, paperTitle2(t, paper)),
+                import_react34.default.createElement("span", { className: "ph-n-paperrow__meta" }, [paper.year, paper.venue, Number(paper.annotationCount) > 0 ? "\u6279\u6CE8 " + paper.annotationCount : ""].filter(Boolean).join(" \xB7 ") || t("common.noVenue"))
               )
             )
           )
-        ) : import_react33.default.createElement(
+        ) : import_react34.default.createElement(
           "div",
           { className: "ph-n-paperview" },
-          import_react33.default.createElement(
+          import_react34.default.createElement(
             "div",
             { className: "ph-n-paperview__head" },
-            import_react33.default.createElement(
+            import_react34.default.createElement(
               "div",
               { className: "ph-n-paperview__titles" },
-              import_react33.default.createElement("div", { className: "ph-n-paperview__title" }, paperTitle2(t, open.paper)),
-              import_react33.default.createElement(
+              import_react34.default.createElement("div", { className: "ph-n-paperview__title" }, paperTitle2(t, open.paper)),
+              import_react34.default.createElement(
                 "div",
                 { className: "ph-n-paperview__meta" },
                 [text(open.paper && open.paper.title), open.paper && open.paper.year, open.paper && open.paper.venue].filter(Boolean).join(" \xB7 ")
               )
             ),
-            import_react33.default.createElement(IconButton, { icon: "close", title: t("notes.papers.closeView"), onClick: () => setOpen(null) })
+            import_react34.default.createElement(IconButton, { icon: "close", title: t("notes.papers.closeView"), onClick: () => setOpen(null) })
           ),
-          import_react33.default.createElement(
+          import_react34.default.createElement(
             "div",
             { className: "ph-n-paperview__pager" },
-            import_react33.default.createElement(IconButton, { icon: "chevronLeft", title: t("reader.prevPage"), disabled: page2 <= 1, onClick: () => goPage(page2 - 1) }),
-            import_react33.default.createElement("span", null, t("notes.papers.pageOf", { page: page2, total: open.total || 1 })),
-            import_react33.default.createElement(IconButton, { icon: "chevronRight", title: t("reader.nextPage"), disabled: page2 >= (open.total || 1), onClick: () => goPage(page2 + 1) }),
-            import_react33.default.createElement("span", { className: "ph-n-spacer" }),
-            import_react33.default.createElement(Button, { size: "sm", variant: "ghost", icon: "external", onClick: () => props.onOpenPaper && props.onOpenPaper(open.id, page2) }, t("notes.papers.open"))
+            import_react34.default.createElement(IconButton, { icon: "chevronLeft", title: t("reader.prevPage"), disabled: page2 <= 1, onClick: () => goPage(page2 - 1) }),
+            import_react34.default.createElement("span", null, t("notes.papers.pageOf", { page: page2, total: open.total || 1 })),
+            import_react34.default.createElement(IconButton, { icon: "chevronRight", title: t("reader.nextPage"), disabled: page2 >= (open.total || 1), onClick: () => goPage(page2 + 1) }),
+            import_react34.default.createElement("span", { className: "ph-n-spacer" }),
+            import_react34.default.createElement(Button, { size: "sm", variant: "ghost", icon: "external", onClick: () => props.onOpenPaper && props.onOpenPaper(open.id, page2) }, t("notes.papers.open"))
           ),
-          import_react33.default.createElement(
+          import_react34.default.createElement(
             "div",
             {
               className: "ph-n-readerpage",
@@ -26410,72 +26721,72 @@ function PaperPanel(props) {
               title: t("notes.papers.regionHint"),
               style: { "--ph-r-pageh": (pageHeight > 0 ? pageHeight : 640) + "px" }
             },
-            import_react33.default.createElement("img", {
+            import_react34.default.createElement("img", {
               className: "ph-n-readerpage__img",
               src: pageImageUrl2(open.id, page2, 1200),
               alt: t("reader.thumbPage", { page: page2 }),
               loading: "lazy",
               draggable: false
             }),
-            layer && selectable.words.length > 0 ? import_react33.default.createElement(PageTextLayer, { page: page2, words: selectable.words, width: selectable.width, height: selectable.height, active: true, interactive: true }) : null
+            layer && selectable.words.length > 0 ? import_react34.default.createElement(PageTextLayer, { page: page2, words: selectable.words, width: selectable.width, height: selectable.height, active: true, interactive: true }) : null
           ),
-          import_react33.default.createElement(
+          import_react34.default.createElement(
             "div",
             { className: "ph-n-paperview__section" },
-            import_react33.default.createElement("div", { className: "ph-n-paperview__section-title" }, import_react33.default.createElement(Icon, { name: "translate", size: 12 }), t("notes.papers.regionTitle")),
-            import_react33.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.regionHint")),
-            region.status === "loading" ? import_react33.default.createElement("div", { className: "ph-n-progress" }, import_react33.default.createElement(Spinner), import_react33.default.createElement("span", null, t("common.loading"))) : null,
-            region.status === "error" || region.status === "ready" && region.reason && !region.text ? import_react33.default.createElement(AiWarning, { t, compact: true, status: "error", reason: region.reason || t("common.unavailable") }) : null,
-            region.text ? import_react33.default.createElement(
+            import_react34.default.createElement("div", { className: "ph-n-paperview__section-title" }, import_react34.default.createElement(Icon, { name: "translate", size: 12 }), t("notes.papers.regionTitle")),
+            import_react34.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.regionHint")),
+            region.status === "loading" ? import_react34.default.createElement("div", { className: "ph-n-progress" }, import_react34.default.createElement(Spinner), import_react34.default.createElement("span", null, t("common.loading"))) : null,
+            region.status === "error" || region.status === "ready" && region.reason && !region.text ? import_react34.default.createElement(AiWarning, { t, compact: true, status: "error", reason: region.reason || t("common.unavailable") }) : null,
+            region.text ? import_react34.default.createElement(
               "div",
               { className: "ph-n-region-result" },
-              import_react33.default.createElement("div", { className: "ph-n-region-result__source" }, region.text),
-              region.translation ? import_react33.default.createElement("div", { className: "ph-n-region-result__translation" }, region.translation) : import_react33.default.createElement("div", { className: "ph-n-caption" }, t("notes.papers.regionPending"))
+              import_react34.default.createElement("div", { className: "ph-n-region-result__source" }, region.text),
+              region.translation ? import_react34.default.createElement("div", { className: "ph-n-region-result__translation" }, region.translation) : import_react34.default.createElement("div", { className: "ph-n-caption" }, t("notes.papers.regionPending"))
             ) : null,
-            import_react33.default.createElement(Button, { size: "sm", variant: "soft", icon: "sparkle", loading: busy2 === "ai", onClick: askAiPage }, t("notes.papers.askAi")),
-            ai.status === "loading" ? import_react33.default.createElement("div", { className: "ph-n-progress" }, import_react33.default.createElement(Spinner), import_react33.default.createElement("span", null, t("common.loading"))) : null,
-            ai.status === "error" ? import_react33.default.createElement(AiWarning, { t, compact: true, status: "error", reason: ai.reason, onRetry: askAiPage }) : null,
-            ai.answer ? import_react33.default.createElement("div", { className: "ph-n-region-result__translation" }, ai.answer) : null
+            import_react34.default.createElement(Button, { size: "sm", variant: "soft", icon: "sparkle", loading: busy2 === "ai", onClick: askAiPage }, t("notes.papers.askAi")),
+            ai.status === "loading" ? import_react34.default.createElement("div", { className: "ph-n-progress" }, import_react34.default.createElement(Spinner), import_react34.default.createElement("span", null, t("common.loading"))) : null,
+            ai.status === "error" ? import_react34.default.createElement(AiWarning, { t, compact: true, status: "error", reason: ai.reason, onRetry: askAiPage }) : null,
+            ai.answer ? import_react34.default.createElement("div", { className: "ph-n-region-result__translation" }, ai.answer) : null
           ),
-          import_react33.default.createElement(
+          import_react34.default.createElement(
             "div",
             { className: "ph-n-paperview__section" },
-            import_react33.default.createElement(
+            import_react34.default.createElement(
               "div",
               { className: "ph-n-paperview__section-title" },
-              import_react33.default.createElement(Icon, { name: "translate", size: 12 }),
+              import_react34.default.createElement(Icon, { name: "translate", size: 12 }),
               t("notes.papers.translation"),
-              import_react33.default.createElement(Button, { size: "sm", variant: "soft", icon: "translate", loading: busy2 === "translate", onClick: translatePage }, t("notes.papers.translatePage")),
-              import_react33.default.createElement("span", { className: "ph-n-spacer" }),
-              translation.blocks.length > 0 ? import_react33.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.translatedCount", { count: translation.blocks.filter((block) => block && block.translation).length })) : null
+              import_react34.default.createElement(Button, { size: "sm", variant: "soft", icon: "translate", loading: busy2 === "translate", onClick: translatePage }, t("notes.papers.translatePage")),
+              import_react34.default.createElement("span", { className: "ph-n-spacer" }),
+              translation.blocks.length > 0 ? import_react34.default.createElement("span", { className: "ph-n-caption" }, t("notes.papers.translatedCount", { count: translation.blocks.filter((block) => block && block.translation).length })) : null
             ),
-            translation.status === "translating" ? import_react33.default.createElement("div", { className: "ph-n-progress" }, import_react33.default.createElement(Spinner), import_react33.default.createElement("span", null, t("notes.papers.translating"))) : null,
-            translation.status === "error" || translation.reason && translation.blocks.length === 0 ? import_react33.default.createElement(AiWarning, { t, compact: true, status: "error", reason: translation.reason || t("common.unavailable"), onRetry: translatePage }) : null,
-            translation.blocks.length > 0 ? import_react33.default.createElement(
+            translation.status === "translating" ? import_react34.default.createElement("div", { className: "ph-n-progress" }, import_react34.default.createElement(Spinner), import_react34.default.createElement("span", null, t("notes.papers.translating"))) : null,
+            translation.status === "error" || translation.reason && translation.blocks.length === 0 ? import_react34.default.createElement(AiWarning, { t, compact: true, status: "error", reason: translation.reason || t("common.unavailable"), onRetry: translatePage }) : null,
+            translation.blocks.length > 0 ? import_react34.default.createElement(
               "div",
               { className: "ph-n-paperview__trans" },
               translation.blocks.slice(0, 14).map(
-                (block, index) => import_react33.default.createElement(
+                (block, index) => import_react34.default.createElement(
                   "div",
                   { key: block && block.id || index },
-                  block && block.translation ? import_react33.default.createElement("p", null, block.translation) : import_react33.default.createElement("p", { className: "muted" }, (block && block.text ? String(block.text).slice(0, 180) : "") + " \xB7 " + t("notes.papers.untranslated"))
+                  block && block.translation ? import_react34.default.createElement("p", null, block.translation) : import_react34.default.createElement("p", { className: "muted" }, (block && block.text ? String(block.text).slice(0, 180) : "") + " \xB7 " + t("notes.papers.untranslated"))
                 )
               )
-            ) : translation.status === "idle" ? import_react33.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.translateHint")) : null
+            ) : translation.status === "idle" ? import_react34.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.translateHint")) : null
           ),
-          import_react33.default.createElement(
+          import_react34.default.createElement(
             "div",
             { className: "ph-n-paperview__section" },
-            import_react33.default.createElement(
+            import_react34.default.createElement(
               "div",
               { className: "ph-n-paperview__section-title" },
-              import_react33.default.createElement(Icon, { name: "highlighter", size: 12 }),
+              import_react34.default.createElement(Icon, { name: "highlighter", size: 12 }),
               t("notes.papers.annotations"),
-              import_react33.default.createElement("span", { className: "ph-n-caption" }, String(annotations.items.length))
+              import_react34.default.createElement("span", { className: "ph-n-caption" }, String(annotations.items.length))
             ),
-            annotations.status === "ready" && annotations.items.length === 0 ? import_react33.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.noAnnotations")) : null,
+            annotations.status === "ready" && annotations.items.length === 0 ? import_react34.default.createElement("p", { className: "ph-n-caption" }, t("notes.papers.noAnnotations")) : null,
             annotations.items.slice(0, 8).map(
-              (annotation) => import_react33.default.createElement(
+              (annotation) => import_react34.default.createElement(
                 "button",
                 {
                   key: annotation.id,
@@ -26485,37 +26796,37 @@ function PaperPanel(props) {
                   title: t("reader.annot.openInReader"),
                   style: { textAlign: "left", cursor: "pointer" }
                 },
-                import_react33.default.createElement("span", { className: "ph-n-paperview__annot-dot", style: { background: ANNOTATION_COLORS2[annotation.color] || ANNOTATION_COLORS2.yellow } }),
-                import_react33.default.createElement("span", { className: "ph-n-paperview__annot-text" }, text(annotation.quote, annotation.comment) || annotation.kind)
+                import_react34.default.createElement("span", { className: "ph-n-paperview__annot-dot", style: { background: ANNOTATION_COLORS2[annotation.color] || ANNOTATION_COLORS2.yellow } }),
+                import_react34.default.createElement("span", { className: "ph-n-paperview__annot-text" }, text(annotation.quote, annotation.comment) || annotation.kind)
               )
             )
           ),
-          import_react33.default.createElement(
+          import_react34.default.createElement(
             "div",
             { className: "ph-n-paperview__section" },
-            import_react33.default.createElement(
+            import_react34.default.createElement(
               "div",
               { className: "ph-n-paperview__section-title" },
-              import_react33.default.createElement(Icon, { name: "note", size: 12 }),
+              import_react34.default.createElement(Icon, { name: "note", size: 12 }),
               t("notes.papers.useInNotes")
             ),
-            pageState.status === "loading" ? import_react33.default.createElement("div", { className: "ph-n-progress" }, import_react33.default.createElement(Spinner), import_react33.default.createElement("span", null, t("common.loading"))) : pageState.status === "error" ? import_react33.default.createElement("div", { className: "ph-n-error" }, import_react33.default.createElement(Icon, { name: "warning", size: 14 }), import_react33.default.createElement("span", null, pageState.error)) : import_react33.default.createElement(
+            pageState.status === "loading" ? import_react34.default.createElement("div", { className: "ph-n-progress" }, import_react34.default.createElement(Spinner), import_react34.default.createElement("span", null, t("common.loading"))) : pageState.status === "error" ? import_react34.default.createElement("div", { className: "ph-n-error" }, import_react34.default.createElement(Icon, { name: "warning", size: 14 }), import_react34.default.createElement("span", null, pageState.error)) : import_react34.default.createElement(
               "p",
               { className: "ph-n-caption", style: { maxHeight: 120, overflow: "hidden" } },
               (pageState.text || "").replace(/\s+/g, " ").slice(0, 360) || t("reader.noText")
             ),
-            import_react33.default.createElement(
+            import_react34.default.createElement(
               "div",
               { className: "ph-n-paperview__actions", style: { display: "flex", gap: 6, flexWrap: "wrap" } },
-              props.noteId ? import_react33.default.createElement(Button, {
+              props.noteId ? import_react34.default.createElement(Button, {
                 size: "sm",
                 variant: "soft",
                 icon: "link",
                 onClick: () => props.onLinkPaper && props.onLinkPaper(open.paper),
                 disabled: Array.isArray(props.linkedPaperIds) && props.linkedPaperIds.indexOf(open.id) >= 0
               }, t("notes.papers.linkCurrent")) : null,
-              import_react33.default.createElement(Button, { size: "sm", variant: "ghost", icon: "filter", onClick: () => props.onFilterByPaper && props.onFilterByPaper(open.paper) }, t("notes.fromPaper")),
-              import_react33.default.createElement(Button, { size: "sm", variant: "ghost", icon: "note", onClick: () => props.onCreateNote && props.onCreateNote(open.paper) }, t("notes.papers.newNote"))
+              import_react34.default.createElement(Button, { size: "sm", variant: "ghost", icon: "filter", onClick: () => props.onFilterByPaper && props.onFilterByPaper(open.paper) }, t("notes.fromPaper")),
+              import_react34.default.createElement(Button, { size: "sm", variant: "ghost", icon: "note", onClick: () => props.onCreateNote && props.onCreateNote(open.paper) }, t("notes.papers.newNote"))
             )
           )
         )
@@ -26525,7 +26836,7 @@ function PaperPanel(props) {
 }
 
 // src/surfaces/library/toolbar.jsx
-var import_react34 = __toESM(require("react"), 1);
+var import_react35 = __toESM(require("react"), 1);
 function operationId(prefix) {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
   return (prefix ? prefix + "-" : "") + random;
@@ -26541,8 +26852,8 @@ function ImportControl(props) {
   const t = props.t;
   const api = props.api;
   const controller = props.controller;
-  const [importing, setImporting] = import_react34.default.useState(false);
-  const fileRef = import_react34.default.useRef(null);
+  const [importing, setImporting] = import_react35.default.useState(false);
+  const fileRef = import_react35.default.useRef(null);
   const importFiles = (fileList) => {
     const files = Array.prototype.slice.call(fileList || []);
     if (files.length === 0) return;
@@ -26595,7 +26906,7 @@ function ImportControl(props) {
     }).catch((error) => props.pushToast("error", t("toast.importFailed", { message: describeError(t, error) }))).then(() => setImporting(false));
   };
   return h(
-    import_react34.default.Fragment,
+    import_react35.default.Fragment,
     null,
     h("input", {
       ref: fileRef,
@@ -26625,8 +26936,8 @@ function ImportControl(props) {
 }
 function LibraryToolbar(props) {
   const t = props.t;
-  const [narrow, setNarrow] = import_react34.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
-  import_react34.default.useEffect(() => {
+  const [narrow, setNarrow] = import_react35.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
+  import_react35.default.useEffect(() => {
     const onResize = () => setNarrow(typeof window !== "undefined" && window.innerWidth <= 1100);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -26693,11 +27004,11 @@ function BatchBar(props) {
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const { push } = useToasts();
-  const [tagOpen, setTagOpen] = import_react34.default.useState(false);
-  const [tagValue, setTagValue] = import_react34.default.useState("");
-  const [collectionOpen, setCollectionOpen] = import_react34.default.useState(false);
-  const [busy2, setBusy] = import_react34.default.useState("");
-  const [armed, setArmed] = import_react34.default.useState(false);
+  const [tagOpen, setTagOpen] = import_react35.default.useState(false);
+  const [tagValue, setTagValue] = import_react35.default.useState("");
+  const [collectionOpen, setCollectionOpen] = import_react35.default.useState(false);
+  const [busy2, setBusy] = import_react35.default.useState("");
+  const [armed, setArmed] = import_react35.default.useState(false);
   const count = snapshot4.selection.length;
   const selectedPapers = (snapshot4.items || []).filter((paper) => snapshot4.selection.indexOf(paper.id) >= 0);
   const allFavorite = selectedPapers.length > 0 && selectedPapers.every((paper) => paper.favorite === true);
@@ -26743,7 +27054,7 @@ function BatchBar(props) {
     h("span", { className: "ph-batch__count" }, t("library.selectedCount", { count })),
     h("span", { className: "ph-batch__divider" }),
     trashMode ? h(
-      import_react34.default.Fragment,
+      import_react35.default.Fragment,
       null,
       h(Button, { size: "sm", icon: "restore", loading: busy2 === "restore", onClick: () => {
         setBusy("restore");
@@ -26761,7 +27072,7 @@ function BatchBar(props) {
         }).catch((error) => toast("error", t("toast.failed", { message: describeError(t, error) }))).then(() => setBusy(""));
       } }, armed ? t("library.batch.purgeConfirm") : t("library.batch.purge"))
     ) : h(
-      import_react34.default.Fragment,
+      import_react35.default.Fragment,
       null,
       h(
         "div",
@@ -26855,7 +27166,7 @@ function BatchBar(props) {
 }
 
 // src/surfaces/library/item-table.jsx
-var import_react35 = __toESM(require("react"), 1);
+var import_react36 = __toESM(require("react"), 1);
 function thumbUrl(paper) {
   return paper && paper.thumbnailUrl || (paper && paper.id ? "/pappers-hall/thumb/" + paper.id + ".png" : "");
 }
@@ -26955,8 +27266,8 @@ function TableRow(props) {
 function GridCard(props) {
   const t = props.t;
   const paper = props.paper;
-  const [failed, setFailed] = import_react35.default.useState(false);
-  import_react35.default.useEffect(() => setFailed(false), [paper.id]);
+  const [failed, setFailed] = import_react36.default.useState(false);
+  import_react36.default.useEffect(() => setFailed(false), [paper.id]);
   return h(
     "article",
     {
@@ -26997,10 +27308,10 @@ function ItemTable(props) {
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const items2 = snapshot4.items || [];
-  const selection = import_react35.default.useMemo(() => new Set(snapshot4.selection || []), [snapshot4.selection]);
-  const selectedPapers = import_react35.default.useMemo(() => items2.filter((paper) => selection.has(paper.id)), [items2, selection]);
-  const scrollRef = import_react35.default.useRef(null);
-  const [focused, setFocused] = import_react35.default.useState(0);
+  const selection = import_react36.default.useMemo(() => new Set(snapshot4.selection || []), [snapshot4.selection]);
+  const selectedPapers = import_react36.default.useMemo(() => items2.filter((paper) => selection.has(paper.id)), [items2, selection]);
+  const scrollRef = import_react36.default.useRef(null);
+  const [focused, setFocused] = import_react36.default.useState(0);
   const ensureVisible = (index) => {
     const container = scrollRef.current;
     if (!container) return;
@@ -27155,10 +27466,10 @@ function ItemTable(props) {
 }
 
 // src/surfaces/library/details.jsx
-var import_react37 = __toESM(require("react"), 1);
+var import_react38 = __toESM(require("react"), 1);
 
 // src/surfaces/library/metrics.jsx
-var import_react36 = __toESM(require("react"), 1);
+var import_react37 = __toESM(require("react"), 1);
 function num2(value) {
   if (value === null || value === void 0 || value === "") return null;
   const n = Number(value);
@@ -27206,13 +27517,13 @@ function MetricsSection(props) {
   const t = props.t;
   const detail = props.detail;
   const metrics = detail && detail.metrics || {};
-  const [editing, setEditing] = import_react36.default.useState(false);
-  const [busy2, setBusy] = import_react36.default.useState(false);
-  const [failed, setFailed] = import_react36.default.useState("");
-  const [form, setForm] = import_react36.default.useState({});
-  const [saving, setSaving] = import_react36.default.useState(false);
-  const [armed, setArmed] = import_react36.default.useState(false);
-  import_react36.default.useEffect(() => {
+  const [editing, setEditing] = import_react37.default.useState(false);
+  const [busy2, setBusy] = import_react37.default.useState(false);
+  const [failed, setFailed] = import_react37.default.useState("");
+  const [form, setForm] = import_react37.default.useState({});
+  const [saving, setSaving] = import_react37.default.useState(false);
+  const [armed, setArmed] = import_react37.default.useState(false);
+  import_react37.default.useEffect(() => {
     setEditing(false);
     setFailed("");
   }, [detail && detail.id]);
@@ -27346,14 +27657,14 @@ function MetricsSection(props) {
 // src/surfaces/library/details.jsx
 function Field(props) {
   if (props.value == null || props.value === "") return null;
-  return h(import_react37.default.Fragment, null, h("dt", null, props.label), h("dd", { className: props.mono ? "ph-mono" : void 0 }, props.value));
+  return h(import_react38.default.Fragment, null, h("dt", null, props.label), h("dd", { className: props.mono ? "ph-mono" : void 0 }, props.value));
 }
 var figureDragActive = false;
 function figureUrl(figure) {
   return figure && figure.imageUrl || (figure && figure.id ? "/pappers-hall/figure/" + figure.id + ".png?width=480" : "");
 }
 function AbstractBlock(props) {
-  const [open, setOpen] = import_react37.default.useState(false);
+  const [open, setOpen] = import_react38.default.useState(false);
   const t = props.t;
   if (!props.text) {
     return h(
@@ -27381,12 +27692,12 @@ function InfoTab(props) {
   const detail = props.detail;
   const summary = props.summary;
   const controller = props.controller;
-  const [editing, setEditing] = import_react37.default.useState(false);
-  const [titleZh, setTitleZh] = import_react37.default.useState(firstText(detail && detail.titleZh, summary && summary.titleZh));
-  const [saving, setSaving] = import_react37.default.useState(false);
+  const [editing, setEditing] = import_react38.default.useState(false);
+  const [titleZh, setTitleZh] = import_react38.default.useState(firstText(detail && detail.titleZh, summary && summary.titleZh));
+  const [saving, setSaving] = import_react38.default.useState(false);
   const fileInfo = detail && detail.fileInfo || {};
   const sources = Array.isArray(detail && detail.sources) ? detail.sources : [];
-  import_react37.default.useEffect(() => {
+  import_react38.default.useEffect(() => {
     setTitleZh(firstText(detail && detail.titleZh, summary && summary.titleZh));
     setEditing(false);
   }, [detail && detail.id, detail && detail.titleZh, summary && summary.titleZh]);
@@ -27594,7 +27905,7 @@ function TagsTab(props) {
   const t = props.t;
   const detail = props.detail;
   const controller = props.controller;
-  const [value, setValue] = import_react37.default.useState("");
+  const [value, setValue] = import_react38.default.useState("");
   const tags = Array.isArray(detail.tags) ? detail.tags : [];
   const suggestions = (props.tags || []).filter((tag) => tags.indexOf(tag.name) < 0 && (!value || String(tag.name).toLowerCase().includes(value.toLowerCase()))).slice(0, 8);
   const add = () => {
@@ -27792,15 +28103,15 @@ function DetailsPane(props) {
 }
 
 // src/surfaces/library/duplicates.jsx
-var import_react38 = __toESM(require("react"), 1);
+var import_react39 = __toESM(require("react"), 1);
 function DuplicatesPane(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const controller = props.controller;
   const duplicates = snapshot4.duplicates || { status: "idle", groups: [], error: null };
-  const [primary, setPrimary] = import_react38.default.useState({});
-  const [busy2, setBusy] = import_react38.default.useState("");
-  import_react38.default.useEffect(() => {
+  const [primary, setPrimary] = import_react39.default.useState({});
+  const [busy2, setBusy] = import_react39.default.useState("");
+  import_react39.default.useEffect(() => {
     if (duplicates.status === "idle") controller.loadDuplicates();
   }, [duplicates.status, controller]);
   if (duplicates.status === "loading" || duplicates.status === "idle") {
@@ -27844,18 +28155,18 @@ function DuplicatesPane(props) {
 }
 
 // src/surfaces/library/dialogs.jsx
-var import_react39 = __toESM(require("react"), 1);
+var import_react40 = __toESM(require("react"), 1);
 function useDebounced(value, delay) {
-  const [debounced, setDebounced] = import_react39.default.useState(value);
-  import_react39.default.useEffect(() => {
+  const [debounced, setDebounced] = import_react40.default.useState(value);
+  import_react40.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(value), delay == null ? 240 : delay);
     return () => clearTimeout(timer2);
   }, [value, delay]);
   return debounced;
 }
 function Dialog(props) {
-  const ref = import_react39.default.useRef(null);
-  import_react39.default.useEffect(() => {
+  const ref = import_react40.default.useRef(null);
+  import_react40.default.useEffect(() => {
     const onKey = (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -27880,18 +28191,18 @@ function Dialog(props) {
 }
 function CommandPalette(props) {
   const t = props.t;
-  const [query, setQuery] = import_react39.default.useState("");
-  const [index, setIndex] = import_react39.default.useState(0);
-  const inputRef = import_react39.default.useRef(null);
+  const [query, setQuery] = import_react40.default.useState("");
+  const [index, setIndex] = import_react40.default.useState(0);
+  const inputRef = import_react40.default.useRef(null);
   const commands = (props.commands || []).filter((command) => !query || String(command.label + " " + (command.hint || "")).toLowerCase().indexOf(query.toLowerCase()) >= 0);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     if (props.open) {
       setQuery("");
       setIndex(0);
       setTimeout(() => inputRef.current && inputRef.current.focus(), 30);
     }
   }, [props.open]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     setIndex(0);
   }, [query]);
   if (!props.open) return null;
@@ -27942,17 +28253,17 @@ function CommandPalette(props) {
 function CitationDialog(props) {
   const t = props.t;
   const api = props.api;
-  const [query, setQuery] = import_react39.default.useState("");
+  const [query, setQuery] = import_react40.default.useState("");
   const debounced = useDebounced(query, 260);
-  const [results, setResults] = import_react39.default.useState([]);
-  const [picked, setPicked] = import_react39.default.useState(null);
-  const [style, setStyle] = import_react39.default.useState("bibtex");
-  const [preview, setPreview] = import_react39.default.useState("");
-  const [busy2, setBusy] = import_react39.default.useState(false);
-  const [error, setError] = import_react39.default.useState("");
-  const [tick, setTick] = import_react39.default.useState(0);
-  const dialogRef = import_react39.default.useRef(null);
-  import_react39.default.useEffect(() => {
+  const [results, setResults] = import_react40.default.useState([]);
+  const [picked, setPicked] = import_react40.default.useState(null);
+  const [style, setStyle] = import_react40.default.useState("bibtex");
+  const [preview, setPreview] = import_react40.default.useState("");
+  const [busy2, setBusy] = import_react40.default.useState(false);
+  const [error, setError] = import_react40.default.useState("");
+  const [tick, setTick] = import_react40.default.useState(0);
+  const dialogRef = import_react40.default.useRef(null);
+  import_react40.default.useEffect(() => {
     if (!props.open) return;
     setQuery("");
     setPicked(null);
@@ -27960,7 +28271,7 @@ function CitationDialog(props) {
     setError("");
     setTimeout(() => dialogRef.current && dialogRef.current.focus(), 30);
   }, [props.open]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     if (!props.open) return void 0;
     let alive = true;
     api("library.list", { query: debounced.trim() || void 0, state: "active", sort: "recent", limit: 8 }).then((value) => {
@@ -27972,7 +28283,7 @@ function CitationDialog(props) {
       alive = false;
     };
   }, [api, debounced, props.open, tick]);
-  import_react39.default.useEffect(() => {
+  import_react40.default.useEffect(() => {
     if (!picked) {
       setPreview("");
       return void 0;
@@ -28053,393 +28364,6 @@ function HelpDialog(props) {
     { title: t("help.title"), icon: "info", onClose: props.onClose, className: "ph-dialog--help", label: t("help.title") },
     h("div", { className: "ph-help" }, rows.map(([key, label]) => h("div", { key, className: "ph-help__row" }, h("kbd", { className: "ph-kbd" }, key), h("span", null, label)))),
     h("div", { className: "ph-dialog__foot" }, t("help.hint"))
-  );
-}
-
-// src/surfaces/onboarding.jsx
-var import_react40 = __toESM(require("react"), 1);
-var STEPS = ["welcome", "component", "sample", "tour", "done"];
-var STEP_ICONS = { welcome: "sparkles", component: "cpu", sample: "book", tour: "compass", done: "check" };
-function usePolling(active, run, intervalMs = 1800) {
-  import_react40.default.useEffect(() => {
-    if (!active) return void 0;
-    let cancelled = false;
-    const tick = async () => {
-      if (cancelled) return;
-      try {
-        await run();
-      } catch {
-      }
-    };
-    const timer2 = setInterval(tick, intervalMs);
-    tick();
-    return () => {
-      cancelled = true;
-      clearInterval(timer2);
-    };
-  }, [active, run, intervalMs]);
-}
-function OnboardingDialog(props) {
-  const t = props.t;
-  const open = props.open === true;
-  const [status, setStatus] = import_react40.default.useState(null);
-  const [stepIndex, setStepIndex] = import_react40.default.useState(0);
-  const [component, setComponent] = import_react40.default.useState(null);
-  const [installing, setInstalling] = import_react40.default.useState(false);
-  const [importing, setImporting] = import_react40.default.useState(false);
-  const [error, setError] = import_react40.default.useState("");
-  const [notice, setNotice] = import_react40.default.useState("");
-  const dialogRef = import_react40.default.useRef(null);
-  const loadStatus = import_react40.default.useCallback(async () => {
-    try {
-      const value = await defaultApi("onboarding.status");
-      setStatus(value);
-      return value;
-    } catch (failure) {
-      setError(describeError(t, failure));
-      return null;
-    }
-  }, [t]);
-  const loadComponent = import_react40.default.useCallback(async () => {
-    try {
-      const settings = await defaultApi("settings.get");
-      setComponent(settings && settings.models && settings.models.python || null);
-    } catch {
-      setComponent(null);
-    }
-  }, []);
-  import_react40.default.useEffect(() => {
-    if (!open) return;
-    setError("");
-    setNotice("");
-    loadStatus().then((value) => {
-      if (value === null || value === void 0) return;
-      const completed2 = value.state && value.state.completedSteps || [];
-      const next = STEPS.findIndex((step2) => !completed2.includes(step2));
-      setStepIndex(next === -1 ? STEPS.length - 1 : Math.max(0, next));
-    });
-    loadComponent();
-    setTimeout(() => {
-      try {
-        dialogRef.current && dialogRef.current.focus();
-      } catch {
-      }
-    }, 30);
-  }, [open, loadStatus, loadComponent]);
-  usePolling(open && installing, async () => {
-    await loadComponent();
-    const value = await loadStatus();
-    const installed4 = component !== null && component !== void 0 && component.installed === true;
-    if (installed4 || value && value.state && value.state.completedSteps.includes("component")) setInstalling(false);
-  });
-  const completeStep = import_react40.default.useCallback((step2, patch) => {
-    defaultApi("onboarding.completeStep", { step: step2 }).catch(() => {
-    }).then(() => patch ? defaultApi("onboarding.update", { patch }) : null).catch(() => {
-    }).then(() => loadStatus());
-  }, [loadStatus]);
-  const close = import_react40.default.useCallback((dismissed) => {
-    if (dismissed === true) {
-      defaultApi("onboarding.update", { patch: { dismissedAt: (/* @__PURE__ */ new Date()).toISOString() } }).catch(() => {
-      });
-    }
-    props.onClose();
-  }, [props]);
-  const goto = import_react40.default.useCallback((index) => {
-    setStepIndex(Math.max(0, Math.min(STEPS.length - 1, index)));
-    setError("");
-  }, []);
-  import_react40.default.useEffect(() => {
-    if (!open) return void 0;
-    const onKey = (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        close(true);
-      } else if (event.key === "ArrowRight" && event.metaKey !== true) {
-        if (event.target && /input|textarea/i.test(event.target.tagName || "")) return;
-        setStepIndex((previous) => Math.min(STEPS.length - 1, previous + 1));
-      } else if (event.key === "ArrowLeft" && event.metaKey !== true) {
-        if (event.target && /input|textarea/i.test(event.target.tagName || "")) return;
-        setStepIndex((previous) => Math.max(0, previous - 1));
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, close]);
-  const startInstall = import_react40.default.useCallback(() => {
-    setError("");
-    setNotice("");
-    setInstalling(true);
-    defaultApi("models.install", { kind: "python" }).then((result) => {
-      if (result && result.status === "queued") setNotice(t("onboarding.component.installStarted"));
-    }).catch((failure) => {
-      setInstalling(false);
-      setError(describeError(t, failure));
-    });
-  }, [t]);
-  const importSample = import_react40.default.useCallback(() => {
-    const path = status && status.sample ? status.sample.path : null;
-    if (!path) {
-      setError(t("onboarding.sample.missing"));
-      return;
-    }
-    setImporting(true);
-    setError("");
-    defaultApi("library.import", { paths: [path] }).then((result) => {
-      const accepted = result && result.acceptedItems || [];
-      const paperId = accepted.length > 0 ? accepted[0].paperId : null;
-      if (paperId === null) {
-        const duplicate = result && result.duplicates || [];
-        const existing = duplicate.length > 0 ? duplicate[0].paperId : null;
-        if (existing === null) throw new Error(t("onboarding.sample.failed"));
-        return defaultApi("onboarding.update", { patch: { sampleImported: true, samplePaperId: existing } });
-      }
-      return defaultApi("onboarding.update", { patch: { sampleImported: true, samplePaperId: paperId } });
-    }).then(() => {
-      completeStep("sample");
-      setNotice(t("onboarding.sample.imported"));
-    }).catch((failure) => setError(describeError(t, failure))).then(() => {
-      setImporting(false);
-      loadStatus();
-    });
-  }, [status, t, completeStep, loadStatus]);
-  if (!open) return null;
-  const step = STEPS[stepIndex];
-  const completed = status && status.state && status.state.completedSteps || [];
-  const samplePaperId = status && status.state ? status.state.samplePaperId : null;
-  const pythonInstalled = component !== null && component !== void 0 && component.installed === true;
-  const componentJob = component && component.job ? component.job : null;
-  const progress = componentJob && componentJob.progress && componentJob.progress.total > 0 ? Math.round(componentJob.progress.done / componentJob.progress.total * 100) : null;
-  const featureRows = [
-    ["book", t("onboarding.welcome.feature1.title"), t("onboarding.welcome.feature1.body")],
-    ["highlighter", t("onboarding.welcome.feature2.title"), t("onboarding.welcome.feature2.body")],
-    ["quote", t("onboarding.welcome.feature3.title"), t("onboarding.welcome.feature3.body")]
-  ];
-  const tourCards = [
-    ["book", t("onboarding.tour.read.title"), t("onboarding.tour.read.body")],
-    ["highlighter", t("onboarding.tour.annotate.title"), t("onboarding.tour.annotate.body")],
-    ["note", t("onboarding.tour.note.title"), t("onboarding.tour.note.body")],
-    ["quote", t("onboarding.tour.cite.title"), t("onboarding.tour.cite.body")]
-  ];
-  const openSample = () => {
-    const id = samplePaperId || props.samplePaperId || null;
-    if (id === null || typeof props.onOpenPaper !== "function") return;
-    close(false);
-    props.onOpenPaper(id);
-  };
-  const body = (() => {
-    if (step === "welcome") {
-      return h(
-        import_react40.default.Fragment,
-        null,
-        h(
-          "div",
-          { className: "ph-onb__hero" },
-          h("span", { className: "ph-onb__badge" }, h(Icon, { name: "sparkles", size: 13 }), t("onboarding.badge")),
-          h("h1", { className: "ph-onb__title" }, t("onboarding.welcome.title")),
-          h("p", { className: "ph-onb__lead" }, t("onboarding.welcome.lead"))
-        ),
-        h("div", { className: "ph-onb__features" }, featureRows.map(
-          ([icon, title2, text2]) => h(
-            "div",
-            { key: title2, className: "ph-onb__feature" },
-            h("span", { className: "ph-onb__featureicon" }, h(Icon, { name: icon, size: 16 })),
-            h("div", null, h("strong", null, title2), h("p", null, text2))
-          )
-        )),
-        h("div", { className: "ph-onb__meta" }, h(Icon, { name: "info", size: 13 }), h("span", null, t("onboarding.welcome.meta")))
-      );
-    }
-    if (step === "component") {
-      return h(
-        import_react40.default.Fragment,
-        null,
-        h("h2", { className: "ph-onb__stepTitle" }, t("onboarding.component.title")),
-        h("p", { className: "ph-onb__stepLead" }, t("onboarding.component.lead")),
-        h(
-          "div",
-          { className: "ph-onb__install" + (pythonInstalled ? " ph-onb__install--done" : "") },
-          h(
-            "div",
-            { className: "ph-onb__installhead" },
-            h("span", { className: "ph-onb__installicon" }, h(Icon, { name: pythonInstalled ? "check" : "cpu", size: 18 })),
-            h(
-              "div",
-              null,
-              h("strong", null, t("onboarding.component.name")),
-              h("span", { className: "ph-caption" }, pythonInstalled ? t("onboarding.component.installedHint") : t("onboarding.component.sizeHint"))
-            ),
-            pythonInstalled ? h("span", { className: "ph-onb__pill" }, t("onboarding.component.installed")) : null
-          ),
-          h("ul", { className: "ph-onb__list" }, [
-            t("onboarding.component.benefit1"),
-            t("onboarding.component.benefit2"),
-            t("onboarding.component.benefit3")
-          ].map((line) => h("li", { key: line }, h(Icon, { name: "check", size: 13 }), h("span", null, line)))),
-          installing || componentJob ? h(
-            "div",
-            { className: "ph-onb__progress" },
-            h("div", { className: "ph-onb__progressbar" }, h("span", { style: { width: (progress === null ? 12 : Math.max(6, progress)) + "%" } })),
-            h("span", { className: "ph-caption" }, progress === null ? t("onboarding.component.preparing") : t("onboarding.component.progress", { percent: progress }))
-          ) : null,
-          h(
-            "div",
-            { className: "ph-onb__actions" },
-            pythonInstalled ? h(Button, { variant: "primary", size: "sm", icon: "arrowRight", onClick: () => goto(stepIndex + 1) }, t("onboarding.common.next")) : h(Button, { variant: "primary", size: "sm", icon: "download", loading: installing, disabled: installing, onClick: startInstall }, installing ? t("onboarding.component.installing") : t("onboarding.component.install")),
-            pythonInstalled ? null : h("button", { type: "button", className: "ph-onb__link", onClick: () => goto(stepIndex + 1) }, t("onboarding.component.later"))
-          )
-        ),
-        h("p", { className: "ph-onb__fineprint" }, t("onboarding.component.license"))
-      );
-    }
-    if (step === "sample") {
-      return h(
-        import_react40.default.Fragment,
-        null,
-        h("h2", { className: "ph-onb__stepTitle" }, t("onboarding.sample.title")),
-        h("p", { className: "ph-onb__stepLead" }, t("onboarding.sample.lead")),
-        h(
-          "div",
-          { className: "ph-onb__sample" },
-          h(
-            "div",
-            { className: "ph-onb__paper" },
-            h("div", { className: "ph-onb__paperhead" }, h(Icon, { name: "book", size: 14 }), t("onboarding.sample.paperTitle")),
-            h("div", { className: "ph-onb__pages" }, [1, 2, 3].map(
-              (page2) => h(
-                "div",
-                { key: page2, className: "ph-onb__page" + (page2 === 3 ? " ph-onb__page--scan" : "") },
-                h("div", { className: "ph-onb__pagelines" }),
-                h("span", null, page2)
-              )
-            )),
-            h("p", { className: "ph-caption" }, t("onboarding.sample.paperHint"))
-          ),
-          h(
-            "div",
-            { className: "ph-onb__sampleactions" },
-            samplePaperId !== null ? h(Button, { variant: "primary", size: "sm", icon: "book", onClick: openSample }, t("onboarding.sample.open")) : h(Button, { variant: "primary", size: "sm", icon: "download", loading: importing, disabled: importing, onClick: importSample }, importing ? t("onboarding.sample.importing") : t("onboarding.sample.import"))
-          )
-        )
-      );
-    }
-    if (step === "tour") {
-      return h(
-        import_react40.default.Fragment,
-        null,
-        h("h2", { className: "ph-onb__stepTitle" }, t("onboarding.tour.title")),
-        h("p", { className: "ph-onb__stepLead" }, t("onboarding.tour.lead")),
-        h("div", { className: "ph-onb__tour" }, tourCards.map(
-          ([icon, title2, text2], index) => h(
-            "div",
-            { key: title2, className: "ph-onb__tourcard" },
-            h("span", { className: "ph-onb__tournum" }, String(index + 1)),
-            h("span", { className: "ph-onb__touricon" }, h(Icon, { name: icon, size: 15 })),
-            h("strong", null, title2),
-            h("p", null, text2)
-          )
-        )),
-        h(
-          "div",
-          { className: "ph-onb__actions" },
-          h(Button, { variant: "primary", size: "sm", icon: "book", onClick: openSample, disabled: samplePaperId === null }, t("onboarding.tour.openSample")),
-          h(Button, { size: "sm", icon: "compass", onClick: () => {
-            close(false);
-            if (typeof props.onOpenDrawer === "function") props.onOpenDrawer();
-          } }, t("onboarding.tour.openDrawer"))
-        )
-      );
-    }
-    return h(
-      import_react40.default.Fragment,
-      null,
-      h("div", { className: "ph-onb__donehead" }, h("span", { className: "ph-onb__doneicon" }, h(Icon, { name: "check", size: 20 }))),
-      h("h2", { className: "ph-onb__stepTitle ph-onb__stepTitle--center" }, t("onboarding.done.title")),
-      h("p", { className: "ph-onb__stepLead ph-onb__stepLead--center" }, t("onboarding.done.lead")),
-      h("ul", { className: "ph-onb__checks" }, [
-        [t("onboarding.done.check1"), completed.includes("component") || pythonInstalled],
-        [t("onboarding.done.check2"), completed.includes("sample") || samplePaperId !== null],
-        [t("onboarding.done.check3"), completed.includes("tour")]
-      ].map(([label, done]) => h("li", { key: label, className: done ? "is-done" : "" }, h(Icon, { name: done ? "check" : "minus", size: 13 }), h("span", null, label)))),
-      h("div", { className: "ph-onb__meta" }, h(Icon, { name: "settings", size: 13 }), h("span", null, t("onboarding.done.hint"))),
-      h(
-        "div",
-        { className: "ph-onb__actions ph-onb__actions--center" },
-        h(Button, { variant: "primary", size: "sm", icon: "check", onClick: () => {
-          completeStep("done");
-          close(true);
-        } }, t("onboarding.done.finish"))
-      )
-    );
-  })();
-  return h(
-    "div",
-    { className: "ph-onbbackdrop", role: "presentation", onMouseDown: (event) => {
-      if (event.target === event.currentTarget) close(true);
-    } },
-    h(
-      "div",
-      {
-        className: "ph-onb",
-        role: "dialog",
-        "aria-modal": "true",
-        "aria-label": t("onboarding.title"),
-        tabIndex: -1,
-        ref: dialogRef
-      },
-      h(
-        "div",
-        { className: "ph-onb__rail" },
-        h("div", { className: "ph-onb__brand" }, h(Icon, { name: "book", size: 15 }), h("span", null, t("onboarding.title"))),
-        h("ol", { className: "ph-onb__steps" }, STEPS.map(
-          (name, index) => h(
-            "li",
-            {
-              key: name,
-              className: "ph-onb__step" + (index === stepIndex ? " is-current" : "") + (completed.includes(name) ? " is-done" : "")
-            },
-            h(
-              "button",
-              { type: "button", className: "ph-onb__stepbtn", onClick: () => goto(index), "aria-current": index === stepIndex ? "step" : void 0 },
-              h("span", { className: "ph-onb__dot" }, completed.includes(name) ? h(Icon, { name: "check", size: 11 }) : String(index + 1)),
-              h("span", { className: "ph-onb__steplabel" }, t("onboarding.steps." + name))
-            )
-          )
-        )),
-        h(
-          "div",
-          { className: "ph-onb__railfoot" },
-          h("span", { className: "ph-caption" }, t("onboarding.progress", { current: stepIndex + 1, total: STEPS.length })),
-          h("button", { type: "button", className: "ph-onb__link", onClick: () => close(true) }, t("onboarding.skip"))
-        )
-      ),
-      h(
-        "div",
-        { className: "ph-onb__main" },
-        h(
-          "div",
-          { className: "ph-onb__top" },
-          h("span", { className: "ph-onb__steptag" }, h(Icon, { name: STEP_ICONS[step], size: 13 }), t("onboarding.steps." + step)),
-          h(IconButton, { icon: "close", title: t("onboarding.close"), onClick: () => close(true) })
-        ),
-        h("div", { className: "ph-onb__body" }, body),
-        error !== "" ? h("div", { className: "ph-onb__error", role: "alert" }, h(Icon, { name: "info", size: 13 }), h("span", null, error)) : null,
-        notice !== "" && error === "" ? h("div", { className: "ph-onb__notice" }, h(Icon, { name: "check", size: 13 }), h("span", null, notice)) : null,
-        h(
-          "div",
-          { className: "ph-onb__footer" },
-          h(Button, { size: "sm", icon: "arrowLeft", disabled: stepIndex === 0, onClick: () => goto(stepIndex - 1) }, t("onboarding.back")),
-          h(
-            "div",
-            { className: "ph-onb__footerRight" },
-            h("span", { className: "ph-caption" }, t("onboarding.footerHint")),
-            step === "done" ? null : h(Button, { variant: "primary", size: "sm", icon: "arrowRight", onClick: () => {
-              completeStep(step);
-              goto(stepIndex + 1);
-            } }, t("onboarding.next"))
-          )
-        )
-      )
-    )
   );
 }
 
@@ -28766,7 +28690,6 @@ function LibraryShell(props) {
   const [paletteOpen, setPaletteOpen] = import_react41.default.useState(false);
   const [citationOpen, setCitationOpen] = import_react41.default.useState(false);
   const [helpOpen, setHelpOpen] = import_react41.default.useState(false);
-  const [onboardingOpen, setOnboardingOpen] = import_react41.default.useState(false);
   const [inlineNoteId, setInlineNoteId] = import_react41.default.useState(() => {
     if (props.initialNoteId) return String(props.initialNoteId);
     try {
@@ -28808,18 +28731,9 @@ function LibraryShell(props) {
     }
   }, [inlineNoteId]);
   import_react41.default.useEffect(() => {
-    let cancelled = false;
-    defaultApi("onboarding.status").then((value) => {
-      if (cancelled || value === null || value === void 0) return;
-      if (value.shouldAutoOpen === true) setOnboardingOpen(true);
-    }).catch(() => {
-    });
-    const reopen = () => setOnboardingOpen(true);
-    window.addEventListener("pappers-hall:onboarding", reopen);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("pappers-hall:onboarding", reopen);
-    };
+    onboardingStore.refresh();
+    onboardingStore.startPolling();
+    return () => onboardingStore.stopPolling();
   }, []);
   import_react41.default.useEffect(() => {
     if (snapshot4.status === "idle") library.refresh();
@@ -29016,7 +28930,9 @@ function LibraryShell(props) {
         onOpenDuplicates: () => library.setView("duplicates"),
         onRefresh: () => library.refresh(),
         onHelp: () => setHelpOpen(true),
-        onOnboarding: () => setOnboardingOpen(true)
+        onOnboarding: () => {
+          onboardingStore.reset();
+        }
       })
     )
   );
@@ -29035,7 +28951,9 @@ function LibraryShell(props) {
   ) : h(
     "div",
     { className: "ph-pane ph-pane--mid" + (snapshot4.selection.length > 0 ? " ph-pane--batch" : "") },
-    h(LibraryToolbar, { t, api, snapshot: snapshot4, controller: library, pushToast: push, scopeRef: rootRef, onOpenOnboarding: () => setOnboardingOpen(true) }),
+    h(LibraryToolbar, { t, api, snapshot: snapshot4, controller: library, pushToast: push, scopeRef: rootRef, onOpenOnboarding: () => {
+      onboardingStore.reset();
+    } }),
     h(SearchFilters, { t, snapshot: snapshot4, controller: library }),
     snapshot4.filters.view === "duplicates" ? h(DuplicatesPane, { t, snapshot: snapshot4, controller: library, pushToast: push }) : h(ItemTable, {
       t,
@@ -29063,6 +28981,10 @@ function LibraryShell(props) {
       snapshot: snapshot4,
       controller: library,
       figuresActive: props.figuresActive,
+      onboardingCard: h(OnboardingChecklist, { t, onOpenPaper: (paperId, page2) => openPaper(paperId, page2 || 1), onImported: (paperId) => {
+        library.refresh();
+        if (typeof openPaper === "function") openPaper(paperId, 1);
+      } }),
       duplicatesActive: snapshot4.filters.view === "duplicates",
       onOpenDuplicates: () => library.setView("duplicates"),
       onOpenFigures: props.onOpenFigures,
@@ -29160,12 +29082,6 @@ function LibraryShell(props) {
     h(StatusBar, { t, api, snapshot: snapshot4, library }),
     h(ToastStack, { toasts, onDismiss: dismiss2 }),
     h(FeedbackHost, null),
-    h(OnboardingDialog, { open: onboardingOpen, onClose: () => setOnboardingOpen(false), t, onOpenPaper: (paperId) => openPaper(paperId, 1), onOpenDrawer: () => {
-      try {
-        bus.emit("pappers-hall:open-drawer");
-      } catch (error) {
-      }
-    } }),
     h(CommandPalette, { open: paletteOpen, onClose: () => setPaletteOpen(false), t, commands }),
     h(CitationDialog, { open: citationOpen, onClose: () => setCitationOpen(false), t, api, onInsert: insertCitation, onToast: (tone, text2) => notify(tone, text2) }),
     h(HelpDialog, { open: helpOpen, onClose: () => setHelpOpen(false), t }),
@@ -32226,10 +32142,8 @@ function SettingsPanel(props) {
                 "div",
                 { className: "ph-settings__testrow" },
                 h(Button, { size: "sm", icon: "compass", onClick: () => {
-                  try {
-                    window.dispatchEvent(new CustomEvent("pappers-hall:onboarding"));
-                  } catch (error2) {
-                  }
+                  defaultApi("onboarding.reset").catch(() => {
+                  }).then(() => notify("success", t("settings.guide.reset"), null, 2500));
                 } }, t("settings.guide.reopen")),
                 h("span", { className: "ph-caption" }, t("settings.guide.body"))
               )
@@ -33333,75 +33247,38 @@ var ZH = {
   "settings.job.model.install": "\u6A21\u578B\u5B89\u88C5",
   "settings.job.embedding.index": "\u7D22\u5F15\u91CD\u5EFA",
   "settings.job.ocr.index": "OCR \u7D22\u5F15",
-  "onboarding.title": "\u8BBA\u6587\u4E2D\u5FC3 \xB7 \u4F7F\u7528\u5F15\u5BFC",
-  "onboarding.badge": "\u9996\u6B21\u4F7F\u7528 \xB7 \u7EA6 2 \u5206\u949F",
   "onboarding.reopen": "\u4F7F\u7528\u5F15\u5BFC",
-  "onboarding.steps.welcome": "\u6B22\u8FCE",
-  "onboarding.steps.component": "\u672C\u5730\u7EC4\u4EF6",
-  "onboarding.steps.sample": "\u793A\u4F8B\u8BBA\u6587",
-  "onboarding.steps.tour": "\u6838\u5FC3\u529F\u80FD",
-  "onboarding.steps.done": "\u5B8C\u6210",
-  "onboarding.common.next": "\u4E0B\u4E00\u6B65",
-  "onboarding.progress": "{current} / {total}",
-  "onboarding.skip": "\u8DF3\u8FC7\u5F15\u5BFC",
-  "onboarding.close": "\u5173\u95ED\u5F15\u5BFC",
-  "onboarding.back": "\u4E0A\u4E00\u6B65",
-  "onboarding.next": "\u4E0B\u4E00\u6B65",
-  "onboarding.footerHint": "\u968F\u65F6\u53EF\u4ECE\u5DE5\u5177\u680F\u6216\u8BBE\u7F6E\u91CD\u65B0\u6253\u5F00",
-  "onboarding.welcome.title": "\u628A\u8BBA\u6587\u8BFB\u6210\u81EA\u5DF1\u7684\u4E1C\u897F",
-  "onboarding.welcome.lead": "\u8BBA\u6587\u4E2D\u5FC3\u628A\u9605\u8BFB\u3001\u6279\u6CE8\u3001\u7B14\u8BB0\u548C\u5BF9\u8BDD\u5F15\u7528\u653E\u5728\u4E00\u5904\u3002\u8DDF\u7740\u8FD9\u4E2A\u5F15\u5BFC\u8D70\u4E00\u904D\uFF0C\u4F60\u4F1A\u7528\u5B83\u8BFB\u5B8C\u7B2C\u4E00\u7BC7\u8BBA\u6587\u3002",
-  "onboarding.welcome.feature1.title": "\u8FDE\u7EED\u9605\u8BFB",
-  "onboarding.welcome.feature1.body": "\u9875\u9762\u3001\u76EE\u5F55\u3001\u56FE\u8868\u90FD\u5728\u540C\u4E00\u4E2A\u9605\u8BFB\u5668\u91CC\uFF0C\u7FFB\u8BD1\u4E0E AI \u8F85\u52A9\u5C31\u8FD1\u53EF\u7528\u3002",
-  "onboarding.welcome.feature2.title": "\u8FB9\u8BFB\u8FB9\u8BB0",
-  "onboarding.welcome.feature2.body": "\u62D6\u9009\u6587\u5B57\u5373\u53EF\u9AD8\u4EAE\uFF0C\u6279\u6CE8\u4F1A\u8FDB\u5165\u4FA7\u680F\uFF0C\u4E5F\u80FD\u76F4\u63A5\u6574\u7406\u6210\u7ED3\u6784\u5316\u7B14\u8BB0\u3002",
-  "onboarding.welcome.feature3.title": "\u5F15\u7528\u5230\u5BF9\u8BDD",
-  "onboarding.welcome.feature3.body": "\u628A\u8BBA\u6587\u3001\u56FE\u8868\u3001\u6279\u6CE8\u6216\u7B14\u8BB0\u5F15\u7528\u5230\u5BF9\u8BDD\uFF0CAgent \u4F1A\u4ECE\u8FD9\u4EFD\u6750\u6599\u51FA\u53D1\u56DE\u7B54\u3002",
-  "onboarding.welcome.meta": "\u5F15\u5BFC\u91CC\u4F7F\u7528\u7684\u662F\u4E00\u7BC7\u5185\u7F6E\u793A\u4F8B\u8BBA\u6587\uFF0C\u968F\u65F6\u53EF\u4EE5\u5728\u8BBA\u6587\u5217\u8868\u91CC\u5220\u9664\u3002",
-  "onboarding.component.title": "\u5148\u88C5\u4E00\u6B21\u672C\u5730\u7EC4\u4EF6\uFF08\u63A8\u8350\uFF09",
-  "onboarding.component.lead": "\u5B83\u8BA9 PDF \u89E3\u6790\u66F4\u5FEB\uFF0C\u5E76\u89E3\u9501\u626B\u63CF\u9875 OCR \u4E0E\u7248\u9762\u5206\u6790\u3002\u5168\u90E8\u672C\u5730\u8FD0\u884C\uFF0C\u6587\u732E\u5185\u5BB9\u4E0D\u4F1A\u79BB\u5F00\u4F60\u7684\u7535\u8111\u3002",
-  "onboarding.component.name": "PyMuPDF \xB7 PP-OCRv6 \xB7 PP-DocLayout-S",
-  "onboarding.component.sizeHint": "\u4E0B\u8F7D\u7EA6 342 MB\uFF1APDF \u5F15\u64CE + \u4E24\u4E2A\u56FA\u5B9A\u6A21\u578B\uFF1B\u88C5\u4E00\u6B21\u5373\u53EF",
-  "onboarding.component.installedHint": "\u5DF2\u5B89\u88C5\uFF0CPDF \u89E3\u6790\u5DF2\u5207\u6362\u5230 PyMuPDF",
-  "onboarding.component.benefit1": "PyMuPDF\uFF1A\u6587\u672C\u3001\u8BCD\u6846\u3001\u56FE\u7247\u4E0E\u9875\u9762\u6E32\u67D3\u4E00\u6B21\u5B8C\u6210",
-  "onboarding.component.benefit2": "PP-OCRv6\uFF1A\u626B\u63CF\u7248\u9875\u9762\u4E5F\u80FD\u641C\u7D22\u3001\u5F15\u7528\u4E0E\u9605\u8BFB",
-  "onboarding.component.benefit3": "PP-DocLayout-S\uFF1A\u8BC6\u522B\u6807\u9898\u3001\u56FE\u6CE8\u3001\u8868\u683C\u4E0E\u9875\u7709\u9875\u811A",
-  "onboarding.component.install": "\u4E0B\u8F7D\u5E76\u5B89\u88C5",
-  "onboarding.component.installing": "\u6B63\u5728\u5B89\u88C5\u2026",
-  "onboarding.component.installStarted": "\u5DF2\u5F00\u59CB\u5B89\u88C5\uFF0C\u53EF\u4EE5\u7EE7\u7EED\u4E0B\u4E00\u6B65\uFF0C\u88C5\u5B8C\u4F1A\u81EA\u52A8\u751F\u6548\u3002",
-  "onboarding.component.preparing": "\u6B63\u5728\u51C6\u5907\u5B89\u88C5\u2026",
-  "onboarding.component.progress": "\u5B89\u88C5\u4E2D {percent}%",
-  "onboarding.component.installed": "\u5DF2\u5B89\u88C5",
-  "onboarding.component.later": "\u7A0D\u540E\u518D\u8BF4\uFF0C\u5148\u53BB\u8BFB\u793A\u4F8B",
-  "onboarding.component.license": "PyMuPDF \u91C7\u7528 AGPL-3.0\uFF0C\u4EC5\u5B89\u88C5\u5230\u672C\u673A\u72EC\u7ACB Python \u73AF\u5883\uFF0C\u4E0D\u968F\u63D2\u4EF6\u5206\u53D1\u3002\u4E5F\u53EF\u4EE5\u5728\u300C\u8BBE\u7F6E \u2192 \u80FD\u529B\u4E0E\u6A21\u578B\u300D\u91CC\u5B89\u88C5\u6216\u5378\u8F7D\u3002",
-  "onboarding.sample.title": "\u6253\u5F00\u793A\u4F8B\u8BBA\u6587",
-  "onboarding.sample.lead": "\u8FD9\u7BC7\u5185\u7F6E\u8BBA\u6587\u6709 3 \u9875\uFF1A\u6587\u5B57\u9875\u3001\u56FE\u8868\u9875\uFF0C\u8FD8\u6709\u4E00\u9875\u662F\u626B\u63CF\u56FE\u7247\u2014\u2014\u6B63\u597D\u7528\u6765\u4F53\u9A8C OCR\u3002",
-  "onboarding.sample.paperTitle": "Pappers-Hall \u793A\u4F8B\u8BBA\u6587",
-  "onboarding.sample.paperHint": "\u7B2C 1\u20132 \u9875\u6709\u6587\u5B57\u5C42\uFF0C\u7B2C 3 \u9875\u662F\u626B\u63CF\u56FE\u7247",
-  "onboarding.sample.import": "\u5BFC\u5165\u793A\u4F8B\u8BBA\u6587",
-  "onboarding.sample.importing": "\u6B63\u5728\u5BFC\u5165\u2026",
-  "onboarding.sample.imported": "\u793A\u4F8B\u8BBA\u6587\u5DF2\u5BFC\u5165\u3002",
-  "onboarding.sample.open": "\u6253\u5F00\u793A\u4F8B\u8BBA\u6587",
-  "onboarding.sample.missing": "\u793A\u4F8B\u6587\u4EF6\u7F3A\u5931\uFF0C\u8BF7\u91CD\u65B0\u5B89\u88C5\u63D2\u4EF6\u3002",
-  "onboarding.sample.failed": "\u5BFC\u5165\u793A\u4F8B\u8BBA\u6587\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5\u3002",
-  "onboarding.tour.title": "\u56DB\u4E2A\u52A8\u4F5C\u5C31\u591F\u4E86",
-  "onboarding.tour.lead": "\u4E4B\u540E\u7684\u6BCF\u6B21\u4F7F\u7528\uFF0C\u57FA\u672C\u90FD\u5728\u8FD9\u56DB\u4EF6\u4E8B\u91CC\u5FAA\u73AF\u3002",
-  "onboarding.tour.read.title": "\u9605\u8BFB",
-  "onboarding.tour.read.body": "\u7FFB\u9875\u3001\u8DF3\u76EE\u5F55\u3001\u770B\u56FE\u8868\uFF1B\u53F3\u952E\u539F\u6587\u53EF\u4EE5\u590D\u5236\u5F15\u7528\u3002",
-  "onboarding.tour.annotate.title": "\u6279\u6CE8",
-  "onboarding.tour.annotate.body": "\u62D6\u9009\u6587\u5B57\u9AD8\u4EAE\uFF0C\u533A\u57DF\u6846\u9009\u548C\u4FBF\u7B7E\u5728\u53F3\u4E0B\u89D2\u5DE5\u5177\u6761\u3002",
-  "onboarding.tour.note.title": "\u7B14\u8BB0",
-  "onboarding.tour.note.body": "\u5728\u9AD8\u4EAE\u4E0A\u53F3\u952E\u5373\u53EF\u5199\u6210\u7B14\u8BB0\uFF0C\u4E5F\u53EF\u4EE5\u76F4\u63A5\u65B0\u5EFA\u7ED3\u6784\u7B14\u8BB0\u3002",
-  "onboarding.tour.cite.title": "\u5F15\u7528\u5230\u5BF9\u8BDD",
-  "onboarding.tour.cite.body": "\u70B9\u300C\u5F15\u7528\u5230\u5BF9\u8BDD\u300D\uFF0C\u6750\u6599\u4F1A\u4EE5\u5F15\u7528\u6807\u7B7E\u8FDB\u5165\u8349\u7A3F\u3002",
-  "onboarding.tour.openSample": "\u6253\u5F00\u793A\u4F8B\u8BBA\u6587",
-  "onboarding.tour.openDrawer": "\u53BB\u5BF9\u8BDD\u8BD5\u8BD5",
-  "onboarding.done.title": "\u53EF\u4EE5\u5F00\u59CB\u4E86",
-  "onboarding.done.lead": "\u5F15\u5BFC\u968F\u65F6\u53EF\u4EE5\u91CD\u5F00\uFF1B\u4E0B\u9762\u8FD9\u4E9B\u5DF2\u7ECF\u5C31\u7EEA\u3002",
-  "onboarding.done.check1": "\u672C\u5730\u7EC4\u4EF6\u5DF2\u5B89\u88C5\uFF08PDF \u52A0\u901F + OCR + \u7248\u9762\uFF09",
-  "onboarding.done.check2": "\u793A\u4F8B\u8BBA\u6587\u5DF2\u5BFC\u5165",
-  "onboarding.done.check3": "\u770B\u8FC7\u56DB\u4E2A\u6838\u5FC3\u52A8\u4F5C",
-  "onboarding.done.hint": "\u60F3\u518D\u770B\u4E00\u904D\uFF1A\u5DE5\u5177\u680F\u300C\u66F4\u591A \u2192 \u4F7F\u7528\u5F15\u5BFC\u300D\uFF0C\u6216\u8BBE\u7F6E\u91CC\u7684\u300C\u4F7F\u7528\u5F15\u5BFC\u300D\u3002",
-  "onboarding.done.finish": "\u5F00\u59CB\u4F7F\u7528",
+  "onboarding.card.title": "\u5F00\u59CB\u4F7F\u7528",
+  "onboarding.card.count": "{done}/{total}",
+  "onboarding.card.collapse": "\u6536\u8D77",
+  "onboarding.card.expand": "\u5C55\u5F00",
+  "onboarding.card.hint": "\u8FD9\u4E9B\u4EFB\u52A1\u5728\u4E3B\u754C\u9762\u91CC\u4F1A\u81EA\u52A8\u6253\u52FE",
+  "onboarding.card.auto": "\u81EA\u52A8\u6253\u52FE",
+  "onboarding.card.dismiss": "\u9690\u85CF\u5F15\u5BFC",
+  "onboarding.card.finish": "\u5B8C\u6210\u5F15\u5BFC",
+  "onboarding.task.component": "\u5B89\u88C5\u672C\u5730\u7EC4\u4EF6",
+  "onboarding.task.component.hint": "\u6253\u5F00\u8BBE\u7F6E\u5B89\u88C5 PyMuPDF\u3001PP-OCRv6 \u4E0E PP-DocLayout-S",
+  "onboarding.task.component.action": "\u53BB\u5B89\u88C5",
+  "onboarding.task.sample": "\u5BFC\u5165\u793A\u4F8B\u8BBA\u6587",
+  "onboarding.task.sample.hint": "\u5185\u7F6E 3 \u9875 PDF\uFF0C\u5176\u4E2D\u4E00\u9875\u662F\u6CA1\u6709\u6587\u5B57\u5C42\u7684\u626B\u63CF\u9875",
+  "onboarding.task.sample.action": "\u5BFC\u5165",
+  "onboarding.task.read": "\u9605\u8BFB\u793A\u4F8B\u8BBA\u6587",
+  "onboarding.task.read.hint": "\u5728\u9605\u8BFB\u5668\u91CC\u7FFB\u9875\u3001\u770B\u56FE\u8868\u3001\u8DF3\u76EE\u5F55",
+  "onboarding.task.read.action": "\u6253\u5F00",
+  "onboarding.task.annotate": "\u9AD8\u4EAE\u4E00\u6BB5\u6587\u5B57",
+  "onboarding.task.annotate.hint": "\u5728\u793A\u4F8B\u8BBA\u6587\u91CC\u62D6\u9009\u4E00\u6BB5\u6587\u5B57\uFF0C\u9009\u4E00\u4E2A\u989C\u8272\u5373\u53EF\u9AD8\u4EAE",
+  "onboarding.task.annotate.action": "\u53BB\u9AD8\u4EAE",
+  "onboarding.task.note": "\u9AD8\u4EAE\u5199\u6210\u7B14\u8BB0",
+  "onboarding.task.note.hint": "\u53F3\u4FA7\u5207\u5230\u300C\u7B14\u8BB0\u300D\u6807\u7B7E\uFF0C\u70B9\u300C\u65B0\u5EFA\u7B14\u8BB0\u300D\uFF0C\u4F1A\u81EA\u52A8\u4E0E\u8FD9\u7BC7\u8BBA\u6587\u7ED1\u5B9A",
+  "onboarding.task.note.action": "\u5199\u7B14\u8BB0",
+  "onboarding.task.cite": "\u5F15\u7528\u5230\u5BF9\u8BDD",
+  "onboarding.task.cite.hint": "\u5728\u9605\u8BFB\u5668\u91CC\u70B9\u300C\u5F15\u7528\u5230\u5BF9\u8BDD\u300D\uFF0C\u6750\u6599\u4F1A\u4EE5\u5F15\u7528\u6807\u7B7E\u8FDB\u5165\u8349\u7A3F",
+  "onboarding.task.cite.action": "\u53BB\u5F15\u7528",
+  "onboarding.coach.read": "\u7FFB\u5230\u4E0B\u4E00\u9875\u770B\u770B\uFF0C\u56FE\u8868\u548C\u76EE\u5F55\u90FD\u53EF\u4EE5\u70B9",
+  "onboarding.coach.annotate": "\u62D6\u9009\u4E00\u6BB5\u6587\u5B57\uFF0C\u51FA\u73B0\u914D\u8272\u6761\u540E\u9009\u4E00\u4E2A\u989C\u8272",
+  "onboarding.coach.note": "\u53F3\u4FA7\u70B9\u300C\u7B14\u8BB0\u300D\u2192\u300C\u65B0\u5EFA\u7B14\u8BB0\u300D\uFF0C\u5199\u4E00\u53E5\u5C31\u7B97\u5B8C\u6210",
+  "onboarding.coach.cite": "\u70B9\u9876\u90E8\u300C\u5F15\u7528\u5230\u5BF9\u8BDD\u300D\uFF0C\u6750\u6599\u4F1A\u8FDB\u5165\u8349\u7A3F",
+  "settings.guide.reset": "\u5F15\u5BFC\u5DF2\u91CD\u7F6E\uFF0C\u56DE\u5230\u8BBA\u6587\u4E2D\u5FC3\u67E5\u770B\u4EFB\u52A1\u6E05\u5355",
   "settings.section.guide": "\u4F7F\u7528\u5F15\u5BFC",
   "settings.guide.hint": "\u9996\u6B21\u4F7F\u7528\u7684\u6D41\u7A0B\u53EF\u4EE5\u968F\u65F6\u91CD\u770B",
   "settings.guide.reopen": "\u91CD\u65B0\u67E5\u770B\u4F7F\u7528\u5F15\u5BFC",
@@ -34759,75 +34636,38 @@ var EN = {
   "settings.job.model.install": "Model install",
   "settings.job.embedding.index": "Index rebuild",
   "settings.job.ocr.index": "OCR indexing",
-  "onboarding.title": "Paper centre \xB7 Getting started",
-  "onboarding.badge": "First run \xB7 about 2 minutes",
   "onboarding.reopen": "Getting started",
-  "onboarding.steps.welcome": "Welcome",
-  "onboarding.steps.component": "Local component",
-  "onboarding.steps.sample": "Sample paper",
-  "onboarding.steps.tour": "Core actions",
-  "onboarding.steps.done": "Done",
-  "onboarding.common.next": "Next",
-  "onboarding.progress": "{current} / {total}",
-  "onboarding.skip": "Skip the guide",
-  "onboarding.close": "Close the guide",
-  "onboarding.back": "Back",
-  "onboarding.next": "Next",
-  "onboarding.footerHint": "Reopen any time from the toolbar or settings",
-  "onboarding.welcome.title": "Read papers into your own work",
-  "onboarding.welcome.lead": "The paper centre keeps reading, annotation, notes and conversation references in one place. Walk through this short guide and you will have read your first paper.",
-  "onboarding.welcome.feature1.title": "Continuous reading",
-  "onboarding.welcome.feature1.body": "Pages, outline and figures live in one reader, with translation and AI help next to them.",
-  "onboarding.welcome.feature2.title": "Annotate as you read",
-  "onboarding.welcome.feature2.body": "Select text to highlight; annotations land in the side panel and can become structured notes.",
-  "onboarding.welcome.feature3.title": "Cite into the conversation",
-  "onboarding.welcome.feature3.body": "Reference papers, figures, annotations or notes so the Agent answers from that material.",
-  "onboarding.welcome.meta": "The guide uses one bundled sample paper; you can delete it from the library at any time.",
-  "onboarding.component.title": "Install the local component first (recommended)",
-  "onboarding.component.lead": "It makes PDF extraction faster and unlocks OCR for scanned pages plus layout analysis. Everything runs locally; no document leaves your machine.",
-  "onboarding.component.name": "PyMuPDF \xB7 PP-OCRv6 \xB7 PP-DocLayout-S",
-  "onboarding.component.sizeHint": "About 342 MB: PDF engine plus two fixed models, installed once",
-  "onboarding.component.installedHint": "Installed \u2014 PDF extraction already runs on PyMuPDF",
-  "onboarding.component.benefit1": "PyMuPDF: text, word boxes, images and rendering in one pass",
-  "onboarding.component.benefit2": "PP-OCRv6: scanned pages become searchable and citable",
-  "onboarding.component.benefit3": "PP-DocLayout-S: titles, captions, tables, headers and footers",
-  "onboarding.component.install": "Download & install",
-  "onboarding.component.installing": "Installing\u2026",
-  "onboarding.component.installStarted": "Installation started. You can continue; it applies when finished.",
-  "onboarding.component.preparing": "Preparing the install\u2026",
-  "onboarding.component.progress": "Installing {percent}%",
-  "onboarding.component.installed": "Installed",
-  "onboarding.component.later": "Later \u2014 go read the sample",
-  "onboarding.component.license": "PyMuPDF is AGPL-3.0 and is installed into a private local Python environment, never bundled. You can install or remove it later under Settings \u2192 Capabilities.",
-  "onboarding.sample.title": "Open the sample paper",
-  "onboarding.sample.lead": "The bundled paper has 3 pages: text, a figure, and one rasterised page \u2014 perfect for trying OCR.",
-  "onboarding.sample.paperTitle": "Pappers-Hall sample paper",
-  "onboarding.sample.paperHint": "Pages 1\u20132 have a text layer; page 3 is a scan",
-  "onboarding.sample.import": "Import the sample",
-  "onboarding.sample.importing": "Importing\u2026",
-  "onboarding.sample.imported": "Sample paper imported.",
-  "onboarding.sample.open": "Open the sample paper",
-  "onboarding.sample.missing": "The sample file is missing; reinstall the plugin.",
-  "onboarding.sample.failed": "Could not import the sample paper; please retry.",
-  "onboarding.tour.title": "Four actions cover it",
-  "onboarding.tour.lead": "Day to day you will cycle through these.",
-  "onboarding.tour.read.title": "Read",
-  "onboarding.tour.read.body": "Turn pages, jump in the outline, inspect figures; copy citations from the original text.",
-  "onboarding.tour.annotate.title": "Annotate",
-  "onboarding.tour.annotate.body": "Select to highlight; area selection and sticky notes sit in the bottom-right toolbar.",
-  "onboarding.tour.note.title": "Note",
-  "onboarding.tour.note.body": "Right-click a highlight to turn it into a note, or start a structured note directly.",
-  "onboarding.tour.cite.title": "Cite to the conversation",
-  "onboarding.tour.cite.body": "Choose Cite to conversation and the material enters the draft as a reference chip.",
-  "onboarding.tour.openSample": "Open the sample paper",
-  "onboarding.tour.openDrawer": "Try it in the conversation",
-  "onboarding.done.title": "You are all set",
-  "onboarding.done.lead": "The guide can be reopened any time; these are ready.",
-  "onboarding.done.check1": "Local component installed (PDF speed-up + OCR + layout)",
-  "onboarding.done.check2": "Sample paper imported",
-  "onboarding.done.check3": "Saw the four core actions",
-  "onboarding.done.hint": "To replay it: toolbar More \u2192 Getting started, or the same entry in Settings.",
-  "onboarding.done.finish": "Start using it",
+  "onboarding.card.title": "Getting started",
+  "onboarding.card.count": "{done}/{total}",
+  "onboarding.card.collapse": "Collapse",
+  "onboarding.card.expand": "Expand",
+  "onboarding.card.hint": "These tasks tick themselves as you use the product",
+  "onboarding.card.auto": "Auto-ticks",
+  "onboarding.card.dismiss": "Hide the guide",
+  "onboarding.card.finish": "Finish the guide",
+  "onboarding.task.component": "Install local component",
+  "onboarding.task.component.hint": "Install PyMuPDF, PP-OCRv6 and PP-DocLayout-S from Settings",
+  "onboarding.task.component.action": "Install",
+  "onboarding.task.sample": "Import sample paper",
+  "onboarding.task.sample.hint": "A bundled 3-page PDF, one page is a scan without a text layer",
+  "onboarding.task.sample.action": "Import",
+  "onboarding.task.read": "Read the sample",
+  "onboarding.task.read.hint": "Turn pages, inspect figures, jump in the outline",
+  "onboarding.task.read.action": "Open",
+  "onboarding.task.annotate": "Highlight a passage",
+  "onboarding.task.annotate.hint": "Select text in the sample paper, then pick a colour",
+  "onboarding.task.annotate.action": "Highlight",
+  "onboarding.task.note": "Turn it into a note",
+  "onboarding.task.note.hint": "Open the Notes tab in the right panel and use New note; it binds to this paper automatically",
+  "onboarding.task.note.action": "Write",
+  "onboarding.task.cite": "Cite into conversation",
+  "onboarding.task.cite.hint": "Use Cite to conversation in the reader; the material lands in the draft as a chip",
+  "onboarding.task.cite.action": "Cite",
+  "onboarding.coach.read": "Turn a page: figures and the outline are clickable",
+  "onboarding.coach.annotate": "Select some text, then pick a colour from the swatch",
+  "onboarding.coach.note": "Right panel \u2192 Notes \u2192 New note; one sentence is enough",
+  "onboarding.coach.cite": "Use Cite to conversation at the top to bring it into the draft",
+  "settings.guide.reset": "Guide reset \u2014 check the task list in the paper centre",
   "settings.section.guide": "Getting started",
   "settings.guide.hint": "The first-run walkthrough can be replayed",
   "settings.guide.reopen": "Replay the getting-started guide",

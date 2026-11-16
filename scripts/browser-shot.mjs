@@ -498,9 +498,8 @@ async function main() {
       console.log('theme probe:', JSON.stringify(info).slice(0, 500))
     }
     if (STEPS.includes('onboarding')) {
-      // The app-level login dialog can sit above plugin surfaces on a fresh profile.
       const dismissed = await evaluate(`(() => {
-        const dialogs = [...document.querySelectorAll('[role="dialog"], .ph-modalbackdrop')].filter((dialog) => !dialog.closest('.ph-onbbackdrop') && !dialog.classList.contains('ph-onb'))
+        const dialogs = [...document.querySelectorAll('[role="dialog"], .ph-modalbackdrop')].filter((dialog) => !dialog.closest('.ph-onbcard') && !dialog.classList.contains('ph-onb'))
         let closed = 0
         for (const dialog of dialogs) {
           const close = dialog.querySelector('button[aria-label*="关闭"], button[aria-label*="Close"], .ph-dialog__head button, button[aria-label*="close"]')
@@ -509,63 +508,53 @@ async function main() {
         return closed
       })()`)
       console.log('app dialogs dismissed:', dismissed)
-      await sleep(500)
+      await sleep(600)
       await ensureLibrary()
       await sleep(1200)
-      // If the guide did not auto-open (already dismissed in an earlier run), open
-      // it from the toolbar overflow menu so the walkthrough can still be captured.
-      const ensureOpen = await evaluate(`(() => {
-        if (document.querySelector('.ph-onb')) return 'open'
-        const menu = [...document.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || '') === '更多' || (b.getAttribute('title') || '') === '更多')
-        if (!menu) return 'no-menu'
-        menu.click()
-        return 'clicked'
+      const cardState = () => evaluate(`(() => {
+        const card = document.querySelector('.ph-onbcard')
+        if (!card) return { found: false }
+        const rows = [...card.querySelectorAll('.ph-onbtask')].map((row) => ({
+          label: (row.querySelector('.ph-onbtask__label')?.textContent || '').trim(),
+          done: row.classList.contains('is-done'),
+          next: row.classList.contains('is-next'),
+          action: (row.querySelector('.ph-iconbtn, .ph-btn')?.getAttribute('aria-label') || '').trim(),
+        }))
+        return { found: true, count: (card.querySelector('.ph-onbcard__count')?.textContent || '').trim(), rows }
       })()`)
-      await sleep(400)
-      await evaluate(`(() => {
-        const item = [...document.querySelectorAll('.ph-menu__item')].find((b) => /使用引导|Getting started/.test((b.textContent || '').trim()))
-        if (item) item.click()
-        return Boolean(item)
+      const before = await cardState()
+      console.log('checklist before:', JSON.stringify(before).slice(0, 700))
+      await shot('40-checklist')
+      const clicked = await evaluate(`(() => {
+        const rows = [...document.querySelectorAll('.ph-onbtask')]
+        for (const row of rows) {
+          if (row.classList.contains('is-done')) continue
+          const button = row.querySelector('.ph-iconbtn, .ph-btn')
+          if (button) { button.click(); return (button.getAttribute('aria-label') || button.title || 'action') }
+        }
+        return null
       })()`)
-      await sleep(800)
-      console.log('onboarding open:', ensureOpen, await evaluate("Boolean(document.querySelector('.ph-onb'))"))
-      await shot('30-onboarding-welcome')
-      const stepNext = async (label) => {
-        const clicked = await evaluate(`(() => {
-          const buttons = [...document.querySelectorAll('.ph-onb button')]
-          const next = buttons.find((button) => /下一步|Next/.test((button.textContent || '').trim()))
-          if (next) { next.click(); return true }
-          return false
-        })()`)
-        await sleep(600)
-        if (label) await shot(label)
-        return clicked
-      }
-      await stepNext('31-onboarding-component')
-      const installState = await evaluate(`(() => {
-        const text = document.querySelector('.ph-onb')?.innerText || ''
-        return { hasInstall: /下载并安装|Download & install/.test(text), text: text.slice(0, 300) }
+      console.log('clicked first unfinished row action:', clicked)
+      await sleep(6000)
+      console.log('checklist after import:', JSON.stringify(await cardState()).slice(0, 700))
+      await shot('41-checklist-imported')
+      const opened = await evaluate(`(() => {
+        const rows = [...document.querySelectorAll('.ph-onbtask')]
+        for (const row of rows) {
+          if (row.classList.contains('is-done')) continue
+          const button = row.querySelector('.ph-btn')
+          if (button) { button.click(); return (button.textContent || '').trim() }
+        }
+        return null
       })()`)
-      console.log('component step:', JSON.stringify(installState))
-      await stepNext('32-onboarding-sample')
-      const imported = await evaluate(`(() => {
-        const buttons = [...document.querySelectorAll('.ph-onb button')]
-        const button = buttons.find((item) => /导入示例论文|Import the sample/.test((item.textContent || '').trim()))
-        if (!button) return false
-        button.click()
-        return true
-      })()`)
-      await sleep(4000)
-      const importState = await evaluate(`(() => ({
-        text: (document.querySelector('.ph-onb')?.innerText || '').slice(0, 400),
-        hasOpen: [...document.querySelectorAll('.ph-onb button')].some((b) => /打开示例论文|Open the sample/.test((b.textContent || '').trim())),
+      console.log('clicked open action:', opened)
+      await sleep(2500)
+      const readerState = await evaluate(`(() => ({
+        reader: Boolean(document.querySelector('[data-ph-reader]')),
+        coach: document.querySelector('.ph-onbcoach__text')?.textContent || null,
       }))()`)
-      console.log('sample imported:', imported, JSON.stringify(importState).slice(0, 500))
-      await shot('33-onboarding-sample-imported')
-      await stepNext('34-onboarding-tour')
-      await stepNext('35-onboarding-done')
-      const doneState = await evaluate(`(() => (document.querySelector('.ph-onb')?.innerText || '').slice(0, 400))()`)
-      console.log('done step:', JSON.stringify(doneState).slice(0, 500))
+      console.log('reader/coach:', JSON.stringify(readerState))
+      await shot('42-reader-coach')
     }
 
     if (want('library') || want('all')) {

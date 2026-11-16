@@ -530,7 +530,7 @@ export function SettingsPanel(props) {
                 ),
                 h(Section, { icon: 'compass', title: t('settings.section.guide'), hint: t('settings.guide.hint') },
                   h('div', { className: 'ph-settings__testrow' },
-                    h(Button, { size: 'sm', icon: 'compass', onClick: () => { try { window.dispatchEvent(new CustomEvent('pappers-hall:onboarding')) } catch (error) { /* ignore */ } } }, t('settings.guide.reopen')),
+                    h(Button, { size: 'sm', icon: 'compass', onClick: () => { defaultApi('onboarding.reset').catch(() => {}).then(() => notify('success', t('settings.guide.reset'), null, 2500)) } }, t('settings.guide.reopen')),
                     h('span', { className: 'ph-caption' }, t('settings.guide.body')),
                   ),
                 ),

@@ -400,7 +400,7 @@ async function applyHostNow(ctx, config) {
   })
   const ai = createAi({ ctx, store, layout, pdf, config: resolved, logger })
   const settings = createSettings({ db, config: resolved, logger, identity, layout })
-  const onboarding = createOnboarding({ db, logger })
+  const onboarding = createOnboarding({ db, python, logger })
   const translate = createTranslate({ ctx, store, ai, config: resolved, logger, settings })
   const embedding = createEmbedding({ db, config: resolved, logger, settings })
   // v0.17 notes workbench: own tables + FTS + independent note_embeddings index.

@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **First-run guide**: a five-step walkthrough in the paper centre that installs the local component inline, imports a bundled 3-page sample paper (two text pages plus one scanned page for OCR), and introduces the four core actions. Reopenable from the toolbar, settings or an event; state persists in `onboarding.state`.
+- **First-run guide as a task list**: six tasks in the library side pane whose ticks are derived from the database (component installed, sample imported/read, highlight, linked note, reference bundle), plus a reader coach chip that advances with the next real action. Imports the bundled 3-page sample paper (two text pages plus one scanned page for OCR) inline; re-openable from the toolbar or Settings, and it never claims progress the user did not make.
 
 - **Installer and migration fixes found by installing on a real machine**: `onnxruntime` is now installed and verified (rapidocr does not pull it), a stopped worker can no longer cancel its replacement's readiness ping, and schema v9 stores the OCR geometry scanned pages need for a reader structure.
 

@@ -201,6 +201,7 @@ export function CollectionsPane(props) {
     h(
       'div',
       { className: 'ph-left__scroll ph-scroll' },
+      props.onboardingCard || null,
       h(
         'div',
         { className: 'ph-left__section ph-left__section--browse' },

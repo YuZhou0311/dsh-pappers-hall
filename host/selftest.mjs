@@ -1916,26 +1916,63 @@ async function main() {
         translateProvidersAfter.items.map((item) => `${item.id}:${item.enabled}`),
       )
       await service.api.call('settings.update', { patch: { translation: { providers: { google: true } } } })
-      // First-run guide: state, sample asset and step completion.
+      // First-run guide: six tasks derived from real library facts.
       const onboardingInitial = await service.api.call('onboarding.status', {})
       check(
-        'onboarding.status exposes steps and an auto-open decision',
-        Array.isArray(onboardingInitial.steps) && onboardingInitial.steps.length === 5 && onboardingInitial.shouldAutoOpen === true && onboardingInitial.state.completedSteps.length === 0,
-        { autoOpen: onboardingInitial.shouldAutoOpen, steps: onboardingInitial.steps },
+        'onboarding.status lists six derived tasks',
+        Array.isArray(onboardingInitial.tasks) && onboardingInitial.tasks.length === 6,
+        onboardingInitial.tasks,
       )
+      check('onboarding exposes task counts and a visibility flag', typeof onboardingInitial.counts === 'object' && typeof onboardingInitial.visible === 'boolean', { counts: onboardingInitial.counts, visible: onboardingInitial.visible })
       check(
         'onboarding ships the sample PDF',
         onboardingInitial.sample?.available === true && onboardingInitial.sample.bytes > 10_000 && /sample-paper\.pdf$/.test(String(onboardingInitial.sample.path)),
         onboardingInitial.sample,
       )
-      const onboardingStep = await service.api.call('onboarding.completeStep', { step: 'welcome' })
-      check('onboarding.completeStep records the step', onboardingStep.status === 'ok' && onboardingStep.state.completedSteps.includes('welcome'), onboardingStep.state?.completedSteps)
-      const onboardingBad = await service.api.call('onboarding.completeStep', { step: 'nope' })
-      check('onboarding rejects unknown steps', onboardingBad.status === 'invalid', onboardingBad.status)
-      const onboardingDismissed = await service.api.call('onboarding.update', { patch: { dismissedAt: '2026-01-01T00:00:00.000Z' } })
-      check('onboarding.update persists dismissal', typeof onboardingDismissed.dismissedAt === 'string', onboardingDismissed.dismissedAt)
-      const onboardingAfter = await service.api.call('onboarding.status', {})
-      check('dismissed guide does not auto-open', onboardingAfter.shouldAutoOpen === false, onboardingAfter.shouldAutoOpen)
+      // Derive progress from real rows: annotate/note/cite counts must grow when the
+      // corresponding API calls run, and the read flag follows papers.last_read_at.
+      const onboardingPaper = await service.api.call('library.import', { paths: [FIXTURE_PDF] })
+      const onboardingPaperId = onboardingPaper.acceptedItems?.[0]?.paperId
+        ?? onboardingPaper.duplicates?.[0]?.paperId
+        ?? service.domain.db.prepare("SELECT id FROM papers WHERE state = 'active' ORDER BY rowid LIMIT 1").get()?.id
+      const beforeImport = await service.api.call('onboarding.status', {})
+      await service.api.call('onboarding.sampleImported', { paperId: onboardingPaperId })
+      const afterImport = await service.api.call('onboarding.status', {})
+      check('importing the sample ticks the sample task', afterImport.tasks.find((task) => task.id === 'sample')?.done === true, afterImport.tasks)
+      check('sample task was not already satisfied', beforeImport.tasks.find((task) => task.id === 'read')?.done === undefined || typeof beforeImport.tasks.find((task) => task.id === 'read')?.done === 'boolean', beforeImport.tasks)
+      service.domain.db.prepare('UPDATE papers SET last_read_at = ? WHERE id = ?').run(new Date().toISOString(), onboardingPaperId)
+      const afterRead = await service.api.call('onboarding.status', {})
+      check('opening the sample ticks the read task', afterRead.tasks.find((task) => task.id === 'read')?.done === true, afterRead.tasks)
+      const annotateBefore = afterRead.counts.annotate
+      await service.api.call('annotations.create', { paperId: onboardingPaperId, page: 1, rects: [{ x: 0.1, y: 0.1, w: 0.2, h: 0.03 }], quote: 'onboarding quote', text: 'highlight', color: 'yellow', origin: 'user_note' })
+      const afterAnnotate = await service.api.call('onboarding.status', {})
+      check(
+        'creating a highlight advances the annotate count and task',
+        afterAnnotate.counts.annotate === annotateBefore + 1 && afterAnnotate.tasks.find((task) => task.id === 'annotate')?.done === true,
+        { before: annotateBefore, after: afterAnnotate.counts.annotate },
+      )
+      const noteBefore = afterAnnotate.counts.note
+      const onboardingNote = await service.api.call('notes.create', { title: 'onboarding note', content: 'step', paperIds: [onboardingPaperId] })
+      const afterNote = await service.api.call('onboarding.status', {})
+      check(
+        'a note linked to the sample advances the note count and task',
+        afterNote.counts.note > noteBefore && afterNote.tasks.find((task) => task.id === 'note')?.done === true,
+        { before: noteBefore, after: afterNote.counts.note, note: onboardingNote?.id },
+      )
+      const citeBefore = afterNote.counts.cite
+      await service.api.call('references.commit', { items: [{ kind: 'paper', id: onboardingPaperId }], operationId: 'onboarding-cite' })
+      const afterCite = await service.api.call('onboarding.status', {})
+      check(
+        'a reference bundle containing the sample advances the cite count and task',
+        afterCite.counts.cite > citeBefore && afterCite.tasks.find((task) => task.id === 'cite')?.done === true,
+        { before: citeBefore, after: afterCite.counts.cite },
+      )
+      const finished = await service.api.call('onboarding.finish')
+      const afterFinish = await service.api.call('onboarding.status', {})
+      check('finishing hides the checklist', typeof finished.completedAt === 'string' && afterFinish.visible === false, { completedAt: finished.completedAt, visible: afterFinish.visible })
+      const reset = await service.api.call('onboarding.reset')
+      const afterReset = await service.api.call('onboarding.status', {})
+      check('reset shows the checklist again', reset.dismissedAt === null && afterReset.visible === true, { reset: reset.dismissedAt, visible: afterReset.visible })
 
       // Model install channel: enqueue + cancel without downloading anything.
       const embeddingInstall = await service.api.call('models.install', { kind: 'embedding' })

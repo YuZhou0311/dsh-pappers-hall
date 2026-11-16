@@ -24,7 +24,8 @@ import { ItemTable } from './item-table.jsx'
 import { DetailsPane } from './details.jsx'
 import { DuplicatesPane } from './duplicates.jsx'
 import { CitationDialog, CommandPalette, HelpDialog } from './dialogs.jsx'
-import { OnboardingDialog } from '../onboarding.jsx'
+import { OnboardingChecklist } from '../onboarding-card.jsx'
+import { onboardingStore } from '../../core/onboarding.js'
 import { FeedbackHost, notify } from '../../core/feedback.js'
 import { installUndoShortcuts, undo } from '../../core/undo.js'
 import { deliverMaterials } from '../../core/dnd.js'
@@ -384,7 +385,6 @@ export function LibraryShell(props) {
   const [paletteOpen, setPaletteOpen] = React.useState(false)
   const [citationOpen, setCitationOpen] = React.useState(false)
   const [helpOpen, setHelpOpen] = React.useState(false)
-  const [onboardingOpen, setOnboardingOpen] = React.useState(false)
   const [inlineNoteId, setInlineNoteId] = React.useState(() => {
     if (props.initialNoteId) return String(props.initialNoteId)
     try { return String(sessionStorage.getItem('pappers-hall:inline-note') || '') } catch { return '' }
@@ -423,19 +423,13 @@ export function LibraryShell(props) {
     }
   }, [inlineNoteId])
 
-  // First-run guide: open by itself once, and allow reopening from the toolbar,
-  // the settings panel (custom event) or ⌘K.
+  // The checklist is a real task list: poll its progress while the library is
+  // mounted so rows tick themselves as the user actually reads, highlights,
+  // notes and cites.
   React.useEffect(() => {
-    let cancelled = false
-    defaultApi('onboarding.status')
-      .then((value) => {
-        if (cancelled || value === null || value === undefined) return
-        if (value.shouldAutoOpen === true) setOnboardingOpen(true)
-      })
-      .catch(() => {})
-    const reopen = () => setOnboardingOpen(true)
-    window.addEventListener('pappers-hall:onboarding', reopen)
-    return () => { cancelled = true; window.removeEventListener('pappers-hall:onboarding', reopen) }
+    onboardingStore.refresh()
+    onboardingStore.startPolling()
+    return () => onboardingStore.stopPolling()
   }, [])
 
   React.useEffect(() => {
@@ -624,7 +618,7 @@ export function LibraryShell(props) {
         onOpenDuplicates: () => library.setView('duplicates'),
         onRefresh: () => library.refresh(),
         onHelp: () => setHelpOpen(true),
-        onOnboarding: () => setOnboardingOpen(true),
+        onOnboarding: () => { onboardingStore.reset() },
       }),
     ),
   )
@@ -646,7 +640,7 @@ export function LibraryShell(props) {
     : h(
         'div',
         { className: 'ph-pane ph-pane--mid' + (snapshot.selection.length > 0 ? ' ph-pane--batch' : '') },
-        h(LibraryToolbar, { t: t, api: api, snapshot: snapshot, controller: library, pushToast: push, scopeRef: rootRef, onOpenOnboarding: () => setOnboardingOpen(true) }),
+        h(LibraryToolbar, { t: t, api: api, snapshot: snapshot, controller: library, pushToast: push, scopeRef: rootRef, onOpenOnboarding: () => { onboardingStore.reset() } }),
         h(SearchFilters, { t: t, snapshot: snapshot, controller: library }),
         snapshot.filters.view === 'duplicates'
           ? h(DuplicatesPane, { t: t, snapshot: snapshot, controller: library, pushToast: push })
@@ -681,6 +675,7 @@ export function LibraryShell(props) {
       snapshot: snapshot,
       controller: library,
       figuresActive: props.figuresActive,
+      onboardingCard: h(OnboardingChecklist, { t: t, onOpenPaper: (paperId, page) => openPaper(paperId, page || 1), onImported: (paperId) => { library.refresh(); if (typeof openPaper === 'function') openPaper(paperId, 1) } }),
       duplicatesActive: snapshot.filters.view === 'duplicates',
       onOpenDuplicates: () => library.setView('duplicates'),
       onOpenFigures: props.onOpenFigures,
@@ -783,7 +778,6 @@ export function LibraryShell(props) {
     h(StatusBar, { t: t, api: api, snapshot: snapshot, library: library }),
     h(ToastStack, { toasts: toasts, onDismiss: dismiss }),
     h(FeedbackHost, null),
-    h(OnboardingDialog, { open: onboardingOpen, onClose: () => setOnboardingOpen(false), t: t, onOpenPaper: (paperId) => openPaper(paperId, 1), onOpenDrawer: () => { try { bus.emit('pappers-hall:open-drawer') } catch (error) { /* ignore */ } } }),
     h(CommandPalette, { open: paletteOpen, onClose: () => setPaletteOpen(false), t: t, commands: commands }),
     h(CitationDialog, { open: citationOpen, onClose: () => setCitationOpen(false), t: t, api: api, onInsert: insertCitation, onToast: (tone, text) => notify(tone, text) }),
     h(HelpDialog, { open: helpOpen, onClose: () => setHelpOpen(false), t: t }),

@@ -4729,6 +4729,81 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-side-note-preview__paper:hover { color: var(--ph-ink); border-color: var(--ph-line); }
 .ph-side-note-preview .ph-n-doc { padding: 0; }
 .ph-side-note-preview .ph-n-doc__sec { margin-top: 14px; }
+
+/* ---- DSH-aligned AI model settings ---- */
+.ph-ai-modelcard {
+  border: 1px solid var(--ph-line);
+  border-radius: 12px;
+  background: var(--ph-surface-1);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ph-ai-modelcard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ph-ai-modelcard__current {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ph-ai-modelcard__current strong {
+  font-family: var(--ph-font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ph-ink);
+  overflow-wrap: anywhere;
+}
+.ph-ai-modelcard__form {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(160px, 1.3fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+.ph-ai-modelcard__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ph-ai-modelcard__field .ph-select { max-width: none; width: 100%; }
+.ph-ai-modelcard__actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding-bottom: 1px;
+}
+@media (max-width: 760px) {
+  .ph-ai-modelcard__form { grid-template-columns: 1fr; }
+  .ph-ai-modelcard__actions { justify-content: flex-start; }
+}
+
+/* ---- friendly provider failure banner ---- */
+.ph-providerwarning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary) 38%, var(--ph-line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 8%, var(--ph-surface-1));
+}
+.ph-providerwarning__icon { color: var(--dsw-alias-state-warn-primary); flex: 0 0 auto; margin-top: 1px; }
+.ph-providerwarning__main { min-width: 0; flex: 1 1 auto; }
+.ph-providerwarning__title { font-size: 12.5px; font-weight: 650; color: var(--ph-ink); margin-bottom: 2px; }
+.ph-providerwarning__body { font-size: 12px; line-height: 1.5; color: var(--ph-ink-2); overflow-wrap: anywhere; }
+.ph-providerwarning__actions { display: flex; gap: 6px; flex: 0 0 auto; align-items: center; flex-wrap: wrap; }
+.ph-providerwarning--quota { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 50%, var(--ph-line)); }
+.ph-providerwarning--auth { border-color: color-mix(in srgb, var(--dsw-alias-state-danger-primary) 45%, var(--ph-line)); }
+.ph-providerwarning--auth .ph-providerwarning__icon { color: var(--dsw-alias-state-danger-primary); }
+.ph-providerwarning--rate { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 30%, var(--ph-line)); }
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -18888,6 +18963,9 @@ function AiPanel(props) {
     statusState.error && statusState.error.message,
     t("reader.ai.reasonFallback")
   );
+  const failedMessage = messages.filter((message) => message.role === "assistant" && message.status !== "ok").slice(-1)[0] || null;
+  const warningReason = statusUnavailable ? statusReason : failedMessage ? firstText3(failedMessage.reason, "") : "";
+  const warningStatus = statusUnavailable ? statusState.status === "error" ? "error" : "unavailable" : failedMessage ? "error" : "";
   const maxChars = status && status.limits && status.limits.maxInputChars ? num(status.limits.maxInputChars, 0) : 0;
   const selection = props.selection && props.selection.quote ? props.selection : null;
   const ask = import_react19.default.useCallback(
@@ -19055,6 +19133,14 @@ function AiPanel(props) {
         import_react19.default.createElement("span", null, t("reader.ai.newChat"))
       ) : null
     ),
+    warningReason ? import_react19.default.createElement(ProviderWarning, {
+      t,
+      status: warningStatus,
+      reason: warningReason,
+      onOpenSettings: props.onOpenSettings,
+      onRetry: statusState.reload,
+      compact: true
+    }) : null,
     import_react19.default.createElement(
       "div",
       { ref: bodyRef, className: "ph-r-ai__body ph-r-scroll", "data-ph-ai-messages": String(messages.length) },
@@ -24645,7 +24731,8 @@ function ReaderShellInner(props) {
       onCiteAnswer: citeAiAnswer,
       onClearSelection: clearSelection,
       notify: notify2,
-      sessionId: props.sessionId
+      sessionId: props.sessionId,
+      onOpenSettings: props.onOpenSettings
     });
   }
   const translationSheet = mode === "source" ? null : import_react31.default.createElement(
@@ -29980,6 +30067,17 @@ var import_react47 = __toESM(require("react"), 1);
 
 // src/surfaces/settings/panel.jsx
 var import_react46 = __toESM(require("react"), 1);
+
+// src/core/ai-models.js
+function modelForProvider(catalog, providerId) {
+  const provider = (catalog && catalog.providers ? catalog.providers : []).find((entry) => entry.id === providerId);
+  if (!provider) return "";
+  const current2 = catalog && catalog.selection && catalog.selection.provider === providerId ? catalog.selection.model : "";
+  if (current2 && (provider.models.length === 0 || provider.models.some((model) => model.id === current2))) return current2;
+  return provider.models.length > 0 ? provider.models[0].id : "";
+}
+
+// src/surfaces/settings/panel.jsx
 var JOB_POLL_MS = 1500;
 function opId4(prefix) {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
@@ -30077,6 +30175,10 @@ function SettingsPanel(props) {
   const [busy2, setBusy] = import_react46.default.useState("");
   const [test, setTest] = import_react46.default.useState(null);
   const [error, setError] = import_react46.default.useState("");
+  const [aiCatalog, setAiCatalog] = import_react46.default.useState({ status: "idle", selection: null, providers: [], available: false, error: null });
+  const [aiProvider, setAiProvider] = import_react46.default.useState("");
+  const [aiModel, setAiModel] = import_react46.default.useState("");
+  const [aiSaving, setAiSaving] = import_react46.default.useState(false);
   const pollRef = import_react46.default.useRef(null);
   const load = import_react46.default.useCallback(() => {
     setState((previous) => ({ status: previous.data ? "refreshing" : "loading", data: previous.data, error: null }));
@@ -30092,10 +30194,23 @@ function SettingsPanel(props) {
     }).catch(() => {
     });
   }, []);
+  const loadAi = import_react46.default.useCallback(() => {
+    setAiCatalog((previous) => Object.assign({}, previous, { status: previous.providers && previous.providers.length > 0 ? "refreshing" : "loading", error: null }));
+    defaultApi("ai.providers", {}).then((value) => {
+      const providers2 = Array.isArray(value && value.providers) ? value.providers : [];
+      const selection = value && value.selection ? value.selection : null;
+      setAiCatalog({ status: "ready", selection, providers: providers2, available: Boolean(value && value.available), error: null });
+      const provider = selection && selection.provider ? selection.provider : providers2[0] && providers2[0].id || "";
+      const model = selection && selection.model ? selection.model : modelForProvider({ providers: providers2, selection }, provider);
+      setAiProvider(provider);
+      setAiModel(model);
+    }).catch((err) => setAiCatalog((previous) => Object.assign({}, previous, { status: "error", error: err })));
+  }, []);
   import_react46.default.useEffect(() => {
     if (!props.open) return void 0;
     load();
     loadJobs();
+    loadAi();
     const timer2 = setInterval(() => {
       loadJobs();
     }, JOB_POLL_MS);
@@ -30191,6 +30306,20 @@ function SettingsPanel(props) {
     setTest(null);
     defaultApi("translation.test", { provider: "auto", text: "We propose a general paradigm that combines reasoning and acting." }).then((value) => setTest(value || { ok: false, reason: "empty" })).catch((err) => setTest({ ok: false, reason: describeError(t, err) })).then(() => setBusy(""));
   };
+  const saveAiDefault = () => {
+    if (aiSaving || aiProvider === "" || aiModel === "") return;
+    setAiSaving(true);
+    setError("");
+    defaultApi("ai.setDefault", { provider: aiProvider, model: aiModel }).then((value) => {
+      if (!value || value.ok === false) throw new Error(value && value.reason || "save failed");
+      setAiCatalog((previous) => Object.assign({}, previous, { selection: value.selection || { provider: aiProvider, model: aiModel } }));
+      notify("success", t("ai.settings.saved"), null, 2200);
+    }).catch((err) => {
+      const message = describeError(t, err);
+      setError(t("ai.settings.saveFailed", { message }));
+      notify("error", message, null, 4e3);
+    }).then(() => setAiSaving(false));
+  };
   const ACTIVE_JOB = (job) => job && (job.state === "running" || job.state === "queued" || job.state === "failed");
   const jobFor = (kind) => {
     const model = models && models[kind] || null;
@@ -30208,6 +30337,11 @@ function SettingsPanel(props) {
   const capabilities = diagnostics.capabilities || {};
   const translationState = capabilities.translation ? String(capabilities.translation) : providerList.some((provider) => provider.enabled && provider.available !== false) ? "ready" : providerList.some((provider) => provider.enabled) ? "degraded" : "disabled";
   const ocrState = ocr.installed ? ocr.available === false ? "unavailable" : ocr.enabled ? "ready" : "disabled" : "notInstalled";
+  const aiProviders = Array.isArray(aiCatalog.providers) ? aiCatalog.providers : [];
+  const aiSelection = aiCatalog.selection || {};
+  const aiProviderEntry = aiProviders.find((entry) => entry.id === aiProvider) || null;
+  const aiModelList = aiProviderEntry && Array.isArray(aiProviderEntry.models) ? aiProviderEntry.models : [];
+  const aiSynced = Boolean(aiSelection.provider === aiProvider && aiSelection.model === aiModel);
   const channelStates = {
     fts: channels.fts || "unknown",
     vector: channels.vector || (embedding.installed ? embedding.enabled ? "ready" : "disabled" : "notInstalled"),
@@ -30280,6 +30414,52 @@ function SettingsPanel(props) {
           state.status === "loading" && !state.data ? h("div", { className: "ph-settings__skeleton" }, [0, 1, 2, 3].map((i) => h(Skeleton, { key: i, width: "100%", height: 72, radius: 10 }))) : state.status === "error" && !state.data ? h("div", { className: "ph-settings__error" }, h(Icon, { name: "warning", size: 18 }), h("div", null, h("div", { className: "ph-settings__errorTitle" }, t("settings.loadFailed")), h("div", { className: "ph-caption" }, describeError(t, state.error)), h(Button, { size: "sm", variant: "secondary", icon: "refresh", onClick: load }, t("common.retry")))) : h(
             import_react46.default.Fragment,
             null,
+            h(
+              Section,
+              { icon: "sparkles", title: t("ai.settings.title"), hint: t("ai.settings.desc") },
+              h(
+                "div",
+                { className: "ph-ai-modelcard" },
+                h(
+                  "div",
+                  { className: "ph-ai-modelcard__head" },
+                  h(
+                    "div",
+                    { className: "ph-ai-modelcard__current" },
+                    h("span", { className: "ph-caption" }, t("ai.settings.current")),
+                    h("strong", null, (aiSelection.provider || "\u2014") + " / " + (aiSelection.model || "\u2014"))
+                  ),
+                  aiSynced ? h(Badge, { tone: "success" }, t("ai.settings.sync")) : null
+                ),
+                aiCatalog.status === "loading" ? h("div", { className: "ph-caption" }, t("common.loading")) : aiCatalog.status === "error" ? h("div", { className: "ph-caption ph-caption--error" }, describeError(t, aiCatalog.error)) : aiProviders.length === 0 ? h("div", { className: "ph-caption" }, t("ai.settings.noProvider")) : h(
+                  "div",
+                  { className: "ph-ai-modelcard__form" },
+                  h(
+                    "label",
+                    { className: "ph-ai-modelcard__field" },
+                    h("span", { className: "ph-caption" }, t("ai.settings.provider")),
+                    h("select", { className: "ph-select", value: aiProvider, onChange: (event) => {
+                      const provider = event.target.value;
+                      setAiProvider(provider);
+                      setAiModel(modelForProvider({ providers: aiProviders, selection: aiSelection }, provider));
+                    } }, aiProviders.map((provider) => h("option", { key: provider.id, value: provider.id }, provider.name || provider.id)))
+                  ),
+                  h(
+                    "label",
+                    { className: "ph-ai-modelcard__field" },
+                    h("span", { className: "ph-caption" }, t("ai.settings.model")),
+                    aiModelList.length > 0 ? h("select", { className: "ph-select", value: aiModel, onChange: (event) => setAiModel(event.target.value) }, aiModelList.map((model) => h("option", { key: model.id, value: model.id }, model.name || model.id))) : h("input", { className: "ph-select", value: aiModel, placeholder: t("ai.settings.modelPlaceholder"), onChange: (event) => setAiModel(event.target.value) }),
+                    aiModelList.length === 0 ? h("span", { className: "ph-caption" }, t("ai.settings.noModels")) : null
+                  ),
+                  h(
+                    "div",
+                    { className: "ph-ai-modelcard__actions" },
+                    h(Button, { size: "sm", variant: "primary", loading: aiSaving, disabled: aiProvider === "" || aiModel === "" || aiSynced, onClick: saveAiDefault }, t("ai.settings.save")),
+                    h(Button, { size: "sm", icon: "refresh", onClick: loadAi }, t("ai.settings.reload"))
+                  )
+                )
+              )
+            ),
             h(
               Section,
               { icon: "sparkles", title: t("settings.section.capabilities"), hint: t("settings.section.capabilitiesHint") },
@@ -30455,6 +30635,35 @@ var ZH = {
   "panel.subtitle": "Pappers-Hall \xB7 \u8BBA\u6587\u5E93\u4E0E\u5BF9\u8BDD\u5F15\u7528",
   "common.loading": "\u52A0\u8F7D\u4E2D\u2026",
   "common.failed": "\u52A0\u8F7D\u5931\u8D25",
+  "ai.warning.quota.title": "\u5F53\u524D\u6A21\u578B\u989D\u5EA6\u4E0D\u8DB3\uFF0C\u65E0\u6CD5\u7EE7\u7EED\u4F7F\u7528",
+  "ai.warning.quota.body": "\u4F9B\u5E94\u5546\u8FD4\u56DE\uFF1A{reason}\u3002\u53EF\u4EE5\u5207\u6362\u5230\u5176\u4ED6\u5DF2\u914D\u7F6E\u7684\u6A21\u578B\u4F9B\u5E94\u5546\u540E\u91CD\u8BD5\u3002",
+  "ai.warning.quota.bodyPlain": "\u5F53\u524D\u8BA2\u9605\u989D\u5EA6\u5DF2\u7528\u5B8C\u3002\u8BF7\u5207\u6362\u6A21\u578B\u4F9B\u5E94\u5546\u540E\u91CD\u8BD5\u3002",
+  "ai.warning.auth.title": "\u6A21\u578B\u51ED\u8BC1\u65E0\u6548\u6216\u5DF2\u8FC7\u671F",
+  "ai.warning.auth.body": "\u4F9B\u5E94\u5546\u8FD4\u56DE\uFF1A{reason}\u3002\u8BF7\u5728 DSH \u8BBE\u7F6E\u4E2D\u68C0\u67E5\u767B\u5F55/\u8BA2\u9605\uFF0C\u6216\u5207\u6362\u5230\u5176\u4ED6\u6A21\u578B\u4F9B\u5E94\u5546\u3002",
+  "ai.warning.auth.bodyPlain": "\u5F53\u524D\u6A21\u578B\u51ED\u8BC1\u4E0D\u53EF\u7528\u3002\u8BF7\u91CD\u65B0\u767B\u5F55\u6216\u5207\u6362\u4F9B\u5E94\u5546\u3002",
+  "ai.warning.rate.title": "\u6A21\u578B\u8BF7\u6C42\u8FC7\u4E8E\u9891\u7E41",
+  "ai.warning.rate.body": "\u4F9B\u5E94\u5546\u8FD4\u56DE\uFF1A{reason}\u3002\u53EF\u4EE5\u7A0D\u540E\u91CD\u8BD5\uFF0C\u6216\u6362\u4E00\u4E2A\u6A21\u578B\u4F9B\u5E94\u5546\u3002",
+  "ai.warning.rate.bodyPlain": "\u8BF7\u6C42\u8FC7\u4E8E\u9891\u7E41\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u6216\u6362\u4E00\u4E2A\u4F9B\u5E94\u5546\u3002",
+  "ai.warning.config.title": "\u5F53\u524D\u6A21\u578B\u4E0D\u53EF\u7528",
+  "ai.warning.config.body": "{reason}\u3002\u8BF7\u5728\u8BBE\u7F6E\u4E2D\u9009\u62E9 DSH \u5DF2\u914D\u7F6E\u7684\u6A21\u578B\u4F9B\u5E94\u5546\u3002",
+  "ai.warning.config.bodyPlain": "\u5F53\u524D\u6CA1\u6709\u53EF\u7528\u7684\u9ED8\u8BA4\u6A21\u578B\uFF0C\u8BF7\u5148\u9009\u62E9\u6A21\u578B\u4F9B\u5E94\u5546\u3002",
+  "ai.warning.error.title": "AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528",
+  "ai.warning.error.body": "{reason}\u3002\u4F60\u53EF\u4EE5\u68C0\u67E5\u6A21\u578B\u4F9B\u5E94\u5546\u8BBE\u7F6E\u540E\u91CD\u8BD5\u3002",
+  "ai.warning.error.bodyPlain": "AI \u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528\uFF0C\u8BF7\u68C0\u67E5\u6A21\u578B\u4F9B\u5E94\u5546\u8BBE\u7F6E\u3002",
+  "ai.warning.changeProvider": "\u66F4\u6362\u6A21\u578B\u4F9B\u5E94\u5546",
+  "ai.settings.title": "AI \u6A21\u578B\u4E0E\u8BA2\u9605",
+  "ai.settings.desc": "Pappers-Hall \u7684 AI \u95EE\u7B54\u4E0E AI \u7CBE\u8BD1\u8DDF\u968F DSH \u7684\u9ED8\u8BA4\u6A21\u578B\uFF1B\u8FD9\u91CC\u4FEE\u6539\u4F1A\u540C\u6B65\u5230 DeepSeek Harness\u3002",
+  "ai.settings.current": "\u5F53\u524D\u9ED8\u8BA4\u6A21\u578B",
+  "ai.settings.provider": "\u6A21\u578B\u4F9B\u5E94\u5546",
+  "ai.settings.model": "\u6A21\u578B",
+  "ai.settings.sync": "\u4E0E DSH \u540C\u6B65",
+  "ai.settings.save": "\u8BBE\u4E3A\u9ED8\u8BA4\u6A21\u578B",
+  "ai.settings.saved": "\u5DF2\u540C\u6B65\u5230 DSH",
+  "ai.settings.saveFailed": "\u4FDD\u5B58\u5931\u8D25\uFF1A{message}",
+  "ai.settings.noModels": "\u5F53\u524D\u4F9B\u5E94\u5546\u6CA1\u6709\u53EF\u53D1\u73B0\u7684\u6A21\u578B\uFF0C\u8BF7\u6CBF\u7528\u5F53\u524D\u6A21\u578B ID \u6216\u5148\u5728 DSH \u8BBE\u7F6E\u4E2D\u914D\u7F6E\u6A21\u578B\u3002",
+  "ai.settings.modelPlaceholder": "\u6A21\u578B ID",
+  "ai.settings.noProvider": "DSH \u5F53\u524D\u6CA1\u6709\u5DF2\u6CE8\u518C\u7684\u6A21\u578B\u4F9B\u5E94\u5546\uFF0C\u8BF7\u5148\u5728 DSH \u8BBE\u7F6E\u4E2D\u914D\u7F6E\u3002",
+  "ai.settings.reload": "\u5237\u65B0\u6A21\u578B\u5217\u8868",
   "common.retry": "\u91CD\u8BD5",
   "common.close": "\u5173\u95ED",
   "common.cancel": "\u53D6\u6D88",
@@ -31750,6 +31959,35 @@ var EN = {
   "panel.subtitle": "Pappers-Hall \xB7 library and conversation references",
   "common.loading": "Loading\u2026",
   "common.failed": "Could not load",
+  "ai.warning.quota.title": "The current model has no remaining quota",
+  "ai.warning.quota.body": "Provider says: {reason}. Switch to another configured provider and retry.",
+  "ai.warning.quota.bodyPlain": "The subscription quota is exhausted. Switch the model provider and retry.",
+  "ai.warning.auth.title": "The model credential is invalid or expired",
+  "ai.warning.auth.body": "Provider says: {reason}. Check the DSH login/subscription or switch to another provider.",
+  "ai.warning.auth.bodyPlain": "The current model credential is unavailable. Sign in again or switch providers.",
+  "ai.warning.rate.title": "The model is rate-limited",
+  "ai.warning.rate.body": "Provider says: {reason}. Retry later or choose another provider.",
+  "ai.warning.rate.bodyPlain": "Too many requests. Retry later or choose another provider.",
+  "ai.warning.config.title": "The current model is unavailable",
+  "ai.warning.config.body": "{reason}. Choose a model provider configured in DSH.",
+  "ai.warning.config.bodyPlain": "No default model is available. Choose a provider first.",
+  "ai.warning.error.title": "AI is temporarily unavailable",
+  "ai.warning.error.body": "{reason}. Check the model provider settings and retry.",
+  "ai.warning.error.bodyPlain": "AI is temporarily unavailable. Check the model provider settings.",
+  "ai.warning.changeProvider": "Change model provider",
+  "ai.settings.title": "AI model & subscription",
+  "ai.settings.desc": "Pappers-Hall AI Q&A and AI translation follow the DSH default model; changes here sync to DeepSeek Harness.",
+  "ai.settings.current": "Current default model",
+  "ai.settings.provider": "Provider",
+  "ai.settings.model": "Model",
+  "ai.settings.sync": "Synced with DSH",
+  "ai.settings.save": "Set as default",
+  "ai.settings.saved": "Synced to DSH",
+  "ai.settings.saveFailed": "Save failed: {message}",
+  "ai.settings.noModels": "No models are discoverable for this provider. Keep the current model id or configure models in DSH.",
+  "ai.settings.modelPlaceholder": "model id",
+  "ai.settings.noProvider": "DSH has no registered model provider. Configure one in DSH settings first.",
+  "ai.settings.reload": "Refresh models",
   "common.retry": "Retry",
   "common.close": "Close",
   "common.cancel": "Cancel",

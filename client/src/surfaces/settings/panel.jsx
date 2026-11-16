@@ -10,6 +10,7 @@ import { Badge, Button, IconButton, Skeleton } from '../../core/primitives.jsx'
 import { describeError } from '../../core/api.js'
 import { defaultApi } from '../../core/api.js'
 import { notify } from '../../core/feedback.js'
+import { modelForProvider } from '../../core/ai-models.js'
 
 const JOB_POLL_MS = 1500
 
@@ -111,6 +112,10 @@ export function SettingsPanel(props) {
   const [busy, setBusy] = React.useState('')
   const [test, setTest] = React.useState(null)
   const [error, setError] = React.useState('')
+  const [aiCatalog, setAiCatalog] = React.useState({ status: 'idle', selection: null, providers: [], available: false, error: null })
+  const [aiProvider, setAiProvider] = React.useState('')
+  const [aiModel, setAiModel] = React.useState('')
+  const [aiSaving, setAiSaving] = React.useState(false)
   const pollRef = React.useRef(null)
 
   const load = React.useCallback(() => {
@@ -130,10 +135,26 @@ export function SettingsPanel(props) {
     }).catch(() => {})
   }, [])
 
+  const loadAi = React.useCallback(() => {
+    setAiCatalog((previous) => Object.assign({}, previous, { status: previous.providers && previous.providers.length > 0 ? 'refreshing' : 'loading', error: null }))
+    defaultApi('ai.providers', {})
+      .then((value) => {
+        const providers = Array.isArray(value && value.providers) ? value.providers : []
+        const selection = value && value.selection ? value.selection : null
+        setAiCatalog({ status: 'ready', selection: selection, providers: providers, available: Boolean(value && value.available), error: null })
+        const provider = selection && selection.provider ? selection.provider : (providers[0] && providers[0].id) || ''
+        const model = selection && selection.model ? selection.model : modelForProvider({ providers: providers, selection: selection }, provider)
+        setAiProvider(provider)
+        setAiModel(model)
+      })
+      .catch((err) => setAiCatalog((previous) => Object.assign({}, previous, { status: 'error', error: err })))
+  }, [])
+
   React.useEffect(() => {
     if (!props.open) return undefined
     load()
     loadJobs()
+    loadAi()
     const timer = setInterval(() => { loadJobs() }, JOB_POLL_MS)
     const onKey = (event) => { if (event.key === 'Escape') props.onClose() }
     document.addEventListener('keydown', onKey)
@@ -235,6 +256,20 @@ export function SettingsPanel(props) {
       .then(() => setBusy(''))
   }
 
+  const saveAiDefault = () => {
+    if (aiSaving || aiProvider === '' || aiModel === '') return
+    setAiSaving(true)
+    setError('')
+    defaultApi('ai.setDefault', { provider: aiProvider, model: aiModel })
+      .then((value) => {
+        if (!value || value.ok === false) throw new Error((value && value.reason) || 'save failed')
+        setAiCatalog((previous) => Object.assign({}, previous, { selection: value.selection || { provider: aiProvider, model: aiModel } }))
+        notify('success', t('ai.settings.saved'), null, 2200)
+      })
+      .catch((err) => { const message = describeError(t, err); setError(t('ai.settings.saveFailed', { message: message })); notify('error', message, null, 4000) })
+      .then(() => setAiSaving(false))
+  }
+
   const ACTIVE_JOB = (job) => job && (job.state === 'running' || job.state === 'queued' || job.state === 'failed')
   const jobFor = (kind) => {
     const model = (models && models[kind]) || null
@@ -260,6 +295,11 @@ export function SettingsPanel(props) {
   const ocrState = ocr.installed
     ? (ocr.available === false ? 'unavailable' : (ocr.enabled ? 'ready' : 'disabled'))
     : 'notInstalled'
+  const aiProviders = Array.isArray(aiCatalog.providers) ? aiCatalog.providers : []
+  const aiSelection = aiCatalog.selection || {}
+  const aiProviderEntry = aiProviders.find((entry) => entry.id === aiProvider) || null
+  const aiModelList = aiProviderEntry && Array.isArray(aiProviderEntry.models) ? aiProviderEntry.models : []
+  const aiSynced = Boolean(aiSelection.provider === aiProvider && aiSelection.model === aiModel)
   const channelStates = {
     fts: channels.fts || 'unknown',
     vector: channels.vector || (embedding.installed ? (embedding.enabled ? 'ready' : 'disabled') : 'notInstalled'),
@@ -316,6 +356,44 @@ export function SettingsPanel(props) {
           : state.status === 'error' && !state.data
             ? h('div', { className: 'ph-settings__error' }, h(Icon, { name: 'warning', size: 18 }), h('div', null, h('div', { className: 'ph-settings__errorTitle' }, t('settings.loadFailed')), h('div', { className: 'ph-caption' }, describeError(t, state.error)), h(Button, { size: 'sm', variant: 'secondary', icon: 'refresh', onClick: load }, t('common.retry'))))
             : h(React.Fragment, null,
+                h(Section, { icon: 'sparkles', title: t('ai.settings.title'), hint: t('ai.settings.desc') },
+                  h('div', { className: 'ph-ai-modelcard' },
+                    h('div', { className: 'ph-ai-modelcard__head' },
+                      h('div', { className: 'ph-ai-modelcard__current' },
+                        h('span', { className: 'ph-caption' }, t('ai.settings.current')),
+                        h('strong', null, (aiSelection.provider || '—') + ' / ' + (aiSelection.model || '—')),
+                      ),
+                      aiSynced ? h(Badge, { tone: 'success' }, t('ai.settings.sync')) : null,
+                    ),
+                    aiCatalog.status === 'loading'
+                      ? h('div', { className: 'ph-caption' }, t('common.loading'))
+                      : aiCatalog.status === 'error'
+                        ? h('div', { className: 'ph-caption ph-caption--error' }, describeError(t, aiCatalog.error))
+                        : aiProviders.length === 0
+                          ? h('div', { className: 'ph-caption' }, t('ai.settings.noProvider'))
+                          : h('div', { className: 'ph-ai-modelcard__form' },
+                              h('label', { className: 'ph-ai-modelcard__field' },
+                                h('span', { className: 'ph-caption' }, t('ai.settings.provider')),
+                                h('select', { className: 'ph-select', value: aiProvider, onChange: (event) => {
+                                  const provider = event.target.value
+                                  setAiProvider(provider)
+                                  setAiModel(modelForProvider({ providers: aiProviders, selection: aiSelection }, provider))
+                                } }, aiProviders.map((provider) => h('option', { key: provider.id, value: provider.id }, provider.name || provider.id))),
+                              ),
+                              h('label', { className: 'ph-ai-modelcard__field' },
+                                h('span', { className: 'ph-caption' }, t('ai.settings.model')),
+                                aiModelList.length > 0
+                                  ? h('select', { className: 'ph-select', value: aiModel, onChange: (event) => setAiModel(event.target.value) }, aiModelList.map((model) => h('option', { key: model.id, value: model.id }, model.name || model.id)))
+                                  : h('input', { className: 'ph-select', value: aiModel, placeholder: t('ai.settings.modelPlaceholder'), onChange: (event) => setAiModel(event.target.value) }),
+                                aiModelList.length === 0 ? h('span', { className: 'ph-caption' }, t('ai.settings.noModels')) : null,
+                              ),
+                              h('div', { className: 'ph-ai-modelcard__actions' },
+                                h(Button, { size: 'sm', variant: 'primary', loading: aiSaving, disabled: aiProvider === '' || aiModel === '' || aiSynced, onClick: saveAiDefault }, t('ai.settings.save')),
+                                h(Button, { size: 'sm', icon: 'refresh', onClick: loadAi }, t('ai.settings.reload')),
+                              ),
+                            ),
+                  ),
+                ),
                 h(Section, { icon: 'sparkles', title: t('settings.section.capabilities'), hint: t('settings.section.capabilitiesHint') },
                   h(Card, {
                     t: t, icon: 'search', title: t('settings.embedding.title'), description: t('settings.embedding.desc'), model: embeddingWithJob,

@@ -3,6 +3,8 @@
 ## 0.1.0
 
 - First public pre-release of the Pappers-Hall research workbench.
+- AI Q&A and AI translation now follow the DSH default model/provider; Settings exposes a DSH-synced provider/model picker.
+- Friendly quota/auth/rate-limit warning with a direct “change model provider” action instead of raw provider errors.
 - Paper center, reader, notes, translation, annotations, figure/table extraction, conversation sidebar and note ↔ reader bridge.
 
 ## Unreleased

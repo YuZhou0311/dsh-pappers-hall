@@ -4533,6 +4533,20 @@ export function createStore({ db, layout, fts5, config = {}, logger, manifest = 
      * `ai.status` — cheap availability facts without a model request.
      * @returns {object} AI status payload.
      */
+    async aiProviders() {
+      if (attached.ai === undefined || attached.ai === null || typeof attached.ai.providers !== 'function') {
+        return { available: false, providers: [], selection: null, reason: 'AI service not initialized' }
+      }
+      try { return await attached.ai.providers() } catch (error) { return { available: false, providers: [], selection: null, reason: String(error?.message ?? error) } }
+    },
+
+    async aiSetDefault(params = {}) {
+      if (attached.ai === undefined || attached.ai === null || typeof attached.ai.setDefault !== 'function') {
+        return { ok: false, reason: 'AI service not initialized' }
+      }
+      try { return await attached.ai.setDefault(params ?? {}) } catch (error) { return { ok: false, reason: String(error?.message ?? error) } }
+    },
+
     aiStatus() {
       if (attached.ai === undefined) {
         return { available: false, provider: null, model: null, limits: {}, reason: 'AI service not initialized', cacheEntries: 0 }

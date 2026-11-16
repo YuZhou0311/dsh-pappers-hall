@@ -2276,6 +2276,7 @@ function ReaderShellInner(props) {
       onClearSelection: clearSelection,
       notify,
       sessionId: props.sessionId,
+      onOpenSettings: props.onOpenSettings,
     })
   }
 

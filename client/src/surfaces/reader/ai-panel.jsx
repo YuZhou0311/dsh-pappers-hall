@@ -218,6 +218,9 @@ export function AiPanel(props) {
     statusState.error && statusState.error.message,
     t('reader.ai.reasonFallback'),
   )
+  const failedMessage = messages.filter((message) => message.role === 'assistant' && message.status !== 'ok').slice(-1)[0] || null
+  const warningReason = statusUnavailable ? statusReason : failedMessage ? firstText(failedMessage.reason, '') : ''
+  const warningStatus = statusUnavailable ? (statusState.status === 'error' ? 'error' : 'unavailable') : failedMessage ? 'error' : ''
   const maxChars = status && status.limits && status.limits.maxInputChars ? num(status.limits.maxInputChars, 0) : 0
 
   const selection = props.selection && props.selection.quote ? props.selection : null
@@ -417,6 +420,16 @@ export function AiPanel(props) {
           )
         : null,
     ),
+    warningReason
+      ? React.createElement(ProviderWarning, {
+          t: t,
+          status: warningStatus,
+          reason: warningReason,
+          onOpenSettings: props.onOpenSettings,
+          onRetry: statusState.reload,
+          compact: true,
+        })
+      : null,
     React.createElement(
       'div',
       { ref: bodyRef, className: 'ph-r-ai__body ph-r-scroll', 'data-ph-ai-messages': String(messages.length) },

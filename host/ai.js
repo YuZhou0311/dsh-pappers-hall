@@ -396,6 +396,80 @@ export function createAi({ ctx, store, layout, pdf, config = {}, logger }) {
     return { available: true, provider: route.provider, model: route.model, reason: undefined, route }
   }
 
+  /**
+   * Provider/model catalogue exposed to the settings surface. This is the same
+   * registry the DSH chat uses (`llm.listProviders`) plus the DSH default
+   * selection, so Pappers-Hall never invents a provider that the host cannot
+   * actually call.
+   */
+  async function providers() {
+    const llm = llmService()
+    const selection = (() => {
+      try {
+        const service = typeof ctx?.get === 'function' ? ctx.get('agentDefaultModel') : undefined
+        return service?.currentSelection?.() ?? null
+      } catch {
+        return null
+      }
+    })()
+    if (llm === undefined || typeof llm.listProviders !== 'function') {
+      return { available: false, selection, providers: [], configurable: [], reason: 'llm service is not composed in this profile' }
+    }
+    let list = []
+    let configurable = []
+    try { list = llm.listProviders() || [] } catch (error) { list = [] }
+    try { configurable = typeof llm.listConfigurableProviders === 'function' ? llm.listConfigurableProviders() || [] : [] } catch { configurable = [] }
+    const safe = (value) => {
+      try { return JSON.parse(JSON.stringify(value)) } catch { return null }
+    }
+    const normalized = []
+    for (const entry of Array.isArray(list) ? list : []) {
+      const item = safe(entry)
+      if (!item || typeof item.id !== 'string') continue
+      let models = []
+      try {
+        if (typeof llm.listModels === 'function') {
+          const discovered = await llm.listModels(item.id)
+          models = Array.isArray(discovered) ? discovered.map(safe).filter(Boolean) : []
+        }
+      } catch {
+        models = []
+      }
+      normalized.push(Object.assign({}, item, { models: models }))
+    }
+    return {
+      available: normalized.length > 0,
+      selection,
+      providers: normalized,
+      configurable: Array.isArray(configurable) ? configurable.map(safe).filter(Boolean) : [],
+    }
+  }
+
+  /** Save the DSH default model route, so the plugin and DSH chat stay in sync. */
+  async function setDefault(selection) {
+    const service = typeof ctx?.get === 'function' ? ctx.get('agentDefaultModel') : undefined
+    if (service === undefined || typeof service.saveSelection !== 'function') {
+      const failure = new AiFailure('unavailable', 'the DSH default-model service is not available in this profile')
+      throw failure
+    }
+    const provider = typeof selection?.provider === 'string' ? selection.provider.trim() : ''
+    const model = typeof selection?.model === 'string' ? selection.model.trim() : ''
+    if (provider === '' || model === '') throw new AiFailure('invalid', 'provider and model are required')
+    const known = await providers()
+    const providerEntry = known.providers.find((entry) => String(entry.id) === provider)
+    if (known.providers.length > 0 && providerEntry === undefined) {
+      throw new AiFailure('invalid', `provider "${provider}" is not registered in DSH`)
+    }
+    const models = Array.isArray(providerEntry?.models) ? providerEntry.models : []
+    if (models.length > 0 && !models.some((entry) => String(entry && (entry.id || entry.model || entry)) === model)) {
+      throw new AiFailure('invalid', `model "${model}" is not available for provider "${provider}"`)
+    }
+    const next = { provider, model }
+    if (typeof selection?.reasoningEffort === 'string' && selection.reasoningEffort !== '') next.reasoningEffort = selection.reasoningEffort
+    await service.saveSelection(next)
+    return { ok: true, selection: next }
+  }
+
   /** Read one cached AI value (memory then SQLite). */
   function cacheGet(key) {
     const fromMemory = memory.get(key)
@@ -1335,6 +1409,8 @@ export function createAi({ ctx, store, layout, pdf, config = {}, logger }) {
   return {
     status,
     availability,
+    providers,
+    setDefault,
     complete,
     translateBlocks,
     translateTitles,

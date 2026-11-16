@@ -105,34 +105,56 @@ function decorateTextNode(node, surface) {
 /**
  * Draw the composer citation as one chip.
  *
- * The composer is a Lexical editor, so its DOM must not be restructured — an
- * earlier attempt to wrap the token text corrupted the draft. Instead this
- * marks the *paragraph* that consists only of the mention: the citation is
- * inserted with a trailing blank line, so the user keeps typing in the next
- * paragraph and the chip survives while the box stays untouched.
+ * The composer is a Lexical editor, so its DOM must not be restructured. This
+ * marks the inline text wrapper that starts with the mention and paints the
+ * chip with a positioned pseudo-element measured from the mention's real text
+ * range: the box hugs the reference even after the user keeps typing after it.
  */
-const MENTION_ONLY = /^@论文中心\s+\S.*$/
+const MENTION_HEAD = /^@论文中心 \d+ (篇论文|张图|条批注|条笔记)(《[^》]{0,40}》)?( \+ \d+ (篇论文|张图|条批注|条笔记))* ?/
+
+function composerMentionLength(text) {
+  const match = MENTION_HEAD.exec(String(text || '').trimStart())
+  return match ? match[0].length : 0
+}
+
+function paintChip(span, mentionLength) {
+  const node = span.firstChild
+  if (!node || node.nodeType !== 3 || mentionLength <= 0) return false
+  const spanRect = span.getBoundingClientRect()
+  if (spanRect.width === 0) return false
+  const range = document.createRange()
+  range.setStart(node, 0)
+  range.setEnd(node, mentionLength)
+  const rect = range.getBoundingClientRect()
+  if (rect.width === 0) return false
+  span.style.setProperty('--ph-chip-left', Math.round(rect.left - spanRect.left - 6) + 'px')
+  span.style.setProperty('--ph-chip-top', Math.round(rect.top - spanRect.top - 2) + 'px')
+  span.style.setProperty('--ph-chip-width', Math.round(rect.width + 12) + 'px')
+  span.style.setProperty('--ph-chip-height', Math.round(rect.height + 4) + 'px')
+  return true
+}
 
 function scanComposerChips() {
   if (typeof document === 'undefined') return
   const composer = document.querySelector(COMPOSER_SELECTOR)
   if (!composer) return
-  // Drop stale marks first: a paragraph that gained more text is no longer a chip.
   composer.querySelectorAll('[data-ph-citeblock="1"]').forEach((element) => {
-    const text = String(element.textContent || '').trim()
-    if (!MENTION_ONLY.test(text)) {
-      element.classList.remove('ph-citeblock')
-      element.removeAttribute('data-ph-citeblock')
+    const span = element
+    const inline = span.tagName === 'SPAN' && span.hasAttribute('data-lexical-text')
+    const mentionLength = inline ? composerMentionLength(span.textContent) : 0
+    if (!inline || mentionLength === 0 || !paintChip(span, mentionLength)) {
+      span.classList.remove('ph-citeblock')
+      span.removeAttribute('data-ph-citeblock')
     }
   })
-  const paragraphs = composer.querySelectorAll('p, div[data-lexical-text], span[data-lexical-text]')
-  paragraphs.forEach((element) => {
-    const text = String(element.textContent || '').trim()
-    if (!MENTION_ONLY.test(text)) return
-    if (element.getAttribute('data-ph-citeblock') === '1') return
-    element.classList.add('ph-citeblock')
-    element.setAttribute('data-ph-citeblock', '1')
-    element.setAttribute('title', 'Pappers-Hall 引用材料')
+  composer.querySelectorAll('span[data-lexical-text]').forEach((span) => {
+    if (span.getAttribute('data-ph-citeblock') === '1') return
+    const mentionLength = composerMentionLength(span.textContent)
+    if (mentionLength === 0) return
+    if (!paintChip(span, mentionLength)) return
+    span.classList.add('ph-citeblock')
+    span.setAttribute('data-ph-citeblock', '1')
+    span.setAttribute('title', 'Pappers-Hall 引用材料')
   })
 }
 

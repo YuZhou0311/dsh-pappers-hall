@@ -5447,23 +5447,29 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 }
 
 
-/* Composer citation: one inline chip drawn on the paragraph that holds only the
-   reference mention. The editor's DOM is never restructured, so typing in the
-   next paragraph keeps the chip intact. */
+/* Composer citation: the chip is painted with a measured pseudo-element so it
+   hugs the reference text even after the user keeps typing after it. The editor
+   text itself is never wrapped or restructured. */
 .ph-citeblock {
-  display: inline-block;
-  max-width: 100%;
-  margin: 0 0 1px;
-  padding: 1px 8px;
+  position: relative;
+  isolation: isolate;
+  background: none;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+}
+.ph-citeblock::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  left: var(--ph-chip-left, -6px);
+  top: var(--ph-chip-top, -2px);
+  width: var(--ph-chip-width, 0);
+  height: var(--ph-chip-height, 0);
   border: 1px solid color-mix(in srgb, var(--ph-accent) 26%, transparent);
   border-radius: 7px;
   background: color-mix(in srgb, var(--ph-accent) 8%, transparent);
-  color: color-mix(in srgb, var(--ph-accent) 78%, var(--ph-ink));
-  font-size: var(--ph-fs-12);
-  line-height: 1.65;
-  white-space: pre-wrap;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
 }
 `;
 function installStyles(ctx) {
@@ -29836,26 +29842,48 @@ function decorateTextNode(node, surface) {
   }
   return true;
 }
-var MENTION_ONLY = /^@论文中心\s+\S.*$/;
+var MENTION_HEAD = /^@论文中心 \d+ (篇论文|张图|条批注|条笔记)(《[^》]{0,40}》)?( \+ \d+ (篇论文|张图|条批注|条笔记))* ?/;
+function composerMentionLength(text2) {
+  const match = MENTION_HEAD.exec(String(text2 || "").trimStart());
+  return match ? match[0].length : 0;
+}
+function paintChip(span, mentionLength) {
+  const node = span.firstChild;
+  if (!node || node.nodeType !== 3 || mentionLength <= 0) return false;
+  const spanRect = span.getBoundingClientRect();
+  if (spanRect.width === 0) return false;
+  const range = document.createRange();
+  range.setStart(node, 0);
+  range.setEnd(node, mentionLength);
+  const rect = range.getBoundingClientRect();
+  if (rect.width === 0) return false;
+  span.style.setProperty("--ph-chip-left", Math.round(rect.left - spanRect.left - 6) + "px");
+  span.style.setProperty("--ph-chip-top", Math.round(rect.top - spanRect.top - 2) + "px");
+  span.style.setProperty("--ph-chip-width", Math.round(rect.width + 12) + "px");
+  span.style.setProperty("--ph-chip-height", Math.round(rect.height + 4) + "px");
+  return true;
+}
 function scanComposerChips() {
   if (typeof document === "undefined") return;
   const composer2 = document.querySelector(COMPOSER_SELECTOR);
   if (!composer2) return;
   composer2.querySelectorAll('[data-ph-citeblock="1"]').forEach((element2) => {
-    const text2 = String(element2.textContent || "").trim();
-    if (!MENTION_ONLY.test(text2)) {
-      element2.classList.remove("ph-citeblock");
-      element2.removeAttribute("data-ph-citeblock");
+    const span = element2;
+    const inline = span.tagName === "SPAN" && span.hasAttribute("data-lexical-text");
+    const mentionLength = inline ? composerMentionLength(span.textContent) : 0;
+    if (!inline || mentionLength === 0 || !paintChip(span, mentionLength)) {
+      span.classList.remove("ph-citeblock");
+      span.removeAttribute("data-ph-citeblock");
     }
   });
-  const paragraphs = composer2.querySelectorAll("p, div[data-lexical-text], span[data-lexical-text]");
-  paragraphs.forEach((element2) => {
-    const text2 = String(element2.textContent || "").trim();
-    if (!MENTION_ONLY.test(text2)) return;
-    if (element2.getAttribute("data-ph-citeblock") === "1") return;
-    element2.classList.add("ph-citeblock");
-    element2.setAttribute("data-ph-citeblock", "1");
-    element2.setAttribute("title", "Pappers-Hall \u5F15\u7528\u6750\u6599");
+  composer2.querySelectorAll("span[data-lexical-text]").forEach((span) => {
+    if (span.getAttribute("data-ph-citeblock") === "1") return;
+    const mentionLength = composerMentionLength(span.textContent);
+    if (mentionLength === 0) return;
+    if (!paintChip(span, mentionLength)) return;
+    span.classList.add("ph-citeblock");
+    span.setAttribute("data-ph-citeblock", "1");
+    span.setAttribute("title", "Pappers-Hall \u5F15\u7528\u6750\u6599");
   });
 }
 function scanTokens() {

@@ -362,6 +362,41 @@ async function main() {
       const text = await evaluate(`(() => { const c = document.querySelector('[data-composer-input="true"]'); return c ? { text: c.innerText.slice(0, 200), html: c.innerHTML.slice(0, 400) } : null })()`)
       console.log('insertQuote probe:', JSON.stringify(result), 'composer:', JSON.stringify(text))
     }
+    if (STEPS.includes('probe-paragraph-split')) {
+      await evaluate(`(() => {
+        const node = document.querySelector('.ph-composer-entry')
+        const key = Object.keys(node || {}).find((k) => k.startsWith('__reactFiber'))
+        let fiber = node && node[key]
+        let actions = null
+        for (let i = 0; i < 40 && fiber; i += 1) {
+          if (fiber.memoizedProps && fiber.memoizedProps.inputActions) { actions = fiber.memoizedProps.inputActions; break }
+          fiber = fiber.return
+        }
+        if (!actions) return false
+        actions.setDraft('@论文中心 1 篇论文')
+        return true
+      })()`)
+      await sleep(700)
+      const split = await evaluate(`(() => {
+        const composer = document.querySelector('[data-composer-input="true"]')
+        if (!composer) return { ok: false }
+        composer.focus()
+        const selection = window.getSelection()
+        selection.selectAllChildren(composer)
+        selection.collapseToEnd()
+        document.execCommand('insertParagraph')
+        return { ok: true }
+      })()`)
+      await sleep(700)
+      const dom = await evaluate(`(() => {
+        const composer = document.querySelector('[data-composer-input="true"]')
+        const ps = composer ? [...composer.children].map((child) => ({ tag: child.tagName, text: (child.textContent || '').slice(0, 40), html: child.innerHTML.slice(0, 120) })) : []
+        return { paragraphs: ps.length, ps }
+      })()`)
+      console.log('paragraph split:', JSON.stringify(split), JSON.stringify(dom).slice(0, 700))
+      await shot('probe-paragraph-split')
+    }
+
     if (STEPS.includes('probe-wrap-chip')) {
       await evaluate(`(() => {
         const node = document.querySelector('.ph-composer-entry')
@@ -616,12 +651,14 @@ async function main() {
         const draft = await evaluate(`(() => {
           const composer = document.querySelector('[data-composer-input="true"]')
           const block = composer ? composer.querySelector('[data-ph-citeblock="1"]') : null
+          const rect = block ? block.getBoundingClientRect() : null
           return {
             rawText: (composer?.innerText || '').slice(0, 160),
             chipCount: block ? 1 : 0,
             chipText: block ? (block.textContent || '').trim() : null,
             chipBg: block ? getComputedStyle(block).backgroundColor : null,
-            chipWidth: block ? Math.round(block.getBoundingClientRect().width) : 0,
+            chipWidth: rect ? Math.round(rect.width) : 0,
+            chipHeight: rect ? Math.round(rect.height) : 0,
           }
         })()`)
         console.log('cite auto draft:', cited, JSON.stringify(draft))
@@ -686,6 +723,37 @@ async function main() {
         })()`)
         console.log('draft after cancel:', JSON.stringify(afterRemove))
         await shot('04w-cite-cancelled')
+      }
+      if (STEPS.includes('cite-typing')) {
+        await evaluate(`(() => {
+          const button = [...document.querySelectorAll('button[title="引用到对话"]')][0]
+          if (button) button.click()
+          return Boolean(button)
+        })()`)
+        await sleep(2000)
+        const typed = await evaluate(`(() => {
+          const composer = document.querySelector('[data-composer-input="true"]')
+          if (!composer) return false
+          composer.focus()
+          const selection = window.getSelection()
+          selection.selectAllChildren(composer)
+          selection.collapseToEnd()
+          document.execCommand('insertText', false, '这篇讲的什么')
+          return true
+        })()`)
+        await sleep(900)
+        const state = await evaluate(`(() => {
+          const composer = document.querySelector('[data-composer-input="true"]')
+          const block = composer ? composer.querySelector('[data-ph-citeblock="1"]') : null
+          const rect = block ? block.getBoundingClientRect() : null
+          return {
+            text: (composer?.innerText || '').slice(0, 120),
+            chipCount: block ? 1 : 0,
+            chipHeight: rect ? Math.round(rect.height) : 0,
+          }
+        })()`)
+        console.log('cite typing:', typed, JSON.stringify(state))
+        await shot('04v-cite-typing')
       }
       if (STEPS.includes('drawer-multi-cite')) {
         const citations = await evaluate(`(() => {

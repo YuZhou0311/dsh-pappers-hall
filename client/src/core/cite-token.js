@@ -110,11 +110,32 @@ function decorateTextNode(node, surface) {
  * chip with a positioned pseudo-element measured from the mention's real text
  * range: the box hugs the reference even after the user keeps typing after it.
  */
-const MENTION_HEAD = /^@论文中心 \d+ (篇论文|张图|条批注|条笔记)(《[^》]{0,40}》)?( \+ \d+ (篇论文|张图|条批注|条笔记))* ?/
+const MENTION_UNIT = /^\d+ (?:篇论文|张图|条批注|条笔记)(?:《[^》]{0,80}》)?/
+const MENTION_PREFIX = '@论文中心 '
 
+/**
+ * Length of the reference mention at the start of a composer text run.
+ *
+ * The token is `@论文中心 <n> 篇论文 + <n> 条笔记《标题》`: every unit may carry
+ * its own optional title, so the length is accumulated unit by unit instead of
+ * matching one fixed shape.
+ */
 function composerMentionLength(text) {
-  const match = MENTION_HEAD.exec(String(text || '').trimStart())
-  return match ? match[0].length : 0
+  const value = String(text || '')
+  if (!value.startsWith(MENTION_PREFIX)) return 0
+  let consumed = 0
+  let rest = value.slice(MENTION_PREFIX.length)
+  for (;;) {
+    const unit = MENTION_UNIT.exec(rest)
+    if (!unit) break
+    consumed += unit[0].length
+    rest = rest.slice(unit[0].length)
+    const separator = /^ \+ /.exec(rest)
+    if (!separator) break
+    consumed += separator[0].length
+    rest = rest.slice(separator[0].length)
+  }
+  return consumed === 0 ? 0 : MENTION_PREFIX.length + consumed
 }
 
 function paintChip(span, mentionLength) {

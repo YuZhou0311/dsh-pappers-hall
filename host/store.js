@@ -5300,7 +5300,7 @@ function describeBundle(materials) {
  * bundle id to `papers_search` / `papers_get_passage` / `papers_get_figure`.
  * @param {string} bundleId bundle id (`bn-...`).
  * @param {object[]} materials resolved bundle materials.
- * @returns {string} token such as `@论文中心 2 篇论文 + 1 张图`.
+ * @returns {string} token such as `@论文中心 2 篇论文 + 1 张图` (no bundle id, no note title).
  */
 export function buildBundleToken(bundleId, materials) {
   const counts = { paper: 0, figure: 0, annotation: 0, note: 0 }
@@ -5309,19 +5309,9 @@ export function buildBundleToken(bundleId, materials) {
   if (counts.paper > 0) parts.push(`${counts.paper} 篇论文`)
   if (counts.figure > 0) parts.push(`${counts.figure} 张图`)
   if (counts.annotation > 0) parts.push(`${counts.annotation} 条批注`)
-  if (counts.note > 0) {
-    // A note token without its title made the model guess which note was attached;
-    // include a short title so the first model step can identify it.
-    const titleItem = materials.find((item) => {
-      if (!item || item.kind !== 'note') return false
-      const value = item.material && typeof item.material.title === 'string' ? item.material.title : item.title
-      return typeof value === 'string' && value.trim() !== ''
-    })
-    const rawTitle = titleItem ? (titleItem.material && titleItem.material.title) || titleItem.title || '' : ''
-    const cleanTitle = rawTitle.replace(/\s+/g, ' ').trim()
-    const shortTitle = cleanTitle.length > 20 ? cleanTitle.slice(0, 20) + '…' : cleanTitle
-    parts.push(`${counts.note} 条笔记${shortTitle ? `《${shortTitle}》` : ''}`)
-  }
+  // The note title is intentionally omitted: the mention must stay short enough
+  // to render as one chip, and `papers_references` already returns the titles.
+  if (counts.note > 0) parts.push(`${counts.note} 条笔记`)
   const summary = parts.length === 0 ? `${materials.length} 项材料` : parts.join(' + ')
   // Compact mention form: no box glyphs, reads as a normal @-reference in the
   // draft, and still carries the bundle id the model needs. Keep the id intact.

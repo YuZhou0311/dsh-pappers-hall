@@ -29842,10 +29842,24 @@ function decorateTextNode(node, surface) {
   }
   return true;
 }
-var MENTION_HEAD = /^@论文中心 \d+ (篇论文|张图|条批注|条笔记)(《[^》]{0,40}》)?( \+ \d+ (篇论文|张图|条批注|条笔记))* ?/;
+var MENTION_UNIT = /^\d+ (?:篇论文|张图|条批注|条笔记)(?:《[^》]{0,80}》)?/;
+var MENTION_PREFIX = "@\u8BBA\u6587\u4E2D\u5FC3 ";
 function composerMentionLength(text2) {
-  const match = MENTION_HEAD.exec(String(text2 || "").trimStart());
-  return match ? match[0].length : 0;
+  const value = String(text2 || "");
+  if (!value.startsWith(MENTION_PREFIX)) return 0;
+  let consumed = 0;
+  let rest = value.slice(MENTION_PREFIX.length);
+  for (; ; ) {
+    const unit = MENTION_UNIT.exec(rest);
+    if (!unit) break;
+    consumed += unit[0].length;
+    rest = rest.slice(unit[0].length);
+    const separator = /^ \+ /.exec(rest);
+    if (!separator) break;
+    consumed += separator[0].length;
+    rest = rest.slice(separator[0].length);
+  }
+  return consumed === 0 ? 0 : MENTION_PREFIX.length + consumed;
 }
 function paintChip(span, mentionLength) {
   const node = span.firstChild;
@@ -30000,6 +30014,20 @@ function DockBody(props) {
   const [errors, setErrors] = import_react44.default.useState({});
   const insertingRef = import_react44.default.useRef({});
   const bundles = snapshot4.bundles.filter((bundle) => !bundle.sessionId || bundle.sessionId === props.sessionId);
+  import_react44.default.useEffect(() => {
+    const timer2 = setInterval(() => {
+      const state = pendingStore.getSnapshot();
+      const composer2 = document.querySelector('[data-composer-input="true"]');
+      const text2 = composer2 ? String(composer2.innerText || "") : "";
+      state.bundles.forEach((bundle) => {
+        if (!bundle.token) return;
+        if (props.sessionId && bundle.sessionId && bundle.sessionId !== props.sessionId) return;
+        if (text2.includes(bundle.token)) return;
+        pendingStore.remove(bundle.bundleId);
+      });
+    }, 900);
+    return () => clearInterval(timer2);
+  }, [props.sessionId]);
   const toggleExpanded = import_react44.default.useCallback((bundleId) => {
     setExpanded((previous) => Object.assign({}, previous, { [bundleId]: !previous[bundleId] }));
   }, []);

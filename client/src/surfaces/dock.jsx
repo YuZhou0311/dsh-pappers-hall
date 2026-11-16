@@ -70,6 +70,23 @@ export function DockBody(props) {
   const insertingRef = React.useRef({})
   const bundles = snapshot.bundles.filter((bundle) => !bundle.sessionId || bundle.sessionId === props.sessionId)
 
+  // The mention in the draft is the citation itself: if the user deletes it,
+  // the card above must not keep claiming the material is attached.
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      const state = pendingStore.getSnapshot()
+      const composer = document.querySelector('[data-composer-input="true"]')
+      const text = composer ? String(composer.innerText || '') : ''
+      state.bundles.forEach((bundle) => {
+        if (!bundle.token) return
+        if (props.sessionId && bundle.sessionId && bundle.sessionId !== props.sessionId) return
+        if (text.includes(bundle.token)) return
+        pendingStore.remove(bundle.bundleId)
+      })
+    }, 900)
+    return () => clearInterval(timer)
+  }, [props.sessionId])
+
   const toggleExpanded = React.useCallback((bundleId) => {
     setExpanded((previous) => Object.assign({}, previous, { [bundleId]: !previous[bundleId] }))
   }, [])

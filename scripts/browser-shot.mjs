@@ -362,6 +362,55 @@ async function main() {
       const text = await evaluate(`(() => { const c = document.querySelector('[data-composer-input="true"]'); return c ? { text: c.innerText.slice(0, 200), html: c.innerHTML.slice(0, 400) } : null })()`)
       console.log('insertQuote probe:', JSON.stringify(result), 'composer:', JSON.stringify(text))
     }
+    if (STEPS.includes('probe-surround')) {
+      await evaluate(`(() => {
+        const node = document.querySelector('.ph-composer-entry')
+        const key = Object.keys(node || {}).find((k) => k.startsWith('__reactFiber'))
+        let fiber = node && node[key]
+        let actions = null
+        for (let i = 0; i < 40 && fiber; i += 1) {
+          if (fiber.memoizedProps && fiber.memoizedProps.inputActions) { actions = fiber.memoizedProps.inputActions; break }
+          fiber = fiber.return
+        }
+        if (actions) actions.setDraft('@论文中心 1 篇论文 + 1 条笔记《Reflexion 速记：不更新权重，只让 Agent 记住教训》\\n\\n补充一句')
+        return Boolean(actions)
+      })()`)
+      await sleep(800)
+      const wrapped = await evaluate(`(() => {
+        const composer = document.querySelector('[data-composer-input="true"]')
+        if (!composer) return { ok: false }
+        const walker = document.createTreeWalker(composer, NodeFilter.SHOW_TEXT, null)
+        let target = null
+        let node = walker.nextNode()
+        while (node) {
+          if ((node.nodeValue || '').startsWith('@论文中心')) { target = node; break }
+          node = walker.nextNode()
+        }
+        if (!target) return { ok: false, reason: 'no text' }
+        const text = target.nodeValue
+        const range = document.createRange()
+        range.setStart(target, 0)
+        const match = text.match(/^@论文中心 [^\\n]*?》/)
+        const len = match ? match[0].length : 20
+        range.setEnd(target, len)
+        const span = document.createElement('span')
+        span.className = 'ph-citeblock'
+        span.setAttribute('data-ph-citeblock', 'probe')
+        range.surroundContents(span)
+        return { ok: true, len, wrapped: span.textContent.length }
+      })()`)
+      await sleep(1200)
+      const state = await evaluate(`(() => {
+        const composer = document.querySelector('[data-composer-input="true"]')
+        return {
+          stillThere: Boolean(composer && composer.querySelector('[data-ph-citeblock="probe"]')),
+          text: (composer?.innerText || '').slice(0, 140),
+        }
+      })()`)
+      console.log('surround probe:', JSON.stringify(wrapped), JSON.stringify(state))
+      await shot('probe-surround')
+    }
+
     if (STEPS.includes('probe-paragraph-split')) {
       await evaluate(`(() => {
         const node = document.querySelector('.ph-composer-entry')
@@ -723,6 +772,96 @@ async function main() {
         })()`)
         console.log('draft after cancel:', JSON.stringify(afterRemove))
         await shot('04w-cite-cancelled')
+      }
+      if (STEPS.includes('cite-delete-verify')) {
+        await evaluate(`(() => {
+          const button = [...document.querySelectorAll('button[title="引用到对话"]')][0]
+          if (button) button.click()
+          return Boolean(button)
+        })()`)
+        await sleep(2200)
+        const before = await evaluate(`(() => ({
+          draft: (document.querySelector('[data-composer-input="true"]')?.innerText || '').trim().slice(0, 60),
+          cards: document.querySelectorAll('.ph-refcard').length,
+          chip: document.querySelectorAll('[data-ph-citeblock="1"]').length,
+        }))()`)
+        await evaluate(`(() => {
+          const entry = document.querySelector('.ph-composer-entry')
+          const key = Object.keys(entry || {}).find((k) => k.startsWith('__reactFiber'))
+          let fiber = entry && entry[key]
+          let actions = null
+          for (let i = 0; i < 40 && fiber; i += 1) {
+            if (fiber.memoizedProps && fiber.memoizedProps.inputActions) { actions = fiber.memoizedProps.inputActions; break }
+            fiber = fiber.return
+          }
+          if (actions) actions.setDraft('')
+          return Boolean(actions)
+        })()`)
+        await sleep(2200)
+        const after = await evaluate(`(() => ({
+          draft: (document.querySelector('[data-composer-input="true"]')?.innerText || '').trim().slice(0, 60),
+          cards: document.querySelectorAll('.ph-refcard').length,
+          chip: document.querySelectorAll('[data-ph-citeblock="1"]').length,
+        }))()`)
+        console.log('cite then delete:', JSON.stringify(before), JSON.stringify(after))
+        await shot('04p-cite-delete')
+      }
+      if (STEPS.includes('cite-note-chip')) {
+        // One paper + one note: the chip must cover the whole mention.
+        const seeded = await evaluate(`(async () => {
+          const list = await (await fetch('/pappers-hall/api', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ method: 'library.list', params: { limit: 1 } }) })).json()
+          const notes = await (await fetch('/pappers-hall/api', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ method: 'notes.list', params: { limit: 1 } }) })).json()
+          const paperId = list?.data?.items?.[0]?.id
+          const noteId = notes?.data?.items?.[0]?.id
+          if (!paperId || !noteId) return { ok: false }
+          const commit = await (await fetch('/pappers-hall/api', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ method: 'references.commit', params: { items: [{ kind: 'paper', id: paperId }, { kind: 'note', id: noteId }] } }) })).json()
+          const token = commit?.data?.token
+          if (!token) return { ok: false }
+          const entry = document.querySelector('.ph-composer-entry')
+          const key = Object.keys(entry || {}).find((k) => k.startsWith('__reactFiber'))
+          let fiber = entry && entry[key]
+          let actions = null
+          for (let i = 0; i < 40 && fiber; i += 1) {
+            if (fiber.memoizedProps && fiber.memoizedProps.inputActions) { actions = fiber.memoizedProps.inputActions; break }
+            fiber = fiber.return
+          }
+          if (!actions) return { ok: false }
+          actions.setDraft(token)
+          return { ok: true, token }
+        })()`)
+        await sleep(1400)
+        const chip = await evaluate(`(() => {
+          const composer = document.querySelector('[data-composer-input="true"]')
+          const block = composer ? composer.querySelector('[data-ph-citeblock="1"]') : null
+          if (!block) return { ok: false, text: (composer?.innerText || '').slice(0, 80) }
+          const pseudo = getComputedStyle(block, '::before')
+          const spanWidth = block.getBoundingClientRect().width
+          return {
+            ok: true,
+            text: (block.textContent || '').trim(),
+            boxWidth: Math.round(parseFloat(pseudo.width)),
+            spanWidth: Math.round(spanWidth),
+            covered: Math.round(parseFloat(pseudo.width)) >= Math.round(spanWidth) - 2,
+          }
+        })()`)
+        console.log('note chip:', JSON.stringify(seeded), JSON.stringify(chip))
+        await shot('04n-note-chip')
+        const cleared = await evaluate(`(() => {
+          const composer = document.querySelector('[data-composer-input="true"]')
+          if (!composer) return false
+          composer.focus()
+          document.execCommand('selectAll')
+          document.execCommand('delete')
+          return true
+        })()`)
+        await sleep(2000)
+        const after = await evaluate(`(() => ({
+          draft: (document.querySelector('[data-composer-input="true"]')?.innerText || '').trim().slice(0, 40),
+          cards: document.querySelectorAll('.ph-refcard').length,
+          chip: document.querySelectorAll('[data-ph-citeblock="1"]').length,
+        }))()`)
+        console.log('after clearing draft:', cleared, JSON.stringify(after))
+        await shot('04o-cleared-draft')
       }
       if (STEPS.includes('cite-typing')) {
         await evaluate(`(() => {

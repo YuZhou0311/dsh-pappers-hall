@@ -65,7 +65,7 @@ export const ROUTE_PREFIX = '/pappers-hall'
  */
 export const MATERIALS_PROMPT =
   'Pappers-Hall materials appear in the user message as a short mention like ' +
-  '`@论文中心 2 篇论文 + 1 张图` or `@论文中心 1 条笔记《标题》`. ' +
+  '`@论文中心 2 篇论文 + 1 张图` or `@论文中心 1 条笔记`. ' +
   'When the message contains such a mention, call papers_references (no arguments) to get the attached ' +
   'bundle_id and its material list, then call papers_search with scope:"reference_bundle" and that ' +
   'bundle_id, and read only that material set. ' +

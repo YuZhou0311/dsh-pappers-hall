@@ -70,21 +70,47 @@ export function DockBody(props) {
   const insertingRef = React.useRef({})
   const bundles = snapshot.bundles.filter((bundle) => !bundle.sessionId || bundle.sessionId === props.sessionId)
 
-  // The mention in the draft is the citation itself: if the user deletes it,
-  // the card above must not keep claiming the material is attached.
+  // The mention in the draft is the citation itself: the moment the user
+  // deletes it (even partially), the card above must stop claiming the material
+  // is attached. Contenteditable edits do not bubble to React, so this listens
+  // to the document and also keeps a short polling fallback.
   React.useEffect(() => {
-    const timer = setInterval(() => {
+    const sync = () => {
       const state = pendingStore.getSnapshot()
+      if (state.bundles.length === 0) return
       const composer = document.querySelector('[data-composer-input="true"]')
       const text = composer ? String(composer.innerText || '') : ''
       state.bundles.forEach((bundle) => {
         if (!bundle.token) return
         if (props.sessionId && bundle.sessionId && bundle.sessionId !== props.sessionId) return
+        // `includes` covers the intact mention; a partially deleted mention no
+        // longer matches and drops the pending reference immediately.
         if (text.includes(bundle.token)) return
         pendingStore.remove(bundle.bundleId)
       })
-    }, 900)
-    return () => clearInterval(timer)
+    }
+    let timer = null
+    const schedule = () => {
+      if (timer !== null) return
+      timer = setTimeout(() => { timer = null; sync() }, 60)
+    }
+    const onEdit = (event) => {
+      const target = event.target
+      const composer = document.querySelector('[data-composer-input="true"]')
+      if (!composer || !target) { schedule(); return }
+      if (composer.contains(target) || target === composer) schedule()
+    }
+    document.addEventListener('input', onEdit, true)
+    document.addEventListener('keyup', onEdit, true)
+    document.addEventListener('beforeinput', onEdit, true)
+    const poll = setInterval(sync, 400)
+    return () => {
+      document.removeEventListener('input', onEdit, true)
+      document.removeEventListener('keyup', onEdit, true)
+      document.removeEventListener('beforeinput', onEdit, true)
+      clearInterval(poll)
+      if (timer !== null) clearTimeout(timer)
+    }
   }, [props.sessionId])
 
   const toggleExpanded = React.useCallback((bundleId) => {

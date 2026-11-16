@@ -773,6 +773,44 @@ async function main() {
         console.log('draft after cancel:', JSON.stringify(afterRemove))
         await shot('04w-cite-cancelled')
       }
+      if (STEPS.includes('cite-delete-partial')) {
+        await evaluate(`(() => {
+          const button = [...document.querySelectorAll('button[title="引用到对话"]')][0]
+          if (button) button.click()
+          return Boolean(button)
+        })()`)
+        await sleep(2200)
+        const before = await evaluate(`(() => ({
+          draft: (document.querySelector('[data-composer-input="true"]')?.innerText || '').trim().slice(0, 40),
+          cards: document.querySelectorAll('.ph-refcard').length,
+        }))()`)
+        // Delete only the tail of the mention, like a few Backspace presses.
+        const partial = await evaluate(`(() => {
+          const entry = document.querySelector('.ph-composer-entry')
+          const key = Object.keys(entry || {}).find((k) => k.startsWith('__reactFiber'))
+          let fiber = entry && entry[key]
+          let actions = null
+          for (let i = 0; i < 40 && fiber; i += 1) {
+            if (fiber.memoizedProps && fiber.memoizedProps.inputActions) { actions = fiber.memoizedProps.inputActions; break }
+            fiber = fiber.return
+          }
+          if (actions) actions.setDraft('@论文中心 1 篇')
+          return Boolean(actions)
+        })()`)
+        const started = Date.now()
+        let elapsed = -1
+        for (let i = 0; i < 30; i += 1) {
+          await sleep(100)
+          const cards = await evaluate("document.querySelectorAll('.ph-refcard').length")
+          if (cards === 0) { elapsed = Date.now() - started; break }
+        }
+        const after = await evaluate(`(() => ({
+          draft: (document.querySelector('[data-composer-input="true"]')?.innerText || '').trim().slice(0, 40),
+          cards: document.querySelectorAll('.ph-refcard').length,
+        }))()`)
+        console.log('partial delete:', JSON.stringify(before), partial, 'elapsed_ms:', elapsed, JSON.stringify(after))
+        await shot('04q-partial-delete')
+      }
       if (STEPS.includes('cite-delete-verify')) {
         await evaluate(`(() => {
           const button = [...document.querySelectorAll('button[title="引用到对话"]')][0]

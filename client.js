@@ -30015,8 +30015,9 @@ function DockBody(props) {
   const insertingRef = import_react44.default.useRef({});
   const bundles = snapshot4.bundles.filter((bundle) => !bundle.sessionId || bundle.sessionId === props.sessionId);
   import_react44.default.useEffect(() => {
-    const timer2 = setInterval(() => {
+    const sync = () => {
       const state = pendingStore.getSnapshot();
+      if (state.bundles.length === 0) return;
       const composer2 = document.querySelector('[data-composer-input="true"]');
       const text2 = composer2 ? String(composer2.innerText || "") : "";
       state.bundles.forEach((bundle) => {
@@ -30025,8 +30026,35 @@ function DockBody(props) {
         if (text2.includes(bundle.token)) return;
         pendingStore.remove(bundle.bundleId);
       });
-    }, 900);
-    return () => clearInterval(timer2);
+    };
+    let timer2 = null;
+    const schedule2 = () => {
+      if (timer2 !== null) return;
+      timer2 = setTimeout(() => {
+        timer2 = null;
+        sync();
+      }, 60);
+    };
+    const onEdit = (event) => {
+      const target = event.target;
+      const composer2 = document.querySelector('[data-composer-input="true"]');
+      if (!composer2 || !target) {
+        schedule2();
+        return;
+      }
+      if (composer2.contains(target) || target === composer2) schedule2();
+    };
+    document.addEventListener("input", onEdit, true);
+    document.addEventListener("keyup", onEdit, true);
+    document.addEventListener("beforeinput", onEdit, true);
+    const poll = setInterval(sync, 400);
+    return () => {
+      document.removeEventListener("input", onEdit, true);
+      document.removeEventListener("keyup", onEdit, true);
+      document.removeEventListener("beforeinput", onEdit, true);
+      clearInterval(poll);
+      if (timer2 !== null) clearTimeout(timer2);
+    };
   }, [props.sessionId]);
   const toggleExpanded = import_react44.default.useCallback((bundleId) => {
     setExpanded((previous) => Object.assign({}, previous, { [bundleId]: !previous[bundleId] }));

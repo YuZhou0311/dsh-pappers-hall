@@ -5006,3 +5006,111 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   outline: 2px solid var(--ph-accent);
   outline-offset: 2px;
 }
+
+/* ==================================== 12 component state & colour polish */
+/* Navigation: selected state is a quiet tinted surface rather than a side
+   stripe. This keeps the accent for action and state, not decoration. */
+.ph-navitem--active,
+.ph-collection--active {
+  background: color-mix(in srgb, var(--ph-accent) 8%, var(--ph-bg));
+  color: var(--ph-ink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ph-accent) 14%, transparent);
+}
+.ph-navitem--active::before { display: none; }
+.ph-navitem--active:hover,
+.ph-collection--active:hover {
+  background: color-mix(in srgb, var(--ph-accent) 11%, var(--ph-bg));
+}
+
+/* Buttons: one radius/height language across variants. */
+.ph-btn { border-radius: var(--ph-r-sm); letter-spacing: -0.004em; }
+.ph-btn--sm { border-radius: var(--ph-r-xs); }
+.ph-iconbtn { border-radius: var(--ph-r-sm); }
+.ph-iconbtn:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
+.ph-btn:focus-visible,
+.ph-iconbtn:focus-visible {
+  outline: 2px solid var(--ph-accent);
+  outline-offset: 2px;
+}
+
+/* Inputs and selects share the same focus treatment as buttons. */
+.ph-select,
+.ph-search {
+  border-radius: var(--ph-r-sm);
+  background: var(--ph-surface-1);
+  transition: border-color 150ms var(--ph-ease), background-color 150ms var(--ph-ease), box-shadow 150ms var(--ph-ease);
+}
+.ph-select:hover,
+.ph-search:hover { background: var(--ph-surface-2); }
+.ph-select:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--ph-accent) 58%, var(--ph-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ph-accent) 14%, transparent);
+}
+.ph-search:focus-within {
+  border-color: color-mix(in srgb, var(--ph-accent) 58%, var(--ph-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ph-accent) 12%, transparent);
+  background: var(--ph-surface-1);
+}
+.ph-select,
+.ph-search input { accent-color: var(--ph-accent); }
+.ph-select::placeholder,
+.ph-search input::placeholder { color: var(--ph-ink-3); opacity: 1; }
+
+/* Badges read as labels, not pills competing with buttons. */
+.ph-badge {
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  font-weight: var(--ph-fw-medium);
+}
+.ph-badge--business { border-color: var(--ph-accent-line); }
+.ph-badge--success,
+.ph-badge--warning,
+.ph-badge--error { border-color: color-mix(in srgb, currentColor 22%, transparent); }
+
+/* Table header stays visible in long libraries; the tint separates it without
+   a heavy rule. */
+.ph-table__head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--ph-surface-2) 78%, var(--ph-bg));
+  backdrop-filter: blur(10px);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .ph-table__head { background: var(--ph-surface-2); }
+}
+
+/* Empty states: a small, quiet well for the icon instead of a floating glyph. */
+.ph-empty__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ph-ink) 4%, var(--ph-surface-2));
+  color: var(--ph-ink-3);
+  box-shadow: inset 0 0 0 1px var(--ph-line-soft);
+}
+
+/* Toast: a clear semantic dot, soft elevation, and bounded enter motion. */
+.ph-toast {
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ph-surface-1) 92%, var(--ph-bg));
+  box-shadow: 0 10px 30px -16px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.ph-toast .ph-icon { flex: none; }
+.ph-toast--success { border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 24%, var(--ph-line)); }
+.ph-toast--warning { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 24%, var(--ph-line)); }
+.ph-toast--error { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 24%, var(--ph-line)); }
+
+/* Settings sections get a clear breathing rhythm and a quiet section number
+   only where the content is genuinely ordered; no decorative eyebrows. */
+.ph-settings__body > .ph-section + .ph-section { margin-top: 4px; }
+.ph-settings__section-title,
+.ph-section__title { letter-spacing: -0.01em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-toast { animation: none; }
+  .ph-table__head { backdrop-filter: none; }
+}

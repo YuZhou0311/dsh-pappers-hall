@@ -84,6 +84,7 @@ ICONS.scan = ICONS.pages
 ICONS.globe = ICONS.link
 ICONS.sparkles = ICONS.sparkle
 ICONS.chart = ICONS.grid
+ICONS.compass = [['circle', { cx: 12, cy: 12, r: 8 }], ['path', 'm15.5 8.5-2.2 5-5 2.2 2.2-5 5-2.2Z']]
 ICONS.cpu = [['rect', { x: 6.5, y: 6.5, width: 11, height: 11, rx: 2 }], ['path', 'M10 3.5v3M14 3.5v3M10 17.5v3M14 17.5v3M3.5 10h3M3.5 14h3M17.5 10h3M17.5 14h3']]
 
 /** Render one outline icon. */

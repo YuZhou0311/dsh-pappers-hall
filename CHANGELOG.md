@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **First-run guide**: a five-step walkthrough in the paper centre that installs the local component inline, imports a bundled 3-page sample paper (two text pages plus one scanned page for OCR), and introduces the four core actions. Reopenable from the toolbar, settings or an event; state persists in `onboarding.state`.
+
 - **Installer and migration fixes found by installing on a real machine**: `onnxruntime` is now installed and verified (rapidocr does not pull it), a stopped worker can no longer cancel its replacement's readiness ping, and schema v9 stores the OCR geometry scanned pages need for a reader structure.
 
 - **Scanned papers get a real reader structure**: OCR lines plus PP-DocLayout-S regions build blocks with heading/caption/table roles, a selectable word layer, an abstract and a section outline (`abstractSource: ocr`).

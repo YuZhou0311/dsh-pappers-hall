@@ -13,6 +13,7 @@ import { createElement as h } from 'react'
 import { NS, PANEL_ID, DRAWER_ID, DRAWER_KIND, DOCK_ID, HEADER_ID } from './core/constants.js'
 import { installStyles } from './core/styles.js'
 import { createApi } from './core/api.js'
+import { bus } from './core/bus.js'
 import { createPendingStore } from './core/pending.js'
 import { createLibraryController } from './core/library-state.js'
 import { withBoundary } from './core/boundary.jsx'
@@ -68,6 +69,8 @@ export function openPaperDrawer(ctx) {
  * @param {object} ctx Client plugin context.
  */
 export function apply(ctx) {
+  // The first-run guide can point at the conversation: open the paper drawer there.
+  ctx.effect(() => bus.on('pappers-hall:open-drawer', () => { openPaperDrawer(ctx) || openLibraryPanel(ctx) }), 'pappers-hall: onboarding drawer bridge')
   installStyles(ctx)
 
   ctx.effect(() => ctx.locale.register(NS, { zh: ZH, en: EN }), 'pappers-hall: dictionaries')

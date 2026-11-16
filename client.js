@@ -57,8 +57,8 @@ __export(index_exports, {
   sectionizeMarkdown: () => sectionizeMarkdown
 });
 module.exports = __toCommonJS(index_exports);
-var import_react50 = __toESM(require("react"), 1);
-var import_react51 = require("react");
+var import_react51 = __toESM(require("react"), 1);
+var import_react52 = require("react");
 
 // src/core/constants.js
 var NS = "pappers-hall";
@@ -5471,6 +5471,168 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   border-radius: 7px;
   background: color-mix(in srgb, var(--ph-accent) 8%, transparent);
 }
+
+/* ============================ onboarding / first-run guide ================ */
+/* A takeover card: rail on the left for the five steps, real actions on the
+   right (install the local component, import the sample paper, then a tour). */
+.ph-onbbackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--ph-ink) 28%, transparent);
+  backdrop-filter: blur(6px) saturate(1.05);
+  animation: ph-onb-fade 160ms ease-out both;
+}
+.ph-onb {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  width: min(960px, 100%);
+  max-height: min(86vh, 720px);
+  overflow: hidden;
+  border: 1px solid var(--ph-line);
+  border-radius: 16px;
+  background: var(--ph-surface-1);
+  box-shadow: 0 40px 90px -50px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.06);
+  outline: none;
+  animation: ph-onb-rise 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes ph-onb-fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes ph-onb-rise { from { opacity: 0; transform: translateY(10px) scale(0.995) } to { opacity: 1; transform: none } }
+
+.ph-onb__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 16px;
+  border-right: 1px solid var(--ph-line);
+  background: var(--ph-surface-2);
+}
+.ph-onb__brand { display: flex; align-items: center; gap: 8px; font-size: var(--ph-fs-12); font-weight: var(--ph-fw-medium); color: var(--ph-ink-2); }
+.ph-onb__steps { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.ph-onb__stepbtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ph-ink-3);
+  font: inherit;
+  font-size: var(--ph-fs-12);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.ph-onb__stepbtn:hover { background: var(--ph-surface-1); color: var(--ph-ink); }
+.ph-onb__step.is-current .ph-onb__stepbtn { background: var(--ph-surface-1); color: var(--ph-ink); font-weight: var(--ph-fw-medium); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.ph-onb__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: 1px solid var(--ph-line);
+  border-radius: 999px;
+  background: var(--ph-surface-1);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ph-ink-3);
+}
+.ph-onb__step.is-current .ph-onb__dot { border-color: var(--ph-accent); color: var(--ph-accent); }
+.ph-onb__step.is-done .ph-onb__dot { border-color: transparent; background: color-mix(in srgb, var(--ph-accent) 14%, transparent); color: var(--ph-accent); }
+.ph-onb__railfoot { margin-top: auto; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+
+.ph-onb__main { display: flex; flex-direction: column; min-width: 0; }
+.ph-onb__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px 0; }
+.ph-onb__steptag { display: inline-flex; align-items: center; gap: 6px; font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+.ph-onb__body { flex: 1; min-height: 0; overflow: auto; padding: 8px 24px 20px; }
+.ph-onb__footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; border-top: 1px solid var(--ph-line); background: var(--ph-surface-1); }
+.ph-onb__footerRight { display: flex; align-items: center; gap: 12px; }
+
+.ph-onb__hero { padding: 8px 0 4px; }
+.ph-onb__badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--ph-line); border-radius: 999px; font-size: var(--ph-fs-11); color: var(--ph-ink-3); background: var(--ph-surface-2); }
+.ph-onb__title { margin: 14px 0 8px; font-size: 26px; line-height: 1.25; font-weight: var(--ph-fw-medium); letter-spacing: -0.01em; color: var(--ph-ink); }
+.ph-onb__lead { margin: 0; font-size: var(--ph-fs-13); line-height: 1.7; color: var(--ph-ink-2); max-width: 52ch; }
+.ph-onb__features { display: grid; gap: 10px; margin: 18px 0 4px; }
+.ph-onb__feature { display: flex; gap: 12px; padding: 12px 14px; border: 1px solid var(--ph-line); border-radius: 10px; background: var(--ph-surface-1); }
+.ph-onb__feature strong { display: block; font-size: var(--ph-fs-13); color: var(--ph-ink); font-weight: var(--ph-fw-medium); }
+.ph-onb__feature p { margin: 4px 0 0; font-size: var(--ph-fs-12); line-height: 1.65; color: var(--ph-ink-3); }
+.ph-onb__featureicon { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex: none; border-radius: 8px; background: color-mix(in srgb, var(--ph-accent) 10%, transparent); color: var(--ph-accent); }
+.ph-onb__meta { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: var(--ph-fs-11); color: var(--ph-ink-3); }
+
+.ph-onb__stepTitle { margin: 6px 0 6px; font-size: 20px; font-weight: var(--ph-fw-medium); color: var(--ph-ink); }
+.ph-onb__stepTitle--center { text-align: center; }
+.ph-onb__stepLead { margin: 0 0 16px; font-size: var(--ph-fs-13); line-height: 1.7; color: var(--ph-ink-2); max-width: 58ch; }
+.ph-onb__stepLead--center { text-align: center; margin-left: auto; margin-right: auto; }
+
+.ph-onb__install { border: 1px solid var(--ph-line); border-radius: 12px; padding: 16px; background: var(--ph-surface-1); box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.ph-onb__install--done { border-color: color-mix(in srgb, var(--ph-accent) 30%, var(--ph-line)); background: color-mix(in srgb, var(--ph-accent) 4%, var(--ph-surface-1)); }
+.ph-onb__installhead { display: flex; align-items: center; gap: 12px; }
+.ph-onb__installhead strong { display: block; font-size: var(--ph-fs-13); }
+.ph-onb__installhead .ph-caption { display: block; margin-top: 2px; font-size: var(--ph-fs-11); }
+.ph-onb__installicon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex: none; border-radius: 10px; background: var(--ph-surface-2); color: var(--ph-ink-2); }
+.ph-onb__install--done .ph-onb__installicon { background: color-mix(in srgb, var(--ph-accent) 12%, transparent); color: var(--ph-accent); }
+.ph-onb__installhead > div { flex: 1; min-width: 0; }
+.ph-onb__pill { padding: 2px 8px; border-radius: 999px; font-size: var(--ph-fs-11); color: var(--ph-accent); background: color-mix(in srgb, var(--ph-accent) 12%, transparent); }
+.ph-onb__list { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.ph-onb__list li { display: flex; align-items: flex-start; gap: 8px; font-size: var(--ph-fs-12); line-height: 1.55; color: var(--ph-ink-2); }
+.ph-onb__list .ph-icon { color: var(--ph-accent); margin-top: 3px; flex: none; }
+.ph-onb__progress { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.ph-onb__progressbar { position: relative; flex: 1; height: 6px; border-radius: 999px; background: var(--ph-surface-3); overflow: hidden; }
+.ph-onb__progressbar span { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--ph-accent); transition: width 320ms ease; }
+.ph-onb__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
+.ph-onb__actions--center { justify-content: center; }
+.ph-onb__link { border: 0; background: transparent; color: var(--ph-ink-3); font: inherit; font-size: var(--ph-fs-12); cursor: pointer; padding: 4px 2px; border-radius: 6px; }
+.ph-onb__link:hover { color: var(--ph-ink); text-decoration: underline; text-underline-offset: 3px; }
+.ph-onb__fineprint { margin: 12px 0 0; font-size: var(--ph-fs-11); line-height: 1.7; color: var(--ph-ink-4); }
+
+.ph-onb__sample { display: flex; flex-direction: column; gap: 14px; }
+.ph-onb__paper { border: 1px solid var(--ph-line); border-radius: 12px; padding: 14px; background: var(--ph-surface-1); }
+.ph-onb__paperhead { display: flex; align-items: center; gap: 8px; font-size: var(--ph-fs-12); font-weight: var(--ph-fw-medium); color: var(--ph-ink-2); }
+.ph-onb__pages { display: flex; gap: 10px; margin: 12px 0 8px; }
+.ph-onb__page { position: relative; flex: 1; min-width: 0; aspect-ratio: 3 / 4; border: 1px solid var(--ph-line); border-radius: 7px; background: var(--ph-surface-1); padding: 8px; display: flex; align-items: flex-end; justify-content: flex-end; }
+.ph-onb__page span { font-size: 10px; color: var(--ph-ink-4); font-variant-numeric: tabular-nums; }
+.ph-onb__pagelines { position: absolute; inset: 10px 10px auto; height: 62%; background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--ph-ink) 10%, transparent) 0 2px, transparent 2px 9px); border-radius: 2px; }
+.ph-onb__page--scan { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ph-ink) 5%, transparent) 0 6px, transparent 6px 12px); }
+.ph-onb__page--scan .ph-onb__pagelines { background: none; }
+.ph-onb__sampleactions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.ph-onb__tour { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.ph-onb__tourcard { position: relative; padding: 14px; border: 1px solid var(--ph-line); border-radius: 10px; background: var(--ph-surface-1); }
+.ph-onb__tourcard strong { display: block; margin-top: 8px; font-size: var(--ph-fs-13); color: var(--ph-ink); font-weight: var(--ph-fw-medium); }
+.ph-onb__tourcard p { margin: 4px 0 0; font-size: var(--ph-fs-12); line-height: 1.6; color: var(--ph-ink-3); }
+.ph-onb__tournum { position: absolute; top: 10px; right: 12px; font-size: 11px; color: var(--ph-ink-4); font-variant-numeric: tabular-nums; }
+.ph-onb__touricon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: color-mix(in srgb, var(--ph-accent) 10%, transparent); color: var(--ph-accent); }
+
+.ph-onb__donehead { display: flex; justify-content: center; margin: 8px 0 10px; }
+.ph-onb__doneicon { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 50%; background: color-mix(in srgb, var(--ph-accent) 12%, transparent); color: var(--ph-accent); }
+.ph-onb__checks { display: grid; gap: 8px; max-width: 440px; margin: 14px auto 0; padding: 0; list-style: none; }
+.ph-onb__checks li { display: flex; align-items: center; gap: 9px; font-size: var(--ph-fs-12); color: var(--ph-ink-3); }
+.ph-onb__checks li .ph-icon { color: var(--ph-ink-4); flex: none; }
+.ph-onb__checks li.is-done { color: var(--ph-ink-2); }
+.ph-onb__checks li.is-done .ph-icon { color: var(--ph-accent); }
+
+.ph-onb__error,
+.ph-onb__notice { display: flex; align-items: flex-start; gap: 8px; margin: 0 24px; padding: 9px 12px; border-radius: 8px; font-size: var(--ph-fs-11); line-height: 1.6; }
+.ph-onb__error { border: 1px solid color-mix(in srgb, #dc2626 32%, transparent); background: color-mix(in srgb, #dc2626 7%, transparent); color: #b91c1c; }
+.ph-onb__notice { border: 1px solid color-mix(in srgb, var(--ph-accent) 28%, transparent); background: color-mix(in srgb, var(--ph-accent) 7%, transparent); color: var(--ph-ink-2); }
+
+@media (max-width: 760px) {
+  .ph-onb { grid-template-columns: minmax(0, 1fr); max-height: 92vh; }
+  .ph-onb__rail { flex-direction: row; align-items: center; gap: 10px; padding: 12px; border-right: 0; border-bottom: 1px solid var(--ph-line); overflow: auto; }
+  .ph-onb__brand, .ph-onb__railfoot { display: none; }
+  .ph-onb__steps { flex-direction: row; gap: 4px; }
+  .ph-onb__steplabel { display: none; }
+  .ph-onb__feature, .ph-onb__tourcard { padding: 11px 12px; }
+  .ph-onb__tour { grid-template-columns: minmax(0, 1fr); }
+}
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -5599,6 +5761,30 @@ function createApi() {
   return api;
 }
 var defaultApi = createApi();
+
+// src/core/bus.js
+var handlers = /* @__PURE__ */ new Map();
+var bus = {
+  on(event, handler) {
+    if (typeof handler !== "function") return () => {
+    };
+    const set = handlers.get(event) || /* @__PURE__ */ new Set();
+    set.add(handler);
+    handlers.set(event, set);
+    return () => set.delete(handler);
+  },
+  emit(event, payload) {
+    const set = handlers.get(event);
+    if (!set) return;
+    set.forEach((handler) => {
+      try {
+        handler(payload);
+      } catch (error) {
+        console.warn("[pappers-hall] bus handler failed", event, error);
+      }
+    });
+  }
+};
 
 // src/core/pending.js
 function displayTextOf(display) {
@@ -5819,6 +6005,7 @@ ICONS.scan = ICONS.pages;
 ICONS.globe = ICONS.link;
 ICONS.sparkles = ICONS.sparkle;
 ICONS.chart = ICONS.grid;
+ICONS.compass = [["circle", { cx: 12, cy: 12, r: 8 }], ["path", "m15.5 8.5-2.2 5-5 2.2 2.2-5 5-2.2Z"]];
 ICONS.cpu = [["rect", { x: 6.5, y: 6.5, width: 11, height: 11, rx: 2 }], ["path", "M10 3.5v3M14 3.5v3M10 17.5v3M14 17.5v3M3.5 10h3M3.5 14h3M17.5 10h3M17.5 14h3"]];
 function Icon(props) {
   const size = Number(props.size) || 16;
@@ -7206,31 +7393,7 @@ function PanelIcon(props) {
 }
 
 // src/surfaces/center.jsx
-var import_react42 = __toESM(require("react"), 1);
-
-// src/core/bus.js
-var handlers = /* @__PURE__ */ new Map();
-var bus = {
-  on(event, handler) {
-    if (typeof handler !== "function") return () => {
-    };
-    const set = handlers.get(event) || /* @__PURE__ */ new Set();
-    set.add(handler);
-    handlers.set(event, set);
-    return () => set.delete(handler);
-  },
-  emit(event, payload) {
-    const set = handlers.get(event);
-    if (!set) return;
-    set.forEach((handler) => {
-      try {
-        handler(payload);
-      } catch (error) {
-        console.warn("[pappers-hall] bus handler failed", event, error);
-      }
-    });
-  }
-};
+var import_react43 = __toESM(require("react"), 1);
 
 // src/core/translation.js
 var snapshot3 = {
@@ -7511,7 +7674,7 @@ function createStore2() {
 var navigation = createStore2();
 
 // src/surfaces/library/shell.jsx
-var import_react40 = __toESM(require("react"), 1);
+var import_react41 = __toESM(require("react"), 1);
 
 // src/core/files.js
 function formatBytes(bytes2) {
@@ -27893,20 +28056,407 @@ function HelpDialog(props) {
   );
 }
 
+// src/surfaces/onboarding.jsx
+var import_react40 = __toESM(require("react"), 1);
+var STEPS = ["welcome", "component", "sample", "tour", "done"];
+var STEP_ICONS = { welcome: "sparkles", component: "cpu", sample: "book", tour: "compass", done: "check" };
+function usePolling(active, run, intervalMs = 1800) {
+  import_react40.default.useEffect(() => {
+    if (!active) return void 0;
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled) return;
+      try {
+        await run();
+      } catch {
+      }
+    };
+    const timer2 = setInterval(tick, intervalMs);
+    tick();
+    return () => {
+      cancelled = true;
+      clearInterval(timer2);
+    };
+  }, [active, run, intervalMs]);
+}
+function OnboardingDialog(props) {
+  const t = props.t;
+  const open = props.open === true;
+  const [status, setStatus] = import_react40.default.useState(null);
+  const [stepIndex, setStepIndex] = import_react40.default.useState(0);
+  const [component, setComponent] = import_react40.default.useState(null);
+  const [installing, setInstalling] = import_react40.default.useState(false);
+  const [importing, setImporting] = import_react40.default.useState(false);
+  const [error, setError] = import_react40.default.useState("");
+  const [notice, setNotice] = import_react40.default.useState("");
+  const dialogRef = import_react40.default.useRef(null);
+  const loadStatus = import_react40.default.useCallback(async () => {
+    try {
+      const value = await defaultApi("onboarding.status");
+      setStatus(value);
+      return value;
+    } catch (failure) {
+      setError(describeError(t, failure));
+      return null;
+    }
+  }, [t]);
+  const loadComponent = import_react40.default.useCallback(async () => {
+    try {
+      const settings = await defaultApi("settings.get");
+      setComponent(settings && settings.models && settings.models.python || null);
+    } catch {
+      setComponent(null);
+    }
+  }, []);
+  import_react40.default.useEffect(() => {
+    if (!open) return;
+    setError("");
+    setNotice("");
+    loadStatus().then((value) => {
+      if (value === null || value === void 0) return;
+      const completed2 = value.state && value.state.completedSteps || [];
+      const next = STEPS.findIndex((step2) => !completed2.includes(step2));
+      setStepIndex(next === -1 ? STEPS.length - 1 : Math.max(0, next));
+    });
+    loadComponent();
+    setTimeout(() => {
+      try {
+        dialogRef.current && dialogRef.current.focus();
+      } catch {
+      }
+    }, 30);
+  }, [open, loadStatus, loadComponent]);
+  usePolling(open && installing, async () => {
+    await loadComponent();
+    const value = await loadStatus();
+    const installed4 = component !== null && component !== void 0 && component.installed === true;
+    if (installed4 || value && value.state && value.state.completedSteps.includes("component")) setInstalling(false);
+  });
+  const completeStep = import_react40.default.useCallback((step2, patch) => {
+    defaultApi("onboarding.completeStep", { step: step2 }).catch(() => {
+    }).then(() => patch ? defaultApi("onboarding.update", { patch }) : null).catch(() => {
+    }).then(() => loadStatus());
+  }, [loadStatus]);
+  const close = import_react40.default.useCallback((dismissed) => {
+    if (dismissed === true) {
+      defaultApi("onboarding.update", { patch: { dismissedAt: (/* @__PURE__ */ new Date()).toISOString() } }).catch(() => {
+      });
+    }
+    props.onClose();
+  }, [props]);
+  const goto = import_react40.default.useCallback((index) => {
+    setStepIndex(Math.max(0, Math.min(STEPS.length - 1, index)));
+    setError("");
+  }, []);
+  import_react40.default.useEffect(() => {
+    if (!open) return void 0;
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close(true);
+      } else if (event.key === "ArrowRight" && event.metaKey !== true) {
+        if (event.target && /input|textarea/i.test(event.target.tagName || "")) return;
+        setStepIndex((previous) => Math.min(STEPS.length - 1, previous + 1));
+      } else if (event.key === "ArrowLeft" && event.metaKey !== true) {
+        if (event.target && /input|textarea/i.test(event.target.tagName || "")) return;
+        setStepIndex((previous) => Math.max(0, previous - 1));
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, close]);
+  const startInstall = import_react40.default.useCallback(() => {
+    setError("");
+    setNotice("");
+    setInstalling(true);
+    defaultApi("models.install", { kind: "python" }).then((result) => {
+      if (result && result.status === "queued") setNotice(t("onboarding.component.installStarted"));
+    }).catch((failure) => {
+      setInstalling(false);
+      setError(describeError(t, failure));
+    });
+  }, [t]);
+  const importSample = import_react40.default.useCallback(() => {
+    const path = status && status.sample ? status.sample.path : null;
+    if (!path) {
+      setError(t("onboarding.sample.missing"));
+      return;
+    }
+    setImporting(true);
+    setError("");
+    defaultApi("library.import", { paths: [path] }).then((result) => {
+      const accepted = result && result.acceptedItems || [];
+      const paperId = accepted.length > 0 ? accepted[0].paperId : null;
+      if (paperId === null) {
+        const duplicate = result && result.duplicates || [];
+        const existing = duplicate.length > 0 ? duplicate[0].paperId : null;
+        if (existing === null) throw new Error(t("onboarding.sample.failed"));
+        return defaultApi("onboarding.update", { patch: { sampleImported: true, samplePaperId: existing } });
+      }
+      return defaultApi("onboarding.update", { patch: { sampleImported: true, samplePaperId: paperId } });
+    }).then(() => {
+      completeStep("sample");
+      setNotice(t("onboarding.sample.imported"));
+    }).catch((failure) => setError(describeError(t, failure))).then(() => {
+      setImporting(false);
+      loadStatus();
+    });
+  }, [status, t, completeStep, loadStatus]);
+  if (!open) return null;
+  const step = STEPS[stepIndex];
+  const completed = status && status.state && status.state.completedSteps || [];
+  const samplePaperId = status && status.state ? status.state.samplePaperId : null;
+  const pythonInstalled = component !== null && component !== void 0 && component.installed === true;
+  const componentJob = component && component.job ? component.job : null;
+  const progress = componentJob && componentJob.progress && componentJob.progress.total > 0 ? Math.round(componentJob.progress.done / componentJob.progress.total * 100) : null;
+  const featureRows = [
+    ["book", t("onboarding.welcome.feature1.title"), t("onboarding.welcome.feature1.body")],
+    ["highlighter", t("onboarding.welcome.feature2.title"), t("onboarding.welcome.feature2.body")],
+    ["quote", t("onboarding.welcome.feature3.title"), t("onboarding.welcome.feature3.body")]
+  ];
+  const tourCards = [
+    ["book", t("onboarding.tour.read.title"), t("onboarding.tour.read.body")],
+    ["highlighter", t("onboarding.tour.annotate.title"), t("onboarding.tour.annotate.body")],
+    ["note", t("onboarding.tour.note.title"), t("onboarding.tour.note.body")],
+    ["quote", t("onboarding.tour.cite.title"), t("onboarding.tour.cite.body")]
+  ];
+  const openSample = () => {
+    const id = samplePaperId || props.samplePaperId || null;
+    if (id === null || typeof props.onOpenPaper !== "function") return;
+    close(false);
+    props.onOpenPaper(id);
+  };
+  const body = (() => {
+    if (step === "welcome") {
+      return h(
+        import_react40.default.Fragment,
+        null,
+        h(
+          "div",
+          { className: "ph-onb__hero" },
+          h("span", { className: "ph-onb__badge" }, h(Icon, { name: "sparkles", size: 13 }), t("onboarding.badge")),
+          h("h1", { className: "ph-onb__title" }, t("onboarding.welcome.title")),
+          h("p", { className: "ph-onb__lead" }, t("onboarding.welcome.lead"))
+        ),
+        h("div", { className: "ph-onb__features" }, featureRows.map(
+          ([icon, title2, text2]) => h(
+            "div",
+            { key: title2, className: "ph-onb__feature" },
+            h("span", { className: "ph-onb__featureicon" }, h(Icon, { name: icon, size: 16 })),
+            h("div", null, h("strong", null, title2), h("p", null, text2))
+          )
+        )),
+        h("div", { className: "ph-onb__meta" }, h(Icon, { name: "info", size: 13 }), h("span", null, t("onboarding.welcome.meta")))
+      );
+    }
+    if (step === "component") {
+      return h(
+        import_react40.default.Fragment,
+        null,
+        h("h2", { className: "ph-onb__stepTitle" }, t("onboarding.component.title")),
+        h("p", { className: "ph-onb__stepLead" }, t("onboarding.component.lead")),
+        h(
+          "div",
+          { className: "ph-onb__install" + (pythonInstalled ? " ph-onb__install--done" : "") },
+          h(
+            "div",
+            { className: "ph-onb__installhead" },
+            h("span", { className: "ph-onb__installicon" }, h(Icon, { name: pythonInstalled ? "check" : "cpu", size: 18 })),
+            h(
+              "div",
+              null,
+              h("strong", null, t("onboarding.component.name")),
+              h("span", { className: "ph-caption" }, pythonInstalled ? t("onboarding.component.installedHint") : t("onboarding.component.sizeHint"))
+            ),
+            pythonInstalled ? h("span", { className: "ph-onb__pill" }, t("onboarding.component.installed")) : null
+          ),
+          h("ul", { className: "ph-onb__list" }, [
+            t("onboarding.component.benefit1"),
+            t("onboarding.component.benefit2"),
+            t("onboarding.component.benefit3")
+          ].map((line) => h("li", { key: line }, h(Icon, { name: "check", size: 13 }), h("span", null, line)))),
+          installing || componentJob ? h(
+            "div",
+            { className: "ph-onb__progress" },
+            h("div", { className: "ph-onb__progressbar" }, h("span", { style: { width: (progress === null ? 12 : Math.max(6, progress)) + "%" } })),
+            h("span", { className: "ph-caption" }, progress === null ? t("onboarding.component.preparing") : t("onboarding.component.progress", { percent: progress }))
+          ) : null,
+          h(
+            "div",
+            { className: "ph-onb__actions" },
+            pythonInstalled ? h(Button, { variant: "primary", size: "sm", icon: "arrowRight", onClick: () => goto(stepIndex + 1) }, t("onboarding.common.next")) : h(Button, { variant: "primary", size: "sm", icon: "download", loading: installing, disabled: installing, onClick: startInstall }, installing ? t("onboarding.component.installing") : t("onboarding.component.install")),
+            pythonInstalled ? null : h("button", { type: "button", className: "ph-onb__link", onClick: () => goto(stepIndex + 1) }, t("onboarding.component.later"))
+          )
+        ),
+        h("p", { className: "ph-onb__fineprint" }, t("onboarding.component.license"))
+      );
+    }
+    if (step === "sample") {
+      return h(
+        import_react40.default.Fragment,
+        null,
+        h("h2", { className: "ph-onb__stepTitle" }, t("onboarding.sample.title")),
+        h("p", { className: "ph-onb__stepLead" }, t("onboarding.sample.lead")),
+        h(
+          "div",
+          { className: "ph-onb__sample" },
+          h(
+            "div",
+            { className: "ph-onb__paper" },
+            h("div", { className: "ph-onb__paperhead" }, h(Icon, { name: "book", size: 14 }), t("onboarding.sample.paperTitle")),
+            h("div", { className: "ph-onb__pages" }, [1, 2, 3].map(
+              (page2) => h(
+                "div",
+                { key: page2, className: "ph-onb__page" + (page2 === 3 ? " ph-onb__page--scan" : "") },
+                h("div", { className: "ph-onb__pagelines" }),
+                h("span", null, page2)
+              )
+            )),
+            h("p", { className: "ph-caption" }, t("onboarding.sample.paperHint"))
+          ),
+          h(
+            "div",
+            { className: "ph-onb__sampleactions" },
+            samplePaperId !== null ? h(Button, { variant: "primary", size: "sm", icon: "book", onClick: openSample }, t("onboarding.sample.open")) : h(Button, { variant: "primary", size: "sm", icon: "download", loading: importing, disabled: importing, onClick: importSample }, importing ? t("onboarding.sample.importing") : t("onboarding.sample.import"))
+          )
+        )
+      );
+    }
+    if (step === "tour") {
+      return h(
+        import_react40.default.Fragment,
+        null,
+        h("h2", { className: "ph-onb__stepTitle" }, t("onboarding.tour.title")),
+        h("p", { className: "ph-onb__stepLead" }, t("onboarding.tour.lead")),
+        h("div", { className: "ph-onb__tour" }, tourCards.map(
+          ([icon, title2, text2], index) => h(
+            "div",
+            { key: title2, className: "ph-onb__tourcard" },
+            h("span", { className: "ph-onb__tournum" }, String(index + 1)),
+            h("span", { className: "ph-onb__touricon" }, h(Icon, { name: icon, size: 15 })),
+            h("strong", null, title2),
+            h("p", null, text2)
+          )
+        )),
+        h(
+          "div",
+          { className: "ph-onb__actions" },
+          h(Button, { variant: "primary", size: "sm", icon: "book", onClick: openSample, disabled: samplePaperId === null }, t("onboarding.tour.openSample")),
+          h(Button, { size: "sm", icon: "compass", onClick: () => {
+            close(false);
+            if (typeof props.onOpenDrawer === "function") props.onOpenDrawer();
+          } }, t("onboarding.tour.openDrawer"))
+        )
+      );
+    }
+    return h(
+      import_react40.default.Fragment,
+      null,
+      h("div", { className: "ph-onb__donehead" }, h("span", { className: "ph-onb__doneicon" }, h(Icon, { name: "check", size: 20 }))),
+      h("h2", { className: "ph-onb__stepTitle ph-onb__stepTitle--center" }, t("onboarding.done.title")),
+      h("p", { className: "ph-onb__stepLead ph-onb__stepLead--center" }, t("onboarding.done.lead")),
+      h("ul", { className: "ph-onb__checks" }, [
+        [t("onboarding.done.check1"), completed.includes("component") || pythonInstalled],
+        [t("onboarding.done.check2"), completed.includes("sample") || samplePaperId !== null],
+        [t("onboarding.done.check3"), completed.includes("tour")]
+      ].map(([label, done]) => h("li", { key: label, className: done ? "is-done" : "" }, h(Icon, { name: done ? "check" : "minus", size: 13 }), h("span", null, label)))),
+      h("div", { className: "ph-onb__meta" }, h(Icon, { name: "settings", size: 13 }), h("span", null, t("onboarding.done.hint"))),
+      h(
+        "div",
+        { className: "ph-onb__actions ph-onb__actions--center" },
+        h(Button, { variant: "primary", size: "sm", icon: "check", onClick: () => {
+          completeStep("done");
+          close(true);
+        } }, t("onboarding.done.finish"))
+      )
+    );
+  })();
+  return h(
+    "div",
+    { className: "ph-onbbackdrop", role: "presentation", onMouseDown: (event) => {
+      if (event.target === event.currentTarget) close(true);
+    } },
+    h(
+      "div",
+      {
+        className: "ph-onb",
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-label": t("onboarding.title"),
+        tabIndex: -1,
+        ref: dialogRef
+      },
+      h(
+        "div",
+        { className: "ph-onb__rail" },
+        h("div", { className: "ph-onb__brand" }, h(Icon, { name: "book", size: 15 }), h("span", null, t("onboarding.title"))),
+        h("ol", { className: "ph-onb__steps" }, STEPS.map(
+          (name, index) => h(
+            "li",
+            {
+              key: name,
+              className: "ph-onb__step" + (index === stepIndex ? " is-current" : "") + (completed.includes(name) ? " is-done" : "")
+            },
+            h(
+              "button",
+              { type: "button", className: "ph-onb__stepbtn", onClick: () => goto(index), "aria-current": index === stepIndex ? "step" : void 0 },
+              h("span", { className: "ph-onb__dot" }, completed.includes(name) ? h(Icon, { name: "check", size: 11 }) : String(index + 1)),
+              h("span", { className: "ph-onb__steplabel" }, t("onboarding.steps." + name))
+            )
+          )
+        )),
+        h(
+          "div",
+          { className: "ph-onb__railfoot" },
+          h("span", { className: "ph-caption" }, t("onboarding.progress", { current: stepIndex + 1, total: STEPS.length })),
+          h("button", { type: "button", className: "ph-onb__link", onClick: () => close(true) }, t("onboarding.skip"))
+        )
+      ),
+      h(
+        "div",
+        { className: "ph-onb__main" },
+        h(
+          "div",
+          { className: "ph-onb__top" },
+          h("span", { className: "ph-onb__steptag" }, h(Icon, { name: STEP_ICONS[step], size: 13 }), t("onboarding.steps." + step)),
+          h(IconButton, { icon: "close", title: t("onboarding.close"), onClick: () => close(true) })
+        ),
+        h("div", { className: "ph-onb__body" }, body),
+        error !== "" ? h("div", { className: "ph-onb__error", role: "alert" }, h(Icon, { name: "info", size: 13 }), h("span", null, error)) : null,
+        notice !== "" && error === "" ? h("div", { className: "ph-onb__notice" }, h(Icon, { name: "check", size: 13 }), h("span", null, notice)) : null,
+        h(
+          "div",
+          { className: "ph-onb__footer" },
+          h(Button, { size: "sm", icon: "arrowLeft", disabled: stepIndex === 0, onClick: () => goto(stepIndex - 1) }, t("onboarding.back")),
+          h(
+            "div",
+            { className: "ph-onb__footerRight" },
+            h("span", { className: "ph-caption" }, t("onboarding.footerHint")),
+            step === "done" ? null : h(Button, { variant: "primary", size: "sm", icon: "arrowRight", onClick: () => {
+              completeStep(step);
+              goto(stepIndex + 1);
+            } }, t("onboarding.next"))
+          )
+        )
+      )
+    )
+  );
+}
+
 // src/surfaces/library/shell.jsx
 function GlobalSearch(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const controller = props.controller;
-  const [value, setValue] = import_react40.default.useState(snapshot4.filters.query || "");
-  const external = import_react40.default.useRef(snapshot4.filters.query || "");
-  import_react40.default.useEffect(() => {
+  const [value, setValue] = import_react41.default.useState(snapshot4.filters.query || "");
+  const external = import_react41.default.useRef(snapshot4.filters.query || "");
+  import_react41.default.useEffect(() => {
     if (snapshot4.filters.query !== external.current) {
       external.current = snapshot4.filters.query || "";
       setValue(snapshot4.filters.query || "");
     }
   }, [snapshot4.filters.query]);
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       if (value !== snapshot4.filters.query) controller.setQuery(value);
     }, 260);
@@ -27925,9 +28475,9 @@ function GlobalSearch(props) {
 }
 function TopbarMenu(props) {
   const t = props.t;
-  const [open, setOpen] = import_react40.default.useState(false);
-  const ref = import_react40.default.useRef(null);
-  import_react40.default.useEffect(() => {
+  const [open, setOpen] = import_react41.default.useState(false);
+  const ref = import_react41.default.useRef(null);
+  import_react41.default.useEffect(() => {
     if (!open) return void 0;
     const close = (event) => {
       if (ref.current && !ref.current.contains(event.target)) setOpen(false);
@@ -27991,6 +28541,14 @@ function TopbarMenu(props) {
       ),
       h(
         "button",
+        { type: "button", className: "ph-menu__item", role: "menuitem", onClick: run(() => {
+          if (props.onOnboarding) props.onOnboarding();
+        }) },
+        h(Icon, { name: "compass", size: 15 }),
+        h("span", null, t("onboarding.reopen"))
+      ),
+      h(
+        "button",
         { type: "button", className: "ph-menu__item", role: "menuitem", onClick: run(() => props.onHelp()) },
         h(Icon, { name: "info", size: 15 }),
         h("span", null, t("help.title")),
@@ -28007,8 +28565,8 @@ function StatusBar(props) {
   const t = props.t;
   const snapshot4 = props.snapshot;
   const library = props.library;
-  const [busy2, setBusy] = import_react40.default.useState("");
-  const [errorText, setErrorText] = import_react40.default.useState("");
+  const [busy2, setBusy] = import_react41.default.useState("");
+  const [errorText, setErrorText] = import_react41.default.useState("");
   const status = snapshot4.statusData;
   const counts = snapshot4.counts || status && status.counts || {};
   const index = status && status.index || {};
@@ -28019,7 +28577,7 @@ function StatusBar(props) {
   const running = Number(jobs.running) || 0;
   const paused = jobs.globalPaused === true || jobs.state === "paused";
   const offline = snapshot4.offline;
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
     const timer2 = setInterval(() => library.refreshStatus(), STATUS_POLL_MS);
     return () => clearInterval(timer2);
   }, [library]);
@@ -28089,9 +28647,9 @@ function StatusBar(props) {
   );
 }
 function PaneResizer(props) {
-  const [active, setActive] = import_react40.default.useState(false);
-  const start = import_react40.default.useRef(null);
-  const latest = import_react40.default.useRef(null);
+  const [active, setActive] = import_react41.default.useState(false);
+  const start = import_react41.default.useRef(null);
+  const latest = import_react41.default.useRef(null);
   const onMouseDown = (event) => {
     event.preventDefault();
     start.current = { x: event.clientX, width: props.width };
@@ -28134,9 +28692,9 @@ function ContextMenu(props) {
   const menu = props.menu;
   const paper = props.paper;
   const library = props.library;
-  const [submenu, setSubmenu] = import_react40.default.useState(false);
-  const [armed, setArmed] = import_react40.default.useState(false);
-  const ref = import_react40.default.useRef(null);
+  const [submenu, setSubmenu] = import_react41.default.useState(false);
+  const [armed, setArmed] = import_react41.default.useState(false);
+  const ref = import_react41.default.useRef(null);
   const style = { left: Math.min(menu.x, (typeof window !== "undefined" ? window.innerWidth : 800) - 220) + "px", top: Math.min(menu.y, (typeof window !== "undefined" ? window.innerHeight : 600) - 280) + "px" };
   if (!paper) return null;
   const close = () => library.closeContextMenu();
@@ -28156,7 +28714,7 @@ function ContextMenu(props) {
       props.onShowDetails && props.onShowDetails();
     }) }, h(Icon, { name: "tag", size: 14 }), t("library.context.tag")),
     collections.length > 0 ? h(
-      import_react40.default.Fragment,
+      import_react41.default.Fragment,
       null,
       h("button", { type: "button", className: "ph-ctxmenu__item", onClick: () => setSubmenu(!submenu), "aria-expanded": submenu ? "true" : "false" }, h(Icon, { name: "collection", size: 14 }), t("library.context.collection")),
       submenu ? h("div", { className: "ph-ctxmenu__sub" }, collections.map((collection) => h("button", { key: collection.id, type: "button", className: "ph-ctxmenu__item", onClick: act(() => library.assignCollection(collection.id, [paper.id], true).then(() => props.pushToast("success", t("library.collection.assign") + " \xB7 " + collection.name)).catch((error) => props.pushToast("error", t("toast.failed", { message: describeError(t, error) })))) }, h("span", { className: "ph-collection__dot", "data-color": collection.color || "blue" }), collection.name))) : null
@@ -28164,7 +28722,7 @@ function ContextMenu(props) {
     h("button", { type: "button", className: "ph-ctxmenu__item", onClick: act(() => copyText(paper.id).then((ok) => props.pushToast(ok ? "success" : "warning", ok ? t("toast.copied") : t("common.unavailable")))) }, h(Icon, { name: "copy", size: 14 }), t("library.context.copyId")),
     h("div", { className: "ph-ctxmenu__sep" }),
     trashMode ? h(
-      import_react40.default.Fragment,
+      import_react41.default.Fragment,
       null,
       h("button", { type: "button", className: "ph-ctxmenu__item", onClick: act(() => library.setSelection([paper.id]) || library.restoreSelection().then(() => props.pushToast("success", t("toast.restored"))).catch((error) => props.pushToast("error", t("toast.failed", { message: describeError(t, error) })))) }, h(Icon, { name: "restore", size: 14 }), t("library.context.restore")),
       h("button", { type: "button", className: "ph-ctxmenu__item ph-ctxmenu__item--danger", onClick: () => {
@@ -28179,7 +28737,7 @@ function ContextMenu(props) {
 }
 function LibrarySkeleton() {
   return h(
-    import_react40.default.Fragment,
+    import_react41.default.Fragment,
     null,
     h("div", { className: "ph-pane ph-pane--left" }, h("div", { className: "ph-left-skeleton" }, [0, 1, 2, 3, 4].map((index) => h("div", { key: index, className: "ph-details__skeletonrow" }, h("span", { className: "ph-skeleton", style: { width: "16px", height: "16px" } }), h("span", { className: "ph-skeleton", style: { flex: 1, height: "11px" } }))))),
     h("div", { className: "ph-pane ph-pane--mid" }, h("div", { className: "ph-table-skeleton" }, [0, 1, 2, 3, 4, 5, 6, 7].map((index) => h("div", { key: index, className: "ph-table-skeleton__row" }, h("span", { className: "ph-skeleton", style: { width: 14, height: 14 } }), h("div", { className: "ph-table-skeleton__main" }, h("span", { className: "ph-skeleton", style: { width: "58%" } }), h("span", { className: "ph-skeleton", style: { width: "36%", height: 9 } })), h("span", { className: "ph-skeleton", style: { width: 72, height: 10 } }))))),
@@ -28187,8 +28745,8 @@ function LibrarySkeleton() {
   );
 }
 function useNarrowLayout() {
-  const [narrow, setNarrow] = import_react40.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
-  import_react40.default.useEffect(() => {
+  const [narrow, setNarrow] = import_react41.default.useState(() => typeof window !== "undefined" && window.innerWidth <= 1100);
+  import_react41.default.useEffect(() => {
     const onResize = () => setNarrow(typeof window !== "undefined" && window.innerWidth <= 1100);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -28200,15 +28758,16 @@ function LibraryShell(props) {
   const t = props.t;
   const api = props.api;
   const library = props.library;
-  const snapshot4 = import_react40.default.useSyncExternalStore(library.subscribe, library.getSnapshot, library.getSnapshot);
+  const snapshot4 = import_react41.default.useSyncExternalStore(library.subscribe, library.getSnapshot, library.getSnapshot);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [newCollectionOpen, setNewCollectionOpen] = import_react40.default.useState(false);
-  const [newCollectionName, setNewCollectionName] = import_react40.default.useState("");
-  const [dragWidth, setDragWidth] = import_react40.default.useState({ left: null, right: null });
-  const [paletteOpen, setPaletteOpen] = import_react40.default.useState(false);
-  const [citationOpen, setCitationOpen] = import_react40.default.useState(false);
-  const [helpOpen, setHelpOpen] = import_react40.default.useState(false);
-  const [inlineNoteId, setInlineNoteId] = import_react40.default.useState(() => {
+  const [newCollectionOpen, setNewCollectionOpen] = import_react41.default.useState(false);
+  const [newCollectionName, setNewCollectionName] = import_react41.default.useState("");
+  const [dragWidth, setDragWidth] = import_react41.default.useState({ left: null, right: null });
+  const [paletteOpen, setPaletteOpen] = import_react41.default.useState(false);
+  const [citationOpen, setCitationOpen] = import_react41.default.useState(false);
+  const [helpOpen, setHelpOpen] = import_react41.default.useState(false);
+  const [onboardingOpen, setOnboardingOpen] = import_react41.default.useState(false);
+  const [inlineNoteId, setInlineNoteId] = import_react41.default.useState(() => {
     if (props.initialNoteId) return String(props.initialNoteId);
     try {
       return String(sessionStorage.getItem("pappers-hall:inline-note") || "");
@@ -28216,16 +28775,16 @@ function LibraryShell(props) {
       return "";
     }
   });
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
     try {
       if (inlineNoteId) sessionStorage.setItem("pappers-hall:inline-note", inlineNoteId);
       else sessionStorage.removeItem("pappers-hall:inline-note");
     } catch {
     }
   }, [inlineNoteId]);
-  const filtersKeyRef = import_react40.default.useRef(null);
-  const notePrevLeftRef = import_react40.default.useRef(null);
-  import_react40.default.useEffect(() => {
+  const filtersKeyRef = import_react41.default.useRef(null);
+  const notePrevLeftRef = import_react41.default.useRef(null);
+  import_react41.default.useEffect(() => {
     const key = [snapshot4.filters.view, snapshot4.filters.collectionId, snapshot4.filters.folderId, snapshot4.filters.favorite, snapshot4.filters.reading, snapshot4.filters.query, (snapshot4.filters.tags || []).join("|")].join("");
     if (filtersKeyRef.current === null) {
       filtersKeyRef.current = key;
@@ -28235,10 +28794,10 @@ function LibraryShell(props) {
     filtersKeyRef.current = key;
     setInlineNoteId("");
   }, [snapshot4.filters.view, snapshot4.filters.collectionId, snapshot4.filters.folderId, snapshot4.filters.favorite, snapshot4.filters.reading, snapshot4.filters.query, (snapshot4.filters.tags || []).join("|")]);
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
     if (props.initialNoteId) setInlineNoteId(String(props.initialNoteId));
   }, [props.initialNoteId]);
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
     if (inlineNoteId) {
       if (notePrevLeftRef.current === null) notePrevLeftRef.current = Boolean(snapshot4.ui.leftCollapsed);
       if (!snapshot4.ui.leftCollapsed) library.setUi({ leftCollapsed: true });
@@ -28248,11 +28807,25 @@ function LibraryShell(props) {
       if (!previous) library.setUi({ leftCollapsed: false });
     }
   }, [inlineNoteId]);
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
+    let cancelled = false;
+    defaultApi("onboarding.status").then((value) => {
+      if (cancelled || value === null || value === void 0) return;
+      if (value.shouldAutoOpen === true) setOnboardingOpen(true);
+    }).catch(() => {
+    });
+    const reopen = () => setOnboardingOpen(true);
+    window.addEventListener("pappers-hall:onboarding", reopen);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("pappers-hall:onboarding", reopen);
+    };
+  }, []);
+  import_react41.default.useEffect(() => {
     if (snapshot4.status === "idle") library.refresh();
     else library.refreshStatus();
   }, []);
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
     installUndoShortcuts();
     const onKey = (event) => {
       const meta = event.metaKey || event.ctrlKey;
@@ -28276,7 +28849,7 @@ function LibraryShell(props) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
     const offView = bus.on("open-library-view", (payload) => {
       if (payload && payload.folderId) {
         library.setFolderFilter(String(payload.folderId));
@@ -28300,7 +28873,7 @@ function LibraryShell(props) {
       offPaper();
     };
   }, [library]);
-  import_react40.default.useEffect(() => {
+  import_react41.default.useEffect(() => {
     if (!snapshot4.contextMenu) return void 0;
     const close = () => library.closeContextMenu();
     const onKey = (event) => {
@@ -28314,13 +28887,13 @@ function LibraryShell(props) {
     };
   }, [snapshot4.contextMenu, library]);
   const contextPaper = snapshot4.contextMenu ? snapshot4.items.find((paper) => paper.id === snapshot4.contextMenu.paperId) : null;
-  const citePaper = import_react40.default.useCallback(
+  const citePaper = import_react41.default.useCallback(
     (paper) => {
       commitReferenceBatch([{ kind: "paper", id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title }], { operationId: operationId2("refs") }).then(() => push("success", t("toast.cited"))).catch((error) => push("error", t("toast.citeFailed", { message: describeError(t, error) })));
     },
     [api, push, t]
   );
-  const exportPaper = import_react40.default.useCallback(
+  const exportPaper = import_react41.default.useCallback(
     (paper) => {
       api("export.bibtex", { ids: [paper.id] }).then((result) => {
         if (result && result.content) {
@@ -28331,20 +28904,20 @@ function LibraryShell(props) {
     },
     [api, push, t]
   );
-  const copyCitation = import_react40.default.useCallback((paper, style) => {
+  const copyCitation = import_react41.default.useCallback((paper, style) => {
     api("citation.format", { ids: [paper.id], style: style || "bibtex" }).then((result) => {
       if (!result || !result.content) return notify("info", t("common.unavailable"));
       copyText(String(result.content)).then((ok) => notify(ok ? "success" : "warning", ok ? t("common.copied") : t("common.unavailable")));
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const copyCitationKey = import_react40.default.useCallback((paper) => {
+  const copyCitationKey = import_react41.default.useCallback((paper) => {
     api("citation.key", { ids: [paper.id] }).then((result) => {
       const key = result && Array.isArray(result.keys) && result.keys[0] ? result.keys[0].key : "";
       if (!key) return notify("info", t("common.unavailable"));
       copyText(key).then((ok) => notify(ok ? "success" : "warning", ok ? t("common.copied") + " \xB7 " + key : t("common.unavailable")));
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const exportAnnotations = import_react40.default.useCallback((paper, format, action) => {
+  const exportAnnotations = import_react41.default.useCallback((paper, format, action) => {
     api("export.annotations", { paperId: paper.id, format: format || "markdown" }).then((result) => {
       const content = result && result.content ? String(result.content) : "";
       if (!content) return notify("info", t("annotations.exportEmpty"));
@@ -28356,16 +28929,16 @@ function LibraryShell(props) {
       }
     }).catch((error) => notify("error", t("toast.failed", { message: describeError(t, error) })));
   }, [api, t]);
-  const insertCitation = import_react40.default.useCallback((paper) => {
+  const insertCitation = import_react41.default.useCallback((paper) => {
     if (!paper) return;
     deliverMaterials([{ kind: "paper", id: paper.id, title: paperTitle(t, paper) }], {}).then((result) => {
       if (!result.ok) return notify("error", t("dnd.failed", { message: result.reason || "" }));
       notify(result.inserted ? "success" : "warning", result.inserted ? t("citation.inserted") : t("dnd.queued", { count: 1 }));
     });
   }, [t]);
-  const updateMetrics = import_react40.default.useCallback((ids) => library.refreshMetrics(ids), [library]);
-  const editMetrics = import_react40.default.useCallback((paperId, fields) => library.updateMetrics(paperId, fields), [library]);
-  const resetMetrics = import_react40.default.useCallback(
+  const updateMetrics = import_react41.default.useCallback((ids) => library.refreshMetrics(ids), [library]);
+  const editMetrics = import_react41.default.useCallback((paperId, fields) => library.updateMetrics(paperId, fields), [library]);
+  const resetMetrics = import_react41.default.useCallback(
     (paperId) => api("metrics.reset", { paperId: String(paperId) }).catch(() => api("metrics.update", { paperId: String(paperId), fields: { impactFactor: null, fiveYearImpactFactor: null, impactFactorYear: null, quartile: null, citationCount: null, hIndex: null, issn: null, publisher: null } })).then(() => library.selectPaper(String(paperId), { tab: "info" })),
     [api, library]
   );
@@ -28400,7 +28973,7 @@ function LibraryShell(props) {
   ].filter(Boolean);
   const openContext = (menu) => library.openContextMenu(menu);
   const openPaper = (paperId, page2) => props.onOpenPaper(paperId, page2);
-  const rootRef = import_react40.default.useRef(null);
+  const rootRef = import_react41.default.useRef(null);
   if (snapshot4.offline) {
     return h(
       "div",
@@ -28442,7 +29015,8 @@ function LibraryShell(props) {
         onOpenFigures: props.onOpenFigures,
         onOpenDuplicates: () => library.setView("duplicates"),
         onRefresh: () => library.refresh(),
-        onHelp: () => setHelpOpen(true)
+        onHelp: () => setHelpOpen(true),
+        onOnboarding: () => setOnboardingOpen(true)
       })
     )
   );
@@ -28461,7 +29035,7 @@ function LibraryShell(props) {
   ) : h(
     "div",
     { className: "ph-pane ph-pane--mid" + (snapshot4.selection.length > 0 ? " ph-pane--batch" : "") },
-    h(LibraryToolbar, { t, api, snapshot: snapshot4, controller: library, pushToast: push, scopeRef: rootRef }),
+    h(LibraryToolbar, { t, api, snapshot: snapshot4, controller: library, pushToast: push, scopeRef: rootRef, onOpenOnboarding: () => setOnboardingOpen(true) }),
     h(SearchFilters, { t, snapshot: snapshot4, controller: library }),
     snapshot4.filters.view === "duplicates" ? h(DuplicatesPane, { t, snapshot: snapshot4, controller: library, pushToast: push }) : h(ItemTable, {
       t,
@@ -28566,7 +29140,7 @@ function LibraryShell(props) {
         }
       },
       loadingFirst ? h(LibrarySkeleton, { t }) : h(
-        import_react40.default.Fragment,
+        import_react41.default.Fragment,
         null,
         mobileBackdrop,
         left,
@@ -28586,6 +29160,12 @@ function LibraryShell(props) {
     h(StatusBar, { t, api, snapshot: snapshot4, library }),
     h(ToastStack, { toasts, onDismiss: dismiss2 }),
     h(FeedbackHost, null),
+    h(OnboardingDialog, { open: onboardingOpen, onClose: () => setOnboardingOpen(false), t, onOpenPaper: (paperId) => openPaper(paperId, 1), onOpenDrawer: () => {
+      try {
+        bus.emit("pappers-hall:open-drawer");
+      } catch (error) {
+      }
+    } }),
     h(CommandPalette, { open: paletteOpen, onClose: () => setPaletteOpen(false), t, commands }),
     h(CitationDialog, { open: citationOpen, onClose: () => setCitationOpen(false), t, api, onInsert: insertCitation, onToast: (tone, text2) => notify(tone, text2) }),
     h(HelpDialog, { open: helpOpen, onClose: () => setHelpOpen(false), t }),
@@ -28594,14 +29174,14 @@ function LibraryShell(props) {
 }
 
 // src/surfaces/figure-search.jsx
-var import_react41 = __toESM(require("react"), 1);
+var import_react42 = __toESM(require("react"), 1);
 function operationId3(prefix) {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
   return (prefix ? prefix + "-" : "") + random;
 }
 function useDebounced2(value, delay) {
-  const [debounced, setDebounced] = import_react41.default.useState(value);
-  import_react41.default.useEffect(() => {
+  const [debounced, setDebounced] = import_react42.default.useState(value);
+  import_react42.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(value), delay == null ? 300 : delay);
     return () => clearTimeout(timer2);
   }, [value, delay]);
@@ -28640,8 +29220,8 @@ function paperTitle3(t, paper) {
   return paper.titleZh || paper.displayTitle || paper.title || t("common.untitled");
 }
 function FigureThumb(props) {
-  const [failed, setFailed] = import_react41.default.useState(false);
-  import_react41.default.useEffect(() => setFailed(false), [props.src]);
+  const [failed, setFailed] = import_react42.default.useState(false);
+  import_react42.default.useEffect(() => setFailed(false), [props.src]);
   if (failed || !props.src) return h(Icon, { name: "figure", size: 24 });
   return h("img", { src: props.src, alt: props.alt || "", loading: "lazy", decoding: "async", draggable: false, onError: () => setFailed(true) });
 }
@@ -28693,16 +29273,16 @@ function FigureSearch(props) {
   const api = props.api;
   const { toasts, push } = useToasts();
   const focus = props.focusFigure || null;
-  const [query, setQuery] = import_react41.default.useState(props.initialQuery || "");
+  const [query, setQuery] = import_react42.default.useState(props.initialQuery || "");
   const debounced = useDebounced2(query, 320);
-  const [upload, setUpload] = import_react41.default.useState(null);
-  const [readOnly, setReadOnly] = import_react41.default.useState(false);
-  const [annotatedOnly, setAnnotatedOnly] = import_react41.default.useState(false);
-  const [mode, setMode] = import_react41.default.useState(focus && focus.figureId ? "figure" : "text");
-  const [revision2, setRevision] = import_react41.default.useState(0);
-  const [state, setState] = import_react41.default.useState({ status: "idle", data: null, error: null });
-  const fileRef = import_react41.default.useRef(null);
-  import_react41.default.useEffect(() => {
+  const [upload, setUpload] = import_react42.default.useState(null);
+  const [readOnly, setReadOnly] = import_react42.default.useState(false);
+  const [annotatedOnly, setAnnotatedOnly] = import_react42.default.useState(false);
+  const [mode, setMode] = import_react42.default.useState(focus && focus.figureId ? "figure" : "text");
+  const [revision2, setRevision] = import_react42.default.useState(0);
+  const [state, setState] = import_react42.default.useState({ status: "idle", data: null, error: null });
+  const fileRef = import_react42.default.useRef(null);
+  import_react42.default.useEffect(() => {
     if (focus && focus.figureId) {
       setMode("figure");
       setQuery("");
@@ -28710,7 +29290,7 @@ function FigureSearch(props) {
       setRevision((value) => value + 1);
     }
   }, [focus && focus.figureId, focus && focus.paperId]);
-  import_react41.default.useEffect(() => {
+  import_react42.default.useEffect(() => {
     let alive = true;
     const controller = new AbortController();
     const value = debounced.trim();
@@ -28991,7 +29571,7 @@ function FigureSearch(props) {
 
 // src/surfaces/center.jsx
 function useNavigation() {
-  return import_react42.default.useSyncExternalStore(navigation.subscribe, navigation.getSnapshot, navigation.getSnapshot);
+  return import_react43.default.useSyncExternalStore(navigation.subscribe, navigation.getSnapshot, navigation.getSnapshot);
 }
 function useSessionId(props) {
   const useSessions = typeof props.useSessions === "function" ? props.useSessions : (selector) => selector({});
@@ -29012,15 +29592,15 @@ function PaperCenter(props) {
   const sessionId = useSessionId(props);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
   const route = nav.route || { view: "library" };
-  import_react42.default.useEffect(() => {
+  import_react43.default.useEffect(() => {
     if (route.view !== "library") return;
     navigation.consumeIntent();
   }, [route.view, nav.seq]);
-  const openPaper = import_react42.default.useCallback((paperId, page2, annotationId) => {
+  const openPaper = import_react43.default.useCallback((paperId, page2, annotationId) => {
     if (!paperId) return;
     navigation.openPaper({ paperId, page: page2 || 1, annotationId: annotationId || null, source: "library" });
   }, []);
-  const openFigure = import_react42.default.useCallback((paperId, figure) => {
+  const openFigure = import_react43.default.useCallback((paperId, figure) => {
     if (!paperId || !figure) return;
     navigation.openPaper({
       paperId,
@@ -29081,7 +29661,7 @@ function PaperCenter(props) {
   }
   if (route.view === "figures") {
     return h(
-      import_react42.default.Fragment,
+      import_react43.default.Fragment,
       null,
       h(LibraryShell, {
         t,
@@ -29104,7 +29684,7 @@ function PaperCenter(props) {
     );
   }
   return h(
-    import_react42.default.Fragment,
+    import_react43.default.Fragment,
     null,
     h(LibraryShell, {
       t,
@@ -29122,7 +29702,7 @@ function PaperCenter(props) {
 }
 
 // src/surfaces/drawer.jsx
-var import_react43 = __toESM(require("react"), 1);
+var import_react44 = __toESM(require("react"), 1);
 function opId3() {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
   return "drawer-" + random;
@@ -29162,8 +29742,8 @@ function Thumb(props) {
   const paperId = props.paperId;
   const primary = props.src || (paperId ? "/pappers-hall/thumb/" + paperId + ".png" : "");
   const fallback = paperId ? "/pappers-hall/page/" + paperId + "/1.png?width=120" : "";
-  const [step, setStep] = import_react43.default.useState(primary ? 0 : fallback ? 1 : 2);
-  import_react43.default.useEffect(() => {
+  const [step, setStep] = import_react44.default.useState(primary ? 0 : fallback ? 1 : 2);
+  import_react44.default.useEffect(() => {
     setStep(primary ? 0 : fallback ? 1 : 2);
   }, [primary, fallback]);
   const src = step === 0 ? primary : step === 1 ? fallback : "";
@@ -29268,23 +29848,23 @@ function DrawerBody(props) {
   const sessionId = props.sessionId;
   const openLibrary = props.openLibrary;
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const translation = import_react43.default.useSyncExternalStore(translationStore.subscribe, translationStore.getSnapshot, translationStore.getSnapshot);
-  const [tab, setTab] = import_react43.default.useState("papers");
-  const [query, setQuery] = import_react43.default.useState("");
-  const [debounced, setDebounced] = import_react43.default.useState("");
-  const [feed, setFeed] = import_react43.default.useState({ status: "loading", data: null, error: null });
-  const [annotations, setAnnotations] = import_react43.default.useState({ status: "loading", items: [], error: null, hasMore: false });
-  const [notes, setNotes] = import_react43.default.useState({ status: "idle", items: [], error: null });
-  const [noteTotal, setNoteTotal] = import_react43.default.useState(0);
-  const [revision2, setRevision] = import_react43.default.useState(0);
-  const [filters, setFilters] = import_react43.default.useState({ quick: "all", collectionId: "", tag: "", color: "", kind: "", paperId: "" });
-  const [selected, setSelected] = import_react43.default.useState([]);
-  const [preview, setPreview] = import_react43.default.useState(() => previewFromLastRoute());
-  const [previewNote, setPreviewNote] = import_react43.default.useState({ status: "idle", note: null, error: null });
-  const releasePreviewStyles = import_react43.default.useMemo(() => ensureNotesStyles(), []);
-  import_react43.default.useEffect(() => () => releasePreviewStyles(), [releasePreviewStyles]);
-  const [collapsed, setCollapsed] = import_react43.default.useState({});
-  import_react43.default.useEffect(() => {
+  const translation = import_react44.default.useSyncExternalStore(translationStore.subscribe, translationStore.getSnapshot, translationStore.getSnapshot);
+  const [tab, setTab] = import_react44.default.useState("papers");
+  const [query, setQuery] = import_react44.default.useState("");
+  const [debounced, setDebounced] = import_react44.default.useState("");
+  const [feed, setFeed] = import_react44.default.useState({ status: "loading", data: null, error: null });
+  const [annotations, setAnnotations] = import_react44.default.useState({ status: "loading", items: [], error: null, hasMore: false });
+  const [notes, setNotes] = import_react44.default.useState({ status: "idle", items: [], error: null });
+  const [noteTotal, setNoteTotal] = import_react44.default.useState(0);
+  const [revision2, setRevision] = import_react44.default.useState(0);
+  const [filters, setFilters] = import_react44.default.useState({ quick: "all", collectionId: "", tag: "", color: "", kind: "", paperId: "" });
+  const [selected, setSelected] = import_react44.default.useState([]);
+  const [preview, setPreview] = import_react44.default.useState(() => previewFromLastRoute());
+  const [previewNote, setPreviewNote] = import_react44.default.useState({ status: "idle", note: null, error: null });
+  const releasePreviewStyles = import_react44.default.useMemo(() => ensureNotesStyles(), []);
+  import_react44.default.useEffect(() => () => releasePreviewStyles(), [releasePreviewStyles]);
+  const [collapsed, setCollapsed] = import_react44.default.useState({});
+  import_react44.default.useEffect(() => {
     if (!preview || preview.kind !== "note") {
       setPreviewNote({ status: "idle", note: null, error: null });
       return void 0;
@@ -29307,15 +29887,15 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [preview]);
-  const scrollPositions = import_react43.default.useRef({});
-  const scrollRef = import_react43.default.useRef(null);
-  const searchRef = import_react43.default.useRef(null);
+  const scrollPositions = import_react44.default.useRef({});
+  const scrollRef = import_react44.default.useRef(null);
+  const searchRef = import_react44.default.useRef(null);
   const selectedKeys = new Set(selected.map((item) => item.kind + ":" + item.id));
-  import_react43.default.useEffect(() => {
+  import_react44.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(query.trim()), 260);
     return () => clearTimeout(timer2);
   }, [query]);
-  import_react43.default.useEffect(() => {
+  import_react44.default.useEffect(() => {
     const onKey = (event) => {
       if ((event.metaKey || event.ctrlKey) && String(event.key).toLowerCase() === "f") {
         event.preventDefault();
@@ -29329,15 +29909,15 @@ function DrawerBody(props) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
-  import_react43.default.useEffect(() => {
+  import_react44.default.useEffect(() => {
     translationStore.refresh().catch(() => {
     });
   }, []);
-  import_react43.default.useEffect(() => {
+  import_react44.default.useEffect(() => {
     const timer2 = setInterval(() => setRevision((value) => value + 1), 3e4);
     return () => clearInterval(timer2);
   }, []);
-  const changeTab = import_react43.default.useCallback((next) => {
+  const changeTab = import_react44.default.useCallback((next) => {
     const node = scrollRef.current;
     if (node) scrollPositions.current[tab] = node.scrollTop;
     setTab(next);
@@ -29347,7 +29927,7 @@ function DrawerBody(props) {
       });
     }
   }, [tab]);
-  import_react43.default.useEffect(() => {
+  import_react44.default.useEffect(() => {
     let alive = true;
     Promise.resolve(defaultApi("notes.list", { limit: 1 })).then((value) => {
       if (alive) setNoteTotal(Number(value && value.total) || 0);
@@ -29357,7 +29937,7 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [revision2]);
-  import_react43.default.useEffect(() => {
+  import_react44.default.useEffect(() => {
     let alive = true;
     setFeed((previous) => ({ status: previous.data ? "refreshing" : "loading", data: previous.data, error: null }));
     const previousFeedData = feed.data;
@@ -29423,7 +30003,7 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [debounced, filters.quick, filters.collectionId, filters.tag, filters.folderId, filters.favorite, filters.tags, revision2]);
-  import_react43.default.useEffect(() => {
+  import_react44.default.useEffect(() => {
     if (tab !== "annotations") return void 0;
     let alive = true;
     setAnnotations((previous) => ({ status: "loading", items: previous.items, error: null, hasMore: previous.hasMore }));
@@ -29452,7 +30032,7 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [tab, debounced, filters.color, filters.kind, filters.paperId, filters.folderId, filters.tags, revision2]);
-  import_react43.default.useEffect(() => {
+  import_react44.default.useEffect(() => {
     if (tab !== "notes") return void 0;
     let alive = true;
     setNotes({ status: "loading", items: [], error: null });
@@ -29495,18 +30075,18 @@ function DrawerBody(props) {
       alive = false;
     };
   }, [tab, debounced, filters.folderId, filters.tags, revision2]);
-  const openItem = import_react43.default.useCallback((target, page2, annotationId) => {
+  const openItem = import_react44.default.useCallback((target, page2, annotationId) => {
     const paperId = target && (target.paperId || target.id);
     if (!paperId) return;
     navigation.openPaper({ paperId, page: page2 || target.page || 1, annotationId: annotationId || (target.kind === "annotation" ? target.id : null), source: "sidebar" });
     if (openLibrary) openLibrary();
   }, [openLibrary]);
-  const openPreview = import_react43.default.useCallback((item) => {
+  const openPreview = import_react44.default.useCallback((item) => {
     if (!item) return;
     if (item.kind === "note" || String(item.id || "").startsWith("note-")) setPreview({ kind: "note", note: item.note || item });
     else setPreview({ kind: "paper", paper: item, page: 1 });
   }, []);
-  const cite = import_react43.default.useCallback((materials) => {
+  const cite = import_react44.default.useCallback((materials) => {
     const list = (Array.isArray(materials) ? materials : [materials]).filter(Boolean);
     if (list.length === 0) return;
     commitReferenceBatch(list, { sessionId, operationId: opId3() }).then(({ result, created }) => {
@@ -29763,14 +30343,14 @@ function DrawerBody(props) {
       "div",
       { className: "ph-sidebar__foot" },
       selected.length > 0 ? h(
-        import_react43.default.Fragment,
+        import_react44.default.Fragment,
         null,
         h("span", { className: "ph-caption" }, t("drawer.selected", { count: selected.length })),
         h(Button, { size: "sm", variant: "primary", icon: "quote", onClick: citeSelection }, t("drawer.cite")),
         h(Button, { size: "sm", icon: "external", onClick: () => openLibraryView("all") }, t("drawer.openLibrary")),
         h(IconButton, { icon: "close", title: t("common.clear"), onClick: () => setSelected([]) })
       ) : h(
-        import_react43.default.Fragment,
+        import_react44.default.Fragment,
         null,
         h("span", { className: "ph-caption" }, t("drawer.stats", { papers: counts.papers, annotations: counts.annotations, figures: counts.figures })),
         h("span", { className: "ph-spacer" }),
@@ -29783,7 +30363,7 @@ function DrawerBody(props) {
 }
 
 // src/surfaces/dock.jsx
-var import_react44 = __toESM(require("react"), 1);
+var import_react45 = __toESM(require("react"), 1);
 
 // src/core/cite-token.js
 var COMPOSER_SELECTOR = '[data-composer-input="true"]';
@@ -29988,7 +30568,7 @@ function bundleSummaryLabel(t, bundle) {
   return parts.join(" \xB7 ");
 }
 function usePendingSnapshot() {
-  return import_react44.default.useSyncExternalStore(pendingStore.subscribe, pendingStore.getSnapshot, pendingStore.getSnapshot);
+  return import_react45.default.useSyncExternalStore(pendingStore.subscribe, pendingStore.getSnapshot, pendingStore.getSnapshot);
 }
 function ComposerEntry(props) {
   const t = props.t;
@@ -30010,12 +30590,12 @@ function DockBody(props) {
   const inputActions = props.inputActions;
   const snapshot4 = usePendingSnapshot();
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [expanded, setExpanded] = import_react44.default.useState({});
-  const [busyId, setBusyId] = import_react44.default.useState(null);
-  const [errors, setErrors] = import_react44.default.useState({});
-  const insertingRef = import_react44.default.useRef({});
+  const [expanded, setExpanded] = import_react45.default.useState({});
+  const [busyId, setBusyId] = import_react45.default.useState(null);
+  const [errors, setErrors] = import_react45.default.useState({});
+  const insertingRef = import_react45.default.useRef({});
   const bundles = snapshot4.bundles.filter((bundle) => !bundle.sessionId || bundle.sessionId === props.sessionId);
-  import_react44.default.useEffect(() => {
+  import_react45.default.useEffect(() => {
     const sync = () => {
       const state = pendingStore.getSnapshot();
       if (state.bundles.length === 0) return;
@@ -30060,11 +30640,11 @@ function DockBody(props) {
       if (timer2 !== null) clearTimeout(timer2);
     };
   }, [props.sessionId]);
-  const toggleExpanded = import_react44.default.useCallback((bundleId) => {
+  const toggleExpanded = import_react45.default.useCallback((bundleId) => {
     setExpanded((previous) => Object.assign({}, previous, { [bundleId]: !previous[bundleId] }));
   }, []);
-  import_react44.default.useEffect(() => registerComposerBridge(inputActions), [inputActions]);
-  import_react44.default.useEffect(() => {
+  import_react45.default.useEffect(() => registerComposerBridge(inputActions), [inputActions]);
+  import_react45.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       const composer2 = document.querySelector('[data-composer-input="true"]');
       if (!composer2) return;
@@ -30083,8 +30663,8 @@ function DockBody(props) {
     }, 900);
     return () => clearTimeout(timer2);
   }, [inputActions]);
-  import_react44.default.useEffect(() => installCitationTokens(), []);
-  import_react44.default.useEffect(() => {
+  import_react45.default.useEffect(() => installCitationTokens(), []);
+  import_react45.default.useEffect(() => {
     bundles.forEach((bundle) => {
       if (!bundle.autoInsert || bundle.added || insertingRef.current[bundle.bundleId]) return;
       if (!bundle.token) return;
@@ -30104,7 +30684,7 @@ function DockBody(props) {
       setTimeout(() => attempt(14), 180);
     });
   }, [bundles.map((bundle) => bundle.bundleId + ":" + bundle.added + ":" + Boolean(bundle.autoInsert)).join(","), t]);
-  const attemptInsert = import_react44.default.useCallback(
+  const attemptInsert = import_react45.default.useCallback(
     (bundle) => {
       if (!inputActions || typeof inputActions.captureInsertion !== "function" || typeof inputActions.insertText !== "function") return false;
       if (!bundle || !bundle.token) return false;
@@ -30119,7 +30699,7 @@ function DockBody(props) {
     },
     [inputActions]
   );
-  const insertBundle = import_react44.default.useCallback(
+  const insertBundle = import_react45.default.useCallback(
     (bundle) => {
       if (!bundle || bundle.added || busyId) return;
       if (insertingRef.current[bundle.bundleId]) return;
@@ -30154,7 +30734,7 @@ function DockBody(props) {
     },
     [attemptInsert, busyId, inputActions, push, t]
   );
-  const clearAllReferences = import_react44.default.useCallback(async () => {
+  const clearAllReferences = import_react45.default.useCallback(async () => {
     const tokens = snapshot4.bundles.map((bundle) => bundle.token).filter(Boolean);
     tokens.forEach((token) => removeTokenFromComposer(token));
     pendingStore.clear();
@@ -30300,11 +30880,11 @@ function DockBody(props) {
 }
 
 // src/surfaces/header-button.jsx
-var import_react45 = __toESM(require("react"), 1);
+var import_react46 = __toESM(require("react"), 1);
 function HeaderDrawerButton(props) {
   const t = props.t;
   const sessionId = props.sessionId;
-  const [failed, setFailed] = import_react45.default.useState(false);
+  const [failed, setFailed] = import_react46.default.useState(false);
   if (!sessionId) return null;
   return h(
     "span",
@@ -30329,7 +30909,7 @@ function HeaderDrawerButton(props) {
 }
 
 // src/surfaces/integration/turn-tail.jsx
-var import_react46 = __toESM(require("react"), 1);
+var import_react47 = __toESM(require("react"), 1);
 
 // src/surfaces/integration/input-triggers.js
 var MENTION_SOURCE = "pappers-hall-papers";
@@ -30678,15 +31258,15 @@ function ToolSourceCard(props) {
   const phase = props.phase;
   const block = props.block;
   const api = props.api;
-  const [citing, setCiting] = import_react46.default.useState("");
-  const [open, setOpen] = import_react46.default.useState(false);
-  const [citeError, setCiteError] = import_react46.default.useState("");
+  const [citing, setCiting] = import_react47.default.useState("");
+  const [open, setOpen] = import_react47.default.useState(false);
+  const [citeError, setCiteError] = import_react47.default.useState("");
   const result = phase === "result" ? parseResult(block) : null;
   const isError = phase === "result" && Boolean(block && block.isError);
   const isUnavailable = Boolean(result && result.status === "unavailable");
   const preparing = phase === "preparing";
   const running = phase === "start";
-  const args = import_react46.default.useMemo(() => {
+  const args = import_react47.default.useMemo(() => {
     if (!block) return null;
     const raw = phase === "result" ? block.call && block.call.argsRaw : block.argsRaw;
     if (typeof raw !== "string" || raw === "") return null;
@@ -30850,8 +31430,8 @@ function FigureBody(props) {
   const page2 = figure.page ?? data.page;
   const caption = firstText4(figure.caption, data.caption);
   const imageUrl = firstText4(figure.imageUrl);
-  const [imageFailed, setImageFailed] = import_react46.default.useState(false);
-  import_react46.default.useEffect(() => {
+  const [imageFailed, setImageFailed] = import_react47.default.useState(false);
+  import_react47.default.useEffect(() => {
     setImageFailed(false);
   }, [imageUrl]);
   return h(
@@ -31095,10 +31675,10 @@ function registerConversationIntegration(ctx, services) {
 }
 
 // src/surfaces/settings/host.jsx
-var import_react48 = __toESM(require("react"), 1);
+var import_react49 = __toESM(require("react"), 1);
 
 // src/surfaces/settings/panel.jsx
-var import_react47 = __toESM(require("react"), 1);
+var import_react48 = __toESM(require("react"), 1);
 
 // src/core/ai-models.js
 function modelForProvider(catalog, providerId) {
@@ -31202,33 +31782,33 @@ function Card(props) {
 }
 function SettingsPanel(props) {
   const t = props.t;
-  const [state, setState] = import_react47.default.useState({ status: "loading", data: null, error: null });
-  const [jobs, setJobs] = import_react47.default.useState([]);
-  const [busy2, setBusy] = import_react47.default.useState("");
-  const [test, setTest] = import_react47.default.useState(null);
-  const [error, setError] = import_react47.default.useState("");
-  const [aiCatalog, setAiCatalog] = import_react47.default.useState({ status: "idle", selection: null, providers: [], available: false, error: null });
-  const [aiProvider, setAiProvider] = import_react47.default.useState("");
-  const [aiModel, setAiModel] = import_react47.default.useState("");
-  const [aiSaving, setAiSaving] = import_react47.default.useState(false);
-  const [backupState, setBackupState] = import_react47.default.useState({ busy: "", result: null, error: "" });
-  const backupInputRef = import_react47.default.useRef(null);
-  const pollRef = import_react47.default.useRef(null);
-  const load = import_react47.default.useCallback(() => {
+  const [state, setState] = import_react48.default.useState({ status: "loading", data: null, error: null });
+  const [jobs, setJobs] = import_react48.default.useState([]);
+  const [busy2, setBusy] = import_react48.default.useState("");
+  const [test, setTest] = import_react48.default.useState(null);
+  const [error, setError] = import_react48.default.useState("");
+  const [aiCatalog, setAiCatalog] = import_react48.default.useState({ status: "idle", selection: null, providers: [], available: false, error: null });
+  const [aiProvider, setAiProvider] = import_react48.default.useState("");
+  const [aiModel, setAiModel] = import_react48.default.useState("");
+  const [aiSaving, setAiSaving] = import_react48.default.useState(false);
+  const [backupState, setBackupState] = import_react48.default.useState({ busy: "", result: null, error: "" });
+  const backupInputRef = import_react48.default.useRef(null);
+  const pollRef = import_react48.default.useRef(null);
+  const load = import_react48.default.useCallback(() => {
     setState((previous) => ({ status: previous.data ? "refreshing" : "loading", data: previous.data, error: null }));
     defaultApi("settings.get", {}).then((value) => {
       if (value && value.ok === false) throw Object.assign(new Error(value.error && value.error.message ? value.error.message : "settings.get failed"), { code: value.error && value.error.code });
       setState({ status: "ready", data: value, error: null });
     }).catch((err) => setState({ status: "error", data: null, error: err }));
   }, []);
-  const loadJobs = import_react47.default.useCallback(() => {
+  const loadJobs = import_react48.default.useCallback(() => {
     defaultApi("jobs.list", {}).then((value) => {
       const items2 = Array.isArray(value && value.items) ? value.items : Array.isArray(value && value.jobs) ? value.jobs : [];
       setJobs(items2);
     }).catch(() => {
     });
   }, []);
-  const loadAi = import_react47.default.useCallback(() => {
+  const loadAi = import_react48.default.useCallback(() => {
     setAiCatalog((previous) => Object.assign({}, previous, { status: previous.providers && previous.providers.length > 0 ? "refreshing" : "loading", error: null }));
     defaultApi("ai.providers", {}).then((value) => {
       const providers2 = Array.isArray(value && value.providers) ? value.providers : [];
@@ -31240,7 +31820,7 @@ function SettingsPanel(props) {
       setAiModel(model);
     }).catch((err) => setAiCatalog((previous) => Object.assign({}, previous, { status: "error", error: err })));
   }, []);
-  import_react47.default.useEffect(() => {
+  import_react48.default.useEffect(() => {
     if (!props.open) return void 0;
     load();
     loadJobs();
@@ -31258,8 +31838,8 @@ function SettingsPanel(props) {
     };
   }, [props.open]);
   const runningJob = jobs.find((job) => job && (job.state === "running" || job.state === "queued"));
-  const wasRunning = import_react47.default.useRef(null);
-  import_react47.default.useEffect(() => {
+  const wasRunning = import_react48.default.useRef(null);
+  import_react48.default.useEffect(() => {
     const id = runningJob ? runningJob.id : null;
     if (wasRunning.current && !id) load();
     wasRunning.current = id;
@@ -31474,8 +32054,8 @@ function SettingsPanel(props) {
   const ocrWithJob = Object.assign({}, ocr, { job: jobFor("ocr") });
   const status = index.embedding || index;
   const counts = Object.assign({}, diagnostics.counts || {}, status && status.counts || {});
-  const dialogRef = import_react47.default.useRef(null);
-  import_react47.default.useEffect(() => {
+  const dialogRef = import_react48.default.useRef(null);
+  import_react48.default.useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog === null) return void 0;
     try {
@@ -31526,7 +32106,7 @@ function SettingsPanel(props) {
           "div",
           { className: "ph-settings__body ph-scroll" },
           state.status === "loading" && !state.data ? h("div", { className: "ph-settings__skeleton" }, [0, 1, 2, 3].map((i) => h(Skeleton, { key: i, width: "100%", height: 72, radius: 10 }))) : state.status === "error" && !state.data ? h("div", { className: "ph-settings__error" }, h(Icon, { name: "warning", size: 18 }), h("div", null, h("div", { className: "ph-settings__errorTitle" }, t("settings.loadFailed")), h("div", { className: "ph-caption" }, describeError(t, state.error)), h(Button, { size: "sm", variant: "secondary", icon: "refresh", onClick: load }, t("common.retry")))) : h(
-            import_react47.default.Fragment,
+            import_react48.default.Fragment,
             null,
             h(
               Section,
@@ -31638,6 +32218,21 @@ function SettingsPanel(props) {
                   h("span", { key: "hint", className: "ph-caption" }, t("settings.ocrHint"))
                 ]
               })
+            ),
+            h(
+              Section,
+              { icon: "compass", title: t("settings.section.guide"), hint: t("settings.guide.hint") },
+              h(
+                "div",
+                { className: "ph-settings__testrow" },
+                h(Button, { size: "sm", icon: "compass", onClick: () => {
+                  try {
+                    window.dispatchEvent(new CustomEvent("pappers-hall:onboarding"));
+                  } catch (error2) {
+                  }
+                } }, t("settings.guide.reopen")),
+                h("span", { className: "ph-caption" }, t("settings.guide.body"))
+              )
             ),
             h(
               Section,
@@ -31769,9 +32364,9 @@ function closeSettings() {
 }
 function SettingsHost(props) {
   const t = props && props.t;
-  const [id] = import_react48.default.useState(() => hostState.nextId++);
-  const snapshot4 = import_react48.default.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-  import_react48.default.useEffect(() => {
+  const [id] = import_react49.default.useState(() => hostState.nextId++);
+  const snapshot4 = import_react49.default.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  import_react49.default.useEffect(() => {
     if (hostState.hostId === null) {
       hostState = Object.assign({}, hostState, { hostId: id });
       emit4();
@@ -31783,7 +32378,7 @@ function SettingsHost(props) {
       }
     };
   }, [id]);
-  import_react48.default.useEffect(() => bus.on("open-settings", () => openSettings()), []);
+  import_react49.default.useEffect(() => bus.on("open-settings", () => openSettings()), []);
   if (snapshot4.hostId !== id || !snapshot4.open) return null;
   return h(
     "div",
@@ -32738,6 +33333,79 @@ var ZH = {
   "settings.job.model.install": "\u6A21\u578B\u5B89\u88C5",
   "settings.job.embedding.index": "\u7D22\u5F15\u91CD\u5EFA",
   "settings.job.ocr.index": "OCR \u7D22\u5F15",
+  "onboarding.title": "\u8BBA\u6587\u4E2D\u5FC3 \xB7 \u4F7F\u7528\u5F15\u5BFC",
+  "onboarding.badge": "\u9996\u6B21\u4F7F\u7528 \xB7 \u7EA6 2 \u5206\u949F",
+  "onboarding.reopen": "\u4F7F\u7528\u5F15\u5BFC",
+  "onboarding.steps.welcome": "\u6B22\u8FCE",
+  "onboarding.steps.component": "\u672C\u5730\u7EC4\u4EF6",
+  "onboarding.steps.sample": "\u793A\u4F8B\u8BBA\u6587",
+  "onboarding.steps.tour": "\u6838\u5FC3\u529F\u80FD",
+  "onboarding.steps.done": "\u5B8C\u6210",
+  "onboarding.common.next": "\u4E0B\u4E00\u6B65",
+  "onboarding.progress": "{current} / {total}",
+  "onboarding.skip": "\u8DF3\u8FC7\u5F15\u5BFC",
+  "onboarding.close": "\u5173\u95ED\u5F15\u5BFC",
+  "onboarding.back": "\u4E0A\u4E00\u6B65",
+  "onboarding.next": "\u4E0B\u4E00\u6B65",
+  "onboarding.footerHint": "\u968F\u65F6\u53EF\u4ECE\u5DE5\u5177\u680F\u6216\u8BBE\u7F6E\u91CD\u65B0\u6253\u5F00",
+  "onboarding.welcome.title": "\u628A\u8BBA\u6587\u8BFB\u6210\u81EA\u5DF1\u7684\u4E1C\u897F",
+  "onboarding.welcome.lead": "\u8BBA\u6587\u4E2D\u5FC3\u628A\u9605\u8BFB\u3001\u6279\u6CE8\u3001\u7B14\u8BB0\u548C\u5BF9\u8BDD\u5F15\u7528\u653E\u5728\u4E00\u5904\u3002\u8DDF\u7740\u8FD9\u4E2A\u5F15\u5BFC\u8D70\u4E00\u904D\uFF0C\u4F60\u4F1A\u7528\u5B83\u8BFB\u5B8C\u7B2C\u4E00\u7BC7\u8BBA\u6587\u3002",
+  "onboarding.welcome.feature1.title": "\u8FDE\u7EED\u9605\u8BFB",
+  "onboarding.welcome.feature1.body": "\u9875\u9762\u3001\u76EE\u5F55\u3001\u56FE\u8868\u90FD\u5728\u540C\u4E00\u4E2A\u9605\u8BFB\u5668\u91CC\uFF0C\u7FFB\u8BD1\u4E0E AI \u8F85\u52A9\u5C31\u8FD1\u53EF\u7528\u3002",
+  "onboarding.welcome.feature2.title": "\u8FB9\u8BFB\u8FB9\u8BB0",
+  "onboarding.welcome.feature2.body": "\u62D6\u9009\u6587\u5B57\u5373\u53EF\u9AD8\u4EAE\uFF0C\u6279\u6CE8\u4F1A\u8FDB\u5165\u4FA7\u680F\uFF0C\u4E5F\u80FD\u76F4\u63A5\u6574\u7406\u6210\u7ED3\u6784\u5316\u7B14\u8BB0\u3002",
+  "onboarding.welcome.feature3.title": "\u5F15\u7528\u5230\u5BF9\u8BDD",
+  "onboarding.welcome.feature3.body": "\u628A\u8BBA\u6587\u3001\u56FE\u8868\u3001\u6279\u6CE8\u6216\u7B14\u8BB0\u5F15\u7528\u5230\u5BF9\u8BDD\uFF0CAgent \u4F1A\u4ECE\u8FD9\u4EFD\u6750\u6599\u51FA\u53D1\u56DE\u7B54\u3002",
+  "onboarding.welcome.meta": "\u5F15\u5BFC\u91CC\u4F7F\u7528\u7684\u662F\u4E00\u7BC7\u5185\u7F6E\u793A\u4F8B\u8BBA\u6587\uFF0C\u968F\u65F6\u53EF\u4EE5\u5728\u8BBA\u6587\u5217\u8868\u91CC\u5220\u9664\u3002",
+  "onboarding.component.title": "\u5148\u88C5\u4E00\u6B21\u672C\u5730\u7EC4\u4EF6\uFF08\u63A8\u8350\uFF09",
+  "onboarding.component.lead": "\u5B83\u8BA9 PDF \u89E3\u6790\u66F4\u5FEB\uFF0C\u5E76\u89E3\u9501\u626B\u63CF\u9875 OCR \u4E0E\u7248\u9762\u5206\u6790\u3002\u5168\u90E8\u672C\u5730\u8FD0\u884C\uFF0C\u6587\u732E\u5185\u5BB9\u4E0D\u4F1A\u79BB\u5F00\u4F60\u7684\u7535\u8111\u3002",
+  "onboarding.component.name": "PyMuPDF \xB7 PP-OCRv6 \xB7 PP-DocLayout-S",
+  "onboarding.component.sizeHint": "\u4E0B\u8F7D\u7EA6 342 MB\uFF1APDF \u5F15\u64CE + \u4E24\u4E2A\u56FA\u5B9A\u6A21\u578B\uFF1B\u88C5\u4E00\u6B21\u5373\u53EF",
+  "onboarding.component.installedHint": "\u5DF2\u5B89\u88C5\uFF0CPDF \u89E3\u6790\u5DF2\u5207\u6362\u5230 PyMuPDF",
+  "onboarding.component.benefit1": "PyMuPDF\uFF1A\u6587\u672C\u3001\u8BCD\u6846\u3001\u56FE\u7247\u4E0E\u9875\u9762\u6E32\u67D3\u4E00\u6B21\u5B8C\u6210",
+  "onboarding.component.benefit2": "PP-OCRv6\uFF1A\u626B\u63CF\u7248\u9875\u9762\u4E5F\u80FD\u641C\u7D22\u3001\u5F15\u7528\u4E0E\u9605\u8BFB",
+  "onboarding.component.benefit3": "PP-DocLayout-S\uFF1A\u8BC6\u522B\u6807\u9898\u3001\u56FE\u6CE8\u3001\u8868\u683C\u4E0E\u9875\u7709\u9875\u811A",
+  "onboarding.component.install": "\u4E0B\u8F7D\u5E76\u5B89\u88C5",
+  "onboarding.component.installing": "\u6B63\u5728\u5B89\u88C5\u2026",
+  "onboarding.component.installStarted": "\u5DF2\u5F00\u59CB\u5B89\u88C5\uFF0C\u53EF\u4EE5\u7EE7\u7EED\u4E0B\u4E00\u6B65\uFF0C\u88C5\u5B8C\u4F1A\u81EA\u52A8\u751F\u6548\u3002",
+  "onboarding.component.preparing": "\u6B63\u5728\u51C6\u5907\u5B89\u88C5\u2026",
+  "onboarding.component.progress": "\u5B89\u88C5\u4E2D {percent}%",
+  "onboarding.component.installed": "\u5DF2\u5B89\u88C5",
+  "onboarding.component.later": "\u7A0D\u540E\u518D\u8BF4\uFF0C\u5148\u53BB\u8BFB\u793A\u4F8B",
+  "onboarding.component.license": "PyMuPDF \u91C7\u7528 AGPL-3.0\uFF0C\u4EC5\u5B89\u88C5\u5230\u672C\u673A\u72EC\u7ACB Python \u73AF\u5883\uFF0C\u4E0D\u968F\u63D2\u4EF6\u5206\u53D1\u3002\u4E5F\u53EF\u4EE5\u5728\u300C\u8BBE\u7F6E \u2192 \u80FD\u529B\u4E0E\u6A21\u578B\u300D\u91CC\u5B89\u88C5\u6216\u5378\u8F7D\u3002",
+  "onboarding.sample.title": "\u6253\u5F00\u793A\u4F8B\u8BBA\u6587",
+  "onboarding.sample.lead": "\u8FD9\u7BC7\u5185\u7F6E\u8BBA\u6587\u6709 3 \u9875\uFF1A\u6587\u5B57\u9875\u3001\u56FE\u8868\u9875\uFF0C\u8FD8\u6709\u4E00\u9875\u662F\u626B\u63CF\u56FE\u7247\u2014\u2014\u6B63\u597D\u7528\u6765\u4F53\u9A8C OCR\u3002",
+  "onboarding.sample.paperTitle": "Pappers-Hall \u793A\u4F8B\u8BBA\u6587",
+  "onboarding.sample.paperHint": "\u7B2C 1\u20132 \u9875\u6709\u6587\u5B57\u5C42\uFF0C\u7B2C 3 \u9875\u662F\u626B\u63CF\u56FE\u7247",
+  "onboarding.sample.import": "\u5BFC\u5165\u793A\u4F8B\u8BBA\u6587",
+  "onboarding.sample.importing": "\u6B63\u5728\u5BFC\u5165\u2026",
+  "onboarding.sample.imported": "\u793A\u4F8B\u8BBA\u6587\u5DF2\u5BFC\u5165\u3002",
+  "onboarding.sample.open": "\u6253\u5F00\u793A\u4F8B\u8BBA\u6587",
+  "onboarding.sample.missing": "\u793A\u4F8B\u6587\u4EF6\u7F3A\u5931\uFF0C\u8BF7\u91CD\u65B0\u5B89\u88C5\u63D2\u4EF6\u3002",
+  "onboarding.sample.failed": "\u5BFC\u5165\u793A\u4F8B\u8BBA\u6587\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5\u3002",
+  "onboarding.tour.title": "\u56DB\u4E2A\u52A8\u4F5C\u5C31\u591F\u4E86",
+  "onboarding.tour.lead": "\u4E4B\u540E\u7684\u6BCF\u6B21\u4F7F\u7528\uFF0C\u57FA\u672C\u90FD\u5728\u8FD9\u56DB\u4EF6\u4E8B\u91CC\u5FAA\u73AF\u3002",
+  "onboarding.tour.read.title": "\u9605\u8BFB",
+  "onboarding.tour.read.body": "\u7FFB\u9875\u3001\u8DF3\u76EE\u5F55\u3001\u770B\u56FE\u8868\uFF1B\u53F3\u952E\u539F\u6587\u53EF\u4EE5\u590D\u5236\u5F15\u7528\u3002",
+  "onboarding.tour.annotate.title": "\u6279\u6CE8",
+  "onboarding.tour.annotate.body": "\u62D6\u9009\u6587\u5B57\u9AD8\u4EAE\uFF0C\u533A\u57DF\u6846\u9009\u548C\u4FBF\u7B7E\u5728\u53F3\u4E0B\u89D2\u5DE5\u5177\u6761\u3002",
+  "onboarding.tour.note.title": "\u7B14\u8BB0",
+  "onboarding.tour.note.body": "\u5728\u9AD8\u4EAE\u4E0A\u53F3\u952E\u5373\u53EF\u5199\u6210\u7B14\u8BB0\uFF0C\u4E5F\u53EF\u4EE5\u76F4\u63A5\u65B0\u5EFA\u7ED3\u6784\u7B14\u8BB0\u3002",
+  "onboarding.tour.cite.title": "\u5F15\u7528\u5230\u5BF9\u8BDD",
+  "onboarding.tour.cite.body": "\u70B9\u300C\u5F15\u7528\u5230\u5BF9\u8BDD\u300D\uFF0C\u6750\u6599\u4F1A\u4EE5\u5F15\u7528\u6807\u7B7E\u8FDB\u5165\u8349\u7A3F\u3002",
+  "onboarding.tour.openSample": "\u6253\u5F00\u793A\u4F8B\u8BBA\u6587",
+  "onboarding.tour.openDrawer": "\u53BB\u5BF9\u8BDD\u8BD5\u8BD5",
+  "onboarding.done.title": "\u53EF\u4EE5\u5F00\u59CB\u4E86",
+  "onboarding.done.lead": "\u5F15\u5BFC\u968F\u65F6\u53EF\u4EE5\u91CD\u5F00\uFF1B\u4E0B\u9762\u8FD9\u4E9B\u5DF2\u7ECF\u5C31\u7EEA\u3002",
+  "onboarding.done.check1": "\u672C\u5730\u7EC4\u4EF6\u5DF2\u5B89\u88C5\uFF08PDF \u52A0\u901F + OCR + \u7248\u9762\uFF09",
+  "onboarding.done.check2": "\u793A\u4F8B\u8BBA\u6587\u5DF2\u5BFC\u5165",
+  "onboarding.done.check3": "\u770B\u8FC7\u56DB\u4E2A\u6838\u5FC3\u52A8\u4F5C",
+  "onboarding.done.hint": "\u60F3\u518D\u770B\u4E00\u904D\uFF1A\u5DE5\u5177\u680F\u300C\u66F4\u591A \u2192 \u4F7F\u7528\u5F15\u5BFC\u300D\uFF0C\u6216\u8BBE\u7F6E\u91CC\u7684\u300C\u4F7F\u7528\u5F15\u5BFC\u300D\u3002",
+  "onboarding.done.finish": "\u5F00\u59CB\u4F7F\u7528",
+  "settings.section.guide": "\u4F7F\u7528\u5F15\u5BFC",
+  "settings.guide.hint": "\u9996\u6B21\u4F7F\u7528\u7684\u6D41\u7A0B\u53EF\u4EE5\u968F\u65F6\u91CD\u770B",
+  "settings.guide.reopen": "\u91CD\u65B0\u67E5\u770B\u4F7F\u7528\u5F15\u5BFC",
+  "settings.guide.body": "\u5305\u542B\u672C\u5730\u7EC4\u4EF6\u5B89\u88C5\u3001\u793A\u4F8B\u8BBA\u6587\u4E0E\u56DB\u4E2A\u6838\u5FC3\u52A8\u4F5C\uFF0C\u7EA6 2 \u5206\u949F\u3002",
   "settings.section.capabilities": "\u80FD\u529B\u4E0E\u6A21\u578B",
   "settings.section.capabilitiesHint": "\u6309\u9700\u5B89\u88C5\uFF0C\u672A\u5B89\u88C5\u4E0D\u5F71\u54CD\u57FA\u7840\u6587\u732E\u7BA1\u7406",
   "settings.section.translation": "\u7FFB\u8BD1\u5F15\u64CE",
@@ -34091,6 +34759,79 @@ var EN = {
   "settings.job.model.install": "Model install",
   "settings.job.embedding.index": "Index rebuild",
   "settings.job.ocr.index": "OCR indexing",
+  "onboarding.title": "Paper centre \xB7 Getting started",
+  "onboarding.badge": "First run \xB7 about 2 minutes",
+  "onboarding.reopen": "Getting started",
+  "onboarding.steps.welcome": "Welcome",
+  "onboarding.steps.component": "Local component",
+  "onboarding.steps.sample": "Sample paper",
+  "onboarding.steps.tour": "Core actions",
+  "onboarding.steps.done": "Done",
+  "onboarding.common.next": "Next",
+  "onboarding.progress": "{current} / {total}",
+  "onboarding.skip": "Skip the guide",
+  "onboarding.close": "Close the guide",
+  "onboarding.back": "Back",
+  "onboarding.next": "Next",
+  "onboarding.footerHint": "Reopen any time from the toolbar or settings",
+  "onboarding.welcome.title": "Read papers into your own work",
+  "onboarding.welcome.lead": "The paper centre keeps reading, annotation, notes and conversation references in one place. Walk through this short guide and you will have read your first paper.",
+  "onboarding.welcome.feature1.title": "Continuous reading",
+  "onboarding.welcome.feature1.body": "Pages, outline and figures live in one reader, with translation and AI help next to them.",
+  "onboarding.welcome.feature2.title": "Annotate as you read",
+  "onboarding.welcome.feature2.body": "Select text to highlight; annotations land in the side panel and can become structured notes.",
+  "onboarding.welcome.feature3.title": "Cite into the conversation",
+  "onboarding.welcome.feature3.body": "Reference papers, figures, annotations or notes so the Agent answers from that material.",
+  "onboarding.welcome.meta": "The guide uses one bundled sample paper; you can delete it from the library at any time.",
+  "onboarding.component.title": "Install the local component first (recommended)",
+  "onboarding.component.lead": "It makes PDF extraction faster and unlocks OCR for scanned pages plus layout analysis. Everything runs locally; no document leaves your machine.",
+  "onboarding.component.name": "PyMuPDF \xB7 PP-OCRv6 \xB7 PP-DocLayout-S",
+  "onboarding.component.sizeHint": "About 342 MB: PDF engine plus two fixed models, installed once",
+  "onboarding.component.installedHint": "Installed \u2014 PDF extraction already runs on PyMuPDF",
+  "onboarding.component.benefit1": "PyMuPDF: text, word boxes, images and rendering in one pass",
+  "onboarding.component.benefit2": "PP-OCRv6: scanned pages become searchable and citable",
+  "onboarding.component.benefit3": "PP-DocLayout-S: titles, captions, tables, headers and footers",
+  "onboarding.component.install": "Download & install",
+  "onboarding.component.installing": "Installing\u2026",
+  "onboarding.component.installStarted": "Installation started. You can continue; it applies when finished.",
+  "onboarding.component.preparing": "Preparing the install\u2026",
+  "onboarding.component.progress": "Installing {percent}%",
+  "onboarding.component.installed": "Installed",
+  "onboarding.component.later": "Later \u2014 go read the sample",
+  "onboarding.component.license": "PyMuPDF is AGPL-3.0 and is installed into a private local Python environment, never bundled. You can install or remove it later under Settings \u2192 Capabilities.",
+  "onboarding.sample.title": "Open the sample paper",
+  "onboarding.sample.lead": "The bundled paper has 3 pages: text, a figure, and one rasterised page \u2014 perfect for trying OCR.",
+  "onboarding.sample.paperTitle": "Pappers-Hall sample paper",
+  "onboarding.sample.paperHint": "Pages 1\u20132 have a text layer; page 3 is a scan",
+  "onboarding.sample.import": "Import the sample",
+  "onboarding.sample.importing": "Importing\u2026",
+  "onboarding.sample.imported": "Sample paper imported.",
+  "onboarding.sample.open": "Open the sample paper",
+  "onboarding.sample.missing": "The sample file is missing; reinstall the plugin.",
+  "onboarding.sample.failed": "Could not import the sample paper; please retry.",
+  "onboarding.tour.title": "Four actions cover it",
+  "onboarding.tour.lead": "Day to day you will cycle through these.",
+  "onboarding.tour.read.title": "Read",
+  "onboarding.tour.read.body": "Turn pages, jump in the outline, inspect figures; copy citations from the original text.",
+  "onboarding.tour.annotate.title": "Annotate",
+  "onboarding.tour.annotate.body": "Select to highlight; area selection and sticky notes sit in the bottom-right toolbar.",
+  "onboarding.tour.note.title": "Note",
+  "onboarding.tour.note.body": "Right-click a highlight to turn it into a note, or start a structured note directly.",
+  "onboarding.tour.cite.title": "Cite to the conversation",
+  "onboarding.tour.cite.body": "Choose Cite to conversation and the material enters the draft as a reference chip.",
+  "onboarding.tour.openSample": "Open the sample paper",
+  "onboarding.tour.openDrawer": "Try it in the conversation",
+  "onboarding.done.title": "You are all set",
+  "onboarding.done.lead": "The guide can be reopened any time; these are ready.",
+  "onboarding.done.check1": "Local component installed (PDF speed-up + OCR + layout)",
+  "onboarding.done.check2": "Sample paper imported",
+  "onboarding.done.check3": "Saw the four core actions",
+  "onboarding.done.hint": "To replay it: toolbar More \u2192 Getting started, or the same entry in Settings.",
+  "onboarding.done.finish": "Start using it",
+  "settings.section.guide": "Getting started",
+  "settings.guide.hint": "The first-run walkthrough can be replayed",
+  "settings.guide.reopen": "Replay the getting-started guide",
+  "settings.guide.body": "Covers the local component, the sample paper and the four core actions; about 2 minutes.",
   "settings.section.capabilities": "Capabilities & models",
   "settings.section.capabilitiesHint": "Install on demand \u2014 core library features keep working",
   "settings.section.translation": "Translation",
@@ -34507,22 +35248,22 @@ var EN = {
 };
 
 // src/surfaces/notes/workspace.jsx
-var import_react49 = __toESM(require("react"), 1);
+var import_react50 = __toESM(require("react"), 1);
 function useServiceState2(service) {
-  const subscribe2 = import_react49.default.useCallback((listener) => service.subscribe(listener), [service]);
-  const getSnapshot2 = import_react49.default.useCallback(() => service.getSnapshot(), [service]);
-  return import_react49.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
+  const subscribe2 = import_react50.default.useCallback((listener) => service.subscribe(listener), [service]);
+  const getSnapshot2 = import_react50.default.useCallback(() => service.getSnapshot(), [service]);
+  return import_react50.default.useSyncExternalStore(subscribe2, getSnapshot2, getSnapshot2);
 }
 function FolderTree2(props) {
   const t = props.t;
   const tree = props.tree;
-  const [editing, setEditing] = import_react49.default.useState(null);
-  const [armedDelete, setArmedDelete] = import_react49.default.useState("");
-  const inputRef = import_react49.default.useRef(null);
-  import_react49.default.useEffect(() => {
+  const [editing, setEditing] = import_react50.default.useState(null);
+  const [armedDelete, setArmedDelete] = import_react50.default.useState("");
+  const inputRef = import_react50.default.useRef(null);
+  import_react50.default.useEffect(() => {
     if (editing && inputRef.current) inputRef.current.focus();
   }, [editing]);
-  import_react49.default.useEffect(() => {
+  import_react50.default.useEffect(() => {
     if (!armedDelete) return void 0;
     const timer2 = setTimeout(() => setArmedDelete(""), 4500);
     return () => clearTimeout(timer2);
@@ -34543,11 +35284,11 @@ function FolderTree2(props) {
     for (const node of nodes) {
       const isEditing = editing && editing.mode === "rename" && editing.id === node.id;
       rows.push(
-        import_react49.default.createElement(
+        import_react50.default.createElement(
           "div",
           { key: "f-" + node.id, className: "ph-n-tree__row" + (props.folderId === node.id ? " ph-n-tree__row--active" : ""), style: { paddingLeft: 6 + depth * 14 } },
-          import_react49.default.createElement("span", { className: "ph-n-tree__icon" }, import_react49.default.createElement(Icon, { name: depth === 0 ? "folder" : "folderOpen", size: 13 })),
-          isEditing ? import_react49.default.createElement("input", {
+          import_react50.default.createElement("span", { className: "ph-n-tree__icon" }, import_react50.default.createElement(Icon, { name: depth === 0 ? "folder" : "folderOpen", size: 13 })),
+          isEditing ? import_react50.default.createElement("input", {
             ref: inputRef,
             className: "ph-n-tree__input",
             value: editing.value,
@@ -34557,7 +35298,7 @@ function FolderTree2(props) {
               if (event.key === "Escape") setEditing(null);
             },
             onBlur: submit
-          }) : import_react49.default.createElement(
+          }) : import_react50.default.createElement(
             "button",
             {
               type: "button",
@@ -34568,23 +35309,23 @@ function FolderTree2(props) {
             },
             node.name
           ),
-          import_react49.default.createElement("span", { className: "ph-n-tree__count" }, String(node.count || 0)),
-          import_react49.default.createElement(
+          import_react50.default.createElement("span", { className: "ph-n-tree__count" }, String(node.count || 0)),
+          import_react50.default.createElement(
             "span",
             { className: "ph-n-tree__tools" },
-            import_react49.default.createElement(IconButton, {
+            import_react50.default.createElement(IconButton, {
               icon: "plus",
               size: 12,
               title: t("notes.folders.newChild"),
               onClick: () => setEditing({ mode: "create", parentId: node.id, value: "" })
             }),
-            import_react49.default.createElement(IconButton, {
+            import_react50.default.createElement(IconButton, {
               icon: "edit",
               size: 12,
               title: t("notes.folders.rename"),
               onClick: () => setEditing({ mode: "rename", id: node.id, value: node.name })
             }),
-            import_react49.default.createElement(IconButton, {
+            import_react50.default.createElement(IconButton, {
               icon: "trash",
               size: 12,
               title: armedDelete === node.id ? t("notes.folders.deleteConfirm") : t("notes.folders.delete"),
@@ -34603,22 +35344,22 @@ function FolderTree2(props) {
     }
   };
   walk(tree, 0);
-  return import_react49.default.createElement(
+  return import_react50.default.createElement(
     "div",
     { className: "ph-n-tree" },
-    import_react49.default.createElement(
+    import_react50.default.createElement(
       "button",
       { type: "button", className: "ph-n-tree__row" + (props.folderId === "" ? " ph-n-tree__row--active" : ""), onClick: () => props.onSelect("") },
-      import_react49.default.createElement("span", { className: "ph-n-tree__icon" }, import_react49.default.createElement(Icon, { name: "layers", size: 13 })),
-      import_react49.default.createElement("span", { className: "ph-n-tree__label" }, t("notes.folders.all")),
-      import_react49.default.createElement("span", { className: "ph-n-tree__count" }, String(props.total || 0))
+      import_react50.default.createElement("span", { className: "ph-n-tree__icon" }, import_react50.default.createElement(Icon, { name: "layers", size: 13 })),
+      import_react50.default.createElement("span", { className: "ph-n-tree__label" }, t("notes.folders.all")),
+      import_react50.default.createElement("span", { className: "ph-n-tree__count" }, String(props.total || 0))
     ),
     rows,
-    editing && editing.mode === "create" && !editing.parentId ? import_react49.default.createElement(
+    editing && editing.mode === "create" && !editing.parentId ? import_react50.default.createElement(
       "div",
       { className: "ph-n-tree__row" },
-      import_react49.default.createElement("span", { className: "ph-n-tree__icon" }, import_react49.default.createElement(Icon, { name: "folder", size: 13 })),
-      import_react49.default.createElement("input", {
+      import_react50.default.createElement("span", { className: "ph-n-tree__icon" }, import_react50.default.createElement(Icon, { name: "folder", size: 13 })),
+      import_react50.default.createElement("input", {
         ref: inputRef,
         className: "ph-n-tree__input",
         value: editing.value,
@@ -34630,7 +35371,7 @@ function FolderTree2(props) {
         },
         onBlur: submit
       })
-    ) : import_react49.default.createElement(
+    ) : import_react50.default.createElement(
       "button",
       {
         type: "button",
@@ -34638,39 +35379,39 @@ function FolderTree2(props) {
         onClick: () => setEditing({ mode: "create", parentId: null, value: "" }),
         title: t("notes.folders.new")
       },
-      import_react49.default.createElement("span", { className: "ph-n-tree__icon" }, import_react49.default.createElement(Icon, { name: "folderPlus", size: 13 })),
-      import_react49.default.createElement("span", { className: "ph-n-tree__label ph-n-muted" }, t("notes.folders.new"))
+      import_react50.default.createElement("span", { className: "ph-n-tree__icon" }, import_react50.default.createElement(Icon, { name: "folderPlus", size: 13 })),
+      import_react50.default.createElement("span", { className: "ph-n-tree__label ph-n-muted" }, t("notes.folders.new"))
     ),
-    tree.length === 0 ? import_react49.default.createElement("p", { className: "ph-n-folders__empty" }, t("notes.folders.empty")) : null
+    tree.length === 0 ? import_react50.default.createElement("p", { className: "ph-n-folders__empty" }, t("notes.folders.empty")) : null
   );
 }
 function NotesWorkspace(props) {
   const t = props.t;
   const api = props.api;
-  const releaseStyles = import_react49.default.useMemo(() => ensureNotesStyles(), []);
-  const service = import_react49.default.useMemo(() => createNotesService(api), [api]);
+  const releaseStyles = import_react50.default.useMemo(() => ensureNotesStyles(), []);
+  const service = import_react50.default.useMemo(() => createNotesService(api), [api]);
   const serviceState = useServiceState2(service);
   const { toasts, push, dismiss: dismiss2 } = useToasts();
-  const [folders, setFolders] = import_react49.default.useState({ status: "idle", tree: [] });
-  const [list, setList] = import_react49.default.useState({ status: "idle", items: [], total: 0, error: null });
-  const [query, setQuery] = import_react49.default.useState("");
-  const [debounced, setDebounced] = import_react49.default.useState("");
-  const [folderId, setFolderId] = import_react49.default.useState("");
-  const [paperFilter, setPaperFilter] = import_react49.default.useState(null);
-  const [activeId, setActiveId] = import_react49.default.useState(() => String(props.initialNoteId || ""));
-  const [active, setActive] = import_react49.default.useState({ status: "idle", note: null, error: null });
-  const [foldersOpen, setFoldersOpen] = import_react49.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1250);
-  const [paperOpen, setPaperOpen] = import_react49.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1420);
-  const [refreshToken, setRefreshToken] = import_react49.default.useState(0);
-  const activeIdRef = import_react49.default.useRef(activeId);
+  const [folders, setFolders] = import_react50.default.useState({ status: "idle", tree: [] });
+  const [list, setList] = import_react50.default.useState({ status: "idle", items: [], total: 0, error: null });
+  const [query, setQuery] = import_react50.default.useState("");
+  const [debounced, setDebounced] = import_react50.default.useState("");
+  const [folderId, setFolderId] = import_react50.default.useState("");
+  const [paperFilter, setPaperFilter] = import_react50.default.useState(null);
+  const [activeId, setActiveId] = import_react50.default.useState(() => String(props.initialNoteId || ""));
+  const [active, setActive] = import_react50.default.useState({ status: "idle", note: null, error: null });
+  const [foldersOpen, setFoldersOpen] = import_react50.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1250);
+  const [paperOpen, setPaperOpen] = import_react50.default.useState(() => typeof window === "undefined" ? true : window.innerWidth > 1420);
+  const [refreshToken, setRefreshToken] = import_react50.default.useState(0);
+  const activeIdRef = import_react50.default.useRef(activeId);
   activeIdRef.current = activeId;
-  import_react49.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
-  import_react49.default.useEffect(() => {
+  import_react50.default.useEffect(() => () => releaseStyles(), [releaseStyles]);
+  import_react50.default.useEffect(() => {
     const timer2 = setTimeout(() => setDebounced(query), 260);
     return () => clearTimeout(timer2);
   }, [query]);
-  const refresh = import_react49.default.useCallback(() => setRefreshToken((value) => value + 1), []);
-  import_react49.default.useEffect(() => {
+  const refresh = import_react50.default.useCallback(() => setRefreshToken((value) => value + 1), []);
+  import_react50.default.useEffect(() => {
     let alive = true;
     service.probe().then((state) => {
       if (!alive || state.status === "unavailable" || state.status === "offline") return;
@@ -34685,7 +35426,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [service, refreshToken]);
-  import_react49.default.useEffect(() => {
+  import_react50.default.useEffect(() => {
     if (serviceState.status !== "ready") return void 0;
     let alive = true;
     setList((previous) => Object.assign({}, previous, { status: "loading", error: null }));
@@ -34717,7 +35458,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [debounced, folderId, paperFilter, refreshToken, service, serviceState.status]);
-  import_react49.default.useEffect(() => {
+  import_react50.default.useEffect(() => {
     if (!activeId) {
       setActive({ status: "idle", note: null, error: null });
       return void 0;
@@ -34733,7 +35474,7 @@ function NotesWorkspace(props) {
       alive = false;
     };
   }, [activeId, refreshToken, service]);
-  const updateRow = import_react49.default.useCallback((saved) => {
+  const updateRow = import_react50.default.useCallback((saved) => {
     if (!saved) return;
     setList((previous) => {
       const items2 = previous.items.map(
@@ -34753,7 +35494,7 @@ function NotesWorkspace(props) {
     });
     setActive((previous) => previous.note && previous.note.id === saved.id ? { status: "ready", note: saved, error: null } : previous);
   }, []);
-  const createNote = import_react49.default.useCallback(
+  const createNote = import_react50.default.useCallback(
     (options) => {
       const opts = options || {};
       const paperIds = opts.paperIds || (paperFilter ? [paperFilter.id] : []);
@@ -34771,7 +35512,7 @@ function NotesWorkspace(props) {
     },
     [folderId, paperFilter, push, refresh, service, t]
   );
-  const createFolder = import_react49.default.useCallback(
+  const createFolder = import_react50.default.useCallback(
     (name, parentId) => Promise.resolve(service.createFolder({ name, parentId: parentId || void 0 })).then((folder) => {
       push("success", t("notes.folders.created"));
       refresh();
@@ -34782,14 +35523,14 @@ function NotesWorkspace(props) {
     }),
     [push, refresh, service, t]
   );
-  const renameFolder = import_react49.default.useCallback(
+  const renameFolder = import_react50.default.useCallback(
     (id, name) => Promise.resolve(service.renameFolder({ id, name })).then(() => refresh()).catch((error) => {
       push("error", t("notes.folders.renameFailed", { message: String(error && error.message || error) }));
       throw error;
     }),
     [push, refresh, service, t]
   );
-  const deleteFolder = import_react49.default.useCallback(
+  const deleteFolder = import_react50.default.useCallback(
     (id) => Promise.resolve(service.deleteFolder(id)).then(() => {
       push("success", t("notes.folders.deleted"));
       if (folderId === id) setFolderId("");
@@ -34797,7 +35538,7 @@ function NotesWorkspace(props) {
     }).catch((error) => push("error", t("notes.folders.deleteFailed", { message: String(error && error.message || error) }))),
     [folderId, push, refresh, service, t]
   );
-  const moveNote = import_react49.default.useCallback(
+  const moveNote = import_react50.default.useCallback(
     (targetFolderId) => {
       const note = active.note;
       if (!note) return Promise.resolve(null);
@@ -34821,15 +35562,15 @@ function NotesWorkspace(props) {
     },
     [active.note, folders.tree, push, service, t]
   );
-  const linkPapers = import_react49.default.useCallback(
+  const linkPapers = import_react50.default.useCallback(
     (ids) => Promise.resolve(service.link(activeIdRef.current, ids)),
     [service]
   );
-  const unlinkPapers = import_react49.default.useCallback(
+  const unlinkPapers = import_react50.default.useCallback(
     (ids) => Promise.resolve(service.unlink(activeIdRef.current, ids)),
     [service]
   );
-  const onDeleted = import_react49.default.useCallback(
+  const onDeleted = import_react50.default.useCallback(
     (deleted) => {
       setList((previous) => {
         const items2 = previous.items.filter((item) => item.id !== deleted.id);
@@ -34842,35 +35583,35 @@ function NotesWorkspace(props) {
     },
     [refresh]
   );
-  const openPaper = import_react49.default.useCallback(
+  const openPaper = import_react50.default.useCallback(
     (paperId, page2, annotationId) => {
       if (props.onOpenPaper) props.onOpenPaper(paperId, page2 || 1, annotationId || null);
     },
     [props]
   );
-  const flatFolders = import_react49.default.useMemo(() => flattenFolders(folders.tree || []), [folders.tree]);
-  const folderName = import_react49.default.useMemo(() => {
+  const flatFolders = import_react50.default.useMemo(() => flattenFolders(folders.tree || []), [folders.tree]);
+  const folderName = import_react50.default.useMemo(() => {
     if (!folderId) return "";
     const found = flatFolders.find((folder) => folder.id === folderId);
     return found ? found.name : "";
   }, [flatFolders, folderId]);
   const listTitle = paperFilter ? t("notes.fromPaperTitle", { title: paperFilter.title }) : folderName || t("notes.folders.all");
   const unavailable = serviceState.status === "unavailable" || serviceState.status === "offline";
-  return import_react49.default.createElement(
+  return import_react50.default.createElement(
     "div",
     { className: "ph-n-app" },
-    import_react49.default.createElement(
+    import_react50.default.createElement(
       "div",
       { className: "ph-n-topbar" },
-      import_react49.default.createElement(Button, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack, title: t("notes.library.back") }, t("notes.library.back")),
-      import_react49.default.createElement(
+      import_react50.default.createElement(Button, { size: "sm", variant: "ghost", icon: "arrowLeft", onClick: props.onBack, title: t("notes.library.back") }, t("notes.library.back")),
+      import_react50.default.createElement(
         "div",
         { className: "ph-n-brand" },
-        import_react49.default.createElement(Icon, { name: "note", size: 18, className: "ph-n-brand__mark" }),
-        import_react49.default.createElement("h1", { className: "ph-n-brand__title" }, t("notes.library.title")),
-        import_react49.default.createElement("span", { className: "ph-n-brand__sub" }, t("notes.library.subtitle"))
+        import_react50.default.createElement(Icon, { name: "note", size: 18, className: "ph-n-brand__mark" }),
+        import_react50.default.createElement("h1", { className: "ph-n-brand__title" }, t("notes.library.title")),
+        import_react50.default.createElement("span", { className: "ph-n-brand__sub" }, t("notes.library.subtitle"))
       ),
-      import_react49.default.createElement(SearchInput, {
+      import_react50.default.createElement(SearchInput, {
         className: "ph-n-topbar__search",
         value: query,
         onChange: setQuery,
@@ -34879,54 +35620,54 @@ function NotesWorkspace(props) {
         loading: list.status === "loading",
         "aria-label": t("notes.search.placeholder")
       }),
-      import_react49.default.createElement("span", { className: "ph-n-topbar__spacer" }),
-      import_react49.default.createElement(
+      import_react50.default.createElement("span", { className: "ph-n-topbar__spacer" }),
+      import_react50.default.createElement(
         "div",
         { className: "ph-n-topbar__actions" },
-        import_react49.default.createElement(Button, { variant: "primary", size: "sm", icon: "plus", onClick: () => createNote().catch(() => {
+        import_react50.default.createElement(Button, { variant: "primary", size: "sm", icon: "plus", onClick: () => createNote().catch(() => {
         }), title: t("notes.new") }, t("notes.new")),
-        import_react49.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), active: foldersOpen, onClick: () => setFoldersOpen((value) => !value) }),
-        import_react49.default.createElement(IconButton, { icon: "panelRight", title: paperOpen ? t("notes.papers.panelClose") : t("notes.papers.panelOpen"), active: paperOpen, onClick: () => setPaperOpen((value) => !value) }),
-        import_react49.default.createElement(IconButton, { icon: "refresh", title: t("notes.refresh"), onClick: refresh }),
-        props.onOpenSettings ? import_react49.default.createElement(IconButton, { icon: "settings", title: t("settings.open"), onClick: props.onOpenSettings }) : null
+        import_react50.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), active: foldersOpen, onClick: () => setFoldersOpen((value) => !value) }),
+        import_react50.default.createElement(IconButton, { icon: "panelRight", title: paperOpen ? t("notes.papers.panelClose") : t("notes.papers.panelOpen"), active: paperOpen, onClick: () => setPaperOpen((value) => !value) }),
+        import_react50.default.createElement(IconButton, { icon: "refresh", title: t("notes.refresh"), onClick: refresh }),
+        props.onOpenSettings ? import_react50.default.createElement(IconButton, { icon: "settings", title: t("settings.open"), onClick: props.onOpenSettings }) : null
       )
     ),
-    unavailable ? import_react49.default.createElement(
+    unavailable ? import_react50.default.createElement(
       "div",
       { className: "ph-n-main__empty" },
-      import_react49.default.createElement(EmptyState, {
+      import_react50.default.createElement(EmptyState, {
         icon: "warning",
         tone: "warning",
         title: serviceState.status === "offline" ? t("notes.service.offlineTitle") : t("notes.service.unavailableTitle"),
         desc: serviceState.status === "offline" ? t("notes.service.offlineDesc") : t("notes.service.unavailableDesc"),
-        action: import_react49.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: () => service.probe().then((state) => {
+        action: import_react50.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: () => service.probe().then((state) => {
           if (state.status === "ready") refresh();
         }) }, t("notes.service.retry"))
       })
-    ) : import_react49.default.createElement(
+    ) : import_react50.default.createElement(
       "div",
       { className: "ph-n-body" },
-      import_react49.default.createElement(
+      import_react50.default.createElement(
         "div",
         { className: "ph-n-folders" + (foldersOpen ? "" : " ph-n-folders--closed") },
-        import_react49.default.createElement(
+        import_react50.default.createElement(
           "div",
           { className: "ph-n-folders__head" },
-          import_react49.default.createElement(Icon, { name: "folder", size: 13 }),
-          import_react49.default.createElement("span", null, t("notes.folders.title")),
-          import_react49.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), onClick: () => setFoldersOpen(false) })
+          import_react50.default.createElement(Icon, { name: "folder", size: 13 }),
+          import_react50.default.createElement("span", null, t("notes.folders.title")),
+          import_react50.default.createElement(IconButton, { icon: "panelLeft", title: t("notes.folders.toggle"), onClick: () => setFoldersOpen(false) })
         ),
-        import_react49.default.createElement(
+        import_react50.default.createElement(
           "div",
           { className: "ph-n-folders__scroll ph-n-scroll" },
-          folders.status === "loading" && folders.tree.length === 0 ? import_react49.default.createElement("div", { className: "ph-n-folders__empty" }, t("common.loading")) : null,
-          folders.status === "error" ? import_react49.default.createElement(
+          folders.status === "loading" && folders.tree.length === 0 ? import_react50.default.createElement("div", { className: "ph-n-folders__empty" }, t("common.loading")) : null,
+          folders.status === "error" ? import_react50.default.createElement(
             "div",
             { className: "ph-n-folders__empty" },
             t("notes.folders.loadFailed"),
-            import_react49.default.createElement(Button, { size: "sm", variant: "ghost", icon: "refresh", onClick: refresh }, t("common.retry"))
+            import_react50.default.createElement(Button, { size: "sm", variant: "ghost", icon: "refresh", onClick: refresh }, t("common.retry"))
           ) : null,
-          import_react49.default.createElement(FolderTree2, {
+          import_react50.default.createElement(FolderTree2, {
             t,
             tree: folders.tree || [],
             folderId,
@@ -34941,43 +35682,43 @@ function NotesWorkspace(props) {
           })
         )
       ),
-      import_react49.default.createElement(
+      import_react50.default.createElement(
         "div",
         { className: "ph-n-listpane" },
-        import_react49.default.createElement(
+        import_react50.default.createElement(
           "div",
           { className: "ph-n-listpane__head" },
-          import_react49.default.createElement("span", { className: "ph-n-listpane__title", title: listTitle }, listTitle),
-          import_react49.default.createElement("span", { className: "ph-n-listpane__count" }, list.status === "ready" ? String(list.items.length) : "\u2026")
+          import_react50.default.createElement("span", { className: "ph-n-listpane__title", title: listTitle }, listTitle),
+          import_react50.default.createElement("span", { className: "ph-n-listpane__count" }, list.status === "ready" ? String(list.items.length) : "\u2026")
         ),
-        paperFilter ? import_react49.default.createElement(
+        paperFilter ? import_react50.default.createElement(
           "div",
           { className: "ph-n-listpane__filter" },
-          import_react49.default.createElement(Icon, { name: "filter", size: 12 }),
-          import_react49.default.createElement("span", { className: "ph-n-chip ph-n-chip--folder" }, import_react49.default.createElement("span", { className: "ph-n-chip__label", title: paperFilter.title }, paperFilter.title)),
-          import_react49.default.createElement(IconButton, { icon: "close", size: 12, title: t("notes.fromPaper.clear"), onClick: () => setPaperFilter(null) })
-        ) : debounced.trim() ? import_react49.default.createElement("div", { className: "ph-n-listpane__filter" }, import_react49.default.createElement(Icon, { name: "search", size: 12 }), import_react49.default.createElement("span", null, t("notes.search.results", { count: list.items.length }))) : null,
-        list.status === "error" ? import_react49.default.createElement(
+          import_react50.default.createElement(Icon, { name: "filter", size: 12 }),
+          import_react50.default.createElement("span", { className: "ph-n-chip ph-n-chip--folder" }, import_react50.default.createElement("span", { className: "ph-n-chip__label", title: paperFilter.title }, paperFilter.title)),
+          import_react50.default.createElement(IconButton, { icon: "close", size: 12, title: t("notes.fromPaper.clear"), onClick: () => setPaperFilter(null) })
+        ) : debounced.trim() ? import_react50.default.createElement("div", { className: "ph-n-listpane__filter" }, import_react50.default.createElement(Icon, { name: "search", size: 12 }), import_react50.default.createElement("span", null, t("notes.search.results", { count: list.items.length }))) : null,
+        list.status === "error" ? import_react50.default.createElement(
           "div",
           { className: "ph-n-listpane__filter" },
-          import_react49.default.createElement(Icon, { name: "warning", size: 12 }),
-          import_react49.default.createElement("span", null, t("notes.loadFailed", { message: String(list.error && list.error.message || "") })),
-          import_react49.default.createElement(IconButton, { icon: "refresh", size: 12, title: t("common.retry"), onClick: refresh })
+          import_react50.default.createElement(Icon, { name: "warning", size: 12 }),
+          import_react50.default.createElement("span", null, t("notes.loadFailed", { message: String(list.error && list.error.message || "") })),
+          import_react50.default.createElement(IconButton, { icon: "refresh", size: 12, title: t("common.retry"), onClick: refresh })
         ) : null,
-        import_react49.default.createElement(
+        import_react50.default.createElement(
           "div",
           { className: "ph-n-list ph-n-scroll" },
-          list.status === "loading" && list.items.length === 0 ? [0, 1, 2, 3].map((index) => import_react49.default.createElement("div", { key: index, className: "ph-n-skeletonrow" })) : null,
-          list.status === "ready" && list.items.length === 0 ? import_react49.default.createElement(EmptyState, {
+          list.status === "loading" && list.items.length === 0 ? [0, 1, 2, 3].map((index) => import_react50.default.createElement("div", { key: index, className: "ph-n-skeletonrow" })) : null,
+          list.status === "ready" && list.items.length === 0 ? import_react50.default.createElement(EmptyState, {
             compact: true,
             icon: "note",
             title: debounced.trim() ? t("notes.search.empty") : t("notes.empty.title"),
             desc: debounced.trim() ? t("notes.search.emptyDesc") : t("notes.empty.desc"),
-            action: import_react49.default.createElement(Button, { size: "sm", variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
+            action: import_react50.default.createElement(Button, { size: "sm", variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
             }) }, t("notes.new"))
           }) : null,
           list.items.map(
-            (item) => import_react49.default.createElement(
+            (item) => import_react50.default.createElement(
               "button",
               {
                 key: item.id,
@@ -34986,40 +35727,40 @@ function NotesWorkspace(props) {
                 onClick: () => setActiveId(item.id),
                 title: item.title || t("notes.untitled")
               },
-              import_react49.default.createElement(
+              import_react50.default.createElement(
                 "span",
                 { className: "ph-n-listrow__top" },
-                import_react49.default.createElement("span", { className: "ph-n-listrow__title" }, item.title || t("notes.untitled")),
-                import_react49.default.createElement("span", { className: "ph-n-listrow__time" }, formatNoteTime(item.updatedAt))
+                import_react50.default.createElement("span", { className: "ph-n-listrow__title" }, item.title || t("notes.untitled")),
+                import_react50.default.createElement("span", { className: "ph-n-listrow__time" }, formatNoteTime(item.updatedAt))
               ),
-              import_react49.default.createElement("span", { className: "ph-n-listrow__preview" }, String(item.preview || "").replace(/\s+/g, " ").slice(0, 160) || t("notes.empty.preview")),
-              import_react49.default.createElement(
+              import_react50.default.createElement("span", { className: "ph-n-listrow__preview" }, String(item.preview || "").replace(/\s+/g, " ").slice(0, 160) || t("notes.empty.preview")),
+              import_react50.default.createElement(
                 "span",
                 { className: "ph-n-listrow__meta" },
-                item.folder ? import_react49.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react49.default.createElement(Icon, { name: "folder", size: 10 }), import_react49.default.createElement("span", null, item.folder.name)) : null,
-                item.paperIds && item.paperIds.length > 0 ? import_react49.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react49.default.createElement(Icon, { name: "book", size: 10 }), import_react49.default.createElement("span", null, t("notes.list.paperCount", { count: item.paperIds.length }))) : null,
-                item.searchHit ? import_react49.default.createElement(Badge, { tone: "soft" }, t("notes.search.hit")) : null,
-                item.hasContentJson ? import_react49.default.createElement("span", { title: t("notes.cards.beautifiedHint") }, import_react49.default.createElement(Icon, { name: "sparkle", size: 10 })) : null
+                item.folder ? import_react50.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react50.default.createElement(Icon, { name: "folder", size: 10 }), import_react50.default.createElement("span", null, item.folder.name)) : null,
+                item.paperIds && item.paperIds.length > 0 ? import_react50.default.createElement("span", { className: "ph-n-listrow__folder" }, import_react50.default.createElement(Icon, { name: "book", size: 10 }), import_react50.default.createElement("span", null, t("notes.list.paperCount", { count: item.paperIds.length }))) : null,
+                item.searchHit ? import_react50.default.createElement(Badge, { tone: "soft" }, t("notes.search.hit")) : null,
+                item.hasContentJson ? import_react50.default.createElement("span", { title: t("notes.cards.beautifiedHint") }, import_react50.default.createElement(Icon, { name: "sparkle", size: 10 })) : null
               )
             )
           )
         )
       ),
-      import_react49.default.createElement(
+      import_react50.default.createElement(
         "div",
         { className: "ph-n-main" },
-        active.status === "loading" ? import_react49.default.createElement("div", { className: "ph-n-editor__loading" }, import_react49.default.createElement(Icon, { name: "note", size: 14 }), import_react49.default.createElement("span", null, t("notes.loadingNote"))) : null,
-        active.status === "error" ? import_react49.default.createElement(
+        active.status === "loading" ? import_react50.default.createElement("div", { className: "ph-n-editor__loading" }, import_react50.default.createElement(Icon, { name: "note", size: 14 }), import_react50.default.createElement("span", null, t("notes.loadingNote"))) : null,
+        active.status === "error" ? import_react50.default.createElement(
           "div",
           { className: "ph-n-main__empty" },
-          import_react49.default.createElement(EmptyState, {
+          import_react50.default.createElement(EmptyState, {
             icon: "warning",
             tone: "error",
             title: t("notes.loadFailed", { message: String(active.error && active.error.message || "") }),
-            action: import_react49.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: refresh }, t("common.retry"))
+            action: import_react50.default.createElement(Button, { variant: "secondary", icon: "refresh", onClick: refresh }, t("common.retry"))
           })
         ) : null,
-        active.status === "ready" && active.note ? import_react49.default.createElement(NoteEditor, {
+        active.status === "ready" && active.note ? import_react50.default.createElement(NoteEditor, {
           t,
           api,
           service,
@@ -35035,19 +35776,19 @@ function NotesWorkspace(props) {
           onOpenPaper: openPaper,
           onLinkPapers: linkPapers,
           onUnlinkPapers: unlinkPapers
-        }) : active.status !== "loading" ? import_react49.default.createElement(
+        }) : active.status !== "loading" ? import_react50.default.createElement(
           "div",
           { className: "ph-n-main__empty" },
-          import_react49.default.createElement(EmptyState, {
+          import_react50.default.createElement(EmptyState, {
             icon: "note",
             title: t("notes.select.title"),
             desc: t("notes.select.desc"),
-            action: import_react49.default.createElement(Button, { variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
+            action: import_react50.default.createElement(Button, { variant: "primary", icon: "plus", onClick: () => createNote().catch(() => {
             }) }, t("notes.new"))
           })
         ) : null
       ),
-      paperOpen ? import_react49.default.createElement(PaperPanel, {
+      paperOpen ? import_react50.default.createElement(PaperPanel, {
         t,
         api,
         noteId: active.note ? active.note.id : null,
@@ -35074,21 +35815,21 @@ function NotesWorkspace(props) {
         onClose: () => setPaperOpen(false)
       }) : null
     ),
-    import_react49.default.createElement(
+    import_react50.default.createElement(
       "div",
       { className: "ph-n-statusbar" },
-      import_react49.default.createElement(Icon, { name: "note", size: 12 }),
-      import_react49.default.createElement("span", null, t("notes.status.counts", { count: list.total || 0, folders: flatFolders.length })),
-      import_react49.default.createElement("span", { className: "ph-n-statusbar__spacer" }),
-      import_react49.default.createElement(
+      import_react50.default.createElement(Icon, { name: "note", size: 12 }),
+      import_react50.default.createElement("span", null, t("notes.status.counts", { count: list.total || 0, folders: flatFolders.length })),
+      import_react50.default.createElement("span", { className: "ph-n-statusbar__spacer" }),
+      import_react50.default.createElement(
         "span",
         { className: serviceState.status === "ready" ? "" : "ph-n-statusbar__warn", title: serviceState.reason || "" },
         serviceState.status === "ready" ? t("notes.service.ready") : serviceState.status === "unknown" ? t("notes.service.checking") : t("notes.service.notReady")
       ),
-      import_react49.default.createElement("span", null, "\xB7"),
-      import_react49.default.createElement("span", null, t("notes.status.autosaveHint"))
+      import_react50.default.createElement("span", null, "\xB7"),
+      import_react50.default.createElement("span", null, t("notes.status.autosaveHint"))
     ),
-    import_react49.default.createElement(ToastStack, { toasts, onDismiss: dismiss2 })
+    import_react50.default.createElement(ToastStack, { toasts, onDismiss: dismiss2 })
   );
 }
 
@@ -35115,6 +35856,9 @@ function openPaperDrawer(ctx) {
   }
 }
 function apply(ctx) {
+  ctx.effect(() => bus.on("pappers-hall:open-drawer", () => {
+    openPaperDrawer(ctx) || openLibraryPanel(ctx);
+  }), "pappers-hall: onboarding drawer bridge");
   installStyles(ctx);
   ctx.effect(() => ctx.locale.register(NS, { zh: ZH, en: EN }), "pappers-hall: dictionaries");
   const t = ctx.locale.bind(NS);
@@ -35127,7 +35871,7 @@ function apply(ctx) {
       () => ctx.slots.register(
         { name: "sidebar.panellist", id: PANEL_ID, order: 20, label: () => t("panel.title"), locale: NS },
         withBoundary(function PanelEntry(props) {
-          return (0, import_react51.createElement)(PanelIcon, props);
+          return (0, import_react52.createElement)(PanelIcon, props);
         }, "sidebar settings host")
       )
     ),
@@ -35139,7 +35883,7 @@ function apply(ctx) {
       () => ctx.slots.register(
         { name: "shell.overlay", id: "pappers-hall-settings", order: 40, locale: NS },
         withBoundary(function SettingsOverlay(props) {
-          return (0, import_react51.createElement)(SettingsHost, { t });
+          return (0, import_react52.createElement)(SettingsHost, { t });
         }, "settings overlay")
       )
     ),
@@ -35151,7 +35895,7 @@ function apply(ctx) {
       () => ctx.slots.register(
         { name: "main", key: PANEL_ID, locale: NS },
         withBoundary(function PaperCenterSurface(props) {
-          return (0, import_react51.createElement)(PaperCenter, { ...props, t, api, pending, library });
+          return (0, import_react52.createElement)(PaperCenter, { ...props, t, api, pending, library });
         }, "paper center")
       )
     ),

@@ -27,7 +27,8 @@
     "CHANGELOG.md",
     "client.js",
     "CONTRIBUTING.md",
-    "SECURITY.md"
+    "SECURITY.md",
+    "assets"
   ],
   "engines": {
     "node": ">=24",

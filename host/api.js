@@ -104,7 +104,7 @@ function dispatchNoteDelete(params, store, notes) {
  * @param {object} [services.notes] notes workbench service (v0.17).
  * @returns {{handlers:Map<string,Function>, call:(method:string, params?:object)=>Promise<object>, envelope:(method:string,params?:object)=>Promise<object>, methods:string[]}} API facade.
  */
-export function createApi({ store, search, ingest, queue, settings, models, ocr, notes, noteAgent, layout, python = null }) {
+export function createApi({ store, search, ingest, queue, settings, models, ocr, notes, noteAgent, layout, python = null, onboarding = null }) {
   const handlers = new Map([
     // ---- read-only -------------------------------------------------
     ['status', () => store.status()],
@@ -151,6 +151,11 @@ export function createApi({ store, search, ingest, queue, settings, models, ocr,
 
     // ---- writes ----------------------------------------------------
     ['library.import', (params) => ingest.importRequest(params ?? {})],
+    // First-run guide: state, step completion and the bundled sample paper.
+    ['onboarding.status', () => (onboarding === null ? { state: null, steps: [], shouldAutoOpen: false, sample: null } : onboarding.status())],
+    ['onboarding.update', (params) => (onboarding === null ? { status: 'unavailable' } : onboarding.update(params?.patch ?? params ?? {}))],
+    ['onboarding.completeStep', (params) => (onboarding === null ? { status: 'unavailable' } : onboarding.completeStep(params?.step))],
+    ['onboarding.sample', () => (onboarding === null ? { available: false, path: null } : onboarding.sample())],
     ['library.update', (params) => store.libraryUpdate(params)],
     ['discover.feed', (params) => store.discoverFeed(params)],
     ['annotations.feed', (params) => store.annotationsFeed(params)],

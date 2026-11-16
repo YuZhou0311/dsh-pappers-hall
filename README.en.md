@@ -116,6 +116,15 @@ Select papers, figures, annotations or notes and choose **Cite to conversation**
 - **Node.js ≥24**, plus Poppler's `pdfinfo`, `pdftotext` and `pdftoppm` available to DSH.
 - Configure a suitable model in DSH before using translation, AI reading or note formatting. Add OCR, embeddings and image-capable models as needed.
 
+### Getting started guide
+
+The first visit to the paper centre opens a ~2-minute guide that walks through the four daily actions (read, annotate, note, cite) and brings the two setup steps into the flow:
+
+1. **Local component**: install PyMuPDF + PP-OCRv6 + PP-DocLayout-S right in the guide (or later under Settings → Capabilities)
+2. **Sample paper**: a bundled 3-page PDF — two text pages (figure and table) plus one rasterised page that only OCR can read
+
+Skipping the guide stops it from opening again; replay it from the toolbar's More menu or the "Getting started" section in Settings.
+
 ### Optional local component (recommended)
 
 Settings → Capabilities → **Local component (PDF · OCR · layout)** installs three capabilities in one click:

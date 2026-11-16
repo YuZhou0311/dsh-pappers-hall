@@ -36,6 +36,7 @@ import { createJobQueue } from './jobs.js'
 import { createCommandRunner, createPdfTools } from './pdf.js'
 import { createPythonBridge } from './py.js'
 import { createDocLayout } from './doc-layout.js'
+import { createOnboarding } from './onboarding.js'
 import { ensureLayout, layoutFor, readJsonIfPresent, readPluginVersion, resolveDataDir, resolveFixtureDir, clampInt } from './paths.js'
 import { createSearch } from './search.js'
 import { createStore, emptyManifest, manifestIndex } from './store.js'
@@ -399,6 +400,7 @@ async function applyHostNow(ctx, config) {
   })
   const ai = createAi({ ctx, store, layout, pdf, config: resolved, logger })
   const settings = createSettings({ db, config: resolved, logger, identity, layout })
+  const onboarding = createOnboarding({ db, logger })
   const translate = createTranslate({ ctx, store, ai, config: resolved, logger, settings })
   const embedding = createEmbedding({ db, config: resolved, logger, settings })
   // v0.17 notes workbench: own tables + FTS + independent note_embeddings index.
@@ -432,7 +434,7 @@ async function applyHostNow(ctx, config) {
   ocr.registerHandlers(queue)
   const models = createModels({ db, queue, embedding, ocr, python, settings, config: resolved, logger })
   models.registerHandlers(queue)
-  settings.bind({ embedding, translate, search, store, models, ocr, queue, python, docLayout, pdf })
+  settings.bind({ embedding, translate, search, store, models, ocr, queue, python, docLayout, pdf, onboarding })
   const ingest = createIngest({ store, search, pdf, queue, layout, config: resolved, logger, manifest, docLayout })
   ingest.registerHandlers()
   trace('writer stack ready')
@@ -443,7 +445,7 @@ async function applyHostNow(ctx, config) {
   } catch (error) {
     logger?.warn?.(`pappers-hall: embedding auto-index failed: ${String(error?.message ?? error)}`)
   }
-  const api = createApi({ store, search, ingest, queue, settings, models, ocr, notes, noteAgent, layout, python })
+  const api = createApi({ store, search, ingest, queue, settings, models, ocr, notes, noteAgent, layout, python, onboarding })
   const webHandler = createWebHandler({
     api,
     store,

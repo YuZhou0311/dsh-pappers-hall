@@ -1916,6 +1916,27 @@ async function main() {
         translateProvidersAfter.items.map((item) => `${item.id}:${item.enabled}`),
       )
       await service.api.call('settings.update', { patch: { translation: { providers: { google: true } } } })
+      // First-run guide: state, sample asset and step completion.
+      const onboardingInitial = await service.api.call('onboarding.status', {})
+      check(
+        'onboarding.status exposes steps and an auto-open decision',
+        Array.isArray(onboardingInitial.steps) && onboardingInitial.steps.length === 5 && onboardingInitial.shouldAutoOpen === true && onboardingInitial.state.completedSteps.length === 0,
+        { autoOpen: onboardingInitial.shouldAutoOpen, steps: onboardingInitial.steps },
+      )
+      check(
+        'onboarding ships the sample PDF',
+        onboardingInitial.sample?.available === true && onboardingInitial.sample.bytes > 10_000 && /sample-paper\.pdf$/.test(String(onboardingInitial.sample.path)),
+        onboardingInitial.sample,
+      )
+      const onboardingStep = await service.api.call('onboarding.completeStep', { step: 'welcome' })
+      check('onboarding.completeStep records the step', onboardingStep.status === 'ok' && onboardingStep.state.completedSteps.includes('welcome'), onboardingStep.state?.completedSteps)
+      const onboardingBad = await service.api.call('onboarding.completeStep', { step: 'nope' })
+      check('onboarding rejects unknown steps', onboardingBad.status === 'invalid', onboardingBad.status)
+      const onboardingDismissed = await service.api.call('onboarding.update', { patch: { dismissedAt: '2026-01-01T00:00:00.000Z' } })
+      check('onboarding.update persists dismissal', typeof onboardingDismissed.dismissedAt === 'string', onboardingDismissed.dismissedAt)
+      const onboardingAfter = await service.api.call('onboarding.status', {})
+      check('dismissed guide does not auto-open', onboardingAfter.shouldAutoOpen === false, onboardingAfter.shouldAutoOpen)
+
       // Model install channel: enqueue + cancel without downloading anything.
       const embeddingInstall = await service.api.call('models.install', { kind: 'embedding' })
       check(

@@ -10,7 +10,7 @@ import React from 'react'
 import { h } from '../../core/dom.js'
 import { Icon } from '../../core/icons.jsx'
 import { Badge, Button, EmptyState, IconButton, ToastStack, useToasts, SearchInput } from '../../core/primitives.jsx'
-import { describeError } from '../../core/api.js'
+import { defaultApi, describeError } from '../../core/api.js'
 import { copyText, downloadText } from '../../core/files.js'
 import { paperTitle } from '../../core/texts.js'
 import { pendingStore } from '../../core/pending.js'
@@ -24,6 +24,7 @@ import { ItemTable } from './item-table.jsx'
 import { DetailsPane } from './details.jsx'
 import { DuplicatesPane } from './duplicates.jsx'
 import { CitationDialog, CommandPalette, HelpDialog } from './dialogs.jsx'
+import { OnboardingDialog } from '../onboarding.jsx'
 import { FeedbackHost, notify } from '../../core/feedback.js'
 import { installUndoShortcuts, undo } from '../../core/undo.js'
 import { deliverMaterials } from '../../core/dnd.js'
@@ -126,6 +127,12 @@ function TopbarMenu(props) {
             { type: 'button', className: 'ph-menu__item', role: 'menuitem', onClick: run(() => props.onRefresh()) },
             h(Icon, { name: 'refresh', size: 15 }),
             h('span', null, t('page.refresh')),
+          ),
+          h(
+            'button',
+            { type: 'button', className: 'ph-menu__item', role: 'menuitem', onClick: run(() => { if (props.onOnboarding) props.onOnboarding() }) },
+            h(Icon, { name: 'compass', size: 15 }),
+            h('span', null, t('onboarding.reopen')),
           ),
           h(
             'button',
@@ -377,6 +384,7 @@ export function LibraryShell(props) {
   const [paletteOpen, setPaletteOpen] = React.useState(false)
   const [citationOpen, setCitationOpen] = React.useState(false)
   const [helpOpen, setHelpOpen] = React.useState(false)
+  const [onboardingOpen, setOnboardingOpen] = React.useState(false)
   const [inlineNoteId, setInlineNoteId] = React.useState(() => {
     if (props.initialNoteId) return String(props.initialNoteId)
     try { return String(sessionStorage.getItem('pappers-hall:inline-note') || '') } catch { return '' }
@@ -414,6 +422,21 @@ export function LibraryShell(props) {
       if (!previous) library.setUi({ leftCollapsed: false })
     }
   }, [inlineNoteId])
+
+  // First-run guide: open by itself once, and allow reopening from the toolbar,
+  // the settings panel (custom event) or ⌘K.
+  React.useEffect(() => {
+    let cancelled = false
+    defaultApi('onboarding.status')
+      .then((value) => {
+        if (cancelled || value === null || value === undefined) return
+        if (value.shouldAutoOpen === true) setOnboardingOpen(true)
+      })
+      .catch(() => {})
+    const reopen = () => setOnboardingOpen(true)
+    window.addEventListener('pappers-hall:onboarding', reopen)
+    return () => { cancelled = true; window.removeEventListener('pappers-hall:onboarding', reopen) }
+  }, [])
 
   React.useEffect(() => {
     if (snapshot.status === 'idle') library.refresh()
@@ -601,6 +624,7 @@ export function LibraryShell(props) {
         onOpenDuplicates: () => library.setView('duplicates'),
         onRefresh: () => library.refresh(),
         onHelp: () => setHelpOpen(true),
+        onOnboarding: () => setOnboardingOpen(true),
       }),
     ),
   )
@@ -622,7 +646,7 @@ export function LibraryShell(props) {
     : h(
         'div',
         { className: 'ph-pane ph-pane--mid' + (snapshot.selection.length > 0 ? ' ph-pane--batch' : '') },
-        h(LibraryToolbar, { t: t, api: api, snapshot: snapshot, controller: library, pushToast: push, scopeRef: rootRef }),
+        h(LibraryToolbar, { t: t, api: api, snapshot: snapshot, controller: library, pushToast: push, scopeRef: rootRef, onOpenOnboarding: () => setOnboardingOpen(true) }),
         h(SearchFilters, { t: t, snapshot: snapshot, controller: library }),
         snapshot.filters.view === 'duplicates'
           ? h(DuplicatesPane, { t: t, snapshot: snapshot, controller: library, pushToast: push })
@@ -759,6 +783,7 @@ export function LibraryShell(props) {
     h(StatusBar, { t: t, api: api, snapshot: snapshot, library: library }),
     h(ToastStack, { toasts: toasts, onDismiss: dismiss }),
     h(FeedbackHost, null),
+    h(OnboardingDialog, { open: onboardingOpen, onClose: () => setOnboardingOpen(false), t: t, onOpenPaper: (paperId) => openPaper(paperId, 1), onOpenDrawer: () => { try { bus.emit('pappers-hall:open-drawer') } catch (error) { /* ignore */ } } }),
     h(CommandPalette, { open: paletteOpen, onClose: () => setPaletteOpen(false), t: t, commands: commands }),
     h(CitationDialog, { open: citationOpen, onClose: () => setCitationOpen(false), t: t, api: api, onInsert: insertCitation, onToast: (tone, text) => notify(tone, text) }),
     h(HelpDialog, { open: helpOpen, onClose: () => setHelpOpen(false), t: t }),

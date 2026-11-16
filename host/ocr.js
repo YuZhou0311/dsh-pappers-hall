@@ -100,7 +100,7 @@ export function createOcr({ db, python, docLayout, search, queue, layout, settin
       installed: isInstalled,
       enabled: enabled(),
       engine: OCR_ENGINE,
-      version: readSetting(db, 'models.ocr.version') ?? python?.versions?.rapidocr ?? null,
+      version: isInstalled ? (readSetting(db, 'models.ocr.version') ?? python?.versions?.rapidocr ?? null) : null,
       sizeBytes: isInstalled ? sizeBytes() : 0,
       pythonPath: python?.pythonPath ?? null,
       layoutModel: Boolean(docLayout && typeof docLayout.available === 'function' && docLayout.available()),

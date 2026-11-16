@@ -18,8 +18,14 @@
  */
 import { clampInt } from './paths.js'
 
-/** Version of the derived layout format; bump when parsing/semantics change. */
-export const LAYOUT_VERSION = 3
+/**
+ * Version of the derived layout format; bump when parsing/semantics change.
+ *
+ * v4 adds PP-DocLayout-S region roles (headings/captions/tables/running heads)
+ * on top of the geometric heuristics, so existing papers are regenerated once
+ * after the upgrade.
+ */
+export const LAYOUT_VERSION = 4
 
 /** Round a coordinate to two decimals (layer volume control). */
 export function round2(value) {

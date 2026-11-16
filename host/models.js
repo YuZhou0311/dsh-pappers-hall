@@ -327,7 +327,10 @@ export function createModels({ db, queue, embedding, ocr, python, settings, conf
   async function uninstallPython() {
     const { rm } = await import('node:fs/promises')
     const removed = []
-    for (const target of [pythonVenvDir, path.dirname(pythonModelDir) === pythonModelDir ? pythonModelDir : pythonModelDir]) {
+    // The legacy OCR venv (`<dataDir>/ocr/venv`) is no longer used by this
+    // version; remove it together with the component so no stale copy remains.
+    const legacyOcrDir = path.join(path.dirname(pythonVenvDir), '..', 'ocr')
+    for (const target of [pythonVenvDir, pythonModelDir, legacyOcrDir]) {
       try {
         await rm(target, { recursive: true, force: true })
         removed.push(target)

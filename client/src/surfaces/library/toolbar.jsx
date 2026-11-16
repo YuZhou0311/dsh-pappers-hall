@@ -9,6 +9,7 @@ import { Badge, Button, IconButton, Segmented, useToasts } from '../../core/prim
 import { describeError } from '../../core/api.js'
 import { copyText, dataUrlPayload, importFormatOf, readFileAsDataUrl } from '../../core/files.js'
 import { pendingStore } from '../../core/pending.js'
+import { commitReferenceBatch } from '../../core/reference-actions.js'
 import { notify } from '../../core/feedback.js'
 import { FolderPicker } from './folders.jsx'
 import { withViewTransition } from '../../core/motion.js'
@@ -219,12 +220,8 @@ export function BatchBar(props) {
   const cite = () => {
     const papers = controller.selectedPapers()
     setBusy('cite')
-    api('references.commit', {
-      items: papers.map((paper) => ({ kind: 'paper', id: paper.id })),
-      operationId: operationId('refs'),
-    })
-      .then((result) => {
-        pendingStore.add(result, papers.map((paper) => ({ kind: 'paper', id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title })))
+    commitReferenceBatch(papers.map((paper) => ({ kind: 'paper', id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title })), { operationId: operationId('refs') })
+      .then(() => {
         toast('success', t('toast.cited'))
         controller.clearSelection()
       })

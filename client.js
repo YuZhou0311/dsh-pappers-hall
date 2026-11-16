@@ -5352,6 +5352,114 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-collection--active:hover {
   background: var(--ph-surface-2);
 }
+
+/* Reference composer entry: one chip for the whole pending reference set. */
+.ph-composer-entry--refs {
+  border-color: color-mix(in srgb, var(--ph-accent) 24%, var(--ph-line));
+  background: color-mix(in srgb, var(--ph-accent) 5%, var(--ph-surface-1));
+}
+.ph-composer-entry--refs .ph-composer-entry__badge { background: var(--ph-accent); color: var(--ph-accent-ink); }
+.ph-composer-entry:disabled { opacity: 0.7; cursor: default; }
+
+/* One reference card: human summary + first three titles, not a generic count. */
+.ph-refcard__chips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; min-width: 0; }
+.ph-refcard__chip {
+  min-width: 0;
+  max-width: 190px;
+  padding: 1px 6px;
+  border: 1px solid var(--ph-line-soft);
+  border-radius: 5px;
+  background: var(--ph-surface-1);
+  color: var(--ph-ink-2);
+  font-size: 10.5px;
+  line-height: 1.55;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ph-refcard__chip--more { color: var(--ph-ink-3); background: transparent; }
+.ph-dock__clearAll {
+  align-self: center;
+  border: 0;
+  background: transparent;
+  color: var(--ph-ink-3);
+  font: inherit;
+  font-size: var(--ph-fs-11);
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 5px;
+}
+.ph-dock__clearAll:hover { background: var(--ph-surface-2); color: var(--ph-ink); }
+
+/* Read-only citation tokens in conversation history: a compact reference chip
+   instead of a raw protocol string. The original token text stays in the DOM
+   for copy/model compatibility and is hidden visually. */
+[data-ph-citetoken-history='1'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 1px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--ph-accent-line);
+  background: var(--ph-accent-soft);
+  color: var(--ph-accent-text);
+  font-size: 0 !important;
+  line-height: 1.5 !important;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+[data-ph-citetoken-history='1']::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  flex: none;
+  background: currentColor;
+  -webkit-mask: var(--ph-citetoken-mask) center / contain no-repeat;
+  mask: var(--ph-citetoken-mask) center / contain no-repeat;
+}
+[data-ph-citetoken-history='1']::after {
+  content: attr(data-ph-citetoken-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--ph-font-ui);
+  font-size: var(--ph-fs-12);
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+/* History citation chip: keeps the message text, replaces only the raw protocol
+   token with a readable reference label. */
+.ph-citetoken-history {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: 5px;
+  border: 1px solid var(--ph-accent-line);
+  background: var(--ph-accent-soft);
+  color: var(--ph-accent-text);
+  font-size: 0;
+  white-space: nowrap;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.ph-citetoken-history::before {
+  content: '';
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 4px;
+  vertical-align: -1px;
+  background: currentColor;
+  -webkit-mask: var(--ph-citetoken-mask) center / contain no-repeat;
+  mask: var(--ph-citetoken-mask) center / contain no-repeat;
+}
+.ph-citetoken-history::after {
+  content: attr(data-ph-citetoken-label);
+  font-family: var(--ph-font-ui);
+  font-size: var(--ph-fs-12);
+  line-height: 1.5;
+  letter-spacing: 0;
+}
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -7501,6 +7609,75 @@ function metaLine(t, paper) {
   const venue = firstText(paper && paper.venue, paper && paper.containerTitle);
   if (venue) parts.push(venue);
   return parts.join(" \xB7 ");
+}
+
+// src/core/reference-actions.js
+function itemOf(material) {
+  const kind = String(material && material.kind || "paper");
+  const id = String(material && (material.id || material.paperId) || "");
+  if (!id) return null;
+  const item = { kind, id };
+  if (material.page) item.page = Number(material.page);
+  return item;
+}
+function uniqueItems(materials) {
+  const seen = /* @__PURE__ */ new Set();
+  const items2 = [];
+  for (const material of Array.isArray(materials) ? materials : []) {
+    const item = itemOf(material);
+    if (!item) continue;
+    const key = item.kind + ":" + item.id + ":" + (item.page || "");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    items2.push(item);
+  }
+  return items2;
+}
+var queue = Promise.resolve();
+function commitReferenceBatch(materials, options) {
+  const run = () => commitReferenceBatchNow(materials, options);
+  const next = queue.then(run, run);
+  queue = next.catch(() => {
+  });
+  return next;
+}
+async function commitReferenceBatchNow(materials, options) {
+  const opts = options || {};
+  const fresh = uniqueItems(materials);
+  if (fresh.length === 0) throw new Error("no materials selected");
+  const snapshot4 = pendingStore.getSnapshot();
+  const reusable = snapshot4.bundles.filter(
+    (bundle) => !bundle.added && bundle.token && (!opts.sessionId || !bundle.sessionId || bundle.sessionId === opts.sessionId)
+  );
+  const primary = reusable[0] || null;
+  const combined = uniqueItems(
+    reusable.flatMap((bundle) => bundle.materials || []).concat(materials)
+  );
+  if (primary) {
+    try {
+      const result2 = await defaultApi("references.append", {
+        bundleId: primary.bundleId,
+        ...opts.sessionId ? { sessionId: opts.sessionId } : {},
+        items: combined,
+        ...opts.operationId ? { operationId: opts.operationId } : {}
+      });
+      pendingStore.add(result2, combined, { sessionId: opts.sessionId });
+      reusable.slice(1).forEach((bundle) => pendingStore.remove(bundle.bundleId));
+      return { result: result2, created: false, previous: primary };
+    } catch (error) {
+      console.warn("[pappers-hall] references.append failed, committing a new set", error);
+    }
+  }
+  const result = await defaultApi("references.commit", {
+    ...opts.sessionId ? { sessionId: opts.sessionId } : {},
+    items: fresh,
+    ...opts.operationId ? { operationId: opts.operationId } : {}
+  });
+  pendingStore.add(result, materials, { sessionId: opts.sessionId });
+  reusable.forEach((bundle) => {
+    if (bundle.bundleId !== result.bundleId) pendingStore.remove(bundle.bundleId);
+  });
+  return { result, created: true, previous: null };
 }
 
 // src/surfaces/library/collections.jsx
@@ -12585,18 +12762,18 @@ function layoutLayered(nodes, edges) {
     outgoing.get(edge.from).push(edge.to);
   }
   const levels = /* @__PURE__ */ new Map();
-  const queue = nodes.filter((node) => (incoming.get(node.id) || 0) === 0).map((node) => node.id);
-  if (queue.length === 0) queue.push(nodes[0].id);
-  for (const id of queue) levels.set(id, 0);
+  const queue2 = nodes.filter((node) => (incoming.get(node.id) || 0) === 0).map((node) => node.id);
+  if (queue2.length === 0) queue2.push(nodes[0].id);
+  for (const id of queue2) levels.set(id, 0);
   let cursor = 0;
-  while (cursor < queue.length) {
-    const id = queue[cursor];
+  while (cursor < queue2.length) {
+    const id = queue2[cursor];
     cursor += 1;
     const level = levels.get(id) || 0;
     for (const next of outgoing.get(id) || []) {
       if (levels.has(next)) continue;
       levels.set(next, level + 1);
-      queue.push(next);
+      queue2.push(next);
     }
   }
   for (const node of nodes) if (!levels.has(node.id)) levels.set(node.id, 0);
@@ -24167,19 +24344,12 @@ function ReaderShellInner(props) {
         return item;
       });
       if (list.length === 0) throw makeApiError("invalid", "no materials selected");
-      const params = { items: list, operationId: newOperationId("refs") };
-      if (props.sessionId) params.sessionId = props.sessionId;
-      const result = await apiCall("references.commit", params);
-      let bundleId = firstText3(result && result.bundleId, result && result.bundle && result.bundle.id);
-      if (props.pending && typeof props.pending.add === "function") {
-        try {
-          const added = props.pending.add(result, arrayOf3(materials));
-          bundleId = bundleId || firstText3(added && added.bundleId, added && added.id);
-        } catch (error) {
-          console.warn("[pappers-hall] pending store rejected the bundle", error);
-        }
-      }
-      if (bundleId && props.pending && typeof props.pending.remove === "function") {
+      const { result, created } = await commitReferenceBatch(list, {
+        sessionId: props.sessionId,
+        operationId: newOperationId("refs")
+      });
+      const bundleId = firstText3(result && result.bundleId, result && result.bundle && result.bundle.id);
+      if (created && bundleId && props.pending && typeof props.pending.remove === "function") {
         undoApi.push({
           label: rt("reader.undo.cited"),
           undo: async () => {
@@ -24408,12 +24578,12 @@ function ReaderShellInner(props) {
   const legacyPerBlockTranslate = import_react32.default.useCallback(
     async (blocks, pageNo, provider, token) => {
       const entries2 = {};
-      const queue = blocks.slice().sort((left, right) => String(right.text || "").length - String(left.text || "").length);
+      const queue2 = blocks.slice().sort((left, right) => String(right.text || "").length - String(left.text || "").length);
       let index = 0;
       const worker = async () => {
-        while (queue.length > 0) {
+        while (queue2.length > 0) {
           if (translationSequence.current !== token) return;
-          const block = queue.shift();
+          const block = queue2.shift();
           const params = { paperId, page: pageNo, text: block.text, target: "zh", provider };
           if (props.sessionId) params.sessionId = props.sessionId;
           let item = null;
@@ -26312,11 +26482,7 @@ function BatchBar(props) {
   const cite = () => {
     const papers = controller.selectedPapers();
     setBusy("cite");
-    api("references.commit", {
-      items: papers.map((paper) => ({ kind: "paper", id: paper.id })),
-      operationId: operationId("refs")
-    }).then((result) => {
-      pendingStore.add(result, papers.map((paper) => ({ kind: "paper", id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title })));
+    commitReferenceBatch(papers.map((paper) => ({ kind: "paper", id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title })), { operationId: operationId("refs") }).then(() => {
       toast("success", t("toast.cited"));
       controller.clearSelection();
     }).catch((error) => toast("error", t("toast.citeFailed", { message: describeError(t, error) }))).then(() => setBusy(""));
@@ -28086,10 +28252,7 @@ function LibraryShell(props) {
   const contextPaper = snapshot4.contextMenu ? snapshot4.items.find((paper) => paper.id === snapshot4.contextMenu.paperId) : null;
   const citePaper = import_react40.default.useCallback(
     (paper) => {
-      api("references.commit", { items: [{ kind: "paper", id: paper.id }], operationId: operationId2("refs") }).then((result) => {
-        pendingStore.add(result, [{ kind: "paper", id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title }]);
-        push("success", t("toast.cited"));
-      }).catch((error) => push("error", t("toast.citeFailed", { message: describeError(t, error) })));
+      commitReferenceBatch([{ kind: "paper", id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title }], { operationId: operationId2("refs") }).then(() => push("success", t("toast.cited"))).catch((error) => push("error", t("toast.citeFailed", { message: describeError(t, error) })));
     },
     [api, push, t]
   );
@@ -28301,10 +28464,7 @@ function LibraryShell(props) {
       },
       onCite: citePaper,
       onCiteAnnotation: (annotation) => {
-        api("references.commit", { items: [{ kind: "annotation", id: annotation.id, page: annotation.page }], operationId: operationId2("refs") }).then((result) => {
-          pendingStore.add(result, [{ kind: "annotation", id: annotation.id, page: annotation.page, title: annotation.text || annotation.quote }]);
-          push("success", t("toast.cited"));
-        }).catch((error) => push("error", t("toast.citeFailed", { message: describeError(t, error) })));
+        commitReferenceBatch([{ kind: "annotation", id: annotation.id, page: annotation.page, title: annotation.text || annotation.quote }], { operationId: operationId2("refs") }).then(() => push("success", t("toast.cited"))).catch((error) => push("error", t("toast.citeFailed", { message: describeError(t, error) })));
       },
       onExport: exportPaper,
       onFindSimilar: props.onFindSimilar,
@@ -28646,8 +28806,7 @@ function FigureSearch(props) {
   const cite = (card) => {
     const kind = card.materialKind === "annotation" ? "annotation" : card.materialKind === "paper" ? "paper" : "figure";
     const material = { kind, id: card.figureId || card.materialId, page: card.page, title: card.paperTitle };
-    api("references.commit", { items: [{ kind: material.kind, id: material.id, ...material.page ? { page: material.page } : {} }], operationId: operationId3("refs") }).then((result) => {
-      pendingStore.add(result, [material]);
+    commitReferenceBatch([material], { operationId: operationId3("refs") }).then(() => {
       push("success", t("toast.cited"));
       setRevision((value) => value + 1);
     }).catch((error) => push("error", t("toast.citeFailed", { message: describeError(t, error) })));
@@ -29286,9 +29445,8 @@ function DrawerBody(props) {
   const cite = import_react43.default.useCallback((materials) => {
     const list = (Array.isArray(materials) ? materials : [materials]).filter(Boolean);
     if (list.length === 0) return;
-    defaultApi("references.commit", { ...sessionId ? { sessionId } : {}, items: list.map((m) => ({ kind: m.kind, id: m.id, ...m.page ? { page: m.page } : {} })), operationId: opId3() }).then((result) => {
-      pendingStore.add(result, list);
-      notify("success", t("toast.cited"), { label: t("common.undo"), onClick: () => pendingStore.remove(result.bundleId) }, 2600);
+    commitReferenceBatch(list, { sessionId, operationId: opId3() }).then(({ result, created }) => {
+      notify("success", t("toast.cited"), created ? { label: t("common.undo"), onClick: () => pendingStore.remove(result.bundleId) } : null, 2600);
     }).catch((error) => push("error", t("drawer.submitFailed", { message: describeError(t, error) })));
   }, [push, sessionId, t]);
   const citeSelection = () => {
@@ -29590,6 +29748,72 @@ function isPureToken(element2) {
   const text2 = element2.textContent || "";
   return TOKEN_BLOCK.test(text2) && TOKEN_PATTERN.test(text2);
 }
+var HISTORY_TOKEN = /⟦Pappers-Hall[\s\S]*?⟧/g;
+var PLUGIN_CHROME = ".ph-app, .ph-center, .ph-sidebar, .ph-settings, .ph-dock, .ph-refcard, .ph-citetoken-history";
+function historyLabel(tokenText) {
+  const inner = String(tokenText || "").replace(/^⟦Pappers-Hall\s*/, "").replace(/⟧$/, "");
+  const summary = inner.replace(/\s*·\s*bundle=bn-[a-f0-9]+/i, "").replace(/\s+/g, " ").trim();
+  if (summary === "") return "\u5F15\u7528\u6750\u6599";
+  return summary.length > 46 ? summary.slice(0, 45) + "\u2026" : summary;
+}
+function decorateTextNode(node) {
+  const text2 = node.nodeValue || "";
+  if (!text2.includes("\u27E6Pappers-Hall") || !text2.includes("bundle=bn-")) return false;
+  const parent = node.parentElement;
+  if (!parent || parent.closest(COMPOSER_SELECTOR) || parent.closest(PLUGIN_CHROME)) return false;
+  if (parent.closest('[data-ph-citetoken-history="1"]')) return false;
+  HISTORY_TOKEN.lastIndex = 0;
+  const spans = [];
+  let match;
+  while ((match = HISTORY_TOKEN.exec(text2)) !== null) spans.push({ start: match.index, end: match.index + match[0].length, token: match[0] });
+  if (spans.length === 0) return false;
+  const owner = parent;
+  const ownerText = owner.textContent || "";
+  if (!ownerText.includes("\u27E6Pappers-Hall")) return false;
+  const pieces = [];
+  let cursor = 0;
+  for (const span of spans) {
+    if (span.start > cursor) pieces.push({ text: text2.slice(cursor, span.start) });
+    pieces.push({ token: span.token });
+    cursor = span.end;
+  }
+  if (cursor < text2.length) pieces.push({ text: text2.slice(cursor) });
+  node.nodeValue = "";
+  let anchor = node;
+  for (const piece of pieces) {
+    let next;
+    if (piece.token !== void 0) {
+      next = document.createElement("span");
+      next.className = "ph-citetoken-history";
+      next.setAttribute("data-ph-citetoken-history", "1");
+      next.setAttribute("data-ph-citetoken-label", historyLabel(piece.token));
+      next.setAttribute("title", "Pappers-Hall \u5F15\u7528\u6750\u6599\uFF08\u539F\u6587\u4ECD\u4FDD\u7559\uFF0C\u53EF\u590D\u5236\uFF09");
+      next.textContent = piece.token;
+    } else {
+      next = document.createTextNode(piece.text);
+    }
+    anchor.parentNode.insertBefore(next, anchor.nextSibling);
+    anchor = next;
+  }
+  return true;
+}
+function scanHistory() {
+  if (typeof document === "undefined") return;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+  const queue2 = [];
+  let node = walker.nextNode();
+  while (node) {
+    const text2 = node.nodeValue || "";
+    if (text2.includes("\u27E6Pappers-Hall") && text2.includes("bundle=bn-")) queue2.push(node);
+    node = walker.nextNode();
+  }
+  for (const target of queue2) {
+    try {
+      decorateTextNode(target);
+    } catch (error) {
+    }
+  }
+}
 function clearTokenMark(element2) {
   if (!element2 || !element2.classList) return;
   element2.classList.remove("ph-citetoken");
@@ -29626,6 +29850,7 @@ var installed3 = 0;
 var observer = null;
 var timer = null;
 var frame = null;
+var historyFrame = null;
 function schedule() {
   if (frame != null) return;
   frame = requestAnimationFrame(() => {
@@ -29634,6 +29859,14 @@ function schedule() {
       scan();
     } catch (error) {
     }
+    if (historyFrame != null) return;
+    historyFrame = requestAnimationFrame(() => {
+      historyFrame = null;
+      try {
+        scanHistory();
+      } catch (error) {
+      }
+    });
   });
 }
 function installCitationTokens() {
@@ -29648,6 +29881,7 @@ function installCitationTokens() {
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     timer = setInterval(schedule, 1500);
     schedule();
+    scanHistory();
   }
   return () => {
     installed3 = Math.max(0, installed3 - 1);
@@ -29663,6 +29897,10 @@ function installCitationTokens() {
     if (frame != null) {
       cancelAnimationFrame(frame);
       frame = null;
+    }
+    if (historyFrame != null) {
+      cancelAnimationFrame(historyFrame);
+      historyFrame = null;
     }
   };
 }
@@ -29691,35 +29929,35 @@ function ComposerEntry(props) {
   const pending = snapshot4.bundles.filter(
     (bundle) => !bundle.added && bundle.token && (!bundle.sessionId || bundle.sessionId === sessionId)
   );
-  const pendingKey = pending.map((bundle) => bundle.bundleId).join("|");
-  import_react44.default.useEffect(() => {
-    if (sessionId) return;
-    const timers = [];
-    pending.forEach((bundle) => {
-      let tries = 8;
-      const attempt = () => {
-        if (insertTokenIntoComposer(bundle.token)) {
-          pendingStore.markAdded(bundle.bundleId);
-          return;
-        }
-        tries -= 1;
-        if (tries > 0) timers.push(setTimeout(attempt, 160));
-      };
-      attempt();
-    });
-    return () => timers.forEach((timer2) => clearTimeout(timer2));
-  }, [sessionId, pendingKey]);
+  const [adding, setAdding] = import_react44.default.useState(false);
+  const materialCount = pending.reduce((sum, bundle) => sum + (Array.isArray(bundle.materials) ? bundle.materials.length : 0), 0);
+  const addPending = () => {
+    if (pending.length === 0) {
+      if (props.openPapers) props.openPapers();
+      return;
+    }
+    if (adding) return;
+    setAdding(true);
+    const allMaterials = pending.flatMap((bundle) => bundle.materials || []);
+    commitReferenceBatch(allMaterials, { sessionId }).then(({ result }) => {
+      if (insertTokenIntoComposer(result.token)) pendingStore.markAdded(result.bundleId);
+      else notify("warning", t("dnd.pendingInsert"), { label: t("dnd.addManual") }, 6e3);
+    }).catch((error) => notify("error", t("dock.failed") + " \xB7 " + String(error && error.message || error), null, 5e3)).then(() => setAdding(false));
+  };
+  const hasRefs = pending.length > 0;
   return h(
     "button",
     {
       type: "button",
-      className: "ph-composer-entry",
-      title: t("composer.papers"),
-      onClick: () => props.openPapers && props.openPapers()
+      className: "ph-composer-entry" + (hasRefs ? " ph-composer-entry--refs" : ""),
+      title: hasRefs ? t("composer.refsHint", { count: materialCount }) : t("composer.papers"),
+      "aria-label": hasRefs ? t("composer.refsHint", { count: materialCount }) : t("composer.papers"),
+      disabled: adding,
+      onClick: addPending
     },
-    h(Icon, { name: "book", size: 14 }),
-    h("span", { className: "ph-composer-entry__label" }, t("composer.papers")),
-    pending.length > 0 ? h("span", { className: "ph-composer-entry__badge" }, String(pending.length)) : null
+    h(Icon, { name: hasRefs ? "quote" : "book", size: 14 }),
+    h("span", { className: "ph-composer-entry__label" }, hasRefs ? t("composer.refs", { count: materialCount }) : t("composer.papers")),
+    adding ? h("span", { className: "ph-spinner ph-spinner--inline", "aria-hidden": "true" }) : null
   );
 }
 function DockBody(props) {
@@ -29841,8 +30079,22 @@ function DockBody(props) {
             h(
               "div",
               { className: "ph-refcard__body" },
-              h("div", { className: "ph-refcard__title" }, t("dock.card.title", { count })),
-              h("div", { className: "ph-refcard__sub" }, bundleSummaryLabel(t, bundle) || t("dock.card.count", { count })),
+              h("div", { className: "ph-refcard__title" }, bundleSummaryLabel(t, bundle) || t("dock.card.title", { count })),
+              h(
+                "div",
+                { className: "ph-refcard__chips" },
+                bundle.materials.slice(0, 2).map(
+                  (material, index) => h("span", {
+                    key: material.kind + ":" + material.id + ":" + index,
+                    className: "ph-refcard__chip",
+                    title: material.title || material.figureLabel || material.id
+                  }, material.title || material.figureLabel || material.id)
+                ),
+                count > 2 ? h("button", { type: "button", className: "ph-refcard__chip ph-refcard__chip--more", onClick: (event) => {
+                  event.stopPropagation();
+                  toggleExpanded(bundle.bundleId);
+                } }, "+" + (count - 2)) : null
+              ),
               errors[bundle.bundleId] ? h("div", { className: "ph-refcard__error", role: "status" }, errors[bundle.bundleId]) : null
             ),
             h(
@@ -29914,6 +30166,10 @@ function DockBody(props) {
         );
       }),
       hiddenCount > 0 ? h("div", { className: "ph-dock__more" }, t("dock.card.more", { count: hiddenCount })) : null,
+      bundles.length > 1 ? h("button", { type: "button", className: "ph-dock__clearAll", onClick: () => {
+        pendingStore.clear();
+        push("info", t("dock.card.cleared"), null, 2e3);
+      } }, t("dock.clearAll")) : null,
       toasts.length > 0 ? h(
         "div",
         { className: "ph-dock__toasts", role: "status" },
@@ -30323,8 +30579,7 @@ function ToolSourceCard(props) {
   const cite = (materials) => {
     setCiting("busy");
     setCiteError("");
-    api("references.commit", { sessionId: props.sessionId, items: materials.map((item) => ({ kind: item.kind, id: item.id, ...item.page ? { page: item.page } : {} })), operationId: operationId4("refs") }).then((value) => {
-      pendingStore.add(value, materials);
+    commitReferenceBatch(materials, { sessionId: props.sessionId, operationId: operationId4("refs") }).then(() => {
       setCiting("done");
     }).catch((error) => {
       setCiting("");
@@ -31642,6 +31897,8 @@ var ZH = {
   "drawer.tab.papers": "\u8BBA\u6587",
   "drawer.tab.notes": "\u7B14\u8BB0",
   "drawer.onlyRead": "\u53EA\u770B\u5DF2\u8BFB",
+  "composer.refs": "\u5F15\u7528 {count} \u9879",
+  "composer.refsHint": "\u628A {count} \u9879\u5F15\u7528\u52A0\u5165\u8349\u7A3F",
   "composer.papers": "\u8BBA\u6587",
   "drawer.openNote": "\u6253\u5F00\u7B14\u8BB0",
   "drawer.selected": "\u5DF2\u9009 {count} \u9879",
@@ -32410,6 +32667,7 @@ var ZH = {
   "dock.card.added": "\u5DF2\u52A0\u5165\u8349\u7A3F",
   "dock.card.undo": "\u64A4\u9500",
   "dock.card.removed": "\u5DF2\u4ECE\u5F15\u7528\u5217\u8868\u79FB\u9664",
+  "dock.clearAll": "\u6E05\u7A7A\u5168\u90E8\u5F15\u7528",
   "dock.card.clear": "\u6E05\u7A7A\u5168\u90E8",
   "dock.card.cleared": "\u5DF2\u6E05\u7A7A\u5F15\u7528\u5217\u8868",
   "dock.card.more": "\u8FD8\u6709 {count} \u6761",
@@ -32981,6 +33239,8 @@ var EN = {
   "drawer.tab.papers": "Papers",
   "drawer.tab.notes": "Notes",
   "drawer.onlyRead": "Read only",
+  "composer.refs": "{count} references",
+  "composer.refsHint": "Add {count} references to draft",
   "composer.papers": "Papers",
   "drawer.openNote": "Open note",
   "drawer.selected": "{count} selected",
@@ -33749,6 +34009,7 @@ var EN = {
   "dock.card.added": "Added to draft",
   "dock.card.undo": "Undo",
   "dock.card.removed": "Removed from citations",
+  "dock.clearAll": "Clear all references",
   "dock.card.clear": "Clear all",
   "dock.card.cleared": "Citations cleared",
   "dock.card.more": "{count} more",

@@ -15,6 +15,7 @@ import { Badge, Button, Check, EmptyState, IconButton, SearchInput, Spinner, Tab
 import { describeError, isOffline } from '../core/api.js'
 import { defaultApi } from '../core/api.js'
 import { pendingStore } from '../core/pending.js'
+import { commitReferenceBatch } from '../core/reference-actions.js'
 import { navigation } from '../core/navigation.js'
 import { dragProps } from '../core/dnd.js'
 import { notify } from '../core/feedback.js'
@@ -424,12 +425,11 @@ export function DrawerBody(props) {
   const cite = React.useCallback((materials) => {
     const list = (Array.isArray(materials) ? materials : [materials]).filter(Boolean)
     if (list.length === 0) return
-    defaultApi('references.commit', { ...(sessionId ? { sessionId: sessionId } : {}), items: list.map((m) => ({ kind: m.kind, id: m.id, ...(m.page ? { page: m.page } : {}) })), operationId: opId() })
-      .then((result) => {
-        pendingStore.add(result, list)
-        // One short confirmation only: the dock card shows its own 已加入草稿
-        // badge, so a second toast (and a long instruction) is just noise.
-        notify('success', t('toast.cited'), { label: t('common.undo'), onClick: () => pendingStore.remove(result.bundleId) }, 2600)
+    commitReferenceBatch(list, { sessionId, operationId: opId() })
+      .then(({ result, created }) => {
+        // Appending to the existing set has no safe single-item undo; only a
+        // freshly created bundle exposes undo. The dock handles removal.
+        notify('success', t('toast.cited'), created ? { label: t('common.undo'), onClick: () => pendingStore.remove(result.bundleId) } : null, 2600)
       })
       .catch((error) => push('error', t('drawer.submitFailed', { message: describeError(t, error) })))
   }, [push, sessionId, t])

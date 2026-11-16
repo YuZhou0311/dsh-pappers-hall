@@ -14,6 +14,7 @@ import { describeError } from '../../core/api.js'
 import { copyText, downloadText } from '../../core/files.js'
 import { paperTitle } from '../../core/texts.js'
 import { pendingStore } from '../../core/pending.js'
+import { commitReferenceBatch } from '../../core/reference-actions.js'
 import { STATUS_POLL_MS } from '../../core/constants.js'
 import { CollectionsPane } from './collections.jsx'
 import { NoteInline } from './note-inline.jsx'
@@ -468,11 +469,8 @@ export function LibraryShell(props) {
 
   const citePaper = React.useCallback(
     (paper) => {
-      api('references.commit', { items: [{ kind: 'paper', id: paper.id }], operationId: operationId('refs') })
-        .then((result) => {
-          pendingStore.add(result, [{ kind: 'paper', id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title }])
-          push('success', t('toast.cited'))
-        })
+      commitReferenceBatch([{ kind: 'paper', id: paper.id, title: paper.titleZh || paper.displayTitle || paper.title }], { operationId: operationId('refs') })
+        .then(() => push('success', t('toast.cited')))
         .catch((error) => push('error', t('toast.citeFailed', { message: describeError(t, error) })))
     },
     [api, push, t],
@@ -701,11 +699,8 @@ export function LibraryShell(props) {
       },
       onCite: citePaper,
       onCiteAnnotation: (annotation) => {
-        api('references.commit', { items: [{ kind: 'annotation', id: annotation.id, page: annotation.page }], operationId: operationId('refs') })
-          .then((result) => {
-            pendingStore.add(result, [{ kind: 'annotation', id: annotation.id, page: annotation.page, title: annotation.text || annotation.quote }])
-            push('success', t('toast.cited'))
-          })
+        commitReferenceBatch([{ kind: 'annotation', id: annotation.id, page: annotation.page, title: annotation.text || annotation.quote }], { operationId: operationId('refs') })
+          .then(() => push('success', t('toast.cited')))
           .catch((error) => push('error', t('toast.citeFailed', { message: describeError(t, error) })))
       },
       onExport: exportPaper,

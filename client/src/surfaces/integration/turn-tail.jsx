@@ -15,6 +15,7 @@ import { TOOL_NAMES, NS, PANEL_ID } from '../../core/constants.js'
 import { navigation } from '../../core/navigation.js'
 import { bus } from '../../core/bus.js'
 import { pendingStore } from '../../core/pending.js'
+import { commitReferenceBatch } from '../../core/reference-actions.js'
 import { installDragToConversation } from '../../core/dnd.js'
 import { installUndoShortcuts } from '../../core/undo.js'
 import { registerInputTriggers } from './input-triggers.js'
@@ -181,9 +182,8 @@ function ToolSourceCard(props) {
   const cite = (materials) => {
     setCiting('busy')
     setCiteError('')
-    api('references.commit', { sessionId: props.sessionId, items: materials.map((item) => ({ kind: item.kind, id: item.id, ...(item.page ? { page: item.page } : {}) })), operationId: operationId('refs') })
-      .then((value) => {
-        pendingStore.add(value, materials)
+    commitReferenceBatch(materials, { sessionId: props.sessionId, operationId: operationId('refs') })
+      .then(() => {
         setCiting('done')
       })
       .catch((error) => {

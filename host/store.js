@@ -4709,6 +4709,84 @@ export function createStore({ db, layout, fts5, config = {}, logger, manifest = 
     },
 
     /**
+     * `references.append` — add materials to an existing pending bundle.
+     *
+     * The Client keeps one bundle while the user is composing, so repeated
+     * “引用到对话” clicks accumulate in one draft chip instead of creating a
+     * stack of cards that each need their own cancel action.
+     *
+     * @param {{bundleId:string, sessionId?:string, items:object[], operationId?:string}} params append request.
+     * @returns {object} the updated bundle and its complete material list.
+     */
+    referencesAppend(params = {}) {
+      const bundleId = String(params.bundleId ?? '')
+      const items = Array.isArray(params.items) ? params.items : []
+      if (bundleId === '') throw invalid('references.append requires bundleId')
+      if (items.length === 0) throw invalid('references.append requires at least one item')
+      const bundleRow = db.prepare('SELECT * FROM bundles WHERE id = ?').get(bundleId)
+      if (bundleRow === undefined) throw notFound(`bundle ${bundleId} does not exist`, { bundleId })
+      if (bundleRow.state !== 'active') throw invalid('bundle is no longer active', { bundleId })
+      if (
+        typeof params.sessionId === 'string' &&
+        params.sessionId !== '' &&
+        typeof bundleRow.session_id === 'string' &&
+        bundleRow.session_id !== params.sessionId
+      ) {
+        throw new DomainError('invalid', 'bundle belongs to a different session', { bundleId })
+      }
+      return withOperation('references.append', params.operationId, () => {
+        const existingRows = db.prepare('SELECT * FROM bundle_items WHERE bundle_id = ? ORDER BY ordinal').all(bundleId)
+        const seen = new Set()
+        for (const row of existingRows) seen.add(`${row.kind}:${row.ref_id}:${row.page ?? ''}`)
+        const resolved = []
+        for (const [index, item] of items.entries()) {
+          if (item === null || typeof item !== 'object') throw invalid(`items[${index}] must be an object`)
+          const kind = String(item.kind ?? '')
+          const id = String(item.id ?? '')
+          if (!['paper', 'figure', 'annotation', 'note'].includes(kind)) throw invalid(`items[${index}].kind must be paper|figure|annotation|note`)
+          if (id === '') throw invalid(`items[${index}].id is required`)
+          const page = item.page === undefined || item.page === null ? null : Number(item.page)
+          const key = `${kind}:${id}:${page ?? ''}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          resolved.push(resolveBundleItem(db, kind, id, page))
+        }
+        if (resolved.length > 0) {
+          const now = nowIso()
+          const start = existingRows.length
+          transaction(db, () => {
+            for (const [offset, material] of resolved.entries()) {
+              db.prepare(
+                'INSERT INTO bundle_items(bundle_id, kind, ref_id, page, snapshot_json, ordinal) VALUES (?, ?, ?, ?, ?, ?)',
+              ).run(bundleId, material.kind, material.id, material.page ?? null, JSON.stringify(material.snapshot), start + offset)
+            }
+            const all = db.prepare('SELECT * FROM bundle_items WHERE bundle_id = ? ORDER BY ordinal').all(bundleId)
+            const complete = all.map((row) => {
+              try { return resolveBundleItem(db, row.kind, row.ref_id, row.page).material } catch { return { kind: row.kind, id: row.ref_id } }
+            })
+            const display = describeBundle(complete.map((material) => ({ kind: material.kind, material })))
+            const token = buildBundleToken(bundleId, complete.map((material) => ({ kind: material.kind, material })))
+            db.prepare('UPDATE bundles SET display = ?, token = ? WHERE id = ?').run(display, token, bundleId)
+            recordEvent('references.append', null, { bundleId, items: resolved.length })
+          })
+        }
+        const all = db.prepare('SELECT * FROM bundle_items WHERE bundle_id = ? ORDER BY ordinal').all(bundleId)
+        const materials = all.map((row) => {
+          try { return resolveBundleItem(db, row.kind, row.ref_id, row.page).material } catch { return { kind: row.kind, id: row.ref_id } }
+        })
+        const updated = db.prepare('SELECT * FROM bundles WHERE id = ?').get(bundleId)
+        return {
+          bundleId,
+          display: updated?.display ?? bundleRow.display ?? '',
+          token: updated?.token ?? bundleRow.token,
+          materials,
+          scope: 'reference_bundle',
+          appended: resolved.length,
+        }
+      })
+    },
+
+    /**
      * `references.resolve` — re-validate every frozen material against current state.
      * @param {{bundleId:string, sessionId?:string}} params resolve request.
      * @returns {object} bundle plus valid/invalid partitions.

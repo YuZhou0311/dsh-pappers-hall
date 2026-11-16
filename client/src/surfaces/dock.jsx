@@ -11,6 +11,7 @@ import { h } from '../core/dom.js'
 import { Icon } from '../core/icons.jsx'
 import { Badge, Button, IconButton, useToasts } from '../core/primitives.jsx'
 import { pendingStore } from '../core/pending.js'
+import { commitReferenceBatch } from '../core/reference-actions.js'
 import { insertTokenIntoComposer, registerComposerBridge } from '../core/dnd.js'
 import { installCitationTokens } from '../core/cite-token.js'
 import { FeedbackHost, notify } from '../core/feedback.js'
@@ -50,36 +51,39 @@ export function ComposerEntry(props) {
   const pending = snapshot.bundles.filter(
     (bundle) => !bundle.added && bundle.token && (!bundle.sessionId || bundle.sessionId === sessionId),
   )
-  const pendingKey = pending.map((bundle) => bundle.bundleId).join('|')
-  React.useEffect(() => {
-    if (sessionId) return
-    const timers = []
-    pending.forEach((bundle) => {
-      let tries = 8
-      const attempt = () => {
-        if (insertTokenIntoComposer(bundle.token)) {
-          pendingStore.markAdded(bundle.bundleId)
-          return
-        }
-        tries -= 1
-        if (tries > 0) timers.push(setTimeout(attempt, 160))
-      }
-      attempt()
-    })
-    return () => timers.forEach((timer) => clearTimeout(timer))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, pendingKey])
+  const [adding, setAdding] = React.useState(false)
+  const materialCount = pending.reduce((sum, bundle) => sum + (Array.isArray(bundle.materials) ? bundle.materials.length : 0), 0)
+  const addPending = () => {
+    if (pending.length === 0) {
+      if (props.openPapers) props.openPapers()
+      return
+    }
+    if (adding) return
+    setAdding(true)
+    const allMaterials = pending.flatMap((bundle) => bundle.materials || [])
+    // Merge legacy multi-bundle stacks into one set before touching the draft.
+    commitReferenceBatch(allMaterials, { sessionId })
+      .then(({ result }) => {
+        if (insertTokenIntoComposer(result.token)) pendingStore.markAdded(result.bundleId)
+        else notify('warning', t('dnd.pendingInsert'), { label: t('dnd.addManual') }, 6000)
+      })
+      .catch((error) => notify('error', t('dock.failed') + ' · ' + String((error && error.message) || error), null, 5000))
+      .then(() => setAdding(false))
+  }
+  const hasRefs = pending.length > 0
   return h(
     'button',
     {
       type: 'button',
-      className: 'ph-composer-entry',
-      title: t('composer.papers'),
-      onClick: () => props.openPapers && props.openPapers(),
+      className: 'ph-composer-entry' + (hasRefs ? ' ph-composer-entry--refs' : ''),
+      title: hasRefs ? t('composer.refsHint', { count: materialCount }) : t('composer.papers'),
+      'aria-label': hasRefs ? t('composer.refsHint', { count: materialCount }) : t('composer.papers'),
+      disabled: adding,
+      onClick: addPending,
     },
-    h(Icon, { name: 'book', size: 14 }),
-    h('span', { className: 'ph-composer-entry__label' }, t('composer.papers')),
-    pending.length > 0 ? h('span', { className: 'ph-composer-entry__badge' }, String(pending.length)) : null,
+    h(Icon, { name: hasRefs ? 'quote' : 'book', size: 14 }),
+    h('span', { className: 'ph-composer-entry__label' }, hasRefs ? t('composer.refs', { count: materialCount }) : t('composer.papers')),
+    adding ? h('span', { className: 'ph-spinner ph-spinner--inline', 'aria-hidden': 'true' }) : null,
   )
 }
 
@@ -212,8 +216,19 @@ export function DockBody(props) {
             h(
               'div',
               { className: 'ph-refcard__body' },
-              h('div', { className: 'ph-refcard__title' }, t('dock.card.title', { count: count })),
-              h('div', { className: 'ph-refcard__sub' }, bundleSummaryLabel(t, bundle) || t('dock.card.count', { count: count })),
+              h('div', { className: 'ph-refcard__title' }, bundleSummaryLabel(t, bundle) || t('dock.card.title', { count: count })),
+              h(
+                'div',
+                { className: 'ph-refcard__chips' },
+                bundle.materials.slice(0, 2).map((material, index) =>
+                  h('span', {
+                    key: material.kind + ':' + material.id + ':' + index,
+                    className: 'ph-refcard__chip',
+                    title: material.title || material.figureLabel || material.id,
+                  }, material.title || material.figureLabel || material.id),
+                ),
+                count > 2 ? h('button', { type: 'button', className: 'ph-refcard__chip ph-refcard__chip--more', onClick: (event) => { event.stopPropagation(); toggleExpanded(bundle.bundleId) } }, '+' + (count - 2)) : null,
+              ),
               errors[bundle.bundleId] ? h('div', { className: 'ph-refcard__error', role: 'status' }, errors[bundle.bundleId]) : null,
             ),
             h(
@@ -288,6 +303,9 @@ export function DockBody(props) {
         )
       }),
       hiddenCount > 0 ? h('div', { className: 'ph-dock__more' }, t('dock.card.more', { count: hiddenCount })) : null,
+      bundles.length > 1
+        ? h('button', { type: 'button', className: 'ph-dock__clearAll', onClick: () => { pendingStore.clear(); push('info', t('dock.card.cleared'), null, 2000) } }, t('dock.clearAll'))
+        : null,
       toasts.length > 0
         ? h(
             'div',

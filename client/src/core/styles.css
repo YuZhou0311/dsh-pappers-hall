@@ -5259,3 +5259,111 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
 .ph-collection--active:hover {
   background: var(--ph-surface-2);
 }
+
+/* Reference composer entry: one chip for the whole pending reference set. */
+.ph-composer-entry--refs {
+  border-color: color-mix(in srgb, var(--ph-accent) 24%, var(--ph-line));
+  background: color-mix(in srgb, var(--ph-accent) 5%, var(--ph-surface-1));
+}
+.ph-composer-entry--refs .ph-composer-entry__badge { background: var(--ph-accent); color: var(--ph-accent-ink); }
+.ph-composer-entry:disabled { opacity: 0.7; cursor: default; }
+
+/* One reference card: human summary + first three titles, not a generic count. */
+.ph-refcard__chips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; min-width: 0; }
+.ph-refcard__chip {
+  min-width: 0;
+  max-width: 190px;
+  padding: 1px 6px;
+  border: 1px solid var(--ph-line-soft);
+  border-radius: 5px;
+  background: var(--ph-surface-1);
+  color: var(--ph-ink-2);
+  font-size: 10.5px;
+  line-height: 1.55;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ph-refcard__chip--more { color: var(--ph-ink-3); background: transparent; }
+.ph-dock__clearAll {
+  align-self: center;
+  border: 0;
+  background: transparent;
+  color: var(--ph-ink-3);
+  font: inherit;
+  font-size: var(--ph-fs-11);
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 5px;
+}
+.ph-dock__clearAll:hover { background: var(--ph-surface-2); color: var(--ph-ink); }
+
+/* Read-only citation tokens in conversation history: a compact reference chip
+   instead of a raw protocol string. The original token text stays in the DOM
+   for copy/model compatibility and is hidden visually. */
+[data-ph-citetoken-history='1'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 1px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--ph-accent-line);
+  background: var(--ph-accent-soft);
+  color: var(--ph-accent-text);
+  font-size: 0 !important;
+  line-height: 1.5 !important;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+[data-ph-citetoken-history='1']::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  flex: none;
+  background: currentColor;
+  -webkit-mask: var(--ph-citetoken-mask) center / contain no-repeat;
+  mask: var(--ph-citetoken-mask) center / contain no-repeat;
+}
+[data-ph-citetoken-history='1']::after {
+  content: attr(data-ph-citetoken-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--ph-font-ui);
+  font-size: var(--ph-fs-12);
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+/* History citation chip: keeps the message text, replaces only the raw protocol
+   token with a readable reference label. */
+.ph-citetoken-history {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: 5px;
+  border: 1px solid var(--ph-accent-line);
+  background: var(--ph-accent-soft);
+  color: var(--ph-accent-text);
+  font-size: 0;
+  white-space: nowrap;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.ph-citetoken-history::before {
+  content: '';
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 4px;
+  vertical-align: -1px;
+  background: currentColor;
+  -webkit-mask: var(--ph-citetoken-mask) center / contain no-repeat;
+  mask: var(--ph-citetoken-mask) center / contain no-repeat;
+}
+.ph-citetoken-history::after {
+  content: attr(data-ph-citetoken-label);
+  font-family: var(--ph-font-ui);
+  font-size: var(--ph-fs-12);
+  line-height: 1.5;
+  letter-spacing: 0;
+}

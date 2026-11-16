@@ -271,6 +271,7 @@ export function createApi({ store, search, ingest, queue, settings, models, ocr,
     ['ai.ask', (params) => store.aiAsk(params)],
     ['ai.complete', (params) => store.aiComplete(params)],
     ['references.commit', (params) => store.referencesCommit(params)],
+    ['references.append', (params) => store.referencesAppend(params)],
     ['references.resolve', (params) => store.referencesResolve(params)],
     [
       'jobs.pause',

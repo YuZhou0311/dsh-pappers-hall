@@ -33,6 +33,7 @@ import { FloatingAnnotationTools } from './floating-tools.jsx'
 import { ReaderNotesPanel } from './notes-panel.jsx'
 import { ReaderFiguresPanel } from './figures-panel.jsx'
 import { getNoteContext, subscribeNoteContext } from '../../core/note-context.js'
+import { commitReferenceBatch } from '../../core/reference-actions.js'
 import { Outline } from './outline.jsx'
 import { readFlag, writeFlag } from '../../core/notes-model.js'
 import { SlidingThumb, useSlidingThumb } from '../../core/motion.js'
@@ -905,19 +906,12 @@ function ReaderShellInner(props) {
           return item
         })
       if (list.length === 0) throw makeApiError('invalid', 'no materials selected')
-      const params = { items: list, operationId: newOperationId('refs') }
-      if (props.sessionId) params.sessionId = props.sessionId
-      const result = await apiCall('references.commit', params)
-      let bundleId = firstText(result && result.bundleId, result && result.bundle && result.bundle.id)
-      if (props.pending && typeof props.pending.add === 'function') {
-        try {
-          const added = props.pending.add(result, arrayOf(materials))
-          bundleId = bundleId || firstText(added && added.bundleId, added && added.id)
-        } catch (error) {
-          console.warn('[pappers-hall] pending store rejected the bundle', error)
-        }
-      }
-      if (bundleId && props.pending && typeof props.pending.remove === 'function') {
+      const { result, created } = await commitReferenceBatch(list, {
+        sessionId: props.sessionId,
+        operationId: newOperationId('refs'),
+      })
+      const bundleId = firstText(result && result.bundleId, result && result.bundle && result.bundle.id)
+      if (created && bundleId && props.pending && typeof props.pending.remove === 'function') {
         undoApi.push({
           label: rt('reader.undo.cited'),
           undo: async () => {

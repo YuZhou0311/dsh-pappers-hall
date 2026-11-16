@@ -10,6 +10,7 @@ import { Icon } from '../core/icons.jsx'
 import { Badge, Button, Check, EmptyState, IconButton, SearchInput, useToasts } from '../core/primitives.jsx'
 import { describeError, isOffline } from '../core/api.js'
 import { pendingStore } from '../core/pending.js'
+import { commitReferenceBatch } from '../core/reference-actions.js'
 import { navigation } from '../core/navigation.js'
 
 function operationId(prefix) {
@@ -311,9 +312,8 @@ export function FigureSearch(props) {
   const cite = (card) => {
     const kind = card.materialKind === 'annotation' ? 'annotation' : card.materialKind === 'paper' ? 'paper' : 'figure'
     const material = { kind: kind, id: card.figureId || card.materialId, page: card.page, title: card.paperTitle }
-    api('references.commit', { items: [{ kind: material.kind, id: material.id, ...(material.page ? { page: material.page } : {}) }], operationId: operationId('refs') })
-      .then((result) => {
-        pendingStore.add(result, [material])
+    commitReferenceBatch([material], { operationId: operationId('refs') })
+      .then(() => {
         push('success', t('toast.cited'))
         setRevision((value) => value + 1)
       })

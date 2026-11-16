@@ -453,6 +453,50 @@ async function main() {
       writeFileSync(join(OUT, 'drawer-text.txt'), drawerState.snippet ?? '')
       console.log('drawer state:', JSON.stringify(drawerState.hasDrawer))
       await captureButtons('drawer')
+      if (STEPS.includes('history-token')) {
+        await evaluate(`(() => {
+          const scrollers = [...document.querySelectorAll('*')].filter((el) => el.scrollHeight > el.clientHeight + 80 && /auto|scroll/.test(getComputedStyle(el).overflowY))
+          scrollers.forEach((el) => { el.scrollTop = 0 })
+          return scrollers.length
+        })()`)
+        await sleep(1500)
+        const token = await evaluate(`(() => {
+          const nodes = [...document.querySelectorAll('[data-ph-citetoken-history="1"]')]
+          const sample = [...document.querySelectorAll('.ph-citetoken-history')][0] || null
+          const chain = sample ? { tag: sample.tagName, cls: sample.className, parent: sample.parentElement && sample.parentElement.tagName + '.' + sample.parentElement.className, grand: sample.parentElement && sample.parentElement.parentElement && sample.parentElement.parentElement.tagName + '.' + sample.parentElement.parentElement.className, inChrome: Boolean(sample.closest('.ph-app, .ph-center, .ph-sidebar, .ph-settings, .ph-dock, .ph-refcard')) } : null
+          const probe = sample ? { label: sample.getAttribute('data-ph-citetoken-label'), width: Math.round(sample.getBoundingClientRect().width) } : null
+          const raw = (document.body.innerText || '').includes('bundle=bn-')
+          const rawText = (document.body.innerText || '').match(/⟦Pappers-Hall[^⟧]{0,80}⟧/g) || []
+          return {
+            count: nodes.length,
+            rawInText: raw,
+            chain: chain,
+            probe: probe,
+            rawSamples: rawText.slice(0, 3),
+            labels: nodes.slice(0, 3).map((node) => node.getAttribute('data-ph-citetoken-label')),
+            visible: nodes.slice(0, 1).map((node) => ({ w: Math.round(node.getBoundingClientRect().width), text: node.innerText.slice(0, 60) })),
+          }
+        })()`)
+        console.log('history citation tokens:', JSON.stringify(token))
+        await shot('06-history-token')
+      }
+      if (STEPS.includes('drawer-multi-cite')) {
+        const citations = await evaluate(`(() => {
+          const buttons = [...document.querySelectorAll('button[title="引用到对话"], button[title="Cite to conversation"]')]
+          const chosen = buttons.slice(0, 2)
+          chosen.forEach((button) => button.click())
+          return { buttons: buttons.length, clicked: chosen.length, labels: chosen.map((b) => (b.getAttribute('title') || '').trim()) }
+        })()`)
+        await sleep(1600)
+        const dock = await evaluate(`(() => ({
+          cards: document.querySelectorAll('.ph-refcard').length,
+          text: (document.querySelector('.ph-dock-slot')?.innerText || '').slice(0, 500),
+          chips: [...document.querySelectorAll('.ph-refcard__chip')].map((chip) => chip.textContent.trim()).slice(0, 8),
+          composerEntry: (document.querySelector('.ph-composer-entry')?.innerText || '').trim(),
+        }))()`)
+        console.log('drawer multi cite:', JSON.stringify(citations), JSON.stringify(dock))
+        await shot('04x-multi-cite')
+      }
       if (STEPS.includes('drawer-drag-to-chat')) {
         // The drawer no longer has a 图片 tab: figures enter the chat from the
         // paper itself, so this step guards the removal and drags a paper row.

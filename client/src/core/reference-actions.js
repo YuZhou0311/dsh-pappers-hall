@@ -83,7 +83,7 @@ async function commitReferenceBatchNow(materials, options) {
         if (bundle.token) removeTokenFromComposer(bundle.token)
         pendingStore.remove(bundle.bundleId)
       })
-      pendingStore.add(result, combined, { sessionId: opts.sessionId, autoInsert: false })
+      pendingStore.add(result, combined, { sessionId: opts.sessionId, autoInsert: true })
       return { result, created: false, previous: primary }
     } catch (error) {
       // A stale bundle should not block the new citation; fall through to a
@@ -100,7 +100,7 @@ async function commitReferenceBatchNow(materials, options) {
     if (bundle.token) removeTokenFromComposer(bundle.token)
     if (bundle.bundleId !== result.bundleId) pendingStore.remove(bundle.bundleId)
   })
-  pendingStore.add(result, materials, { sessionId: opts.sessionId, autoInsert: false })
+  pendingStore.add(result, materials, { sessionId: opts.sessionId, autoInsert: true })
   return { result, created: true, previous: null }
 }
 

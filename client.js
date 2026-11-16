@@ -5446,65 +5446,6 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   letter-spacing: 0;
 }
 
-
-
-/* ============================ 14 composer reference chip ================== */
-/* One compact chip above the composer. It is the whole reference UI: no
-   protocol string is written into the draft. */
-.ph-refchip {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  align-self: flex-start;
-  max-width: min(560px, 100%);
-  margin: 0 0 2px;
-  padding: 1px 2px 1px 4px;
-  border: 1px solid var(--ph-line);
-  border-radius: 8px;
-  background: var(--ph-surface-1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-.ph-refchip__main {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-  height: 24px;
-  padding: 0 4px;
-  border: 0;
-  background: transparent;
-  color: var(--ph-ink-2);
-  font: inherit;
-  font-size: var(--ph-fs-12);
-  cursor: pointer;
-  border-radius: 5px;
-}
-.ph-refchip__main:hover { background: var(--ph-surface-2); color: var(--ph-ink); }
-.ph-refchip__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--ph-fw-medium); }
-.ph-refchip__chev { color: var(--ph-ink-4); flex: none; }
-.ph-refchip__remove { width: 20px; height: 20px; opacity: 0.55; }
-.ph-refchip:hover .ph-refchip__remove { opacity: 1; }
-.ph-refchip__panel {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  z-index: 20;
-  min-width: 260px;
-  max-width: 420px;
-  padding: 5px;
-  border: 1px solid var(--ph-line);
-  border-radius: 10px;
-  background: var(--ph-surface-1);
-  box-shadow: 0 12px 32px -18px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-.ph-refchip__item { display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 4px; border-radius: 5px; font-size: var(--ph-fs-11); }
-.ph-refchip__item:hover { background: var(--ph-surface-2); }
-.ph-refchip__icon { color: var(--ph-ink-3); flex: none; display: inline-flex; }
-.ph-refchip__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ph-ink); }
-.ph-refchip__meta { flex: none; color: var(--ph-ink-4); font-variant-numeric: tabular-nums; }
-.ph-refchip__itemRemove { width: 18px; height: 18px; opacity: 0; }
-.ph-refchip__item:hover .ph-refchip__itemRemove { opacity: 0.8; }
-.ph-dock-slot { position: relative; }
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -8031,7 +7972,7 @@ async function commitReferenceBatchNow(materials, options) {
         if (bundle.token) removeTokenFromComposer(bundle.token);
         pendingStore.remove(bundle.bundleId);
       });
-      pendingStore.add(result2, combined, { sessionId: opts.sessionId, autoInsert: false });
+      pendingStore.add(result2, combined, { sessionId: opts.sessionId, autoInsert: true });
       return { result: result2, created: false, previous: primary };
     } catch (error) {
       console.warn("[pappers-hall] references.append failed, committing a new set", error);
@@ -8046,7 +7987,7 @@ async function commitReferenceBatchNow(materials, options) {
     if (bundle.token) removeTokenFromComposer(bundle.token);
     if (bundle.bundleId !== result.bundleId) pendingStore.remove(bundle.bundleId);
   });
-  pendingStore.add(result, materials, { sessionId: opts.sessionId, autoInsert: false });
+  pendingStore.add(result, materials, { sessionId: opts.sessionId, autoInsert: true });
   return { result, created: true, previous: null };
 }
 async function dropPendingReferences(bundleId) {
@@ -29978,10 +29919,14 @@ function DockBody(props) {
   const snapshot4 = usePendingSnapshot();
   const { toasts, push, dismiss: dismiss2 } = useToasts();
   const [expanded, setExpanded] = import_react44.default.useState({});
-  const bundles = snapshot4.bundles.filter((bundle2) => !bundle2.sessionId || bundle2.sessionId === props.sessionId);
-  const attachedRef = import_react44.default.useRef(null);
+  const [busyId, setBusyId] = import_react44.default.useState(null);
+  const [errors, setErrors] = import_react44.default.useState({});
+  const insertingRef = import_react44.default.useRef({});
+  const bundles = snapshot4.bundles.filter((bundle) => !bundle.sessionId || bundle.sessionId === props.sessionId);
+  const toggleExpanded = import_react44.default.useCallback((bundleId) => {
+    setExpanded((previous) => Object.assign({}, previous, { [bundleId]: !previous[bundleId] }));
+  }, []);
   import_react44.default.useEffect(() => registerComposerBridge(inputActions), [inputActions]);
-  import_react44.default.useEffect(() => installCitationTokens(), []);
   import_react44.default.useEffect(() => {
     const timer2 = setTimeout(() => {
       const composer2 = document.querySelector('[data-composer-input="true"]');
@@ -30001,73 +29946,219 @@ function DockBody(props) {
     }, 900);
     return () => clearTimeout(timer2);
   }, [inputActions]);
+  import_react44.default.useEffect(() => installCitationTokens(), []);
   import_react44.default.useEffect(() => {
-    const bundle2 = bundles[0];
-    if (!bundle2 || attachedRef.current === bundle2.bundleId) return;
-    attachedRef.current = bundle2.bundleId;
-    defaultApi("references.attach", { bundleId: bundle2.bundleId, ...props.sessionId ? { sessionId: props.sessionId } : {} }).catch(() => {
+    bundles.forEach((bundle) => {
+      if (!bundle.autoInsert || bundle.added || insertingRef.current[bundle.bundleId]) return;
+      if (!bundle.token) return;
+      insertingRef.current[bundle.bundleId] = true;
+      const attempt = (retries) => {
+        if (insertTokenIntoComposer(bundle.token) && composerHasToken(bundle.token)) {
+          pendingStore.markAdded(bundle.bundleId);
+          insertingRef.current[bundle.bundleId] = false;
+          return;
+        }
+        if (retries > 0) setTimeout(() => attempt(retries - 1), 260);
+        else {
+          insertingRef.current[bundle.bundleId] = false;
+          notify("warning", t("dnd.pendingInsert"), { label: t("dnd.addManual"), onClick: () => insertBundle(bundle) }, 9e3);
+        }
+      };
+      setTimeout(() => attempt(14), 180);
     });
-  }, [bundles.map((bundle2) => bundle2.bundleId).join(","), props.sessionId]);
-  const toggleExpanded = import_react44.default.useCallback((bundleId) => {
-    setExpanded((previous) => Object.assign({}, previous, { [bundleId]: !previous[bundleId] }));
-  }, []);
+  }, [bundles.map((bundle) => bundle.bundleId + ":" + bundle.added + ":" + Boolean(bundle.autoInsert)).join(","), t]);
+  const attemptInsert = import_react44.default.useCallback(
+    (bundle) => {
+      if (!inputActions || typeof inputActions.captureInsertion !== "function" || typeof inputActions.insertText !== "function") return false;
+      if (!bundle || !bundle.token) return false;
+      try {
+        const span = inputActions.captureInsertion();
+        const accepted = inputActions.insertText(bundle.token, span);
+        return accepted !== false;
+      } catch (error) {
+        console.warn("[pappers-hall] insertText failed", error);
+        return false;
+      }
+    },
+    [inputActions]
+  );
+  const insertBundle = import_react44.default.useCallback(
+    (bundle) => {
+      if (!bundle || bundle.added || busyId) return;
+      if (insertingRef.current[bundle.bundleId]) return;
+      if (!inputActions) {
+        setErrors((previous) => Object.assign({}, previous, { [bundle.bundleId]: t("dock.noInput") }));
+        return;
+      }
+      setErrors((previous) => {
+        const next = Object.assign({}, previous);
+        delete next[bundle.bundleId];
+        return next;
+      });
+      insertingRef.current[bundle.bundleId] = true;
+      setBusyId(bundle.bundleId);
+      const first = attemptInsert(bundle) && composerHasToken(bundle.token);
+      if (first) {
+        pendingStore.markAdded(bundle.bundleId);
+        setBusyId(null);
+        insertingRef.current[bundle.bundleId] = false;
+        return;
+      }
+      setTimeout(() => {
+        const second = attemptInsert(bundle) && composerHasToken(bundle.token);
+        if (second) {
+          pendingStore.markAdded(bundle.bundleId);
+        } else {
+          setErrors((previous) => Object.assign({}, previous, { [bundle.bundleId]: t("dock.failed") }));
+        }
+        setBusyId(null);
+        insertingRef.current[bundle.bundleId] = false;
+      }, 150);
+    },
+    [attemptInsert, busyId, inputActions, push, t]
+  );
   const clearAllReferences = import_react44.default.useCallback(async () => {
+    const tokens = snapshot4.bundles.map((bundle) => bundle.token).filter(Boolean);
+    tokens.forEach((token) => removeTokenFromComposer(token));
     pendingStore.clear();
-  }, []);
+  }, [snapshot4.bundles]);
   if (bundles.length === 0) {
-    return h("div", { className: "ph-dock-slot ph-dock-slot--empty" }, h(FeedbackHost, null));
+    return h(
+      "div",
+      { className: "ph-dock-slot ph-dock-slot--empty" },
+      h(FeedbackHost, null)
+    );
   }
   const materialIcon = (kind) => kind === "figure" ? "figure" : kind === "annotation" ? "highlighter" : kind === "note" ? "note" : "book";
-  const bundle = bundles[0];
-  const count = bundle.materials.length;
-  const isOpen = Boolean(expanded[bundle.bundleId]);
+  const visibleBundles = bundles.slice(0, 3);
+  const hiddenCount = bundles.length - visibleBundles.length;
   return h(
     "div",
     { className: "ph-dock-slot" },
     h(FeedbackHost, null),
     h(
       "div",
-      { className: "ph-refchip", role: "group", "aria-label": t("dock.materials") },
-      h(
-        "button",
-        {
-          type: "button",
-          className: "ph-refchip__main",
-          "aria-expanded": isOpen ? "true" : "false",
-          title: t("dock.card.hint"),
-          onClick: () => toggleExpanded(bundle.bundleId)
-        },
-        h(Icon, { name: bundle.materials.some((material) => material.kind === "figure") ? "figure" : "book", size: 13 }),
-        h("span", { className: "ph-refchip__label" }, bundleSummaryLabel(t, bundle) || t("dock.card.count", { count })),
-        h(Icon, { name: isOpen ? "chevronDown" : "chevronRight", size: 12, className: "ph-refchip__chev" })
-      ),
-      h(IconButton, { icon: "close", className: "ph-refchip__remove", title: t("dock.remove"), onClick: () => {
-        dropPendingReferences(bundle.bundleId).catch(() => {
-        });
-      } })
-    ),
-    isOpen ? h(
-      "div",
-      { className: "ph-refchip__panel" },
-      bundle.materials.map(
-        (material, index) => h(
+      { className: "ph-dock", role: "group", "aria-label": t("dock.materials") },
+      visibleBundles.map((bundle) => {
+        const count = bundle.materials.length;
+        const isOpen = Boolean(expanded[bundle.bundleId]);
+        return h(
           "div",
-          { key: material.kind + ":" + material.id + ":" + index, className: "ph-refchip__item" },
-          h("span", { className: "ph-refchip__icon" }, h(Icon, { name: materialIcon(material.kind), size: 12 })),
-          h("span", { className: "ph-refchip__title", title: material.title || material.figureLabel || material.id }, material.title || material.figureLabel || material.id),
-          h("span", { className: "ph-refchip__meta" }, material.page ? t("reader.pages", { page: material.page }) : t("dock.item." + (material.kind || "paper"))),
-          h(IconButton, { icon: "close", className: "ph-refchip__itemRemove", title: t("dock.remove"), onClick: () => {
-            dropPendingMaterial(bundle.bundleId, index).catch(() => {
-            });
-          } })
-        )
-      ),
-      h("button", { type: "button", className: "ph-linkbtn", onClick: () => {
+          {
+            key: bundle.bundleId,
+            className: "ph-refcard" + (bundle.added ? " ph-refcard--added" : "") + (isOpen ? " ph-refcard--open" : ""),
+            "data-bundle": bundle.bundleId,
+            title: t("dock.card.hint")
+          },
+          h(
+            "div",
+            { className: "ph-refcard__main" },
+            h("span", { className: "ph-refcard__icon" }, h(Icon, { name: bundle.materials.some((material) => material.kind === "figure") ? "figure" : "book", size: 15 })),
+            h(
+              "div",
+              { className: "ph-refcard__body" },
+              h("div", { className: "ph-refcard__title" }, bundleSummaryLabel(t, bundle) || t("dock.card.title", { count })),
+              h(
+                "div",
+                { className: "ph-refcard__chips" },
+                bundle.materials.slice(0, 2).map(
+                  (material, index) => h("span", {
+                    key: material.kind + ":" + material.id + ":" + index,
+                    className: "ph-refcard__chip",
+                    title: material.title || material.figureLabel || material.id
+                  }, material.title || material.figureLabel || material.id)
+                ),
+                count > 2 ? h("button", { type: "button", className: "ph-refcard__chip ph-refcard__chip--more", onClick: (event) => {
+                  event.stopPropagation();
+                  toggleExpanded(bundle.bundleId);
+                } }, "+" + (count - 2)) : null
+              ),
+              errors[bundle.bundleId] ? h("div", { className: "ph-refcard__error", role: "status" }, errors[bundle.bundleId]) : null
+            ),
+            h(
+              "div",
+              { className: "ph-refcard__actions" },
+              bundle.added ? h("span", { className: "ph-refcard__added" }, h(Icon, { name: "checkCircle", size: 12 }), t("dock.card.added")) : h(
+                Button,
+                {
+                  size: "sm",
+                  variant: "primary",
+                  icon: "plus",
+                  loading: busyId === bundle.bundleId,
+                  disabled: Boolean(busyId) || !bundle.token,
+                  onClick: () => insertBundle(bundle)
+                },
+                busyId === bundle.bundleId ? t("dock.adding") : t("dock.card.add")
+              ),
+              bundle.added ? h(IconButton, {
+                icon: "restore",
+                className: "ph-refcard__undo",
+                title: t("dock.card.undo"),
+                onClick: () => {
+                  dropPendingReferences(bundle.bundleId).then(() => push("info", t("dock.card.removed"), null, 2e3)).catch(() => push("error", t("dock.failed"), null, 3e3));
+                }
+              }) : null,
+              h(IconButton, { icon: "close", className: "ph-refcard__remove", title: t("dock.remove"), onClick: () => {
+                dropPendingReferences(bundle.bundleId).catch(() => {
+                });
+              } }),
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "ph-refcard__chevron",
+                  "aria-expanded": isOpen ? "true" : "false",
+                  "aria-label": isOpen ? t("dock.collapse") : t("dock.expand"),
+                  title: isOpen ? t("dock.collapse") : t("dock.expand"),
+                  onClick: () => toggleExpanded(bundle.bundleId)
+                },
+                h(Icon, { name: isOpen ? "chevronDown" : "chevronRight", size: 14 })
+              )
+            )
+          ),
+          isOpen ? h(
+            "div",
+            { className: "ph-refcard__materials" },
+            h(
+              "div",
+              { className: "ph-refcard__list" },
+              bundle.materials.map(
+                (material, index) => h(
+                  "div",
+                  { key: material.kind + ":" + material.id + ":" + index, className: "ph-refcard__material" },
+                  h("span", { className: "ph-refcard__materialIcon" }, h(Icon, { name: materialIcon(material.kind), size: 13 })),
+                  h("span", { className: "ph-refcard__materialTitle", title: material.title || material.figureLabel || material.id }, material.title || material.figureLabel || material.id),
+                  h("span", { className: "ph-refcard__materialMeta" }, material.page ? t("reader.pages", { page: material.page }) : t("dock.item." + (material.kind || "paper"))),
+                  h(IconButton, { icon: "close", className: "ph-refcard__materialRemove", title: t("dock.remove"), onClick: () => {
+                    dropPendingMaterial(bundle.bundleId, index).catch(() => {
+                    });
+                  } })
+                )
+              )
+            ),
+            h(
+              "div",
+              { className: "ph-refcard__foot" },
+              h("span", { className: "ph-refcard__hint" }, t("dock.card.hint")),
+              h("button", { type: "button", className: "ph-linkbtn", onClick: () => {
+                clearAllReferences().then(() => push("info", t("dock.card.cleared"), null, 2e3)).catch(() => {
+                });
+              } }, t("dock.card.clear"))
+            )
+          ) : null
+        );
+      }),
+      hiddenCount > 0 ? h("div", { className: "ph-dock__more" }, t("dock.card.more", { count: hiddenCount })) : null,
+      bundles.length > 1 ? h("button", { type: "button", className: "ph-dock__clearAll", onClick: () => {
         clearAllReferences().then(() => push("info", t("dock.card.cleared"), null, 2e3)).catch(() => {
         });
-      } }, t("dock.card.clear"))
-    ) : null,
-    toasts.length > 0 ? h("div", { className: "ph-dock__toasts", role: "status" }, toasts.map((toast) => h("span", { key: toast.id, className: "ph-dock__toastText" }, toast.text))) : null
+      } }, t("dock.clearAll")) : null,
+      toasts.length > 0 ? h(
+        "div",
+        { className: "ph-dock__toasts", role: "status" },
+        toasts.map((toast) => h("span", { key: toast.id, className: "ph-dock__toastText" }, toast.text))
+      ) : null
+    )
   );
 }
 

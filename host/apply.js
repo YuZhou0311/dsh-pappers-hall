@@ -25,6 +25,7 @@ import { closeDatabase, openDatabase, migrate, probeFts5, SCHEMA_VERSION, readUs
 import { createAi } from './ai.js'
 import { createTranslate } from './translate.js'
 import { createApi, createWebHandler, DEFAULT_BODY_LIMIT_BYTES } from './api.js'
+import { createBackup, importBackup } from './backup.js'
 import { createClassify } from './classify.js'
 import { createEmbedding } from './embedding.js'
 import { createModels } from './models.js'
@@ -424,8 +425,13 @@ async function applyHostNow(ctx, config) {
     store,
     pdf,
     layout,
+    search,
     logger,
     bodyLimitBytes: resolved.bodyLimitBytes,
+    backup: {
+      export: () => createBackup({ db, layout, version: pluginVersion, schemaVersion: SCHEMA_VERSION }),
+      import: (buffer) => importBackup({ db, layout, search, buffer }),
+    },
   })
   const toolDefinitions = buildToolDefinitions({ store, search, ctx, layout, logger, config: resolved, classify, ingest, pdf, embedding, notes, ocr })
   trace('api+tools ready', toolDefinitions.length)

@@ -4838,6 +4838,32 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   font-size: 10.5px;
   line-height: 1.45;
 }
+
+/* ---- backup & restore ---- */
+.ph-backup { display: flex; flex-direction: column; gap: 10px; }
+.ph-backup__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--ph-line);
+  border-radius: 10px;
+  background: var(--ph-surface-1);
+}
+.ph-backup__copy { min-width: 0; flex: 1 1 240px; }
+.ph-backup__label { font-size: 12.5px; font-weight: 600; color: var(--ph-ink); margin-bottom: 2px; }
+.ph-backup__result {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  color: var(--dsw-alias-state-success-primary);
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 8%, var(--ph-surface-1));
+  font-size: 11.5px;
+}
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -30294,6 +30320,8 @@ function SettingsPanel(props) {
   const [aiProvider, setAiProvider] = import_react47.default.useState("");
   const [aiModel, setAiModel] = import_react47.default.useState("");
   const [aiSaving, setAiSaving] = import_react47.default.useState(false);
+  const [backupState, setBackupState] = import_react47.default.useState({ busy: "", result: null, error: "" });
+  const backupInputRef = import_react47.default.useRef(null);
   const pollRef = import_react47.default.useRef(null);
   const load = import_react47.default.useCallback(() => {
     setState((previous) => ({ status: previous.data ? "refreshing" : "loading", data: previous.data, error: null }));
@@ -30434,6 +30462,72 @@ function SettingsPanel(props) {
       setError(t("ai.settings.saveFailed", { message }));
       notify("error", message, null, 4e3);
     }).then(() => setAiSaving(false));
+  };
+  const exportBackup = async () => {
+    if (backupState.busy) return;
+    setBackupState({ busy: "export", result: null, error: "" });
+    try {
+      const response = await fetch("/pappers-hall/backup/export", { credentials: "same-origin" });
+      if (!response.ok) throw new Error("\u5907\u4EFD\u5BFC\u51FA\u5931\u8D25\uFF08HTTP " + response.status + "\uFF09");
+      const blob = await response.blob();
+      const disposition = response.headers.get("content-disposition") || "";
+      const match = /filename="([^"]+)"/i.exec(disposition);
+      const filename = match ? match[1] : "pappers-hall-backup.zip";
+      let picked = false;
+      if (typeof window.showSaveFilePicker === "function") {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{ description: "Pappers-Hall backup", accept: { "application/zip": [".zip"] } }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          picked = true;
+        } catch (error2) {
+          if (error2 && error2.name === "AbortError") {
+            setBackupState({ busy: "", result: null, error: "" });
+            return;
+          }
+          picked = false;
+        }
+      }
+      if (!picked) {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = filename;
+        anchor.rel = "noopener";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }
+      notify("success", t("backup.exported"), null, 2600);
+      setBackupState({ busy: "", result: null, error: "" });
+    } catch (error2) {
+      setBackupState({ busy: "", result: null, error: String(error2 && error2.message || error2) });
+      notify("error", t("backup.exportFailed", { message: String(error2 && error2.message || error2) }), null, 5e3);
+    }
+  };
+  const importBackup = (file) => {
+    if (!file || backupState.busy) return;
+    setBackupState({ busy: "import", result: null, error: "" });
+    file.arrayBuffer().then((buffer) => fetch("/pappers-hall/backup/import", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/zip" }, body: buffer })).then((response) => response.json().then((payload) => {
+      if (!response.ok || !payload || payload.ok !== true) {
+        const message = payload && payload.error && payload.error.message ? payload.error.message : "HTTP " + response.status;
+        throw new Error(message);
+      }
+      return payload.data;
+    })).then((result) => {
+      setBackupState({ busy: "", result, error: "" });
+      notify("success", t("backup.imported", { papers: result.counts.papers, notes: result.counts.notes }), null, 3500);
+      load();
+      loadJobs();
+    }).catch((error2) => {
+      setBackupState({ busy: "", result: null, error: String(error2 && error2.message || error2) });
+      notify("error", t("backup.importFailed", { message: String(error2 && error2.message || error2) }), null, 5e3);
+    });
   };
   const ACTIVE_JOB = (job) => job && (job.state === "running" || job.state === "queued" || job.state === "failed");
   const jobFor = (kind) => {
@@ -30655,6 +30749,43 @@ function SettingsPanel(props) {
                 { className: "ph-settings__testrow" },
                 h(Button, { size: "sm", icon: "trash", loading: busy2 === "clear-pdf-cache", onClick: clearPdfCache }, t("settings.clearPdfCache")),
                 h("span", { className: "ph-caption" }, t("settings.clearPdfCacheHint"))
+              )
+            ),
+            h(
+              Section,
+              { icon: "download", title: t("backup.title"), hint: t("backup.desc") },
+              h(
+                "div",
+                { className: "ph-backup" },
+                h(
+                  "div",
+                  { className: "ph-backup__row" },
+                  h(
+                    "div",
+                    { className: "ph-backup__copy" },
+                    h("div", { className: "ph-backup__label" }, t("backup.exportTitle")),
+                    h("div", { className: "ph-caption" }, t("backup.exportHint"))
+                  ),
+                  h(Button, { size: "sm", variant: "primary", icon: "download", loading: backupState.busy === "export", onClick: exportBackup }, t("backup.export"))
+                ),
+                h(
+                  "div",
+                  { className: "ph-backup__row" },
+                  h(
+                    "div",
+                    { className: "ph-backup__copy" },
+                    h("div", { className: "ph-backup__label" }, t("backup.importTitle")),
+                    h("div", { className: "ph-caption" }, t("backup.importHint"))
+                  ),
+                  h(Button, { size: "sm", icon: "import", loading: backupState.busy === "import", onClick: () => backupInputRef.current && backupInputRef.current.click() }, t("backup.import")),
+                  h("input", { ref: backupInputRef, type: "file", accept: ".zip,application/zip", style: { display: "none" }, onChange: (event) => {
+                    const file = event.target.files && event.target.files[0];
+                    event.target.value = "";
+                    if (file) importBackup(file);
+                  } })
+                ),
+                backupState.result ? h("div", { className: "ph-backup__result" }, h(Icon, { name: "check", size: 14 }), h("span", null, t("backup.result", { papers: backupState.result.counts.papers, notes: backupState.result.counts.notes, pdfs: backupState.result.counts.pdfs, annotations: backupState.result.counts.annotations }))) : null,
+                backupState.error ? h("div", { className: "ph-caption ph-caption--error", role: "status" }, backupState.error) : null
               )
             ),
             h(
@@ -31689,6 +31820,19 @@ var ZH = {
   "settings.clearPdfCacheFailed": "\u6E05\u7A7A\u5931\u8D25\uFF1A{message}",
   "settings.section.index": "\u7D22\u5F15\u4E0E\u6570\u636E",
   "settings.section.indexHint": "\u5411\u91CF\u68C0\u7D22\u5173\u95ED\u65F6\u4E0D\u8D70\u5411\u91CF\u901A\u9053\uFF0C\u4F46\u7D22\u5F15\u4ECD\u53EF\u7EF4\u62A4",
+  "backup.title": "\u5907\u4EFD\u4E0E\u6062\u590D",
+  "backup.desc": "\u5BFC\u51FA\u8BBA\u6587\u3001PDF\u3001\u6279\u6CE8\u548C\u7B14\u8BB0\u4E3A\u4E00\u4E2A\u53EF\u79FB\u690D ZIP\uFF1B\u5728\u53E6\u4E00\u53F0\u7535\u8111\u5BFC\u5165\u5373\u53EF\u6062\u590D\u3002",
+  "backup.exportTitle": "\u5BFC\u51FA\u5168\u90E8\u6570\u636E",
+  "backup.exportHint": "\u5305\u542B\u8BBA\u6587\u5143\u6570\u636E\u3001\u539F\u59CB PDF\u3001\u6279\u6CE8\u3001\u6587\u4EF6\u5939\u548C\u7B14\u8BB0\u5185\u5BB9\uFF1B\u4E0D\u5305\u542B AI \u7F13\u5B58\u548C\u641C\u7D22\u7D22\u5F15\u3002",
+  "backup.export": "\u5BFC\u51FA\u5907\u4EFD ZIP",
+  "backup.exported": "\u5907\u4EFD\u5DF2\u751F\u6210\uFF0C\u8BF7\u9009\u62E9\u4FDD\u5B58\u4F4D\u7F6E\u3002",
+  "backup.exportFailed": "\u5BFC\u51FA\u5931\u8D25\uFF1A{message}",
+  "backup.importTitle": "\u4ECE\u5907\u4EFD\u6062\u590D",
+  "backup.importHint": "\u9009\u62E9\u4E4B\u524D\u5BFC\u51FA\u7684 ZIP\uFF1B\u540C ID \u6761\u76EE\u4F1A\u66F4\u65B0\uFF0C\u73B0\u6709\u5176\u4ED6\u6761\u76EE\u4FDD\u7559\uFF0C\u5BFC\u5165\u540E\u4F1A\u91CD\u5EFA\u641C\u7D22\u7D22\u5F15\u3002",
+  "backup.import": "\u9009\u62E9 ZIP \u5BFC\u5165",
+  "backup.imported": "\u5DF2\u6062\u590D {papers} \u7BC7\u8BBA\u6587\u3001{notes} \u6761\u7B14\u8BB0\u3002",
+  "backup.importFailed": "\u5BFC\u5165\u5931\u8D25\uFF1A{message}",
+  "backup.result": "\u5DF2\u6062\u590D\uFF1A\u8BBA\u6587 {papers} \xB7 \u7B14\u8BB0 {notes} \xB7 PDF {pdfs} \xB7 \u6279\u6CE8 {annotations}",
   "settings.section.about": "\u5173\u4E8E\u4E0E\u8BCA\u65AD",
   "settings.model": "\u6A21\u578B",
   "settings.dims": "\u7EF4\u5EA6",
@@ -33014,6 +33158,19 @@ var EN = {
   "settings.clearPdfCacheFailed": "Clear failed: {message}",
   "settings.section.index": "Index & data",
   "settings.section.indexHint": "With vector search off the channel is skipped; the index can still be maintained",
+  "backup.title": "Backup & restore",
+  "backup.desc": "Export papers, PDFs, annotations and notes as a portable ZIP; import it on another computer to restore.",
+  "backup.exportTitle": "Export all data",
+  "backup.exportHint": "Includes paper metadata, original PDFs, annotations, folders and notes; excludes AI caches and search indexes.",
+  "backup.export": "Export backup ZIP",
+  "backup.exported": "Backup generated. Choose where to save it.",
+  "backup.exportFailed": "Export failed: {message}",
+  "backup.importTitle": "Restore from backup",
+  "backup.importHint": "Choose a previously exported ZIP. Same-ID entries are updated, other entries are kept, and the search index is rebuilt.",
+  "backup.import": "Choose ZIP to import",
+  "backup.imported": "Restored {papers} papers and {notes} notes.",
+  "backup.importFailed": "Import failed: {message}",
+  "backup.result": "Restored: papers {papers} \xB7 notes {notes} \xB7 PDFs {pdfs} \xB7 annotations {annotations}",
   "settings.section.about": "About & diagnostics",
   "settings.model": "Model",
   "settings.dims": "Dims",

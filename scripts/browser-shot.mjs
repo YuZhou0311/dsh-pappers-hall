@@ -796,6 +796,11 @@ async function main() {
       })()`)
       await sleep(800)
       await shot('11-settings')
+      await evaluate(`(() => { const body = document.querySelector('.ph-settings__body'); if (body) body.scrollTop = body.scrollHeight; return Boolean(body); })()`)
+      await sleep(500)
+      const backupUi = await evaluate(`(() => ({ text: (document.querySelector('.ph-backup')?.innerText || '').slice(0, 700), buttons: [...document.querySelectorAll('.ph-backup button')].map((button) => button.textContent.trim()), hasInput: Boolean(document.querySelector('.ph-backup input[type=file]')) }))()`)
+      console.log('backup UI:', JSON.stringify(backupUi))
+      await shot('11b-settings-backup')
       const cacheClicked = await evaluate(`(() => {
         const b = [...document.querySelectorAll('.ph-settings button')].filter((button) => /清空 PDF 预览缓存|Clear PDF preview cache/.test((button.textContent || '').trim())).sort((left, right) => (left.textContent || '').length - (right.textContent || '').length)[0]
         if (!b) return { found: false }

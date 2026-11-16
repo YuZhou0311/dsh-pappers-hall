@@ -417,7 +417,7 @@ function readBody(req, limitBytes) {
  * @param {number} [options.bodyLimitBytes] JSON body cap.
  * @returns {(req:import('node:http').IncomingMessage, res:import('node:http').ServerResponse)=>Promise<void>} handler.
  */
-export function createWebHandler({ api, store, pdf, layout, logger, bodyLimitBytes = DEFAULT_BODY_LIMIT_BYTES }) {
+export function createWebHandler({ api, store, pdf, layout, search, logger, bodyLimitBytes = DEFAULT_BODY_LIMIT_BYTES, backup }) {
   /** Whether the poppler facade is usable for render requests. */
   const rendersAvailable = () => pdf?.detection?.available === true
 
@@ -799,6 +799,53 @@ export function createWebHandler({ api, store, pdf, layout, logger, bodyLimitByt
       }
       if (url.pathname === '/pappers-hall/' || url.pathname === '/pappers-hall') {
         sendJson(res, 200, { ok: true, data: { plugin: 'dsh-pappers-hall', api: '/pappers-hall/api' } })
+        return
+      }
+      if (url.pathname === '/pappers-hall/backup/export' || url.pathname === '/pappers-hall/backup/export/') {
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+          res.writeHead(405, { allow: 'GET, HEAD' })
+          res.end()
+          return
+        }
+        if (!backup || typeof backup.export !== 'function') {
+          sendJson(res, 503, { ok: false, error: { code: 'unavailable', message: 'backup service is not available' } })
+          return
+        }
+        const result = await backup.export()
+        res.writeHead(200, {
+          'content-type': 'application/zip',
+          'content-length': result.buffer.length,
+          'content-disposition': 'attachment; filename="' + result.filename.replace(/[^A-Za-z0-9._-]/g, '_') + '"',
+          'cache-control': 'no-store',
+          'x-content-type-options': 'nosniff',
+        })
+        if (req.method === 'HEAD') res.end()
+        else res.end(result.buffer)
+        return
+      }
+      if (url.pathname === '/pappers-hall/backup/import' || url.pathname === '/pappers-hall/backup/import/') {
+        if (req.method !== 'POST') {
+          res.writeHead(405, { allow: 'POST' })
+          res.end()
+          return
+        }
+        if (!backup || typeof backup.import !== 'function') {
+          sendJson(res, 503, { ok: false, error: { code: 'unavailable', message: 'backup service is not available' } })
+          return
+        }
+        let raw
+        try {
+          raw = await readBody(req, Math.max(bodyLimitBytes, 512 * 1024 * 1024))
+        } catch (error) {
+          sendJson(res, error?.code === 'too_large' ? 413 : 400, { ok: false, error: { code: 'invalid', message: String(error?.message ?? error) } })
+          return
+        }
+        try {
+          const result = await backup.import(raw)
+          sendJson(res, 200, { ok: true, data: result })
+        } catch (error) {
+          sendJson(res, 400, { ok: false, error: { code: 'invalid', message: String(error?.message ?? error) } })
+        }
         return
       }
       if (url.pathname.startsWith('/pappers-hall/')) {

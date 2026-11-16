@@ -4752,6 +4752,32 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   font-size: 10.5px;
   line-height: 1.45;
 }
+
+/* ---- backup & restore ---- */
+.ph-backup { display: flex; flex-direction: column; gap: 10px; }
+.ph-backup__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--ph-line);
+  border-radius: 10px;
+  background: var(--ph-surface-1);
+}
+.ph-backup__copy { min-width: 0; flex: 1 1 240px; }
+.ph-backup__label { font-size: 12.5px; font-weight: 600; color: var(--ph-ink); margin-bottom: 2px; }
+.ph-backup__result {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  color: var(--dsw-alias-state-success-primary);
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 8%, var(--ph-surface-1));
+  font-size: 11.5px;
+}
 `
 
 export function installStyles(ctx) {

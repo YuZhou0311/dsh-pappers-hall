@@ -116,6 +116,8 @@ export function SettingsPanel(props) {
   const [aiProvider, setAiProvider] = React.useState('')
   const [aiModel, setAiModel] = React.useState('')
   const [aiSaving, setAiSaving] = React.useState(false)
+  const [backupState, setBackupState] = React.useState({ busy: '', result: null, error: '' })
+  const backupInputRef = React.useRef(null)
   const pollRef = React.useRef(null)
 
   const load = React.useCallback(() => {
@@ -268,6 +270,78 @@ export function SettingsPanel(props) {
       })
       .catch((err) => { const message = describeError(t, err); setError(t('ai.settings.saveFailed', { message: message })); notify('error', message, null, 4000) })
       .then(() => setAiSaving(false))
+  }
+
+  const exportBackup = async () => {
+    if (backupState.busy) return
+    setBackupState({ busy: 'export', result: null, error: '' })
+    try {
+      const response = await fetch('/pappers-hall/backup/export', { credentials: 'same-origin' })
+      if (!response.ok) throw new Error('备份导出失败（HTTP ' + response.status + '）')
+      const blob = await response.blob()
+      const disposition = response.headers.get('content-disposition') || ''
+      const match = /filename="([^"]+)"/i.exec(disposition)
+      const filename = match ? match[1] : 'pappers-hall-backup.zip'
+      let picked = false
+      if (typeof window.showSaveFilePicker === 'function') {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{ description: 'Pappers-Hall backup', accept: { 'application/zip': ['.zip'] } }],
+          })
+          const writable = await handle.createWritable()
+          await writable.write(blob)
+          await writable.close()
+          picked = true
+        } catch (error) {
+          if (error && error.name === 'AbortError') {
+            setBackupState({ busy: '', result: null, error: '' })
+            return
+          }
+          picked = false
+        }
+      }
+      if (!picked) {
+        const url = URL.createObjectURL(blob)
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download = filename
+        anchor.rel = 'noopener'
+        document.body.appendChild(anchor)
+        anchor.click()
+        anchor.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 1500)
+      }
+      notify('success', t('backup.exported'), null, 2600)
+      setBackupState({ busy: '', result: null, error: '' })
+    } catch (error) {
+      setBackupState({ busy: '', result: null, error: String((error && error.message) || error) })
+      notify('error', t('backup.exportFailed', { message: String((error && error.message) || error) }), null, 5000)
+    }
+  }
+
+  const importBackup = (file) => {
+    if (!file || backupState.busy) return
+    setBackupState({ busy: 'import', result: null, error: '' })
+    file.arrayBuffer()
+      .then((buffer) => fetch('/pappers-hall/backup/import', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/zip' }, body: buffer }))
+      .then((response) => response.json().then((payload) => {
+        if (!response.ok || !payload || payload.ok !== true) {
+          const message = payload && payload.error && payload.error.message ? payload.error.message : 'HTTP ' + response.status
+          throw new Error(message)
+        }
+        return payload.data
+      }))
+      .then((result) => {
+        setBackupState({ busy: '', result: result, error: '' })
+        notify('success', t('backup.imported', { papers: result.counts.papers, notes: result.counts.notes }), null, 3500)
+        load()
+        loadJobs()
+      })
+      .catch((error) => {
+        setBackupState({ busy: '', result: null, error: String((error && error.message) || error) })
+        notify('error', t('backup.importFailed', { message: String((error && error.message) || error) }), null, 5000)
+      })
   }
 
   const ACTIVE_JOB = (job) => job && (job.state === 'running' || job.state === 'queued' || job.state === 'failed')
@@ -452,6 +526,29 @@ export function SettingsPanel(props) {
                   h('div', { className: 'ph-settings__testrow' },
                     h(Button, { size: 'sm', icon: 'trash', loading: busy === 'clear-pdf-cache', onClick: clearPdfCache }, t('settings.clearPdfCache')),
                     h('span', { className: 'ph-caption' }, t('settings.clearPdfCacheHint')),
+                  ),
+                ),
+                h(Section, { icon: 'download', title: t('backup.title'), hint: t('backup.desc') },
+                  h('div', { className: 'ph-backup' },
+                    h('div', { className: 'ph-backup__row' },
+                      h('div', { className: 'ph-backup__copy' },
+                        h('div', { className: 'ph-backup__label' }, t('backup.exportTitle')),
+                        h('div', { className: 'ph-caption' }, t('backup.exportHint')),
+                      ),
+                      h(Button, { size: 'sm', variant: 'primary', icon: 'download', loading: backupState.busy === 'export', onClick: exportBackup }, t('backup.export')),
+                    ),
+                    h('div', { className: 'ph-backup__row' },
+                      h('div', { className: 'ph-backup__copy' },
+                        h('div', { className: 'ph-backup__label' }, t('backup.importTitle')),
+                        h('div', { className: 'ph-caption' }, t('backup.importHint')),
+                      ),
+                      h(Button, { size: 'sm', icon: 'import', loading: backupState.busy === 'import', onClick: () => backupInputRef.current && backupInputRef.current.click() }, t('backup.import')),
+                      h('input', { ref: backupInputRef, type: 'file', accept: '.zip,application/zip', style: { display: 'none' }, onChange: (event) => { const file = event.target.files && event.target.files[0]; event.target.value = ''; if (file) importBackup(file) } }),
+                    ),
+                    backupState.result
+                      ? h('div', { className: 'ph-backup__result' }, h(Icon, { name: 'check', size: 14 }), h('span', null, t('backup.result', { papers: backupState.result.counts.papers, notes: backupState.result.counts.notes, pdfs: backupState.result.counts.pdfs, annotations: backupState.result.counts.annotations })))
+                      : null,
+                    backupState.error ? h('div', { className: 'ph-caption ph-caption--error', role: 'status' }, backupState.error) : null,
                   ),
                 ),
                 h(Section, { icon: 'info', title: t('settings.section.about') },

@@ -6,6 +6,7 @@
 import React from 'react'
 import { h } from '../../core/dom.js'
 import { Icon } from '../../core/icons.jsx'
+import { bus } from '../../core/bus.js'
 import { Badge, Button, Check, EmptyState, IconButton, Skeleton } from '../../core/primitives.jsx'
 import { MATERIAL_MIME } from '../../core/constants.js'
 import { dragProps } from '../../core/dnd.js'
@@ -94,8 +95,9 @@ function TableRow(props) {
     h(
       'div',
       { className: 'ph-rowitem__titlewrap' },
-      h('div', { className: 'ph-rowitem__title' }, title),
+      h('div', { className: 'ph-rowitem__title' }, title, Number(paper.similarity) > 0 ? h('span', { className: 'ph-sim', title: t('library.search.similarity', { score: Number(paper.similarity).toFixed(2) }) }, Number(paper.similarity).toFixed(2)) : null),
       original ? h('div', { className: 'ph-rowitem__original' }, original) : null,
+      paper.snippet && Number(paper.similarity) > 0 ? h('div', { className: 'ph-rowitem__snippet' }, paper.snippet) : null,
     ),
     h('div', { className: 'ph-rowitem__cell ph-rowitem__cell--authors' }, h('span', { className: 'ph-rowitem__authors' }, authorLine(paper.authors) || t('common.unknownAuthors'))),
     h('div', { className: 'ph-rowitem__cell ph-rowitem__cell--year' }, h('span', { className: 'ph-rowitem__year' }, paper.year ? String(paper.year) : '—')),
@@ -251,6 +253,15 @@ export function ItemTable(props) {
   }
 
   if (items.length === 0) {
+    const semantic = snapshot.semantic || {}
+    if (snapshot.filters.mode === 'semantic' && semantic.available === false) {
+      return h(EmptyState, {
+        icon: 'sparkles',
+        title: t('library.search.semanticOfflineTitle'),
+        desc: (semantic.reason ? semantic.reason + ' · ' : '') + t('library.search.semanticOfflineDesc'),
+        action: h(Button, { variant: 'secondary', icon: 'settings', onClick: () => { try { bus.emit('open-settings') } catch (error) { /* ignore */ } } }, t('library.search.semanticOfflineAction')),
+      })
+    }
     const trash = snapshot.filters.view === 'trash'
     const filtering = snapshot.filters.query || snapshot.filters.tags.length > 0 || snapshot.filters.collectionId || snapshot.filters.field
     if (trash) return h(EmptyState, { icon: 'trash', title: t('library.trash.empty'), desc: t('library.trash.hint') })

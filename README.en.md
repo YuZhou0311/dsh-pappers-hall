@@ -116,6 +116,15 @@ Select papers, figures, annotations or notes and choose **Cite to conversation**
 - **Node.js ≥24**, plus Poppler's `pdfinfo`, `pdftotext` and `pdftoppm` available to DSH.
 - Configure a suitable model in DSH before using translation, AI reading or note formatting. Add OCR, embeddings and image-capable models as needed.
 
+### Search: keywords and semantics
+
+The search box above the paper table has a **Hybrid / Semantic** switch in the filter row:
+
+- **Hybrid (default)**: full text (FTS5) and substring keywords first, a few strongly related semantic neighbours appended
+- **Semantic**: ranked by the local embedding model (paraphrase-multilingual-MiniLM-L12-v2); each row shows its similarity score and an abstract snippet
+
+Semantic search needs the embedding component installed and indexed under Settings → Capabilities → Vector search; when it is not ready the switch explains why and links there. The first query loads the model (~12 s), then each query takes about 50 ms.
+
 ### Getting started guide
 
 The first visit docks a "Getting started" task card in the left pane. Every row is a real action and **its tick is derived from the library database**, not self-reported:

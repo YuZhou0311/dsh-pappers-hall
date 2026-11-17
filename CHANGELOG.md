@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Semantic search is now a visible feature**: a Hybrid / Semantic switch in the library filter row. Semantic mode ranks papers by embedding similarity through the new `search.semantic` API, shows per-row similarity scores and abstract snippets, reports an honest reason when the embedding component is missing, and shows a pending state while a cold worker loads.
+
 - **First-run guide as a task list**: six tasks in the library side pane whose ticks are derived from the database (component installed, sample imported/read, highlight, linked note, reference bundle), plus a reader coach chip that advances with the next real action. Imports the bundled 3-page sample paper (two text pages plus one scanned page for OCR) inline; re-openable from the toolbar or Settings, and it never claims progress the user did not make.
 
 - **Installer and migration fixes found by installing on a real machine**: `onnxruntime` is now installed and verified (rapidocr does not pull it), a stopped worker can no longer cancel its replacement's readiness ping, and schema v9 stores the OCR geometry scanned pages need for a reader structure.

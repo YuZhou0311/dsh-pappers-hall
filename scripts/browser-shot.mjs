@@ -497,6 +497,90 @@ async function main() {
       })()`)
       console.log('theme probe:', JSON.stringify(info).slice(0, 500))
     }
+    if (STEPS.includes('probe-semantic')) {
+      await ensureLibrary()
+      await sleep(800)
+      await evaluate(`(() => {
+        window.__phCalls = []
+        const original = window.fetch
+        window.fetch = function (...args) {
+          try {
+            const input = args[0]
+            const body = args[1] && args[1].body ? String(args[1].body) : ''
+            window.__phCalls.push({ url: String(input && input.url ? input.url : input).slice(-40), body: body.slice(0, 120) })
+          } catch (error) { /* ignore */ }
+          return original.apply(this, args)
+        }
+        return true
+      })()`)
+      await evaluate(`(() => {
+        const buttons = [...document.querySelectorAll('.ph-searchmode__btn')]
+        const semantic = buttons.find((button) => /语义|Semantic/.test((button.textContent || '').trim()))
+        if (semantic) semantic.click()
+        return true
+      })()`)
+      await sleep(500)
+      await evaluate(`(() => {
+        const input = document.querySelector('.ph-center__globalsearch input, input.ph-search__input, .ph-search input')
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+        setter.call(input, 'reasoning agents')
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        return true
+      })()`)
+      let waited = 0
+      while (waited < 25000) {
+        const count = await evaluate("document.querySelectorAll('.ph-sim').length")
+        if (Number(count) > 0) break
+        await sleep(900)
+        waited += 900
+      }
+      const report = await evaluate(`(() => ({
+        calls: (window.__phCalls || []).filter((call) => /semantic|search\.query|library\.list/.test(call.body)).slice(-12),
+        modeButtons: [...document.querySelectorAll('.ph-searchmode__btn')].map((b) => ({ label: (b.textContent || '').trim(), active: b.getAttribute('aria-pressed') === 'true' })),
+        rows: document.querySelectorAll('.ph-rowitem').length,
+        sims: [...document.querySelectorAll('.ph-sim')].map((node) => node.textContent.trim()),
+        emptyText: (document.querySelector('.ph-empty')?.textContent || '').slice(0, 120),
+        channels: [...document.querySelectorAll('.ph-semchip')].map((chip) => (chip.textContent || '').trim()),
+      }))()`)
+      console.log('probe-semantic:', JSON.stringify(report).slice(0, 1400))
+      await shot('51-semantic-probe')
+    }
+
+    if (STEPS.includes('semantic')) {
+      await ensureLibrary()
+      await sleep(900)
+      const toggled = await evaluate(`(() => {
+        const buttons = [...document.querySelectorAll('.ph-searchmode__btn')]
+        const semantic = buttons.find((button) => /语义|Semantic/.test((button.textContent || '').trim()))
+        if (!semantic) return { found: false, buttons: buttons.map((b) => (b.textContent || '').trim()) }
+        semantic.click()
+        return { found: true, pressed: semantic.getAttribute('aria-pressed') }
+      })()`)
+      console.log('semantic toggle:', JSON.stringify(toggled))
+      await sleep(600)
+      const typed = await evaluate(`(() => {
+        const input = document.querySelector('.ph-center__globalsearch input, input.ph-search__input, .ph-search input')
+        if (!input) return false
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+        setter.call(input, 'models that reason and act')
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        return true
+      })()`)
+      console.log('typed query:', typed)
+      await sleep(4000)
+      const state = await evaluate(`(() => {
+        const rows = [...document.querySelectorAll('.ph-rowitem')].map((row) => ({
+          title: (row.querySelector('.ph-rowitem__title')?.textContent || '').trim().slice(0, 46),
+          sim: (row.querySelector('.ph-sim')?.textContent || '').trim(),
+        }))
+        const chips = [...document.querySelectorAll('.ph-semchip')].map((chip) => (chip.textContent || '').trim())
+        const mode = [...document.querySelectorAll('.ph-searchmode__btn')].map((button) => ({ label: (button.textContent || '').trim(), active: button.getAttribute('aria-pressed') === 'true' }))
+        return { rows: rows.slice(0, 6), chips, mode, empty: Boolean(document.querySelector('.ph-empty')) }
+      })()`)
+      console.log('semantic results:', JSON.stringify(state).slice(0, 900))
+      await shot('50-semantic-search')
+    }
+
     if (STEPS.includes('onboarding')) {
       const dismissed = await evaluate(`(() => {
         const dialogs = [...document.querySelectorAll('[role="dialog"], .ph-modalbackdrop')].filter((dialog) => !dialog.closest('.ph-onbcard') && !dialog.classList.contains('ph-onb'))

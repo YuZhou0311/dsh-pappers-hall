@@ -646,6 +646,15 @@ async function main() {
     check('figure PNG is a real PNG', figureBytes.length > 1000 && figureBytes.readUInt32BE(0) === 0x89504e47, figureBytes.length)
 
     // ---- text search ---------------------------------------------------
+    // `search.semantic` must answer honestly when the embedding component is absent.
+    const semanticSearch = await service.api.call('search.semantic', { q: 'reasoning and acting', limit: 5 })
+    check(
+      'search.semantic reports unavailable without an embedding component',
+      semanticSearch.available === false && Array.isArray(semanticSearch.items) && semanticSearch.items.length === 0 && typeof semanticSearch.reason === 'string' && semanticSearch.reason !== '',
+      { available: semanticSearch.available, reason: semanticSearch.reason },
+    )
+    const semanticEmpty = await service.api.call('search.semantic', { q: '' })
+    check('search.semantic handles an empty query', semanticEmpty.available === true && semanticEmpty.items.length === 0, semanticEmpty)
     const searchResult = await service.api.call('search.query', { q: 'ReAct', scope: 'library' })
     check('search finds the paper for "ReAct"', searchResult.items.length > 0, searchResult.items.length)
     check('search hit belongs to the imported paper', searchResult.items.some((hit) => hit.paperId === paperId), searchResult.items[0])

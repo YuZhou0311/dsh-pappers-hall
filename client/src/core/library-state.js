@@ -74,9 +74,10 @@ export function createLibraryController({ api }) {
     status: 'idle',
     error: null,
     offline: false,
-    filters: { view: 'all', collectionId: null, collectionKind: null, field: null, folderId: null, favorite: false, tags: [], query: '', sort: prefs.sort || 'recent', reading: null },
+    filters: { view: 'all', collectionId: null, collectionKind: null, field: null, folderId: null, favorite: false, tags: [], query: '', sort: prefs.sort || 'recent', reading: null, mode: prefs.searchMode === 'semantic' ? 'semantic' : 'hybrid' },
     items: [],
     total: 0,
+    semantic: { mode: 'hybrid', available: null, reason: '', model: null, tookMs: 0, pending: false },
     selection: [],
     anchorIndex: -1,
     details: EMPTY_DETAILS,
@@ -124,6 +125,7 @@ export function createLibraryController({ api }) {
       rightCollapsed: state.ui.rightCollapsed,
       viewMode: state.viewMode,
       sort: state.filters.sort,
+      searchMode: state.filters.mode,
     })
   }
 
@@ -276,15 +278,23 @@ export function createLibraryController({ api }) {
     if (state.filters.tags && state.filters.tags.length > 0) semanticFilters.tags = state.filters.tags.slice()
     if (state.filters.favorite) semanticFilters.favorite = true
     if (state.filters.field) semanticFilters.field = state.filters.field
-    const semanticCall = query
-      ? api('search.query', { q: query, scope: 'papers', limit: Math.max(LIBRARY_PAGE_SIZE, 30), ai: 'off', filters: semanticFilters })
+    const semanticMode = state.filters.mode === 'semantic'
+    // Hybrid mode keeps keyword rows and appends strongly related neighbours;
+    // semantic mode replaces the list with the embedding ranking (cosine scores).
+    const semanticCall = !query || semanticMode
+      ? Promise.resolve(null)
+      : api('search.query', { q: query, scope: 'papers', limit: Math.max(LIBRARY_PAGE_SIZE, 30), ai: 'off', filters: semanticFilters }).then((value) => ({ kind: 'hybrid', value: value })).catch((error) => ({ kind: 'hybrid', error: error }))
+    const semanticOnlyCall = query && semanticMode
+      ? api('search.semantic', { q: query, limit: Math.max(LIBRARY_PAGE_SIZE, 30), filters: semanticFilters }).then((value) => ({ kind: 'semantic', value: value })).catch((error) => ({ kind: 'semantic', error: error }))
       : Promise.resolve(null)
-    const [listResult, statusResult, collectionsResult, tagsResult, semanticResult] = await Promise.allSettled([
+    if (semanticMode && query) publish({ semantic: Object.assign({}, state.semantic, { mode: 'semantic', query, pending: true }) })
+    const [listResult, statusResult, collectionsResult, tagsResult, semanticResult, semanticOnlyResult] = await Promise.allSettled([
       api('library.list', params),
       api('status', {}),
       api('library.folders.tree', {}),
       api('tags.list', {}),
       semanticCall,
+      semanticOnlyCall,
     ])
     if (seq !== listSeq) return
     if (listResult.status === 'rejected') {
@@ -297,8 +307,10 @@ export function createLibraryController({ api }) {
     // v0.5: a non-empty query is also answered by `search.query` (FTS + LIKE +
     // AI expansion + real vector channel). Merge its paper-level hits into the
     // table and hydrate full rows via library.tiles; keyword rows stay first.
-    if (query && semanticResult.status === 'fulfilled' && semanticResult.value && Array.isArray(semanticResult.value.items)) {
-      const semanticItems = semanticResult.value.items
+    const hybridSettled = semanticResult.status === 'fulfilled' ? semanticResult.value : null
+    const hybridPayload = hybridSettled !== null && hybridSettled !== undefined && hybridSettled.kind === 'hybrid' ? hybridSettled.value : null
+    if (query && hybridPayload !== null && Array.isArray(hybridPayload.items)) {
+      const semanticItems = hybridPayload.items
       const seen = new Set(items.map((paper) => paper.id))
       // v0.15: the vector channel legitimately returns up to 30 neighbours for
       // any query, but a table-wide semantic dump makes keyword search look
@@ -333,6 +345,52 @@ export function createLibraryController({ api }) {
         }
       }
     }
+    let semanticState = Object.assign({}, state.semantic, {
+      mode: semanticMode ? 'semantic' : 'hybrid',
+      query,
+    })
+    if (query && semanticMode) {
+      const settled = semanticOnlyResult.status === 'fulfilled' ? semanticOnlyResult.value : null
+      const payload = settled && settled.kind === 'semantic' ? settled.value : null
+      const failure = settled && settled.error ? settled.error : null
+      if (payload === null || payload === undefined) {
+        semanticState = Object.assign(semanticState, {
+          available: false,
+          reason: failure && failure.message ? failure.message : 'semantic search request failed',
+          tookMs: 0,
+        })
+      } else {
+        semanticState = Object.assign(semanticState, {
+          available: payload.available === true,
+          reason: payload.reason || '',
+          model: payload.model || null,
+          tookMs: Number(payload.tookMs) || 0,
+        })
+        const hits = listOf(payload.items)
+        if (payload.available === true && hits.length > 0) {
+          const order = hits.map((hit) => hit.paperId || hit.id)
+          let hydrated = []
+          try {
+            const tiles = await api('library.tiles', { ids: order })
+            hydrated = listOf(tiles && tiles.items)
+          } catch { hydrated = [] }
+          const byId = new Map(hydrated.map((paper) => [paper.id, paper]))
+          items = order.map((id) => {
+            const paper = byId.get(id)
+            if (paper === undefined) return null
+            const hit = hits.find((entry) => (entry.paperId || entry.id) === id) || {}
+            return Object.assign({}, paper, { similarity: Number(hit.similarity) || 0, snippet: hit.snippet || paper.snippet || '' })
+          }).filter(Boolean)
+          data = Object.assign({}, data, { total: Number(payload.total) || items.length })
+        } else if (payload.available === true) {
+          items = []
+          data = Object.assign({}, data, { total: 0 })
+        } else {
+          items = []
+          data = Object.assign({}, data, { total: 0 })
+        }
+      }
+    }
     const collections = collectionsFrom(collectionsResult, items)
     const folders = foldersFrom(collectionsResult, collections, items)
     const tags = tagsFrom(tagsResult, items)
@@ -350,6 +408,7 @@ export function createLibraryController({ api }) {
       tagsAvailable: tags.available,
       statusData: status || null,
       counts: (status && status.counts) || state.counts,
+      semantic: Object.assign({}, semanticState, { pending: false }),
     })
   }
 
@@ -396,6 +455,7 @@ export function createLibraryController({ api }) {
   function setFilters(patch, options) {
     const opts = options || {}
     const filters = Object.assign({}, state.filters, patch)
+    if (patch.mode === 'semantic' || patch.mode === 'hybrid') prefs.searchMode = patch.mode
     if (opts.resetSelection !== false) publish({ filters: filters, selection: [], anchorIndex: -1, details: EMPTY_DETAILS })
     else publish({ filters: filters })
     persistUi()
@@ -406,12 +466,12 @@ export function createLibraryController({ api }) {
     const allowed = ['all', 'favorite', 'continueReading', 'recentAdded', 'recentRead', 'recentAnnotations', 'toRead', 'reading', 'read', 'annotated', 'trash', 'duplicates']
     const next = allowed.indexOf(view) >= 0 ? view : 'all'
     if (next === 'duplicates') {
-      const filters = { view: next, collectionId: null, collectionKind: null, field: null, tags: [], query: '', sort: state.filters.sort, reading: null }
+      const filters = { view: next, collectionId: null, collectionKind: null, field: null, tags: [], query: '', sort: state.filters.sort, reading: null, mode: state.filters.mode }
       publish({ filters: filters, selection: [], anchorIndex: -1, details: EMPTY_DETAILS })
       loadDuplicates()
       return
     }
-    const filters = { view: next, collectionId: null, collectionKind: null, field: null, folderId: null, favorite: next === 'favorite', tags: [], query: state.filters.query, sort: sortForView(next, state.filters.sort), reading: READING_VIEWS[next] || null }
+    const filters = { view: next, collectionId: null, collectionKind: null, field: null, folderId: null, favorite: next === 'favorite', tags: [], query: state.filters.query, sort: sortForView(next, state.filters.sort), reading: READING_VIEWS[next] || null, mode: state.filters.mode }
     publish({ filters: filters, selection: [], anchorIndex: -1, details: EMPTY_DETAILS })
     refresh()
   }
@@ -419,6 +479,13 @@ export function createLibraryController({ api }) {
   function setQuery(query) {
     if (query === state.filters.query) return Promise.resolve()
     return setFilters({ query: query })
+  }
+
+  /** Switch between keyword ("hybrid") and embedding ("semantic") library search. */
+  function setSearchMode(mode) {
+    const next = mode === 'semantic' ? 'semantic' : 'hybrid'
+    if (state.filters.mode === next) return Promise.resolve()
+    return setFilters({ mode: next })
   }
 
   function setSort(sort) {
@@ -830,6 +897,7 @@ export function createLibraryController({ api }) {
     setView: setView,
     setQuery: setQuery,
     setSort: setSort,
+    setSearchMode: setSearchMode,
     toggleTag: toggleTag,
     clearTags: clearTags,
     selectCollection: selectCollection,

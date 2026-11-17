@@ -1130,6 +1130,105 @@ function keywordQuery(params = {}) {
       return { items: items.slice(offset, offset + limit), channels, tookMs: Date.now() - started, total }
     },
 
+    /* ------------------------- semantic search --------------------- */
+
+    /**
+     * `search.semantic` — pure vector search over paper embeddings.
+     *
+     * Unlike {@link query} this does not fuse keyword channels: the library's
+     * "语义" mode shows nearest neighbours with their cosine similarity, so the
+     * ranking has to be the embedding's ranking. Availability is reported
+     * honestly, and a missing embedding component or empty index is a normal
+     * answer, not an error.
+     *
+     * @param {object} params q, limit, offset, filters.
+     * @returns {Promise<{available:boolean, reason?:string, model?:string|null, items:object[], total:number, tookMs:number}>} neighbours.
+     */
+    async semanticQuery(params = {}) {
+      const started = Date.now()
+      const queryText = typeof params.q === 'string' ? params.q.trim() : ''
+      const limit = clampInt(params.limit ?? 20, 1, 100, 20)
+      const base = { items: [], total: 0, tookMs: 0, model: null }
+      if (queryText === '') return { available: true, reason: '', ...base, tookMs: Date.now() - started }
+      if (embedding === undefined || embedding === null) {
+        return { available: false, reason: 'embedding service is not initialized', ...base, tookMs: Date.now() - started }
+      }
+      const filterSpec = params.filters ?? {}
+      const allowedIds =
+        store !== undefined && typeof store.searchFilterPaperIds === 'function'
+          ? store.searchFilterPaperIds({
+              folderId: filterSpec.folderId ?? params.folderId,
+              tags: Array.isArray(filterSpec.tags) ? filterSpec.tags : Array.isArray(params.tags) ? params.tags : undefined,
+              favorite: filterSpec.favorite ?? params.favorite,
+              field: filterSpec.field ?? params.field,
+            })
+          : null
+      let result
+      try {
+        result = await embedding.searchVectors(queryText, {
+          k: Math.max(40, Math.min(400, limit * 6)),
+          kinds: ['paper'],
+          paperIds: allowedIds === null ? undefined : [...allowedIds],
+        })
+      } catch (error) {
+        return { available: false, reason: String(error?.message ?? error), ...base, tookMs: Date.now() - started }
+      }
+      if (result.available !== true) {
+        return {
+          ...base,
+          available: false,
+          reason: result.reason ?? 'vector search unavailable',
+          indexReady: result.indexReady !== false,
+          model: result.model ?? null,
+          tookMs: Date.now() - started,
+        }
+      }
+      // One row per paper: keep the best chunk score and its opening text.
+      const best = new Map()
+      for (const chunk of result.items ?? []) {
+        if (chunk.kind !== 'paper' || typeof chunk.paperId !== 'string') continue
+        const score = Number(chunk.score) || 0
+        const previous = best.get(chunk.paperId)
+        if (previous === undefined || score > previous.score) {
+          best.set(chunk.paperId, { score, text: String(chunk.text ?? '') })
+        }
+      }
+      const ids = [...best.entries()].sort((left, right) => right[1].score - left[1].score).slice(0, limit).map((entry) => entry[0])
+      const items = []
+      if (ids.length > 0) {
+        const rows = new Map()
+        for (const row of db.prepare(`SELECT id, title, title_zh, abstract, year, venue FROM papers WHERE id IN (${ids.map(() => '?').join(',')})`).all(...ids)) {
+          rows.set(row.id, row)
+        }
+        for (const id of ids) {
+          const row = rows.get(id)
+          if (row === undefined) continue
+          const entry = best.get(id)
+          items.push({
+            kind: 'paper',
+            id,
+            paperId: id,
+            title: row.title_zh ?? row.title,
+            titleZh: row.title_zh ?? null,
+            titleOriginal: row.title_zh === null ? row.title : row.title,
+            year: row.year ?? null,
+            venue: row.venue ?? null,
+            snippet: (row.abstract ? String(row.abstract) : entry.text).replace(/\s+/g, ' ').slice(0, 260),
+            similarity: Math.round(entry.score * 10_000) / 10_000,
+            reasons: ['vector_similarity'],
+          })
+        }
+      }
+      return {
+        available: true,
+        model: result.model ?? null,
+        dims: result.dims ?? null,
+        items,
+        total: best.size,
+        tookMs: Date.now() - started,
+      }
+    },
+
     /* -------------------------- figure search --------------------- */
 
     /**

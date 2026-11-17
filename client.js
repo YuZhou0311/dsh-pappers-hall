@@ -5693,6 +5693,59 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   .ph-onbcoach { left: 10px; right: 10px; bottom: 10px; max-width: none; }
   .ph-onbcoach__text { white-space: normal; }
 }
+
+/* ============================ semantic (vector) search ==================== */
+.ph-searchmode {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid var(--ph-line);
+  border-radius: var(--ph-r-pill);
+  background: var(--ph-surface-2);
+}
+.ph-searchmode__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: var(--ph-r-pill);
+  background: transparent;
+  color: var(--ph-ink-3);
+  font: inherit;
+  font-size: var(--ph-fs-11);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ph-searchmode__btn:hover { color: var(--ph-ink-2); }
+.ph-searchmode__btn.is-active {
+  background: var(--ph-surface-1);
+  color: var(--ph-ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.ph-searchmode__btn.is-active .ph-icon { color: var(--ph-accent); }
+.ph-sim {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: var(--ph-r-xs);
+  background: color-mix(in srgb, var(--ph-accent) 12%, transparent);
+  color: var(--ph-accent);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 1px;
+}
+.ph-rowitem__snippet {
+  margin-top: 2px;
+  font-size: var(--ph-fs-11);
+  line-height: 1.45;
+  color: var(--ph-ink-4);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -6326,9 +6379,10 @@ function createLibraryController({ api }) {
     status: "idle",
     error: null,
     offline: false,
-    filters: { view: "all", collectionId: null, collectionKind: null, field: null, folderId: null, favorite: false, tags: [], query: "", sort: prefs.sort || "recent", reading: null },
+    filters: { view: "all", collectionId: null, collectionKind: null, field: null, folderId: null, favorite: false, tags: [], query: "", sort: prefs.sort || "recent", reading: null, mode: prefs.searchMode === "semantic" ? "semantic" : "hybrid" },
     items: [],
     total: 0,
+    semantic: { mode: "hybrid", available: null, reason: "", model: null, tookMs: 0, pending: false },
     selection: [],
     anchorIndex: -1,
     details: EMPTY_DETAILS,
@@ -6373,7 +6427,8 @@ function createLibraryController({ api }) {
       leftCollapsed: state.ui.leftCollapsed,
       rightCollapsed: state.ui.rightCollapsed,
       viewMode: state.viewMode,
-      sort: state.filters.sort
+      sort: state.filters.sort,
+      searchMode: state.filters.mode
     });
   }
   function listParams(filters, offset) {
@@ -6514,13 +6569,17 @@ function createLibraryController({ api }) {
     if (state.filters.tags && state.filters.tags.length > 0) semanticFilters.tags = state.filters.tags.slice();
     if (state.filters.favorite) semanticFilters.favorite = true;
     if (state.filters.field) semanticFilters.field = state.filters.field;
-    const semanticCall = query ? api("search.query", { q: query, scope: "papers", limit: Math.max(LIBRARY_PAGE_SIZE, 30), ai: "off", filters: semanticFilters }) : Promise.resolve(null);
-    const [listResult, statusResult, collectionsResult, tagsResult, semanticResult] = await Promise.allSettled([
+    const semanticMode = state.filters.mode === "semantic";
+    const semanticCall = !query || semanticMode ? Promise.resolve(null) : api("search.query", { q: query, scope: "papers", limit: Math.max(LIBRARY_PAGE_SIZE, 30), ai: "off", filters: semanticFilters }).then((value) => ({ kind: "hybrid", value })).catch((error) => ({ kind: "hybrid", error }));
+    const semanticOnlyCall = query && semanticMode ? api("search.semantic", { q: query, limit: Math.max(LIBRARY_PAGE_SIZE, 30), filters: semanticFilters }).then((value) => ({ kind: "semantic", value })).catch((error) => ({ kind: "semantic", error })) : Promise.resolve(null);
+    if (semanticMode && query) publish3({ semantic: Object.assign({}, state.semantic, { mode: "semantic", query, pending: true }) });
+    const [listResult, statusResult, collectionsResult, tagsResult, semanticResult, semanticOnlyResult] = await Promise.allSettled([
       api("library.list", params),
       api("status", {}),
       api("library.folders.tree", {}),
       api("tags.list", {}),
-      semanticCall
+      semanticCall,
+      semanticOnlyCall
     ]);
     if (seq2 !== listSeq) return;
     if (listResult.status === "rejected") {
@@ -6530,8 +6589,10 @@ function createLibraryController({ api }) {
     }
     let data = listResult.value || {};
     let items2 = applyTagFilter(listOf(data.items), state.filters.tags);
-    if (query && semanticResult.status === "fulfilled" && semanticResult.value && Array.isArray(semanticResult.value.items)) {
-      const semanticItems = semanticResult.value.items;
+    const hybridSettled = semanticResult.status === "fulfilled" ? semanticResult.value : null;
+    const hybridPayload = hybridSettled !== null && hybridSettled !== void 0 && hybridSettled.kind === "hybrid" ? hybridSettled.value : null;
+    if (query && hybridPayload !== null && Array.isArray(hybridPayload.items)) {
+      const semanticItems = hybridPayload.items;
       const seen = new Set(items2.map((paper) => paper.id));
       const candidates = semanticItems.map((hit) => ({ id: hit.paperId || (hit.kind === "paper" ? hit.id : null), hit })).filter((entry) => entry.id && !seen.has(entry.id));
       const topVector = candidates.reduce((max, entry) => Math.max(max, Number(entry.hit.vectorScore) || 0), 0);
@@ -6557,6 +6618,54 @@ function createLibraryController({ api }) {
         }
       }
     }
+    let semanticState = Object.assign({}, state.semantic, {
+      mode: semanticMode ? "semantic" : "hybrid",
+      query
+    });
+    if (query && semanticMode) {
+      const settled = semanticOnlyResult.status === "fulfilled" ? semanticOnlyResult.value : null;
+      const payload = settled && settled.kind === "semantic" ? settled.value : null;
+      const failure = settled && settled.error ? settled.error : null;
+      if (payload === null || payload === void 0) {
+        semanticState = Object.assign(semanticState, {
+          available: false,
+          reason: failure && failure.message ? failure.message : "semantic search request failed",
+          tookMs: 0
+        });
+      } else {
+        semanticState = Object.assign(semanticState, {
+          available: payload.available === true,
+          reason: payload.reason || "",
+          model: payload.model || null,
+          tookMs: Number(payload.tookMs) || 0
+        });
+        const hits = listOf(payload.items);
+        if (payload.available === true && hits.length > 0) {
+          const order = hits.map((hit) => hit.paperId || hit.id);
+          let hydrated = [];
+          try {
+            const tiles = await api("library.tiles", { ids: order });
+            hydrated = listOf(tiles && tiles.items);
+          } catch {
+            hydrated = [];
+          }
+          const byId = new Map(hydrated.map((paper) => [paper.id, paper]));
+          items2 = order.map((id) => {
+            const paper = byId.get(id);
+            if (paper === void 0) return null;
+            const hit = hits.find((entry) => (entry.paperId || entry.id) === id) || {};
+            return Object.assign({}, paper, { similarity: Number(hit.similarity) || 0, snippet: hit.snippet || paper.snippet || "" });
+          }).filter(Boolean);
+          data = Object.assign({}, data, { total: Number(payload.total) || items2.length });
+        } else if (payload.available === true) {
+          items2 = [];
+          data = Object.assign({}, data, { total: 0 });
+        } else {
+          items2 = [];
+          data = Object.assign({}, data, { total: 0 });
+        }
+      }
+    }
     const collections = collectionsFrom(collectionsResult, items2);
     const folders = foldersFrom(collectionsResult, collections, items2);
     const tags = tagsFrom(tagsResult, items2);
@@ -6573,7 +6682,8 @@ function createLibraryController({ api }) {
       tags: tags.tags,
       tagsAvailable: tags.available,
       statusData: status || null,
-      counts: status && status.counts || state.counts
+      counts: status && status.counts || state.counts,
+      semantic: Object.assign({}, semanticState, { pending: false })
     });
   }
   async function refreshStatus() {
@@ -6613,6 +6723,7 @@ function createLibraryController({ api }) {
   function setFilters(patch, options) {
     const opts = options || {};
     const filters = Object.assign({}, state.filters, patch);
+    if (patch.mode === "semantic" || patch.mode === "hybrid") prefs.searchMode = patch.mode;
     if (opts.resetSelection !== false) publish3({ filters, selection: [], anchorIndex: -1, details: EMPTY_DETAILS });
     else publish3({ filters });
     persistUi();
@@ -6622,18 +6733,23 @@ function createLibraryController({ api }) {
     const allowed = ["all", "favorite", "continueReading", "recentAdded", "recentRead", "recentAnnotations", "toRead", "reading", "read", "annotated", "trash", "duplicates"];
     const next = allowed.indexOf(view) >= 0 ? view : "all";
     if (next === "duplicates") {
-      const filters2 = { view: next, collectionId: null, collectionKind: null, field: null, tags: [], query: "", sort: state.filters.sort, reading: null };
+      const filters2 = { view: next, collectionId: null, collectionKind: null, field: null, tags: [], query: "", sort: state.filters.sort, reading: null, mode: state.filters.mode };
       publish3({ filters: filters2, selection: [], anchorIndex: -1, details: EMPTY_DETAILS });
       loadDuplicates();
       return;
     }
-    const filters = { view: next, collectionId: null, collectionKind: null, field: null, folderId: null, favorite: next === "favorite", tags: [], query: state.filters.query, sort: sortForView(next, state.filters.sort), reading: READING_VIEWS[next] || null };
+    const filters = { view: next, collectionId: null, collectionKind: null, field: null, folderId: null, favorite: next === "favorite", tags: [], query: state.filters.query, sort: sortForView(next, state.filters.sort), reading: READING_VIEWS[next] || null, mode: state.filters.mode };
     publish3({ filters, selection: [], anchorIndex: -1, details: EMPTY_DETAILS });
     refresh();
   }
   function setQuery(query) {
     if (query === state.filters.query) return Promise.resolve();
     return setFilters({ query });
+  }
+  function setSearchMode(mode) {
+    const next = mode === "semantic" ? "semantic" : "hybrid";
+    if (state.filters.mode === next) return Promise.resolve();
+    return setFilters({ mode: next });
   }
   function setSort(sort) {
     if (sort === state.filters.sort) return Promise.resolve();
@@ -6989,6 +7105,7 @@ function createLibraryController({ api }) {
     setView,
     setQuery,
     setSort,
+    setSearchMode,
     toggleTag,
     clearTags,
     selectCollection,
@@ -8522,9 +8639,50 @@ function SearchFilters(props) {
       h("option", { value: "reading" }, t("library.smart.reading")),
       h("option", { value: "read" }, t("library.smart.read"))
     ),
+    h(
+      "div",
+      { className: "ph-searchmode", role: "group", "aria-label": t("library.search.mode") },
+      h("button", {
+        type: "button",
+        className: "ph-searchmode__btn" + ((filters.mode || "hybrid") === "hybrid" ? " is-active" : ""),
+        "aria-pressed": (filters.mode || "hybrid") === "hybrid" ? "true" : "false",
+        title: t("library.search.hybridHint"),
+        onClick: () => controller.setSearchMode("hybrid")
+      }, h(Icon, { name: "search", size: 11 }), t("library.search.hybrid")),
+      h("button", {
+        type: "button",
+        className: "ph-searchmode__btn" + (filters.mode === "semantic" ? " is-active" : ""),
+        "aria-pressed": filters.mode === "semantic" ? "true" : "false",
+        title: t("library.search.semanticHint"),
+        onClick: () => controller.setSearchMode("semantic")
+      }, h(Icon, { name: "sparkles", size: 11 }), t("library.search.semantic"))
+    ),
     h("span", { className: "ph-spacer" }),
+    filters.mode === "semantic" ? h(SemanticChips, { t, snapshot: snapshot4 }) : null,
     tags.map((tag) => h("button", { key: tag.name, type: "button", className: "ph-fchip" + (filters.tags.indexOf(tag.name) >= 0 ? " ph-fchip--active" : ""), onClick: () => controller.toggleTag(tag.name) }, tag.name, h("span", { className: "ph-fchip__count" }, String(tag.count)))),
     filters.tags.length > 0 ? h(IconButton, { icon: "close", title: t("drawer.filter.clear"), onClick: () => controller.clearTags() }) : null
+  );
+}
+function SemanticChips(props) {
+  const t = props.t;
+  const status = props.snapshot && props.snapshot.statusData;
+  const semantic = props.snapshot && props.snapshot.semantic || {};
+  const channels = status && status.index && status.index.channels || {};
+  const vector = channels.vector || "unavailable";
+  const vectorState = vector === "ready" ? "ok" : vector;
+  const vectorInfo = status && status.index && status.index.vectorInfo || {};
+  const items2 = [
+    { id: "fts", label: t("semantic.fts"), state: channels.fts === "ready" ? "ok" : channels.fts || "unknown" },
+    { id: "tags", label: t("semantic.tags"), state: channels.tags || (channels.fts === "ok" || channels.fts === "ready" ? "ok" : "unknown") },
+    { id: "ai", label: t("semantic.ai"), state: channels.ai || channels.ai_expand || "unavailable" },
+    { id: "vector", label: t("semantic.vector"), state: vectorState, model: vectorInfo.model, latencyMs: vectorInfo.latencyMs, reason: vectorInfo.reason }
+  ];
+  return h(
+    "div",
+    { className: "ph-semantic" },
+    items2.map((item) => h("span", { key: item.id, className: "ph-semchip ph-semchip--" + item.state, title: item.reason || "" }, h(Icon, { name: item.id === "vector" ? "search" : "tag", size: 10 }), item.label, item.state === "ok" && item.model ? h("span", { className: "ph-semchip__meta" }, item.model + (item.latencyMs ? " \xB7 " + item.latencyMs + "ms" : "")) : null)),
+    semantic.pending === true ? h("span", { className: "ph-caption ph-semantic__hint" }, t("library.search.semanticPending")) : null,
+    semantic.pending === true ? null : vectorState !== "ok" ? h("span", { className: "ph-caption ph-semantic__hint" }, t("semantic.vectorUnavailable") + (vectorInfo.reason ? "\uFF1A" + vectorInfo.reason : "")) : null
   );
 }
 function FavoriteButton(props) {
@@ -27231,8 +27389,9 @@ function TableRow(props) {
     h(
       "div",
       { className: "ph-rowitem__titlewrap" },
-      h("div", { className: "ph-rowitem__title" }, title2),
-      original ? h("div", { className: "ph-rowitem__original" }, original) : null
+      h("div", { className: "ph-rowitem__title" }, title2, Number(paper.similarity) > 0 ? h("span", { className: "ph-sim", title: t("library.search.similarity", { score: Number(paper.similarity).toFixed(2) }) }, Number(paper.similarity).toFixed(2)) : null),
+      original ? h("div", { className: "ph-rowitem__original" }, original) : null,
+      paper.snippet && Number(paper.similarity) > 0 ? h("div", { className: "ph-rowitem__snippet" }, paper.snippet) : null
     ),
     h("div", { className: "ph-rowitem__cell ph-rowitem__cell--authors" }, h("span", { className: "ph-rowitem__authors" }, authorLine(paper.authors) || t("common.unknownAuthors"))),
     h("div", { className: "ph-rowitem__cell ph-rowitem__cell--year" }, h("span", { className: "ph-rowitem__year" }, paper.year ? String(paper.year) : "\u2014")),
@@ -27383,6 +27542,20 @@ function ItemTable(props) {
     });
   }
   if (items2.length === 0) {
+    const semantic = snapshot4.semantic || {};
+    if (snapshot4.filters.mode === "semantic" && semantic.available === false) {
+      return h(EmptyState, {
+        icon: "sparkles",
+        title: t("library.search.semanticOfflineTitle"),
+        desc: (semantic.reason ? semantic.reason + " \xB7 " : "") + t("library.search.semanticOfflineDesc"),
+        action: h(Button, { variant: "secondary", icon: "settings", onClick: () => {
+          try {
+            bus.emit("open-settings");
+          } catch (error) {
+          }
+        } }, t("library.search.semanticOfflineAction"))
+      });
+    }
     const trash = snapshot4.filters.view === "trash";
     const filtering = snapshot4.filters.query || snapshot4.filters.tags.length > 0 || snapshot4.filters.collectionId || snapshot4.filters.field;
     if (trash) return h(EmptyState, { icon: "trash", title: t("library.trash.empty"), desc: t("library.trash.hint") });
@@ -32643,6 +32816,17 @@ var ZH = {
   "library.collection.assign": "\u52A0\u5165\u6536\u85CF\u5939",
   "library.import": "\u5BFC\u5165",
   "library.importing": "\u5BFC\u5165\u4E2D\u2026",
+  "library.search.mode": "\u68C0\u7D22\u65B9\u5F0F",
+  "library.search.hybrid": "\u6DF7\u5408",
+  "library.search.hybridHint": "\u5173\u952E\u8BCD\uFF08FTS + LIKE\uFF09\u4E3A\u4E3B\uFF0C\u8BED\u4E49\u76F8\u8FD1\u7684\u8BBA\u6587\u8865\u5145\u5728\u540E\u9762",
+  "library.search.semantic": "\u8BED\u4E49",
+  "library.search.semanticHint": "\u7528\u5411\u91CF\u6A21\u578B\u6309\u8BED\u4E49\u627E\u8BBA\u6587\uFF0C\u7ED3\u679C\u6309\u76F8\u4F3C\u5EA6\u6392\u5E8F",
+  "library.search.similarity": "\u8BED\u4E49\u76F8\u4F3C\u5EA6 {score}",
+  "library.search.semanticOfflineTitle": "\u8BED\u4E49\u68C0\u7D22\u6682\u4E0D\u53EF\u7528",
+  "library.search.semanticOfflineDesc": "\u9700\u8981\u5148\u5B89\u88C5\u5D4C\u5165\u6A21\u578B\u5E76\u5EFA\u7ACB\u7D22\u5F15\uFF08\u8BBE\u7F6E \u2192 \u80FD\u529B\u4E0E\u6A21\u578B \u2192 \u5411\u91CF\u68C0\u7D22\uFF09\u3002",
+  "library.search.semanticOfflineAction": "\u53BB\u8BBE\u7F6E",
+  "library.search.semanticPending": "\u8BED\u4E49\u68C0\u7D22\u4E2D\u2026",
+  "library.search.semanticEmpty": "\u6CA1\u6709\u8BED\u4E49\u76F8\u8FD1\u7684\u8BBA\u6587\uFF0C\u6362\u4E2A\u8BF4\u6CD5\u8BD5\u8BD5\u3002",
   "library.searchPlaceholder": "\u641C\u7D22\u9898\u540D\u3001\u4F5C\u8005\u3001\u6807\u7B7E\u2026",
   "library.sort": "\u6392\u5E8F",
   "library.sort.recent": "\u6700\u8FD1\u66F4\u65B0",
@@ -34032,6 +34216,17 @@ var EN = {
   "library.collection.assign": "Add to collection",
   "library.import": "Import",
   "library.importing": "Importing\u2026",
+  "library.search.mode": "Search mode",
+  "library.search.hybrid": "Hybrid",
+  "library.search.hybridHint": "Keyword channels first, semantically related papers appended",
+  "library.search.semantic": "Semantic",
+  "library.search.semanticHint": "Rank papers by embedding similarity",
+  "library.search.similarity": "Semantic similarity {score}",
+  "library.search.semanticOfflineTitle": "Semantic search is unavailable",
+  "library.search.semanticOfflineDesc": "Install the embedding component and build the index first (Settings \u2192 Capabilities \u2192 Vector search).",
+  "library.search.semanticOfflineAction": "Open settings",
+  "library.search.semanticPending": "Searching semantically\u2026",
+  "library.search.semanticEmpty": "No semantically close papers; try another phrasing.",
   "library.searchPlaceholder": "Search title, authors, tags\u2026",
   "library.sort": "Sort",
   "library.sort.recent": "Recently updated",

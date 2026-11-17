@@ -188,7 +188,26 @@ export function SearchFilters(props) {
       h('option', { value: 'reading' }, t('library.smart.reading')),
       h('option', { value: 'read' }, t('library.smart.read')),
     ),
+    h(
+      'div',
+      { className: 'ph-searchmode', role: 'group', 'aria-label': t('library.search.mode') },
+      h('button', {
+        type: 'button',
+        className: 'ph-searchmode__btn' + ((filters.mode || 'hybrid') === 'hybrid' ? ' is-active' : ''),
+        'aria-pressed': (filters.mode || 'hybrid') === 'hybrid' ? 'true' : 'false',
+        title: t('library.search.hybridHint'),
+        onClick: () => controller.setSearchMode('hybrid'),
+      }, h(Icon, { name: 'search', size: 11 }), t('library.search.hybrid')),
+      h('button', {
+        type: 'button',
+        className: 'ph-searchmode__btn' + (filters.mode === 'semantic' ? ' is-active' : ''),
+        'aria-pressed': filters.mode === 'semantic' ? 'true' : 'false',
+        title: t('library.search.semanticHint'),
+        onClick: () => controller.setSearchMode('semantic'),
+      }, h(Icon, { name: 'sparkles', size: 11 }), t('library.search.semantic')),
+    ),
     h('span', { className: 'ph-spacer' }),
+    filters.mode === 'semantic' ? h(SemanticChips, { t: t, snapshot: snapshot }) : null,
     tags.map((tag) => h('button', { key: tag.name, type: 'button', className: 'ph-fchip' + (filters.tags.indexOf(tag.name) >= 0 ? ' ph-fchip--active' : ''), onClick: () => controller.toggleTag(tag.name) }, tag.name, h('span', { className: 'ph-fchip__count' }, String(tag.count)))),
     filters.tags.length > 0 ? h(IconButton, { icon: 'close', title: t('drawer.filter.clear'), onClick: () => controller.clearTags() }) : null,
   )
@@ -198,6 +217,7 @@ export function SearchFilters(props) {
 export function SemanticChips(props) {
   const t = props.t
   const status = props.snapshot && props.snapshot.statusData
+  const semantic = (props.snapshot && props.snapshot.semantic) || {}
   const channels = (status && status.index && status.index.channels) || {}
   const vector = channels.vector || 'unavailable'
   // Host marks component readiness as 'ready'; search channels use 'ok'.
@@ -214,7 +234,8 @@ export function SemanticChips(props) {
     'div',
     { className: 'ph-semantic' },
     items.map((item) => h('span', { key: item.id, className: 'ph-semchip ph-semchip--' + item.state, title: item.reason || '' }, h(Icon, { name: item.id === 'vector' ? 'search' : 'tag', size: 10 }), item.label, item.state === 'ok' && item.model ? h('span', { className: 'ph-semchip__meta' }, item.model + (item.latencyMs ? ' · ' + item.latencyMs + 'ms' : '')) : null)),
-    vectorState !== 'ok' ? h('span', { className: 'ph-caption ph-semantic__hint' }, t('semantic.vectorUnavailable') + (vectorInfo.reason ? '：' + vectorInfo.reason : '')) : null,
+    semantic.pending === true ? h('span', { className: 'ph-caption ph-semantic__hint' }, t('library.search.semanticPending')) : null,
+    semantic.pending === true ? null : vectorState !== 'ok' ? h('span', { className: 'ph-caption ph-semantic__hint' }, t('semantic.vectorUnavailable') + (vectorInfo.reason ? '：' + vectorInfo.reason : '')) : null,
   )
 }
 

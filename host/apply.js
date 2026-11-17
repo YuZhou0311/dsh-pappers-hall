@@ -400,9 +400,9 @@ async function applyHostNow(ctx, config) {
   })
   const ai = createAi({ ctx, store, layout, pdf, config: resolved, logger })
   const settings = createSettings({ db, config: resolved, logger, identity, layout })
-  const onboarding = createOnboarding({ db, python, logger })
   const translate = createTranslate({ ctx, store, ai, config: resolved, logger, settings })
   const embedding = createEmbedding({ db, config: resolved, logger, settings })
+  const onboarding = createOnboarding({ db, python, embedding, logger })
   // v0.17 notes workbench: own tables + FTS + independent note_embeddings index.
   // The embedding service is attached after construction so the vector channel can
   // degrade honestly when the optional local model is absent.

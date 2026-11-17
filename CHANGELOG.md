@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **The guide now installs vector search too**: a seventh onboarding task installs the local embedding component (progress shown on the row), force-builds the index when it is empty, and ticks once `indexReady`/chunks are real. The card is driven by `/api` facts, so it also ticks by itself when an index already exists.
+- **Packaging fix**: `scripts/setup-embedding.sh` now ships inside the package (previously the embedding install button failed with a missing script for GitHub/Release installs), and release preflight fails if it disappears again.
+
 - **Semantic search is now a visible feature**: a Hybrid / Semantic switch in the library filter row. Semantic mode ranks papers by embedding similarity through the new `search.semantic` API, shows per-row similarity scores and abstract snippets, reports an honest reason when the embedding component is missing, and shows a pending state while a cold worker loads.
 
 - **First-run guide as a task list**: six tasks in the library side pane whose ticks are derived from the database (component installed, sample imported/read, highlight, linked note, reference bundle), plus a reader coach chip that advances with the next real action. Imports the bundled 3-page sample paper (two text pages plus one scanned page for OCR) inline; re-openable from the toolbar or Settings, and it never claims progress the user did not make.

@@ -28,7 +28,7 @@ export const ONBOARDING_VERSION = 2
 export const ONBOARDING_KEY = 'onboarding.state'
 
 /** Tasks in display order. */
-export const ONBOARDING_TASKS = ['component', 'sample', 'read', 'annotate', 'note', 'cite']
+export const ONBOARDING_TASKS = ['component', 'vector', 'sample', 'read', 'annotate', 'note', 'cite']
 
 /** Title marker of the bundled sample paper, used when the id was lost. */
 const SAMPLE_TITLE = 'Pappers-Hall 示例论文'
@@ -63,7 +63,7 @@ function normalizeState(value) {
  * @param {object} [options.logger] logger.
  * @returns {object} onboarding service.
  */
-export function createOnboarding({ db, python = null, logger } = {}) {
+export function createOnboarding({ db, python = null, embedding = null, logger } = {}) {
   /** Current stored state. */
   function state() {
     const stored = readSetting(db, ONBOARDING_KEY)
@@ -122,6 +122,26 @@ export function createOnboarding({ db, python = null, logger } = {}) {
     }
   }
 
+  /** Embedding component facts (never throws; a missing service reads as unavailable). */
+  function vectorFacts() {
+    try {
+      if (embedding === null || embedding === undefined || typeof embedding.facts !== 'function') {
+        return { installed: false, available: false, indexReady: false, chunks: 0, model: null, reason: 'embedding service is not initialized' }
+      }
+      const facts = embedding.facts()
+      return {
+        installed: facts.configured === true,
+        available: facts.available === true,
+        indexReady: facts.indexReady === true,
+        chunks: Number(facts.counts?.chunks ?? 0),
+        model: facts.model ?? null,
+        reason: facts.configured !== true ? (facts.lastError ?? 'embedding component is not installed') : facts.available !== true ? (facts.lastError ?? 'embedding worker is unavailable') : facts.indexReady !== true ? 'embedding index is empty; run embedding.index' : '',
+      }
+    } catch (error) {
+      return { installed: false, available: false, indexReady: false, chunks: 0, model: null, reason: String(error?.message ?? error) }
+    }
+  }
+
   /** Derived task progress from the library itself. */
   function progress() {
     const paper = samplePaper()
@@ -130,8 +150,10 @@ export function createOnboarding({ db, python = null, logger } = {}) {
     const note = paperId === null ? 0 : count('SELECT COUNT(*) AS count FROM note_paper_links WHERE paper_id = ?', paperId)
     const quickNote = paperId === null ? 0 : count("SELECT COUNT(*) AS count FROM notes WHERE paper_id = ? AND state = 'active'", paperId)
     const cite = paperId === null ? 0 : count("SELECT COUNT(*) AS count FROM bundle_items WHERE ref_id = ? AND kind = 'paper'", paperId)
+    const vector = vectorFacts()
     const done = {
       component: componentInstalled(),
+      vector: vector.installed && vector.indexReady,
       sample: paperId !== null,
       read: paperId !== null && typeof paper.last_read_at === 'string' && paper.last_read_at !== '',
       annotate: annotate > 0,
@@ -147,12 +169,13 @@ export function createOnboarding({ db, python = null, logger } = {}) {
       total: ONBOARDING_TASKS.length,
       allDone: doneCount === ONBOARDING_TASKS.length,
       next: next === null ? null : next.id,
-      counts: { annotate, note: note + quickNote, cite },
+      counts: { annotate, note: note + quickNote, cite, vectorChunks: vector.chunks },
       sample: {
         paperId,
         title: paper === undefined ? null : paper.title,
         opened: paper !== undefined && typeof paper.last_read_at === 'string' && paper.last_read_at !== '',
       },
+      vector,
     }
   }
 
@@ -169,6 +192,7 @@ export function createOnboarding({ db, python = null, logger } = {}) {
       allDone: derived.allDone,
       next: derived.next,
       counts: derived.counts,
+      vector: derived.vector,
       sample: { ...sample(), paperId: derived.sample.paperId, title: derived.sample.title, opened: derived.sample.opened },
       // The checklist shows itself on a fresh install and stays docked until the
       // user finishes or dismisses it.

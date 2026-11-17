@@ -1928,9 +1928,14 @@ async function main() {
       // First-run guide: six tasks derived from real library facts.
       const onboardingInitial = await service.api.call('onboarding.status', {})
       check(
-        'onboarding.status lists six derived tasks',
-        Array.isArray(onboardingInitial.tasks) && onboardingInitial.tasks.length === 6,
+        'onboarding.status lists seven derived tasks',
+        Array.isArray(onboardingInitial.tasks) && onboardingInitial.tasks.length === 7 && onboardingInitial.tasks.some((task) => task.id === 'vector'),
         onboardingInitial.tasks,
+      )
+      check(
+        'vector task stays open without an embedding component',
+        onboardingInitial.tasks.find((task) => task.id === 'vector')?.done === false && typeof onboardingInitial.vector?.reason === 'string',
+        onboardingInitial.vector,
       )
       check('onboarding exposes task counts and a visibility flag', typeof onboardingInitial.counts === 'object' && typeof onboardingInitial.visible === 'boolean', { counts: onboardingInitial.counts, visible: onboardingInitial.visible })
       check(

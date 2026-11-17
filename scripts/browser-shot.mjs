@@ -497,6 +497,46 @@ async function main() {
       })()`)
       console.log('theme probe:', JSON.stringify(info).slice(0, 500))
     }
+    if (STEPS.includes('probe-vector')) {
+      await ensureLibrary()
+      await sleep(900)
+      const errors = await evaluate(`(() => {
+        window.__phErrors = []
+        window.addEventListener('error', (event) => { window.__phErrors.push(String(event.message || event.error)) })
+        window.addEventListener('unhandledrejection', (event) => { window.__phErrors.push('rejection: ' + String(event.reason && event.reason.message ? event.reason.message : event.reason)) })
+        return true
+      })()`)
+      const clicked = await evaluate(`(() => {
+        const rows = [...document.querySelectorAll('.ph-onbtask')]
+        const vector = rows.find((row) => /向量|vector|semantic/i.test((row.textContent || '')))
+        if (!vector) return { clicked: false, rows: rows.map((row) => (row.textContent || '').trim().slice(0, 20)) }
+        const button = vector.querySelector('.ph-iconbtn')
+        if (!button) return { clicked: false, why: 'no button' }
+        button.click()
+        return { clicked: true, disabled: button.disabled }
+      })()`)
+      console.log('probe-vector click:', JSON.stringify(clicked), 'errors-watch', errors)
+      const samples = []
+      for (let i = 0; i < 12; i += 1) {
+        await sleep(1000)
+        const snapshot = await evaluate(`(() => {
+          const card = document.querySelector('.ph-onbcard')
+          const row = [...document.querySelectorAll('.ph-onbtask')].find((node) => /向量|vector|semantic/i.test((node.textContent || '')))
+          return {
+            card: (card?.innerText || '').replace(/\s+/g, ' ').slice(0, 240),
+            rowDone: row ? row.classList.contains('is-done') : null,
+            progress: (row?.querySelector('.ph-onbtask__progress')?.textContent || '').trim(),
+            errorBox: (document.querySelector('.ph-onbcard__error')?.textContent || '').trim(),
+            errors: (window.__phErrors || []).slice(-3),
+          }
+        })()`)
+        samples.push(snapshot)
+        if (snapshot.rowDone === true) break
+      }
+      console.log('probe-vector samples:', JSON.stringify(samples).slice(0, 1600))
+      await shot('52-vector-install')
+    }
+
     if (STEPS.includes('probe-semantic')) {
       await ensureLibrary()
       await sleep(800)

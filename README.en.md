@@ -132,13 +132,14 @@ The first visit docks a "Getting started" task card in the left pane. Every row 
 | Task | Ticks when |
 |---|---|
 | Install the local component | PyMuPDF + PP-OCRv6 + PP-DocLayout-S are installed |
+| Install vector search (semantic) | the local embedding model is installed and indexed (about 1 GB); the row's Install button downloads the component and then builds the index |
 | Import the sample | the bundled 3-page PDF is in the library |
 | Read the sample | the paper has `last_read_at` |
 | Highlight a passage | an annotation exists on it |
 | Turn it into a note | a note links to it |
 | Cite into the conversation | a reference bundle contains it |
 
-Importing from the card opens the reader automatically; a coach chip in the bottom-left advances as you highlight, note and cite. Back in the library the card has ticked itself; at 100% it offers "Finish the guide".
+Installing vector search from the card reports download and indexing progress and enables Semantic mode immediately. Importing from the card opens the reader automatically; a coach chip in the bottom-left advances as you highlight, note and cite. Back in the library the card has ticked itself; at 100% it offers "Finish the guide".
 
 Replay it from the toolbar (More → Getting started) or Settings → Getting started; completed ticks stay because they come from the library itself.
 

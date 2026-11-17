@@ -10,12 +10,12 @@ import React from 'react'
 import { h } from '../core/dom.js'
 import { Icon } from '../core/icons.jsx'
 import { Button, IconButton } from '../core/primitives.jsx'
-import { describeError } from '../core/api.js'
+import { defaultApi, describeError } from '../core/api.js'
 import { bus } from '../core/bus.js'
 import { onboardingStore } from '../core/onboarding.js'
 
-const TASK_ORDER = ['component', 'sample', 'read', 'annotate', 'note', 'cite']
-const TASK_ICONS = { component: 'cpu', sample: 'download', read: 'book', annotate: 'highlighter', note: 'note', cite: 'quote' }
+const TASK_ORDER = ['component', 'vector', 'sample', 'read', 'annotate', 'note', 'cite']
+const TASK_ICONS = { component: 'cpu', vector: 'sparkles', sample: 'download', read: 'book', annotate: 'highlighter', note: 'note', cite: 'quote' }
 
 /** Subscribe to the store and poll while mounted. */
 function useOnboarding() {
@@ -30,14 +30,19 @@ function useOnboarding() {
 /** One row in the checklist. */
 function TaskRow(props) {
   const t = props.t
-  const { task, isNext, busy, onAction } = props
+  const { task, isNext, busy, onAction, progressText } = props
   const label = t('onboarding.task.' + task.id)
   const hint = t('onboarding.task.' + task.id + '.hint')
   return h(
     'div',
     { className: 'ph-onbtask' + (task.done ? ' is-done' : '') + (isNext ? ' is-next' : ''), title: label + '\n' + hint },
     h('span', { className: 'ph-onbtask__dot', 'aria-hidden': 'true' }, task.done ? h(Icon, { name: 'check', size: 11 }) : null),
-    h('span', { className: 'ph-onbtask__label' }, label),
+    h(
+      'div',
+      { className: 'ph-onbtask__stack' },
+      h('span', { className: 'ph-onbtask__label' }, label),
+      progressText ? h('span', { className: 'ph-onbtask__progress' }, progressText) : null,
+    ),
     task.done
       ? null
       : h(IconButton, {
@@ -51,10 +56,18 @@ function TaskRow(props) {
   )
 }
 
+/** `jobs.list` may answer with a bare array or an `{items}` envelope. */
+function jobList(payload) {
+  if (Array.isArray(payload)) return payload
+  if (payload && Array.isArray(payload.items)) return payload.items
+  return []
+}
+
 export function OnboardingChecklist(props) {
   const t = props.t
   const snapshot = useOnboarding()
   const [busy, setBusy] = React.useState('')
+  const [vectorStage, setVectorStage] = React.useState('')
   const [error, setError] = React.useState('')
   const openPaper = props.onOpenPaper
   const expanded = snapshot.state === null ? true : snapshot.state.expanded !== false
@@ -65,6 +78,63 @@ export function OnboardingChecklist(props) {
 
   if (snapshot.loaded !== true || snapshot.visible !== true) return null
 
+  // Embedding setup: install the component (venv + torch + model), then build the
+  // index, keeping the row's progress text up to date. Both steps are idempotent.
+  const runVectorSetup = () => {
+    setBusy('vector')
+    setError('')
+    const stage = { text: '' }
+    const setStage = (text) => { stage.text = text; setVectorStage(text) }
+    const poll = (check, timeoutMs) => new Promise((resolve, reject) => {
+      const started = Date.now()
+      const tick = async () => {
+        try {
+          const done = await check()
+          if (done === true) { resolve(true); return }
+        } catch (failure) { /* transient */ }
+        if (Date.now() - started > timeoutMs) { reject(new Error(t('onboarding.vector.timeout'))); return }
+        setTimeout(tick, 2000)
+      }
+      tick()
+    })
+    const jobProgress = (kind) => defaultApi('jobs.list').then((payload) => {
+      const job = jobList(payload).find((entry) => entry && entry.kind === kind)
+      if (!job) return ''
+      const done = Number(job.progress && job.progress.done) || 0
+      const total = Number(job.progress && job.progress.total) || 0
+      return total > 0 ? `${done}/${total}` : (job.state || '')
+    }).catch(() => '')
+    defaultApi('settings.get')
+      .then((settings) => {
+        const embedding = (settings && settings.models && settings.models.embedding) || {}
+        if (embedding.installed === true && embedding.available !== false) return null
+        setStage(t('onboarding.vector.installing'))
+        return defaultApi('models.install', { kind: 'embedding' }).then(() => poll(async () => {
+          const progress = await jobProgress('model.install')
+          setStage(t('onboarding.vector.installing') + (progress ? ' · ' + progress : ''))
+          const next = await defaultApi('settings.get')
+          const model = (next && next.models && next.models.embedding) || {}
+          return model.installed === true
+        }, 30 * 60 * 1000))
+      })
+      .then(() => {
+        setStage(t('onboarding.vector.indexing'))
+        // Force: the guide only gets here when the index is empty, and the plain
+        // call is idempotent per model/version (it would replay the old job).
+        return defaultApi('embedding.index', { force: true })
+      })
+      .then(() => poll(async () => {
+        const progress = await jobProgress('embedding.index')
+        setStage(t('onboarding.vector.indexing') + (progress ? ' · ' + progress : ''))
+        const next = await defaultApi('onboarding.status')
+        const vector = (next && next.vector) || {}
+        return vector.indexReady === true && Number(vector.chunks) > 0
+      }, 15 * 60 * 1000))
+      .then(() => onboardingStore.refresh())
+      .catch((failure) => setError(describeError(t, failure)))
+      .then(() => { setVectorStage(''); setBusy('') })
+  }
+
   const openSample = () => {
     const paperId = snapshot.sample && snapshot.sample.paperId ? snapshot.sample.paperId : null
     if (paperId !== null && typeof openPaper === 'function') { openPaper(paperId, 1); return true }
@@ -74,6 +144,10 @@ export function OnboardingChecklist(props) {
   const run = (taskId) => {
     setError('')
     if (taskId === 'component') { bus.emit('open-settings'); return }
+    if (taskId === 'vector') {
+      runVectorSetup()
+      return
+    }
     if (taskId === 'sample') {
       setBusy('sample')
       onboardingStore.importSample()
@@ -122,6 +196,7 @@ export function OnboardingChecklist(props) {
               isNext: snapshot.next === task.id,
               busy: busy,
               onAction: run,
+              progressText: task.id === 'vector' && busy === 'vector' ? vectorStage : '',
             }),
           )),
           h('div', { className: 'ph-onbcard__progress' },

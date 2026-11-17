@@ -5660,6 +5660,11 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 }
+
+/* onboarding: per-row progress text (embedding install / index) */
+.ph-onbtask__stack { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 1px; }
+.ph-onbtask__progress { font-size: 10px; line-height: 1.35; color: var(--ph-ink-3); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-onbtask.is-next .ph-onbtask__progress { color: var(--ph-accent); }
 `
 
 export function installStyles(ctx) {

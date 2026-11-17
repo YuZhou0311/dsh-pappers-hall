@@ -5746,6 +5746,11 @@ button.ph-n-doc__gallery-media { cursor: zoom-in; }
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 }
+
+/* onboarding: per-row progress text (embedding install / index) */
+.ph-onbtask__stack { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 1px; }
+.ph-onbtask__progress { font-size: 10px; line-height: 1.35; color: var(--ph-ink-3); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-onbtask.is-next .ph-onbtask__progress { color: var(--ph-accent); }
 `;
 function installStyles(ctx) {
   if (typeof document === "undefined") return;
@@ -22633,8 +22638,8 @@ function createStore3() {
 var onboardingStore = createStore3();
 
 // src/surfaces/onboarding-card.jsx
-var TASK_ORDER = ["component", "sample", "read", "annotate", "note", "cite"];
-var TASK_ICONS = { component: "cpu", sample: "download", read: "book", annotate: "highlighter", note: "note", cite: "quote" };
+var TASK_ORDER = ["component", "vector", "sample", "read", "annotate", "note", "cite"];
+var TASK_ICONS = { component: "cpu", vector: "sparkles", sample: "download", read: "book", annotate: "highlighter", note: "note", cite: "quote" };
 function useOnboarding() {
   const snapshot4 = import_react29.default.useSyncExternalStore(onboardingStore.subscribe, onboardingStore.getSnapshot, onboardingStore.getSnapshot);
   import_react29.default.useEffect(() => {
@@ -22645,14 +22650,19 @@ function useOnboarding() {
 }
 function TaskRow(props) {
   const t = props.t;
-  const { task, isNext, busy: busy2, onAction } = props;
+  const { task, isNext, busy: busy2, onAction, progressText } = props;
   const label = t("onboarding.task." + task.id);
   const hint = t("onboarding.task." + task.id + ".hint");
   return h(
     "div",
     { className: "ph-onbtask" + (task.done ? " is-done" : "") + (isNext ? " is-next" : ""), title: label + "\n" + hint },
     h("span", { className: "ph-onbtask__dot", "aria-hidden": "true" }, task.done ? h(Icon, { name: "check", size: 11 }) : null),
-    h("span", { className: "ph-onbtask__label" }, label),
+    h(
+      "div",
+      { className: "ph-onbtask__stack" },
+      h("span", { className: "ph-onbtask__label" }, label),
+      progressText ? h("span", { className: "ph-onbtask__progress" }, progressText) : null
+    ),
     task.done ? null : h(IconButton, {
       icon: TASK_ICONS[task.id] || "arrowRight",
       title: t("onboarding.task." + task.id + ".action"),
@@ -22663,10 +22673,16 @@ function TaskRow(props) {
     })
   );
 }
+function jobList(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.items)) return payload.items;
+  return [];
+}
 function OnboardingChecklist(props) {
   const t = props.t;
   const snapshot4 = useOnboarding();
   const [busy2, setBusy] = import_react29.default.useState("");
+  const [vectorStage, setVectorStage] = import_react29.default.useState("");
   const [error, setError] = import_react29.default.useState("");
   const openPaper = props.onOpenPaper;
   const expanded = snapshot4.state === null ? true : snapshot4.state.expanded !== false;
@@ -22675,6 +22691,65 @@ function OnboardingChecklist(props) {
     return { id, done: found !== void 0 && found.done === true };
   });
   if (snapshot4.loaded !== true || snapshot4.visible !== true) return null;
+  const runVectorSetup = () => {
+    setBusy("vector");
+    setError("");
+    const stage = { text: "" };
+    const setStage = (text2) => {
+      stage.text = text2;
+      setVectorStage(text2);
+    };
+    const poll = (check, timeoutMs) => new Promise((resolve, reject) => {
+      const started = Date.now();
+      const tick = async () => {
+        try {
+          const done = await check();
+          if (done === true) {
+            resolve(true);
+            return;
+          }
+        } catch (failure) {
+        }
+        if (Date.now() - started > timeoutMs) {
+          reject(new Error(t("onboarding.vector.timeout")));
+          return;
+        }
+        setTimeout(tick, 2e3);
+      };
+      tick();
+    });
+    const jobProgress = (kind) => defaultApi("jobs.list").then((payload) => {
+      const job = jobList(payload).find((entry) => entry && entry.kind === kind);
+      if (!job) return "";
+      const done = Number(job.progress && job.progress.done) || 0;
+      const total = Number(job.progress && job.progress.total) || 0;
+      return total > 0 ? `${done}/${total}` : job.state || "";
+    }).catch(() => "");
+    defaultApi("settings.get").then((settings) => {
+      const embedding = settings && settings.models && settings.models.embedding || {};
+      if (embedding.installed === true && embedding.available !== false) return null;
+      setStage(t("onboarding.vector.installing"));
+      return defaultApi("models.install", { kind: "embedding" }).then(() => poll(async () => {
+        const progress = await jobProgress("model.install");
+        setStage(t("onboarding.vector.installing") + (progress ? " \xB7 " + progress : ""));
+        const next = await defaultApi("settings.get");
+        const model = next && next.models && next.models.embedding || {};
+        return model.installed === true;
+      }, 30 * 60 * 1e3));
+    }).then(() => {
+      setStage(t("onboarding.vector.indexing"));
+      return defaultApi("embedding.index", { force: true });
+    }).then(() => poll(async () => {
+      const progress = await jobProgress("embedding.index");
+      setStage(t("onboarding.vector.indexing") + (progress ? " \xB7 " + progress : ""));
+      const next = await defaultApi("onboarding.status");
+      const vector = next && next.vector || {};
+      return vector.indexReady === true && Number(vector.chunks) > 0;
+    }, 15 * 60 * 1e3)).then(() => onboardingStore.refresh()).catch((failure) => setError(describeError(t, failure))).then(() => {
+      setVectorStage("");
+      setBusy("");
+    });
+  };
   const openSample = () => {
     const paperId = snapshot4.sample && snapshot4.sample.paperId ? snapshot4.sample.paperId : null;
     if (paperId !== null && typeof openPaper === "function") {
@@ -22687,6 +22762,10 @@ function OnboardingChecklist(props) {
     setError("");
     if (taskId === "component") {
       bus.emit("open-settings");
+      return;
+    }
+    if (taskId === "vector") {
+      runVectorSetup();
       return;
     }
     if (taskId === "sample") {
@@ -22737,7 +22816,8 @@ function OnboardingChecklist(props) {
           task,
           isNext: snapshot4.next === task.id,
           busy: busy2,
-          onAction: run
+          onAction: run,
+          progressText: task.id === "vector" && busy2 === "vector" ? vectorStage : ""
         })
       )),
       h(
@@ -33443,6 +33523,13 @@ var ZH = {
   "onboarding.task.component": "\u5B89\u88C5\u672C\u5730\u7EC4\u4EF6",
   "onboarding.task.component.hint": "\u6253\u5F00\u8BBE\u7F6E\u5B89\u88C5 PyMuPDF\u3001PP-OCRv6 \u4E0E PP-DocLayout-S",
   "onboarding.task.component.action": "\u53BB\u5B89\u88C5",
+  "onboarding.task.vector": "\u5B89\u88C5\u5411\u91CF\u68C0\u7D22\uFF08\u8BED\u4E49\u641C\u7D22\uFF09",
+  "onboarding.task.vector.hint": "\u672C\u5730\u5D4C\u5165\u6A21\u578B + \u7D22\u5F15\uFF0C\u7EA6 1 GB\uFF1B\u88C5\u597D\u540E\u641C\u7D22\u6846\u7684\u300C\u8BED\u4E49\u300D\u6A21\u5F0F\u53EF\u7528",
+  "onboarding.task.vector.action": "\u5B89\u88C5",
+  "onboarding.vector.checking": "\u68C0\u67E5\u5411\u91CF\u7EC4\u4EF6\u2026",
+  "onboarding.vector.installing": "\u6B63\u5728\u5B89\u88C5\u5411\u91CF\u7EC4\u4EF6",
+  "onboarding.vector.indexing": "\u6B63\u5728\u5EFA\u7ACB\u7D22\u5F15",
+  "onboarding.vector.timeout": "\u5411\u91CF\u7EC4\u4EF6\u5B89\u88C5\u6216\u7D22\u5F15\u8D85\u65F6\uFF0C\u8BF7\u5230\u8BBE\u7F6E\u91CC\u67E5\u770B\u4EFB\u52A1\u72B6\u6001",
   "onboarding.task.sample": "\u5BFC\u5165\u793A\u4F8B\u8BBA\u6587",
   "onboarding.task.sample.hint": "\u5185\u7F6E 3 \u9875 PDF\uFF0C\u5176\u4E2D\u4E00\u9875\u662F\u6CA1\u6709\u6587\u5B57\u5C42\u7684\u626B\u63CF\u9875",
   "onboarding.task.sample.action": "\u5BFC\u5165",
@@ -34843,6 +34930,13 @@ var EN = {
   "onboarding.task.component": "Install local component",
   "onboarding.task.component.hint": "Install PyMuPDF, PP-OCRv6 and PP-DocLayout-S from Settings",
   "onboarding.task.component.action": "Install",
+  "onboarding.task.vector": "Install vector search (semantic)",
+  "onboarding.task.vector.hint": "Local embedding model plus index, about 1 GB; enables the Semantic mode in the search box",
+  "onboarding.task.vector.action": "Install",
+  "onboarding.vector.checking": "Checking the embedding component\u2026",
+  "onboarding.vector.installing": "Installing the embedding component",
+  "onboarding.vector.indexing": "Building the vector index",
+  "onboarding.vector.timeout": "Embedding install or indexing timed out; check the job list in Settings",
   "onboarding.task.sample": "Import sample paper",
   "onboarding.task.sample.hint": "A bundled 3-page PDF, one page is a scan without a text layer",
   "onboarding.task.sample.action": "Import",

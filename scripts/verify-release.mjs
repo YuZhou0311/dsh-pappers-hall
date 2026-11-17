@@ -72,6 +72,9 @@ if (packed.length > 0) {
   check('npm pack includes icon', packed.includes('icon.svg'))
   check('npm pack includes README/LICENSE', packed.includes('README.md') && packed.includes('LICENSE'))
   check('npm pack includes detail docs', packed.includes('docs/DETAIL.md') && packed.includes('docs/preview.svg'))
+  // The embedding installer runs a shell script from the package; a release that
+  // omits it breaks "install vector search" for every GitHub-installed user.
+  check('npm pack includes embedding setup script', packed.includes('scripts/setup-embedding.sh'))
   check('npm pack excludes source/tests/reports', !packed.some((file) => /^(src\/|test\/|reports\/|node_modules\/)/.test(file)), packed.filter((file) => /^(src\/|test\/|reports\/)/.test(file)).join(', '))
 }
 

@@ -28,7 +28,8 @@
     "client.js",
     "CONTRIBUTING.md",
     "SECURITY.md",
-    "assets"
+    "assets",
+    "scripts/setup-embedding.sh"
   ],
   "engines": {
     "node": ">=24",

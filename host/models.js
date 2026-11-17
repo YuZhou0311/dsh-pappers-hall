@@ -12,6 +12,7 @@
  */
 import { spawn } from 'node:child_process'
 import { existsSync, readdirSync, statSync } from 'node:fs'
+import { access } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import readline from 'node:readline'
@@ -172,6 +173,20 @@ export function createModels({ db, queue, embedding, ocr, python, settings, conf
 
   /** One install job's steps (4 units each). */
   async function runEmbeddingInstall(job, api) {
+    // The setup script handles venv + torch + model download. A packaged install
+    // must contain it; a missing file is a packaging bug, so say what to do
+    // instead of surfacing a bare ENOENT.
+    try {
+      await access(setupScript)
+    } catch {
+      throw new Error(
+        `embedding setup script missing: ${setupScript}\n`
+        + 'install it manually with:\n'
+        + '  python3 -m venv ~/.dsh/pappers-hall/embedding/venv && '
+        + '~/.dsh/pappers-hall/embedding/venv/bin/pip install torch==2.2.2 sentence-transformers==2.7.0 "numpy<2"\n'
+        + 'then restart the plugin and build the index from Settings.',
+      )
+    }
     if (!existsSync(setupScript)) throw new Error(`setup script missing: ${setupScript}`)
     api.updateProgress(job, 0, 4, 'steps')
     let step = 0

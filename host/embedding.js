@@ -118,7 +118,7 @@ export function createEmbedding({ db, config = {}, logger, settings }) {
   const modelName = typeof config.embeddingModel === 'string' && config.embeddingModel !== '' ? config.embeddingModel : DEFAULT_EMBEDDING_MODEL
   const disabled = config.embeddingDisabled === true
   const batchSize = Math.max(1, Math.min(64, Number(config.embeddingBatchSize) || 16))
-  const readyTimeoutMs = Math.max(1000, Number(config.embeddingReadyTimeoutMs) || 25_000)
+  const readyTimeoutMs = Math.max(1000, Number(config.embeddingReadyTimeoutMs) || 90_000)
   const requestTimeoutMs = Math.max(1000, Number(config.embeddingRequestTimeoutMs) || 60_000)
 
   let child = null

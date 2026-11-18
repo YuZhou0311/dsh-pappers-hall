@@ -3,6 +3,7 @@
 ## Unreleased
 
 - **The guide now installs vector search too**: a seventh onboarding task installs the local embedding component (progress shown on the row), force-builds the index when it is empty, and ticks once `indexReady`/chunks are real. The card is driven by `/api` facts, so it also ticks by itself when an index already exists.
+- **Embedding cold start**: the worker-ready timeout is now 90 s (configurable up to 300 s); a busy machine could exceed 25 s while torch loads the model, which made the first `embedding.index` fail and retry.
 - **Packaging fix**: `scripts/setup-embedding.sh` now ships inside the package (previously the embedding install button failed with a missing script for GitHub/Release installs), and release preflight fails if it disappears again.
 
 - **Semantic search is now a visible feature**: a Hybrid / Semantic switch in the library filter row. Semantic mode ranks papers by embedding similarity through the new `search.semantic` API, shows per-row similarity scores and abstract snippets, reports an honest reason when the embedding component is missing, and shows a pending state while a cold worker loads.

@@ -218,7 +218,9 @@ export function resolveConfig(config = {}) {
     embeddingModel: typeof config.embeddingModel === 'string' && config.embeddingModel !== '' ? config.embeddingModel : undefined,
     embeddingDisabled: config.embeddingDisabled === true,
     embeddingBatchSize: clampInt(config.embeddingBatchSize ?? 16, 1, 64, 16),
-    embeddingReadyTimeoutMs: clampInt(config.embeddingReadyTimeoutMs ?? 25_000, 1_000, 120_000, 25_000),
+    // Cold model loading on a busy machine can take far longer than 25 s; a tight
+    // timeout makes the first embedding.index fail and retry pointlessly.
+    embeddingReadyTimeoutMs: clampInt(config.embeddingReadyTimeoutMs ?? 90_000, 1_000, 300_000, 90_000),
     embeddingRequestTimeoutMs: clampInt(config.embeddingRequestTimeoutMs ?? 60_000, 1_000, 300_000, 60_000),
     // v0.11 optional OCR component (user-installed from the settings panel).
     ocrDir: typeof config.ocrDir === 'string' && config.ocrDir !== '' ? config.ocrDir : undefined,
